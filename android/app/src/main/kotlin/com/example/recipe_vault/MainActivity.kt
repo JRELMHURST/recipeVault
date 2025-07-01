@@ -1,4 +1,4 @@
-package com.example.recipe_vault
+package com.badgercreations.recipevault
 
 import io.flutter.embedding.android.FlutterActivity
 

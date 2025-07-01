@@ -5,6 +5,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/results_screen.dart';
+import 'core/theme.dart'; // ✅ Import custom themes
 
 // ✅ Globally accessible Firebase Functions instance
 late final FirebaseFunctions functions;
@@ -40,7 +41,10 @@ class RecipeVaultApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'RecipeVault',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode:
+          ThemeMode.system, // Automatically switches based on system preference
       routerConfig: _router,
     );
   }

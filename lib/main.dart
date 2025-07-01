@@ -27,6 +27,7 @@ class RecipeVaultApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'RecipeVault',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
       routerConfig: _router,
     );

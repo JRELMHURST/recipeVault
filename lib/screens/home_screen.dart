@@ -20,67 +20,88 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const int _jpegQuality = 80;
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
 
   Future<void> _generateRecipeCard() async {
     setState(() => _isLoading = true);
-
     try {
-      // Pick multiple images (max 10)
-      final List<XFile>? pickedFiles = await _picker.pickMultiImage();
-
-      if (pickedFiles == null || pickedFiles.isEmpty) {
-        setState(() => _isLoading = false);
-        return; // User cancelled or no images selected
-      }
-
-      // Convert XFile list to File list
-      final List<File> files = pickedFiles
-          .map((xfile) => File(xfile.path))
-          .toList();
-
-      final List<File> compressedFiles = [];
-      final tempDir = await getTemporaryDirectory();
-
-      for (final file in files) {
-        final compressedFile = await FlutterImageCompress.compressAndGetFile(
-          file.path,
-          '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}',
-          quality: 80,
-          format: CompressFormat.jpeg,
-        );
-        if (compressedFile != null) {
-          compressedFiles.add(compressedFile);
-        }
-      }
-
-      if (compressedFiles.isEmpty) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to compress images')),
-        );
+      // 1. Pick multiple images
+      final List<XFile> pickedXFiles = await _picker.pickMultiImage();
+      if (pickedXFiles.isEmpty) {
+        _showError('No images selected.');
         return;
       }
 
-      // Upload compressed images and get URLs
+      // 2. Convert XFiles to Files
+      final List<File> imageFiles = pickedXFiles
+          .map((xfile) => File(xfile.path))
+          .toList();
+
+      // 3. Compress images
+      final List<File> compressedFiles = await _compressFiles(imageFiles);
+      if (compressedFiles.isEmpty) {
+        _showError('Failed to compress images.');
+        return;
+      }
+
+      // 4. Upload images
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Uploading images...')));
       final List<String> imageUrls = await ImageUploadService.uploadImages(
         compressedFiles,
       );
 
-      // Call backend to get formatted OCR text
+      // 5. Format recipe
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Formatting recipe...')));
       final String ocrText = await RecipeFormatter.formatRecipe(imageUrls);
 
       if (!mounted) return;
       context.go('/results', extra: ocrText);
-    } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+    } catch (e, st) {
+      debugPrint('Error in _generateRecipeCard: $e\n$st');
+      _showError('Error: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<List<File>> _compressFiles(List<File> files) async {
+    final Directory tempDir = await getTemporaryDirectory();
+    final List<File> results = [];
+
+    for (final file in files) {
+      try {
+        final String targetPath =
+            '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+
+        final result = await FlutterImageCompress.compressAndGetFile(
+          file.path,
+          targetPath,
+          quality: _jpegQuality,
+          format: CompressFormat.jpeg,
+        );
+
+        if (result != null) {
+          results.add(result as File); // 👈 Force the cast
+        }
+      } catch (e, st) {
+        debugPrint('Compression failed for ${file.path}: $e\n$st');
+      }
+    }
+
+    return results;
+  }
+
+  void _showError(String message) {
+    setState(() => _isLoading = false);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override

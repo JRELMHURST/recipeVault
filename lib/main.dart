@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/results_screen.dart';
 
-void main() {
+// ✅ Globally accessible Firebase Functions instance
+late final FirebaseFunctions functions;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // ✅ Set the region for Cloud Functions
+  functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
+
   runApp(const RecipeVaultApp());
 }
 

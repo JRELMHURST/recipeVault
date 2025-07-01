@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "140256184353",
+    "project_id": "recipevault-bg-ai",
+    "storage_bucket": "recipevault-bg-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:140256184353:android:4bc2306845cf9ee1a43b60",
+        "android_client_info": {
+          "package_name": "com.badgercreations.recipevault"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0mi7KUqUxmWmgxtgMuJFErSZMtYpMUqI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

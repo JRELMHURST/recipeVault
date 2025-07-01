@@ -1,7 +1,8 @@
-import {onRequest} from "firebase-functions/v2/https";
+import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
-import {initializeApp} from "firebase-admin/app";
+import { initializeApp } from "firebase-admin/app";
 import vision from "@google-cloud/vision";
+export { formatRecipeText } from "./formatRecipeText";
 
 initializeApp();
 const visionClient = new vision.ImageAnnotatorClient();
@@ -18,7 +19,7 @@ export const extractRecipeFromImages = onRequest(
 
     const imageUrls: string[] = req.body.imageUrls;
     if (!imageUrls || !Array.isArray(imageUrls)) {
-      res.status(400).json({error: "Missing or invalid 'imageUrls' array"});
+      res.status(400).json({ error: "Missing or invalid 'imageUrls' array" });
       return;
     }
 
@@ -36,7 +37,7 @@ export const extractRecipeFromImages = onRequest(
       );
 
       const mergedText = ocrTexts.join("\n").trim();
-      logger.info("Merged OCR text", {mergedLength: mergedText.length});
+      logger.info("Merged OCR text", { mergedLength: mergedText.length });
 
       const recipe = `# Recipe Placeholder
 
@@ -46,10 +47,10 @@ OCR scanned text from ${imageUrls.length} image(s)
 ${mergedText.slice(0, 500)}...
 `;
 
-      res.status(200).json({recipe});
+      res.status(200).json({ recipe });
     } catch (err) {
       logger.error("Error during OCR processing", err);
-      res.status(500).json({error: "Failed to process recipe"});
+      res.status(500).json({ error: "Failed to process recipe" });
     }
   }
 );

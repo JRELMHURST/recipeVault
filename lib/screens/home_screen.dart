@@ -76,18 +76,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
     for (final file in files) {
       try {
+        final String originalName = file.path.split('/').last;
+        final String baseName = originalName.split('.').first;
         final String targetPath =
-            '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+            '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}_$baseName.jpg';
 
-        final result = await FlutterImageCompress.compressAndGetFile(
-          file.path,
-          targetPath,
-          quality: _jpegQuality,
-          format: CompressFormat.jpeg,
-        );
+        final File? compressedFile =
+            await FlutterImageCompress.compressAndGetFile(
+              file.path,
+              targetPath,
+              quality: _jpegQuality,
+              format: CompressFormat.jpeg,
+            );
 
-        if (result != null) {
-          results.add(result as File); // 👈 Force the cast
+        if (compressedFile != null) {
+          results.add(compressedFile);
         }
       } catch (e, st) {
         debugPrint('Compression failed for ${file.path}: $e\n$st');

@@ -5,7 +5,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/results_screen.dart';
-import 'core/theme.dart'; // ✅ Import custom themes
+import 'core/theme.dart'; // ✅ Custom themes
+import 'core/accessibility.dart'; // ✅ Accessibility config
 
 // ✅ Globally accessible Firebase Functions instance
 late final FirebaseFunctions functions;
@@ -38,14 +39,26 @@ class RecipeVaultApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'RecipeVault',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode:
-          ThemeMode.system, // Automatically switches based on system preference
-      routerConfig: _router,
+    return Builder(
+      builder: (context) {
+        final mediaQuery = MediaQuery.of(context);
+
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: TextScaler.linear(
+              Accessibility.constrainedTextScale(context),
+            ),
+          ),
+          child: MaterialApp.router(
+            title: 'RecipeVault',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: ThemeMode.system,
+            routerConfig: _router,
+          ),
+        );
+      },
     );
   }
 }

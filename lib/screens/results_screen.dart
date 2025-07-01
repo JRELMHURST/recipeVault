@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/recipe_card.dart';
 
 class ResultsScreen extends StatelessWidget {
   final String ocrText;
@@ -9,10 +10,7 @@ class ResultsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Formatted Recipe')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Text(ocrText, style: const TextStyle(fontSize: 16)),
-      ),
+      body: RecipeCard(recipeText: ocrText),
     );
   }
 }

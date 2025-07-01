@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "recipevault-ai-bc"
-  }
+    "default": "recipevault-bg-ai",
+    "prod": "recipevault-bg-ai"
+  },
+  "targets": {},
+  "etags": {}
 }

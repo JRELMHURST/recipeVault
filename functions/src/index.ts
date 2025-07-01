@@ -1,32 +1,55 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
-import {setGlobalOptions} from "firebase-functions";
-import {onRequest} from "firebase-functions/https";
+import {onRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import {initializeApp} from "firebase-admin/app";
+import vision from "@google-cloud/vision";
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+initializeApp();
+const visionClient = new vision.ImageAnnotatorClient();
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
+export const extractRecipeFromImages = onRequest(
+  {
+    region: "europe-west2", // ✅ v2-style region config
+  },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+    const imageUrls: string[] = req.body.imageUrls;
+    if (!imageUrls || !Array.isArray(imageUrls)) {
+      res.status(400).json({error: "Missing or invalid 'imageUrls' array"});
+      return;
+    }
+
+    try {
+      logger.info("Starting OCR for images...", {
+        imageCount: imageUrls.length,
+      });
+
+      const ocrTexts = await Promise.all(
+        imageUrls.map(async (url) => {
+          const [result] = await visionClient.textDetection(url);
+          const detections = result.textAnnotations;
+          return detections?.[0]?.description || "";
+        })
+      );
+
+      const mergedText = ocrTexts.join("\n").trim();
+      logger.info("Merged OCR text", {mergedLength: mergedText.length});
+
+      const recipe = `# Recipe Placeholder
+
+OCR scanned text from ${imageUrls.length} image(s)
+-----------------------------------------------
+
+${mergedText.slice(0, 500)}...
+`;
+
+      res.status(200).json({recipe});
+    } catch (err) {
+      logger.error("Error during OCR processing", err);
+      res.status(500).json({error: "Failed to process recipe"});
+    }
+  }
+);

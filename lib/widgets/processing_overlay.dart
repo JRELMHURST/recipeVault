@@ -1,10 +1,7 @@
-// ignore_for_file: use_build_context_synchronously, deprecated_member_use
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
-import 'package:recipe_vault/services/recipe_formatter.dart';
 import 'package:recipe_vault/widgets/timeline_step.dart';
 
 class ProcessingOverlay {
@@ -18,7 +15,7 @@ class ProcessingOverlay {
     );
 
     _currentOverlay = overlay;
-    Overlay.of(context).insert(overlay);
+    Overlay.of(context, rootOverlay: true).insert(overlay);
   }
 
   static void hide() {
@@ -42,9 +39,8 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView> {
 
   final List<String> _steps = [
     'Uploading Images',
-    'Reading Text',
-    'Formatting Recipe',
-    'Done',
+    'Extracting & Formatting',
+    'Finishing Up',
   ];
 
   @override
@@ -62,23 +58,18 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView> {
       if (_hasCancelled) return;
 
       await _setStep(1);
-      final ocrText = await ImageProcessingService.extractTextFromImages(
-        imageUrls,
-      );
+      final formattedRecipe =
+          await ImageProcessingService.extractAndFormatRecipe(imageUrls);
       if (_hasCancelled) return;
 
       await _setStep(2);
-      final formattedRecipe = await RecipeFormatter.formatRecipe(ocrText);
-      if (_hasCancelled) return;
-
-      await _setStep(3);
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (!mounted) return;
       ProcessingOverlay.hide();
       GoRouter.of(context).go('/results', extra: formattedRecipe);
     } catch (e, st) {
-      debugPrint('Processing failed: $e\n$st');
+      debugPrint('❌ Processing failed: $e\n$st');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -104,7 +95,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView> {
     final theme = Theme.of(context);
 
     return Material(
-      color: Colors.black.withOpacity(0.3),
+      color: const Color(0x4D000000), // Replaces .withOpacity(0.3)
       child: Center(
         child: Card(
           margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -119,7 +110,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const SizedBox(width: 48), // for alignment
+                    const SizedBox(width: 48),
                     Text(
                       'Processing',
                       style: theme.textTheme.titleLarge?.copyWith(

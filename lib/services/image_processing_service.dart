@@ -1,46 +1,42 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:recipe_vault/services/image_upload_service.dart';
-import 'package:http/http.dart' as http;
 
 class ImageProcessingService {
   static const int _jpegQuality = 80;
   static final ImagePicker _picker = ImagePicker();
 
-  /// Picks and compresses multiple images from the gallery.
+  /// Opens gallery, picks multiple images, compresses them, and returns local files.
   static Future<List<File>> pickAndCompressImages() async {
-    final List<XFile> pickedXFiles = await _picker.pickMultiImage();
+    final pickedXFiles = await _picker.pickMultiImage();
     if (pickedXFiles.isEmpty) return [];
 
-    final List<File> imageFiles = pickedXFiles
-        .map((xfile) => File(xfile.path))
-        .toList();
-    return await _compressFiles(imageFiles);
+    final imageFiles = pickedXFiles.map((x) => File(x.path)).toList();
+    return _compressFiles(imageFiles);
   }
 
-  /// Compresses a list of image files and returns the compressed results.
+  /// Compresses images to JPEG format with specified quality.
   static Future<List<File>> _compressFiles(List<File> files) async {
-    final Directory tempDir = await getTemporaryDirectory();
-    final List<File> results = [];
+    final tempDir = await getTemporaryDirectory();
+    final results = <File>[];
 
     for (final file in files) {
       try {
-        final String targetPath =
+        final targetPath =
             '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-        final File? compressedFile =
-            await FlutterImageCompress.compressAndGetFile(
-              file.path,
-              targetPath,
-              quality: _jpegQuality,
-              format: CompressFormat.jpeg,
-            );
+        final compressedFile = await FlutterImageCompress.compressAndGetFile(
+          file.path,
+          targetPath,
+          quality: _jpegQuality,
+          format: CompressFormat.jpeg,
+        );
 
         if (compressedFile != null) {
           results.add(compressedFile);
@@ -53,32 +49,25 @@ class ImageProcessingService {
     return results;
   }
 
-  /// Uploads compressed image files to Firebase Storage and returns their download URLs.
+  /// Uploads images to Firebase Storage and returns their download URLs.
   static Future<List<String>> uploadFiles(List<File> files) {
     return ImageUploadService.uploadImages(files);
   }
 
-  /// Calls the Firebase backend to extract merged OCR text from image URLs.
-  static Future<String> extractTextFromImages(List<String> imageUrls) async {
-    final url = Uri.parse(
-      'https://europe-west2-recipe-vault-ai.cloudfunctions.net/extractRecipeFromImages',
-    );
+  /// Runs OCR and GPT formatting via Firebase Callable Function.
+  static Future<String> extractAndFormatRecipe(List<String> imageUrls) async {
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
+      final callable = functions.httpsCallable('extractAndFormatRecipe');
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'imageUrls': imageUrls}),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to extract OCR text: ${response.body}');
+      final result = await callable.call({'imageUrls': imageUrls});
+      return result.data['formattedRecipe'] as String;
+    } catch (e) {
+      throw Exception('❌ Failed to process recipe: $e');
     }
-
-    final data = json.decode(response.body);
-    return data['recipe'] as String;
   }
 
-  /// Shows a SnackBar error.
+  /// Shows an error snackbar in the current context.
   static void showError(BuildContext context, String message) {
     ScaffoldMessenger.of(
       context,

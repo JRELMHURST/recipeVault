@@ -1,20 +1,18 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 
 /// Global accessibility utilities and reusable widgets.
 class Accessibility {
-  /// Returns true if accessibility services (e.g., TalkBack or VoiceOver) are active.
+  /// Returns true if accessibility navigation is enabled (e.g. for screen readers).
   static bool isScreenReaderOn(BuildContext context) {
     return MediaQuery.of(context).accessibleNavigation;
   }
 
-  /// Returns a safe default text scale factor.
+  /// Returns a safe default text scale factor (linear), clamped to avoid UI breakage.
   static double constrainedTextScale(
     BuildContext context, {
     double maxScale = 1.4,
   }) {
-    final userScale = MediaQuery.of(context).textScaleFactor;
+    final double userScale = MediaQuery.of(context).textScaler.scale(1.0);
     return userScale > maxScale ? maxScale : userScale;
   }
 }
@@ -32,7 +30,7 @@ class AccessibleImage extends StatelessWidget {
   }
 }
 
-/// A button with semantic label support, used for icons or custom gestures.
+/// A button with semantic label support, used for icons or gesture-based actions.
 class AccessibleIconButton extends StatelessWidget {
   final String label;
   final VoidCallback onPressed;

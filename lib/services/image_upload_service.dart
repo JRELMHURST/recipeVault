@@ -1,29 +1,31 @@
-// lib/services/image_upload_service.dart
-
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 class ImageUploadService {
   static final FirebaseStorage _storage = FirebaseStorage.instance;
   static final Uuid _uuid = const Uuid();
 
-  /// Uploads each file to Firebase Storage and returns their download URLs.
+  /// Uploads files to Firebase Storage and returns their public download URLs.
   static Future<List<String>> uploadImages(List<File> files) async {
-    final List<String> urls = [];
+    final urls = <String>[];
 
     for (final file in files) {
       try {
-        final String fileName = _uuid.v4();
-        final Reference ref = _storage.ref().child('uploads/$fileName.jpg');
-        final UploadTask task = ref.putFile(file);
+        final fileName = _uuid.v4();
+        final ref = _storage.ref('uploads/$fileName.jpg');
+        final uploadTask = ref.putFile(file);
 
-        final TaskSnapshot snapshot = await task.whenComplete(() {});
-        final String url = await snapshot.ref.getDownloadURL();
+        final snapshot = await uploadTask.whenComplete(() {});
+        final url = await snapshot.ref.getDownloadURL();
 
         urls.add(url);
-      } catch (e) {
-        rethrow; // Let the caller handle the error
+      } catch (e, st) {
+        if (kDebugMode) {
+          print('🔥 Upload failed for ${file.path}: $e\n$st');
+        }
+        rethrow; // bubble up to caller
       }
     }
 

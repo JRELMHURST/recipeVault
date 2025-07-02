@@ -8,8 +8,19 @@ class FirebaseAuthService {
     final currentUser = _auth.currentUser;
     if (currentUser != null) return currentUser;
 
-    final userCredential = await _auth.signInAnonymously();
-    return userCredential.user!;
+    try {
+      final userCredential = await _auth.signInAnonymously();
+      final user = userCredential.user;
+      if (user == null) {
+        throw FirebaseAuthException(
+          code: 'NULL_USER',
+          message: 'Anonymous sign-in returned null user.',
+        );
+      }
+      return user;
+    } catch (e) {
+      rethrow; // Forward error to caller
+    }
   }
 
   /// Returns the current Firebase user, if signed in.

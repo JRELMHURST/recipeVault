@@ -1,7 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
@@ -20,7 +16,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _startProcessingFlow() async {
     setState(() => _isLoading = true);
     try {
-      final List<File> compressedFiles =
+      final compressedFiles =
           await ImageProcessingService.pickAndCompressImages();
 
       if (compressedFiles.isEmpty) {
@@ -39,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showError(String message) {
+    if (!mounted) return;
     setState(() => _isLoading = false);
     ScaffoldMessenger.of(
       context,
@@ -62,15 +59,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   offset: Offset(0, -screenHeight * 0.07),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
                         'RecipeVault',
+                        textAlign: TextAlign.center,
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface.withOpacity(0.85),
+                          color: theme.colorScheme.onSurface.withAlpha(
+                            217,
+                          ), // 85% opacity
                         ),
-                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 20),
                       Text(
@@ -79,7 +77,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontSize: 16,
                           height: 1.5,
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          color: theme.colorScheme.onSurface.withAlpha(
+                            179,
+                          ), // 70% opacity
                         ),
                       ),
                       const SizedBox(height: 48),

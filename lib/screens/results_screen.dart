@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/recipe_card.dart';
 
 class ResultsScreen extends StatelessWidget {
-  final String ocrText;
-
-  const ResultsScreen({super.key, required this.ocrText});
+  const ResultsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Pull formattedRecipe from GoRouter extra
+    final formattedRecipe = GoRouterState.of(context).extra as String? ?? '';
+
     final bool hasValidContent =
-        ocrText.trim().isNotEmpty && !ocrText.contains('error');
+        formattedRecipe.trim().isNotEmpty &&
+        !formattedRecipe.toLowerCase().contains('error');
 
     return Scaffold(
       appBar: AppBar(
@@ -19,7 +22,7 @@ class ResultsScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.copy),
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: ocrText));
+              Clipboard.setData(ClipboardData(text: formattedRecipe));
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Recipe copied to clipboard')),
               );
@@ -31,7 +34,9 @@ class ResultsScreen extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: hasValidContent
-            ? SingleChildScrollView(child: RecipeCard(recipeText: ocrText))
+            ? SingleChildScrollView(
+                child: RecipeCard(recipeText: formattedRecipe),
+              )
             : Center(
                 child: Text(
                   'Whoops! Looks like something went wrong with formatting.\n\nPlease try again.',

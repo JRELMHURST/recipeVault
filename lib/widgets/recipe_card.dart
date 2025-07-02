@@ -1,4 +1,3 @@
-// lib/widgets/recipe_card.dart
 import 'package:flutter/material.dart';
 
 class RecipeCard extends StatelessWidget {
@@ -8,17 +7,24 @@ class RecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Card(
-      margin: const EdgeInsets.all(16),
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-          child: Text(
-            recipeText,
-            style: textTheme.bodyLarge?.copyWith(height: 1.4),
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          color: theme.colorScheme.surface,
+          child: SelectableText(
+            recipeText.trim(),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              height: 1.5,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
         ),
       ),

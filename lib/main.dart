@@ -34,10 +34,7 @@ final _router = GoRouter(
     GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
     GoRoute(
       path: '/results',
-      builder: (context, state) {
-        final ocrText = state.extra as String? ?? 'No recipe found.';
-        return ResultsScreen(ocrText: ocrText);
-      },
+      builder: (context, state) => const ResultsScreen(), // ✅ Fixed here
     ),
     GoRoute(
       path: '/processing',

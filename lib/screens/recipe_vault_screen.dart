@@ -1,11 +1,8 @@
-// lib/screens/recipe_vault_screen.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/core/hive_recipe_service.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
-import 'package:recipe_vault/widgets/placeholder_logo.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
 
 class RecipeVaultScreen extends StatefulWidget {
@@ -36,16 +33,12 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       final snapshot = await recipeCollection
           .orderBy('createdAt', descending: true)
           .get();
-
       final recipes = snapshot.docs
           .map((doc) => RecipeCardModel.fromJson(doc.data()))
           .toList();
-
-      // Update Hive cache with fresh Firestore data
       for (final recipe in recipes) {
         await HiveRecipeService.save(recipe);
       }
-
       return recipes;
     } catch (e) {
       debugPrint("⚠️ Firestore fetch failed, loading from Hive: $e");
@@ -53,103 +46,35 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () async => setState(() {}),
-        child: FutureBuilder<List<RecipeCardModel>>(
-          future: _fetchRecipes(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  'Error loading recipes',
-                  style: theme.textTheme.titleMedium,
-                ),
-              );
-            }
+  void _deleteRecipe(RecipeCardModel recipe) async {
+    await recipeCollection.doc(recipe.id).delete();
+    await HiveRecipeService.delete(recipe.id);
+    setState(() {});
+  }
 
-            final recipes = snapshot.data ?? [];
-
-            if (recipes.isEmpty) {
-              return const Center(
-                child: PlaceholderLogo(
-                  imageAsset: 'assets/icon/round_vaultLogo.png',
-                ),
-              );
-            }
-
-            return GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.8,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-              ),
-              itemCount: recipes.length,
-              itemBuilder: (context, index) {
-                final recipe = recipes[index];
-                return GestureDetector(
-                  onTap: () => _showRecipeDialog(context, recipe),
-                  child: Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 3,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            recipe.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Expanded(
-                            child: Text(
-                              recipe.ingredients.take(3).join(', ') +
-                                  (recipe.ingredients.length > 3
-                                      ? ', ...'
-                                      : ''),
-                              style: theme.textTheme.bodySmall,
-                            ),
-                          ),
-                          Text(
-                            recipe.createdAt
-                                .toLocal()
-                                .toString()
-                                .split(' ')
-                                .first,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          },
+  void _showRecipeDialog(RecipeCardModel recipe) {
+    final markdown = _formatRecipeMarkdown(recipe);
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: RecipeCard(recipeText: markdown),
         ),
       ),
     );
   }
 
-  void _showRecipeDialog(BuildContext context, RecipeCardModel recipe) {
-    final markdown =
-        """
+  void _toggleFavourite(RecipeCardModel recipe) {
+    debugPrint("⭐ Long pressed to favourite: ${recipe.title}");
+    // Add Hive or Firestore toggle logic here if needed
+  }
+
+  String _formatRecipeMarkdown(RecipeCardModel recipe) {
+    return '''
 ---
 Title: ${recipe.title}
 
@@ -159,18 +84,103 @@ ${recipe.ingredients.map((i) => "- $i").join("\n")}
 Instructions:
 ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").join("\n")}
 ---
-""";
+''';
+  }
 
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(16),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: RecipeCard(recipeText: markdown),
-        ),
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      body: FutureBuilder<List<RecipeCardModel>>(
+        future: _fetchRecipes(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return const Center(child: Text("Error loading recipes"));
+          }
+
+          final recipes = snapshot.data ?? [];
+
+          if (recipes.isEmpty) {
+            return const Center(child: Text("No recipes found"));
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: recipes.length,
+            itemBuilder: (context, index) {
+              final recipe = recipes[index];
+              return Dismissible(
+                key: Key(recipe.id),
+                background: Container(
+                  color: Colors.red,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                direction: DismissDirection.endToStart,
+                onDismissed: (_) => _deleteRecipe(recipe),
+                child: GestureDetector(
+                  onTap: () => _showRecipeDialog(recipe),
+                  onLongPress: () => _toggleFavourite(recipe),
+                  child: Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 3,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundColor: Colors.deepPurple.shade50,
+                            child: const Icon(
+                              Icons.restaurant_menu,
+                              color: Colors.deepPurple,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  recipe.title,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Tap to view recipe',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

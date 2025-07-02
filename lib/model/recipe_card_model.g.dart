@@ -22,6 +22,7 @@ class RecipeCardModelAdapter extends TypeAdapter<RecipeCardModel> {
       title: fields[2] as String,
       ingredients: (fields[3] as List).cast<String>(),
       instructions: (fields[4] as List).cast<String>(),
+      imageUrl: fields[6] as String?,
       createdAt: fields[5] as DateTime?,
     );
   }
@@ -29,7 +30,7 @@ class RecipeCardModelAdapter extends TypeAdapter<RecipeCardModel> {
   @override
   void write(BinaryWriter writer, RecipeCardModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +42,9 @@ class RecipeCardModelAdapter extends TypeAdapter<RecipeCardModel> {
       ..writeByte(4)
       ..write(obj.instructions)
       ..writeByte(5)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(6)
+      ..write(obj.imageUrl);
   }
 
   @override

@@ -63,7 +63,7 @@ flutter_launcher_icons:
   remove_alpha_ios: true
 
 flutter_native_splash:
-  color: "#121014"
+  color: "#F6F4FA"
   image: assets/icon/recipe_vaultBG.png
   android: true
   ios: true

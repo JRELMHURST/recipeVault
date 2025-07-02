@@ -1,16 +1,20 @@
+import { initializeApp } from "firebase-admin/app";
+initializeApp();
+
+// ✅ Import callable GPT formatter
+export { generateRecipeCard } from "./generatedRecipeCard";
+
+// (Optional) OCR image-to-text handler
+// Uncomment if still needed
+/*
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
-import { initializeApp } from "firebase-admin/app";
 import vision from "@google-cloud/vision";
-export { formatRecipeText } from "./formatRecipeText";
 
-initializeApp();
 const visionClient = new vision.ImageAnnotatorClient();
 
 export const extractRecipeFromImages = onRequest(
-  {
-    region: "europe-west2", // ✅ v2-style region config
-  },
+  { region: "europe-west2" },
   async (req, res) => {
     if (req.method !== "POST") {
       res.status(405).send("Method Not Allowed");
@@ -39,18 +43,11 @@ export const extractRecipeFromImages = onRequest(
       const mergedText = ocrTexts.join("\n").trim();
       logger.info("Merged OCR text", { mergedLength: mergedText.length });
 
-      const recipe = `# Recipe Placeholder
-
-OCR scanned text from ${imageUrls.length} image(s)
------------------------------------------------
-
-${mergedText.slice(0, 500)}...
-`;
-
-      res.status(200).json({ recipe });
+      res.status(200).json({ mergedText });
     } catch (err) {
       logger.error("Error during OCR processing", err);
       res.status(500).json({ error: "Failed to process recipe" });
     }
   }
 );
+*/

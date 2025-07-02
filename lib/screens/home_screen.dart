@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/widgets/placeholder_logo.dart';
+import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/widgets/processing_overlay.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,9 +15,23 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 1; // Start at the "Vault" tab
 
-  final List<Widget> _pages = const [_UploadTab(), _VaultTab(), _SettingsTab()];
+  final List<Widget> _pages = const [
+    SizedBox.shrink(), // <-- nothing for Upload tab
+    _VaultTab(),
+    _SettingsTab(),
+  ];
 
-  void _onNavTap(int idx) {
+  Future<void> _onNavTap(int idx) async {
+    if (idx == 0) {
+      // --- Trigger the upload flow ---
+      final files = await ImageProcessingService.pickAndCompressImages();
+      if (files.isNotEmpty && mounted) {
+        ProcessingOverlay.show(context, files);
+      }
+      // Optionally, you can keep the user on Vault after upload
+      setState(() => _selectedIndex = 1);
+      return;
+    }
     setState(() => _selectedIndex = idx);
   }
 
@@ -42,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: NavigationBar(
         backgroundColor: theme.colorScheme.surface,
         selectedIndex: _selectedIndex,
-        onDestinationSelected: _onNavTap,
+        onDestinationSelected: (idx) => _onNavTap(idx),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         indicatorColor: theme.colorScheme.primary.withOpacity(0.14),
         destinations: [
@@ -80,17 +96,6 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ---- TABS ----
-
-class _UploadTab extends StatelessWidget {
-  const _UploadTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: PlaceholderLogo(imageAsset: 'assets/icon/RC_logo.png'),
-    );
-  }
-}
 
 class _VaultTab extends StatelessWidget {
   const _VaultTab();

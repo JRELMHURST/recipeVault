@@ -12,6 +12,17 @@ initializeApp();
 const visionClient = new vision.ImageAnnotatorClient();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+const predefinedCategories = [
+  "Main",
+  "Dessert",
+  "Side",
+  "Vegan",
+  "Vegetarian",
+  "Breakfast",
+  "Snack",
+  "Quick"
+];
+
 export const extractAndFormatRecipe = onCall(
   { region: "europe-west2" },
   async (request) => {
@@ -27,26 +38,29 @@ export const extractAndFormatRecipe = onCall(
     try {
       console.log(`🔍 Running OCR for ${imageUrls.length} image(s)...`);
 
+      let detectedLanguage: string | null = null;
+
       const ocrTexts = await Promise.all(
-        imageUrls.map(async (url) => {
-          const [result] = await visionClient.textDetection(url);
-          const detections = result.textAnnotations;
-          return detections?.[0]?.description || "";
+        imageUrls.map(async (url, idx) => {
+          const [result] = await visionClient.documentTextDetection(url);
+          const document = result.fullTextAnnotation;
+          if (idx === 0 && document?.pages?.length) {
+            detectedLanguage = document.pages[0].property?.detectedLanguages?.[0]?.languageCode || null;
+          }
+          return document?.text || "";
         })
       );
 
       const mergedText = ocrTexts.join("\n").trim();
       console.log("📝 Merged OCR text length:", mergedText.length);
       console.log("📄 Merged OCR preview:\n", mergedText.slice(0, 500));
+      console.log("🌍 Detected language:", detectedLanguage || "unknown");
 
-      const systemPrompt = `
-You are a recipe formatting assistant.
+const systemPrompt = `
+You are a recipe assistant. Your job is three-fold:
 
-First, check the text language.
-- If the text is NOT in UK English, translate it into clean UK English.
-- If it IS already in English, leave it as-is.
-
-Then format the text using this exact structure:
+1. If the recipe is not written in UK English, translate it into clean, natural UK English.
+2. Format the input text as a recipe card using this exact format:
 ---
 Title: <title>
 
@@ -59,31 +73,53 @@ Instructions:
 2. Step two
 ---
 
-Do NOT include markdown symbols, language names, or commentary. Only output the final recipe.
+3. Then, return a JSON list of all relevant categories from this set:
+${JSON.stringify(predefinedCategories)}
+
+Your final output must be valid JSON like this:
+{
+  "formattedRecipe": "<recipe card text>",
+  "categories": ["Main", "Quick"]
+}
+
+Do not include any commentary or explanation. Only return valid JSON.
 `;
 
-      const userPrompt = `Here is the text to process:\n"""\n${mergedText}\n"""`;
+      const userPrompt = `Here is the recipe text:\n"""\n${mergedText}\n"""`;
 
       const completion = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [
-          {
-            role: "system",
-            content: systemPrompt.trim(),
-          },
-          {
-            role: "user",
-            content: userPrompt.trim(),
-          },
+          { role: "system", content: systemPrompt.trim() },
+          { role: "user", content: userPrompt.trim() }
         ],
         temperature: 0.3,
         max_tokens: 1500,
       });
 
-      const formatted = completion.choices[0]?.message?.content?.trim();
-      console.log("✅ GPT output (preview):", formatted?.slice(0, 300));
+      const rawContent = completion.choices[0]?.message?.content?.trim();
+      console.log("✅ GPT raw output:\n", rawContent?.slice(0, 300));
 
-      // Delete uploaded screenshots from Firebase Storage
+      let parsed;
+      try {
+        parsed = JSON.parse(rawContent || "{}");
+
+        if (
+          typeof parsed !== "object" ||
+          typeof parsed.formattedRecipe !== "string" ||
+          !Array.isArray(parsed.categories)
+        ) {
+          throw new Error("Invalid structure");
+        }
+      } catch (err) {
+        console.error("❌ Failed to parse GPT response as JSON:", err);
+        throw new functions.https.HttpsError(
+          "internal",
+          "Invalid GPT response format"
+        );
+      }
+
+      // Clean up uploaded image files
       const storage = getStorage();
       const deletedPaths: string[] = [];
 
@@ -104,10 +140,17 @@ Do NOT include markdown symbols, language names, or commentary. Only output the 
         })
       );
 
-      return { formattedRecipe: formatted };
+      return {
+        formattedRecipe: parsed.formattedRecipe,
+        categories: parsed.categories,
+        language: detectedLanguage || "unknown"
+      };
     } catch (err: any) {
       console.error("❌ Failure in extractAndFormatRecipe:", err);
-      throw new functions.https.HttpsError("internal", "Failed to process recipe");
+      throw new functions.https.HttpsError(
+        "internal",
+        "Failed to process recipe"
+      );
     }
   }
 );

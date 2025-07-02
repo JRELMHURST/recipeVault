@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_vault/core/hive_recipe_service.dart';
+import 'package:recipe_vault/services/image_processing_service.dart';
 
 import '../widgets/recipe_card.dart';
 import '../core/theme.dart';
@@ -97,7 +98,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final formattedRecipe = GoRouterState.of(context).extra as String? ?? '';
+    final result = GoRouterState.of(context).extra as ProcessedRecipeResult?;
+    final formattedRecipe = result?.formattedRecipe ?? '';
     final hasValidContent =
         formattedRecipe.trim().isNotEmpty &&
         !formattedRecipe.toLowerCase().contains('error');

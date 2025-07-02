@@ -8,6 +8,18 @@ import 'package:path_provider/path_provider.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:recipe_vault/services/image_upload_service.dart';
 
+class ProcessedRecipeResult {
+  final String formattedRecipe;
+  final List<String> categories;
+  final String language;
+
+  ProcessedRecipeResult({
+    required this.formattedRecipe,
+    required this.categories,
+    required this.language,
+  });
+}
+
 class ImageProcessingService {
   static const int _jpegQuality = 80;
   static final ImagePicker _picker = ImagePicker();
@@ -55,13 +67,29 @@ class ImageProcessingService {
   }
 
   /// Runs OCR and GPT formatting via Firebase Callable Function.
-  static Future<String> extractAndFormatRecipe(List<String> imageUrls) async {
+  static Future<ProcessedRecipeResult> extractAndFormatRecipe(
+    List<String> imageUrls,
+  ) async {
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
       final callable = functions.httpsCallable('extractAndFormatRecipe');
 
       final result = await callable.call({'imageUrls': imageUrls});
-      return result.data['formattedRecipe'] as String;
+      final data = result.data as Map<String, dynamic>;
+
+      final formatted = data['formattedRecipe'] as String?;
+      final categories = List<String>.from(data['categories'] ?? []);
+      final language = data['language'] as String? ?? 'unknown';
+
+      if (formatted == null || formatted.isEmpty) {
+        throw Exception('Formatted recipe is missing or empty.');
+      }
+
+      return ProcessedRecipeResult(
+        formattedRecipe: formatted,
+        categories: categories,
+        language: language,
+      );
     } catch (e) {
       throw Exception('❌ Failed to process recipe: $e');
     }

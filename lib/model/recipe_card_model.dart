@@ -24,10 +24,10 @@ class RecipeCardModel extends HiveObject {
   final DateTime createdAt;
 
   @HiveField(6)
-  final String? imageUrl; // ✅ optional image URL field
+  final String? imageUrl;
 
   @HiveField(7)
-  final List<String> categories; // ✅ new field for categories
+  final List<String> categories; // ✅ Added missing categories field
 
   RecipeCardModel({
     required this.id,
@@ -65,7 +65,6 @@ class RecipeCardModel extends HiveObject {
         categories: List<String>.from(json['categories'] ?? []),
       );
 
-  /// Convenience for stringified storage
   String toRawJson() => jsonEncode(toJson());
 
   factory RecipeCardModel.fromRawJson(String str) =>

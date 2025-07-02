@@ -1,43 +1,29 @@
+// lib/services/image_upload_service.dart
+
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:uuid/uuid.dart';
 
-/// Service responsible for uploading images to Firebase Storage.
 class ImageUploadService {
-  /// Uploads a list of compressed image [File]s to Firebase Storage.
-  ///
-  /// Returns a list of publicly accessible URLs for the uploaded images.
-  static Future<List<String>> uploadImages(List<File> images) async {
-    final storage = FirebaseStorage.instance;
+  static final FirebaseStorage _storage = FirebaseStorage.instance;
+  static final Uuid _uuid = const Uuid();
+
+  /// Uploads each file to Firebase Storage and returns their download URLs.
+  static Future<List<String>> uploadImages(List<File> files) async {
     final List<String> urls = [];
 
-    for (final image in images) {
+    for (final file in files) {
       try {
-        // Create a reference with a unique file name in 'uploads/' folder
-        final fileName = image.path.split('/').last;
-        final ref = storage.ref().child('uploads/$fileName');
+        final String fileName = _uuid.v4();
+        final Reference ref = _storage.ref().child('uploads/$fileName.jpg');
+        final UploadTask task = ref.putFile(file);
 
-        // Upload the file
-        for (final image in images) {
-          try {
-            final fileName = image.path.split('/').last;
-            final ref = storage.ref().child('uploads/$fileName');
+        final TaskSnapshot snapshot = await task.whenComplete(() {});
+        final String url = await snapshot.ref.getDownloadURL();
 
-            await ref.putFile(image); // No need to assign to uploadTask
-
-            final downloadUrl = await ref.getDownloadURL();
-            urls.add(downloadUrl);
-          } catch (e) {
-            throw Exception('Failed to upload image: $e');
-          }
-        }
-
-        // Once uploaded, get the download URL
-        final downloadUrl = await ref.getDownloadURL();
-
-        urls.add(downloadUrl);
+        urls.add(url);
       } catch (e) {
-        // You may want to log or handle upload errors here
-        throw Exception('Failed to upload image: $e');
+        rethrow; // Let the caller handle the error
       }
     }
 

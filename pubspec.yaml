@@ -22,6 +22,7 @@ dependencies:
 
   # Networking
   http: ^1.2.1
+  uuid: ^4.3.3
 
   # Firebase Core + Storage + Functions
   firebase_storage: ^12.0.0

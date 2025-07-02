@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:recipe_vault/firebase_auth.dart';
-import 'package:recipe_vault/widgets/processing_screen.dart';
+import 'package:recipe_vault/widgets/processing_overlay.dart';
 
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
@@ -42,8 +42,17 @@ final _router = GoRouter(
     GoRoute(
       path: '/processing',
       builder: (context, state) {
-        final imageFiles = state.extra as List<File>;
-        return ProcessingScreen(imageFiles: imageFiles);
+        final imageFiles = state.extra as List<File>?;
+
+        if (imageFiles != null && imageFiles.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ProcessingOverlay.show(context, imageFiles);
+          });
+        } else {
+          debugPrint('⚠️ No image files passed to /processing route.');
+        }
+
+        return const SizedBox.shrink(); // Dummy widget required by GoRouter
       },
     ),
   ],

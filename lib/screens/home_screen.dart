@@ -4,10 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:path_provider/path_provider.dart';
-
+import 'package:recipe_vault/utils/image_controller.dart';
 import '../widgets/loading_overlay.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -18,26 +15,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const int _jpegQuality = 80;
-  final ImagePicker _picker = ImagePicker();
+  final ImageController _imageController = ImageController();
   bool _isLoading = false;
 
   Future<void> _startProcessingFlow() async {
     setState(() => _isLoading = true);
     try {
-      final List<XFile> pickedXFiles = await _picker.pickMultiImage();
-      if (pickedXFiles.isEmpty) {
-        _showError('No images selected.');
-        return;
-      }
-
-      final List<File> imageFiles = pickedXFiles
-          .map((xfile) => File(xfile.path))
-          .toList();
-      final List<File> compressedFiles = await _compressFiles(imageFiles);
-
+      final List<File> compressedFiles = await _imageController
+          .pickAndCompressImages();
       if (compressedFiles.isEmpty) {
-        _showError('Failed to compress images.');
+        _showError('No images selected or failed to compress.');
         return;
       }
 
@@ -49,34 +36,6 @@ class _HomeScreenState extends State<HomeScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  Future<List<File>> _compressFiles(List<File> files) async {
-    final Directory tempDir = await getTemporaryDirectory();
-    final List<File> results = [];
-
-    for (final file in files) {
-      try {
-        final String targetPath =
-            '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-        final File? compressedFile =
-            await FlutterImageCompress.compressAndGetFile(
-              file.path,
-              targetPath,
-              quality: _jpegQuality,
-              format: CompressFormat.jpeg,
-            );
-
-        if (compressedFile != null) {
-          results.add(compressedFile);
-        }
-      } catch (e) {
-        debugPrint('Compression failed for ${file.path}: $e');
-      }
-    }
-
-    return results;
   }
 
   void _showError(String message) {
@@ -100,10 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Transform.translate(
-                  offset: Offset(
-                    0,
-                    -screenHeight * 0.07,
-                  ), // shift upward by ~12%
+                  offset: Offset(0, -screenHeight * 0.07),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,

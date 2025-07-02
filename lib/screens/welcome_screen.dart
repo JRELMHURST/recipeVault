@@ -4,15 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:go_router/go_router.dart';
+
+import 'package:recipe_vault/widgets/dev_bypass_button.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
   @override
-  State<WelcomeScreen> createState() => _HomeScreenState();
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _HomeScreenState extends State<WelcomeScreen>
+class _WelcomeScreenState extends State<WelcomeScreen>
     with SingleTickerProviderStateMixin {
   bool _isLoading = false;
   late final AnimationController _controller = AnimationController(
@@ -30,11 +34,10 @@ class _HomeScreenState extends State<WelcomeScreen>
     setState(() => _isLoading = true);
 
     try {
-      // User picks and compresses images
       final compressedFiles =
           await ImageProcessingService.pickAndCompressImages();
 
-      setState(() => _isLoading = false); // Hide loading overlay ASAP
+      setState(() => _isLoading = false);
 
       if (compressedFiles.isEmpty) {
         _showError('No images selected or failed to compress.');
@@ -43,10 +46,7 @@ class _HomeScreenState extends State<WelcomeScreen>
 
       if (!mounted) return;
 
-      // Immediately show the animated processing overlay
       ProcessingOverlay.show(context, compressedFiles);
-
-      // The overlay widget will handle the async flow and navigation.
     } catch (e) {
       debugPrint('Image processing failed: $e');
       _showError('Something went wrong.');
@@ -75,7 +75,6 @@ class _HomeScreenState extends State<WelcomeScreen>
 
     return Stack(
       children: [
-        // Gradient background
         Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -99,11 +98,10 @@ class _HomeScreenState extends State<WelcomeScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Logo or mascot at the top - replace with your own asset!
                       Padding(
                         padding: const EdgeInsets.only(bottom: 18),
                         child: Image.asset(
-                          'assets/icon/round_vaultLogo.png', // Replace this asset with your own!
+                          'assets/icon/round_vaultLogo.png',
                           width: 96,
                           height: 96,
                           fit: BoxFit.contain,
@@ -147,7 +145,10 @@ class _HomeScreenState extends State<WelcomeScreen>
                         color: theme.colorScheme.primary,
                         textColor: Colors.white,
                       ),
-                      const SizedBox(height: 34),
+                      const SizedBox(height: 18),
+                      // 👇 DEV BYPASS BUTTON
+                      const DevBypassButton(),
+                      const SizedBox(height: 12),
                       Text(
                         'No faff. No ads. Just recipes.',
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -167,6 +168,7 @@ class _HomeScreenState extends State<WelcomeScreen>
   }
 }
 
+// --- Place this at the bottom of the file if not already ---
 class _BouncyButton extends StatefulWidget {
   final VoidCallback onPressed;
   final String label;
@@ -234,7 +236,7 @@ class _BouncyButtonState extends State<_BouncyButton>
               BoxShadow(
                 color: widget.color.withOpacity(0.28),
                 blurRadius: 16,
-                offset: Offset(0, 5),
+                offset: const Offset(0, 5),
               ),
             ],
           ),
@@ -263,7 +265,7 @@ class _BouncyButtonState extends State<_BouncyButton>
                   Shadow(
                     blurRadius: 6,
                     color: Colors.black26,
-                    offset: Offset(0, 2),
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),

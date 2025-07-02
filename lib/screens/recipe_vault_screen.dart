@@ -3,6 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/core/hive_recipe_service.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/widgets/placeholder_logo.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
@@ -31,12 +32,25 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   }
 
   Future<List<RecipeCardModel>> _fetchRecipes() async {
-    final snapshot = await recipeCollection
-        .orderBy('createdAt', descending: true)
-        .get();
-    return snapshot.docs
-        .map((doc) => RecipeCardModel.fromJson(doc.data()))
-        .toList();
+    try {
+      final snapshot = await recipeCollection
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      final recipes = snapshot.docs
+          .map((doc) => RecipeCardModel.fromJson(doc.data()))
+          .toList();
+
+      // Update Hive cache with fresh Firestore data
+      for (final recipe in recipes) {
+        await HiveRecipeService.save(recipe);
+      }
+
+      return recipes;
+    } catch (e) {
+      debugPrint("⚠️ Firestore fetch failed, loading from Hive: $e");
+      return HiveRecipeService.getAll();
+    }
   }
 
   @override

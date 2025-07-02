@@ -6,16 +6,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:recipe_vault/firebase_auth.dart';
-import 'package:recipe_vault/widgets/processing_overlay.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'firebase_options.dart';
+import 'firebase_auth.dart';
+import 'widgets/processing_overlay.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/results_screen.dart';
 import 'core/theme.dart';
 import 'core/accessibility.dart';
+import 'model/recipe_card_model.dart'; // ✅ Hive model
 
 /// Force welcome screen for dev/test
 const bool kAlwaysShowWelcome = true;
@@ -27,10 +28,14 @@ final FirebaseFirestore firestore = FirebaseFirestore.instance;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
   await FirebaseAuthService.signInAnonymously();
 
   functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
+
+  // ✅ Initialise Hive and open recipe box
+  await Hive.initFlutter();
+  Hive.registerAdapter(RecipeCardModelAdapter());
+  await Hive.openBox<RecipeCardModel>('recipes');
 
   runApp(const RecipeVaultApp());
 }
@@ -74,26 +79,16 @@ class _InitialScreenState extends State<InitialScreen> {
 /// Router for navigation
 final GoRouter _router = GoRouter(
   routes: <GoRoute>[
-    GoRoute(
-      path: '/',
-      builder: (BuildContext context, GoRouterState state) =>
-          const InitialScreen(),
-    ),
-    GoRoute(
-      path: '/home',
-      builder: (BuildContext context, GoRouterState state) =>
-          const HomeScreen(),
-    ),
+    GoRoute(path: '/', builder: (context, state) => const InitialScreen()),
+    GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
     GoRoute(
       path: '/results',
-      builder: (BuildContext context, GoRouterState state) =>
-          const ResultsScreen(),
+      builder: (context, state) => const ResultsScreen(),
     ),
     GoRoute(
       path: '/processing',
-      builder: (BuildContext context, GoRouterState state) {
+      builder: (context, state) {
         final List<File>? imageFiles = state.extra as List<File>?;
-
         if (imageFiles != null && imageFiles.isNotEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             ProcessingOverlay.show(context, imageFiles);
@@ -101,7 +96,6 @@ final GoRouter _router = GoRouter(
         } else {
           debugPrint('⚠️ No image files passed to /processing route.');
         }
-
         return const SizedBox.shrink();
       },
     ),

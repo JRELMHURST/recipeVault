@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:recipe_vault/firebase_auth.dart';
@@ -16,11 +17,12 @@ import 'screens/results_screen.dart';
 import 'core/theme.dart';
 import 'core/accessibility.dart';
 
-// ---- DEV OVERRIDE ----
-const bool kAlwaysShowWelcome = true; // Set to false for production
+/// Force welcome screen for dev/test
+const bool kAlwaysShowWelcome = true;
 
-// Globally accessible Firebase Functions instance
+/// Globally accessible Firebase Functions instance
 late final FirebaseFunctions functions;
+final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +35,7 @@ Future<void> main() async {
   runApp(const RecipeVaultApp());
 }
 
-/// A widget that decides which start screen to show
+/// Launch control for deciding between Welcome or Home screen
 class InitialScreen extends StatefulWidget {
   const InitialScreen({super.key});
   @override
@@ -69,7 +71,7 @@ class _InitialScreenState extends State<InitialScreen> {
   }
 }
 
-// -- GoRouter config --
+/// Router for navigation
 final GoRouter _router = GoRouter(
   routes: <GoRoute>[
     GoRoute(
@@ -106,6 +108,7 @@ final GoRouter _router = GoRouter(
   ],
 );
 
+/// The main app widget
 class RecipeVaultApp extends StatelessWidget {
   const RecipeVaultApp({super.key});
 

@@ -103,7 +103,7 @@ class _VaultTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: PlaceholderLogo(imageAsset: 'assets/icon/RC_logo.png'),
+      child: PlaceholderLogo(imageAsset: 'assets/icon/round_vaultLogo.png'),
     );
   }
 }
@@ -114,7 +114,7 @@ class _SettingsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: PlaceholderLogo(imageAsset: 'assets/icon/RC_logo.png'),
+      child: PlaceholderLogo(imageAsset: 'assets/icon/round_vaultLogo.png'),
     );
   }
 }

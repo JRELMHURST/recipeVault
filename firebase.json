@@ -1,1 +1,9 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"recipevault-bg-ai","appId":"1:140256184353:android:4bc2306845cf9ee1a43b60","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"recipevault-bg-ai","appId":"1:140256184353:ios:1f10acf3e05a6fbea43b60","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"recipevault-bg-ai","configurations":{"android":"1:140256184353:android:4bc2306845cf9ee1a43b60","ios":"1:140256184353:ios:1f10acf3e05a6fbea43b60"}}}}}}
+{
+  "functions": {
+    "source": "functions"
+  },
+  "hosting": {
+    "public": "public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
+  }
+}

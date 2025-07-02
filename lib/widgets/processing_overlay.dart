@@ -1,9 +1,9 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:recipe_vault/utils/image_controller.dart';
+import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/services/recipe_formatter.dart';
 import 'package:recipe_vault/widgets/timeline_step.dart';
 
@@ -56,14 +56,19 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView> {
   Future<void> _runFullFlow() async {
     try {
       await _setStep(0);
-      final imageUrls = await ImageController.uploadFiles(widget.imageFiles);
+      final imageUrls = await ImageProcessingService.uploadFiles(
+        widget.imageFiles,
+      );
       if (_hasCancelled) return;
 
       await _setStep(1);
-      await Future.delayed(const Duration(milliseconds: 500));
+      final ocrText = await ImageProcessingService.extractTextFromImages(
+        imageUrls,
+      );
+      if (_hasCancelled) return;
 
       await _setStep(2);
-      final ocrText = await RecipeFormatter.formatRecipe(imageUrls);
+      final formattedRecipe = await RecipeFormatter.formatRecipe(ocrText);
       if (_hasCancelled) return;
 
       await _setStep(3);
@@ -71,7 +76,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView> {
 
       if (!mounted) return;
       ProcessingOverlay.hide();
-      GoRouter.of(context).go('/results', extra: ocrText);
+      GoRouter.of(context).go('/results', extra: formattedRecipe);
     } catch (e, st) {
       debugPrint('Processing failed: $e\n$st');
       if (mounted) {
@@ -114,7 +119,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const SizedBox(width: 48),
+                    const SizedBox(width: 48), // for alignment
                     Text(
                       'Processing',
                       style: theme.textTheme.titleLarge?.copyWith(

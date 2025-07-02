@@ -1,11 +1,11 @@
-// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+// ignore_for_file: deprecated_member_use
 
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:recipe_vault/utils/image_controller.dart';
-import '../widgets/loading_overlay.dart';
+import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/widgets/loading_overlay.dart';
+import 'package:recipe_vault/widgets/processing_overlay.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,21 +15,21 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final ImageController _imageController = ImageController();
   bool _isLoading = false;
 
   Future<void> _startProcessingFlow() async {
     setState(() => _isLoading = true);
     try {
-      final List<File> compressedFiles = await _imageController
-          .pickAndCompressImages();
+      final List<File> compressedFiles =
+          await ImageProcessingService.pickAndCompressImages();
+
       if (compressedFiles.isEmpty) {
         _showError('No images selected or failed to compress.');
         return;
       }
 
       if (!mounted) return;
-      context.go('/processing', extra: compressedFiles);
+      ProcessingOverlay.show(context, compressedFiles);
     } catch (e) {
       debugPrint('Image processing failed: $e');
       _showError('Something went wrong.');

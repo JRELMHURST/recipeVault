@@ -1,25 +1,19 @@
+import 'package:cloud_functions/cloud_functions.dart';
+
 class RecipeFormatter {
-  /// Calls your backend cloud function with image URLs to get OCR & formatted recipe text.
-  ///
-  /// Replace the stub implementation with an actual call to Firebase Functions or another backend.
-  static Future<String> formatRecipe(List<String> imageUrls) async {
-    // TODO: Replace this with actual backend call using Cloud Functions, e.g.:
-    // final callable = FirebaseFunctions.instance.httpsCallable('formatRecipeText');
-    // final result = await callable.call(<String, dynamic>{'imageUrls': imageUrls});
-    // return result.data as String;
+  /// Calls the backend Cloud Function with merged OCR text and returns the formatted recipe.
+  static Future<String> formatRecipe(String ocrText) async {
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'generateRecipeCard',
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 60)),
+      );
 
-    // Simulated delay and dummy recipe text for now
-    await Future.delayed(const Duration(seconds: 2));
-    return '''
-Title: Sample Recipe
+      final result = await callable.call(<String, dynamic>{'ocrText': ocrText});
 
-Ingredients:
-- Example Ingredient 1
-- Example Ingredient 2
-
-Instructions:
-1. Do this
-2. Do that
-''';
+      return result.data['formattedRecipe'] as String;
+    } catch (e) {
+      return '⚠️ Failed to format recipe.\n\nError: $e';
+    }
   }
 }

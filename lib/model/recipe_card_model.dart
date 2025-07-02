@@ -24,7 +24,10 @@ class RecipeCardModel extends HiveObject {
   final DateTime createdAt;
 
   @HiveField(6)
-  final String? imageUrl; // ✅ NEW optional image URL field
+  final String? imageUrl; // ✅ optional image URL field
+
+  @HiveField(7)
+  final List<String> categories; // ✅ new field for categories
 
   RecipeCardModel({
     required this.id,
@@ -33,6 +36,7 @@ class RecipeCardModel extends HiveObject {
     required this.ingredients,
     required this.instructions,
     this.imageUrl,
+    this.categories = const [],
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -45,6 +49,7 @@ class RecipeCardModel extends HiveObject {
     'instructions': instructions,
     'createdAt': createdAt.toIso8601String(),
     if (imageUrl != null) 'imageUrl': imageUrl,
+    'categories': categories,
   };
 
   /// For loading from Firestore or Shared Preferences
@@ -57,6 +62,7 @@ class RecipeCardModel extends HiveObject {
         instructions: List<String>.from(json['instructions'] ?? []),
         createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
         imageUrl: json['imageUrl'] as String?,
+        categories: List<String>.from(json['categories'] ?? []),
       );
 
   /// Convenience for stringified storage

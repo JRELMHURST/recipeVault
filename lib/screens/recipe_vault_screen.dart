@@ -15,6 +15,17 @@ class RecipeVaultScreen extends StatefulWidget {
 class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   late final String userId;
   late final CollectionReference<Map<String, dynamic>> recipeCollection;
+  String _selectedCategory = 'All';
+
+  final List<String> _allCategories = [
+    'All',
+    'Dessert',
+    'Main',
+    'Vegan',
+    'Quick',
+    'Side',
+    'Breakfast',
+  ];
 
   @override
   void initState() {
@@ -91,6 +102,7 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      appBar: AppBar(title: const Text("My Recipes")),
       body: FutureBuilder<List<RecipeCardModel>>(
         future: _fetchRecipes(),
         builder: (context, snapshot) {
@@ -100,85 +112,118 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
             return const Center(child: Text("Error loading recipes"));
           }
 
-          final recipes = snapshot.data ?? [];
+          final allRecipes = snapshot.data ?? [];
+          final recipes = _selectedCategory == 'All'
+              ? allRecipes
+              : allRecipes
+                    .where((r) => r.categories.contains(_selectedCategory))
+                    .toList();
 
           if (recipes.isEmpty) {
             return const Center(child: Text("No recipes found"));
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: recipes.length,
-            itemBuilder: (context, index) {
-              final recipe = recipes[index];
-              return Dismissible(
-                key: Key(recipe.id),
-                background: Container(
-                  color: Colors.red,
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 20),
-                  child: const Icon(Icons.delete, color: Colors.white),
+          return Column(
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
                 ),
-                direction: DismissDirection.endToStart,
-                onDismissed: (_) => _deleteRecipe(recipe),
-                child: GestureDetector(
-                  onTap: () => _showRecipeDialog(recipe),
-                  onLongPress: () => _toggleFavourite(recipe),
-                  child: Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 3,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          CircleAvatar(
-                            radius: 24,
-                            backgroundColor: Colors.deepPurple.shade50,
-                            child: const Icon(
-                              Icons.restaurant_menu,
-                              color: Colors.deepPurple,
-                              size: 24,
-                            ),
+                child: Row(
+                  children: _allCategories.map((category) {
+                    final selected = category == _selectedCategory;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(category),
+                        selected: selected,
+                        onSelected: (_) =>
+                            setState(() => _selectedCategory = category),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: recipes.length,
+                  itemBuilder: (context, index) {
+                    final recipe = recipes[index];
+                    return Dismissible(
+                      key: Key(recipe.id),
+                      background: Container(
+                        color: Colors.red,
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 20),
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      ),
+                      direction: DismissDirection.endToStart,
+                      onDismissed: (_) => _deleteRecipe(recipe),
+                      child: GestureDetector(
+                        onTap: () => _showRecipeDialog(recipe),
+                        onLongPress: () => _toggleFavourite(recipe),
+                        child: Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          elevation: 3,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Text(
-                                  recipe.title,
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
+                                CircleAvatar(
+                                  radius: 24,
+                                  backgroundColor: Colors.deepPurple.shade50,
+                                  child: const Icon(
+                                    Icons.restaurant_menu,
+                                    color: Colors.deepPurple,
+                                    size: 24,
                                   ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Tap to view recipe',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey,
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        recipe.title,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Tap to view recipe',
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(color: Colors.grey),
+                                      ),
+                                    ],
                                   ),
+                                ),
+                                const Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 16,
+                                  color: Colors.grey,
                                 ),
                               ],
                             ),
                           ),
-                          const Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ],
           );
         },
       ),

@@ -76,7 +76,9 @@ class RecipeCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         MarkdownBody(
-                          data: recipeBody.trim(),
+                          data: recipeBody.trim().isEmpty
+                              ? '*No content found.*'
+                              : recipeBody.trim(),
                           selectable: true,
                           styleSheet: mdStyle,
                         ),
@@ -95,8 +97,11 @@ class RecipeCard extends StatelessWidget {
   String _extractTitle(String txt) {
     final lines = txt.trim().split('\n');
     for (final line in lines) {
-      if (line.trim().toLowerCase().startsWith('title:')) {
+      final lower = line.trim().toLowerCase();
+      if (lower.startsWith('title:')) {
         return line.split(':').skip(1).join(':').trim();
+      } else if (lower.startsWith('#')) {
+        return line.replaceFirst('#', '').trim();
       }
     }
     return 'Your Recipe';

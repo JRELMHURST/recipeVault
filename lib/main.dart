@@ -9,7 +9,7 @@ import 'package:recipe_vault/firebase_auth.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 
 import 'firebase_options.dart';
-import 'screens/home_screen.dart';
+import 'screens/welcome_screen.dart';
 import 'screens/results_screen.dart';
 import 'core/theme.dart';
 import 'core/accessibility.dart';
@@ -33,7 +33,7 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/',
       builder: (BuildContext context, GoRouterState state) =>
-          const HomeScreen(),
+          const WelcomeScreen(),
     ),
     GoRoute(
       path: '/results',

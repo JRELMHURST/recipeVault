@@ -5,14 +5,14 @@ import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class WelcomeScreen extends StatefulWidget {
+  const WelcomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<WelcomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
+class _HomeScreenState extends State<WelcomeScreen>
     with SingleTickerProviderStateMixin {
   bool _isLoading = false;
   late final AnimationController _controller = AnimationController(

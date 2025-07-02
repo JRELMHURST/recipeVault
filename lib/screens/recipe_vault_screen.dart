@@ -27,6 +27,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     'Breakfast',
   ];
 
+  List<RecipeCardModel> _allRecipes = [];
+
   @override
   void initState() {
     super.initState();
@@ -37,9 +39,10 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         .collection('users')
         .doc(userId)
         .collection('recipes');
+    _loadRecipes();
   }
 
-  Future<List<RecipeCardModel>> _fetchRecipes() async {
+  Future<void> _loadRecipes() async {
     try {
       final snapshot = await recipeCollection
           .orderBy('createdAt', descending: true)
@@ -50,17 +53,23 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       for (final recipe in recipes) {
         await HiveRecipeService.save(recipe);
       }
-      return recipes;
+      setState(() {
+        _allRecipes = recipes;
+      });
     } catch (e) {
       debugPrint("⚠️ Firestore fetch failed, loading from Hive: $e");
-      return HiveRecipeService.getAll();
+      setState(() {
+        _allRecipes = HiveRecipeService.getAll();
+      });
     }
   }
 
   void _deleteRecipe(RecipeCardModel recipe) async {
     await recipeCollection.doc(recipe.id).delete();
     await HiveRecipeService.delete(recipe.id);
-    setState(() {});
+    setState(() {
+      _allRecipes.removeWhere((r) => r.id == recipe.id);
+    });
   }
 
   void _showRecipeDialog(RecipeCardModel recipe) {
@@ -81,7 +90,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   void _toggleFavourite(RecipeCardModel recipe) {
     debugPrint("⭐ Long pressed to favourite: ${recipe.title}");
-    // Add Hive or Firestore toggle logic here if needed
   }
 
   String _formatRecipeMarkdown(RecipeCardModel recipe) {
@@ -101,131 +109,113 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final filteredRecipes = _selectedCategory == 'All'
+        ? _allRecipes
+        : _allRecipes
+              .where((r) => r.categories.contains(_selectedCategory))
+              .toList();
+
     return Scaffold(
-      appBar: AppBar(title: const Text("My Recipes")),
-      body: FutureBuilder<List<RecipeCardModel>>(
-        future: _fetchRecipes(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return const Center(child: Text("Error loading recipes"));
-          }
-
-          final allRecipes = snapshot.data ?? [];
-          final recipes = _selectedCategory == 'All'
-              ? allRecipes
-              : allRecipes
-                    .where((r) => r.categories.contains(_selectedCategory))
-                    .toList();
-
-          if (recipes.isEmpty) {
-            return const Center(child: Text("No recipes found"));
-          }
-
-          return Column(
-            children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: _allCategories.map((category) {
-                    final selected = category == _selectedCategory;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(category),
-                        selected: selected,
-                        onSelected: (_) =>
-                            setState(() => _selectedCategory = category),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: recipes.length,
-                  itemBuilder: (context, index) {
-                    final recipe = recipes[index];
-                    return Dismissible(
-                      key: Key(recipe.id),
-                      background: Container(
-                        color: Colors.red,
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 20),
-                        child: const Icon(Icons.delete, color: Colors.white),
-                      ),
-                      direction: DismissDirection.endToStart,
-                      onDismissed: (_) => _deleteRecipe(recipe),
-                      child: GestureDetector(
-                        onTap: () => _showRecipeDialog(recipe),
-                        onLongPress: () => _toggleFavourite(recipe),
-                        child: Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 3,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                CircleAvatar(
-                                  radius: 24,
-                                  backgroundColor: Colors.deepPurple.shade50,
-                                  child: const Icon(
-                                    Icons.restaurant_menu,
-                                    color: Colors.deepPurple,
-                                    size: 24,
+      body: Column(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: _allCategories.map((category) {
+                final selected = category == _selectedCategory;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(category),
+                    selected: selected,
+                    onSelected: (_) =>
+                        setState(() => _selectedCategory = category),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          Expanded(
+            child: filteredRecipes.isEmpty
+                ? const Center(child: Text("No recipes found"))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: filteredRecipes.length,
+                    itemBuilder: (context, index) {
+                      final recipe = filteredRecipes[index];
+                      return Dismissible(
+                        key: Key(recipe.id),
+                        background: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        direction: DismissDirection.endToStart,
+                        onDismissed: (_) => _deleteRecipe(recipe),
+                        child: GestureDetector(
+                          onTap: () => _showRecipeDialog(recipe),
+                          onLongPress: () => _toggleFavourite(recipe),
+                          child: Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 3,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: Colors.deepPurple.shade50,
+                                    child: const Icon(
+                                      Icons.restaurant_menu,
+                                      color: Colors.deepPurple,
+                                      size: 24,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        recipe.title,
-                                        style: theme.textTheme.titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Tap to view recipe',
-                                        style: theme.textTheme.bodySmall
-                                            ?.copyWith(color: Colors.grey),
-                                      ),
-                                    ],
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          recipe.title,
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Tap to view recipe',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(color: Colors.grey),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const Icon(
-                                  Icons.arrow_forward_ios,
-                                  size: 16,
-                                  color: Colors.grey,
-                                ),
-                              ],
+                                  const Icon(
+                                    Icons.arrow_forward_ios,
+                                    size: 16,
+                                    color: Colors.grey,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
-        },
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }

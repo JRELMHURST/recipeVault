@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:recipe_vault/widgets/placeholder_logo.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
+import 'package:recipe_vault/screens/recipe_vault_screen.dart'; // ✅ import it here
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,7 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _pages = const [
     SizedBox.shrink(), // <-- nothing for Upload tab
-    _VaultTab(),
+    RecipeVaultScreen(), // ✅ replace with actual Vault screen
     _SettingsTab(),
   ];
 
@@ -28,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (files.isNotEmpty && mounted) {
         ProcessingOverlay.show(context, files);
       }
-      // Optionally, you can keep the user on Vault after upload
+      // Optionally, return to Vault tab after processing
       setState(() => _selectedIndex = 1);
       return;
     }
@@ -58,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: NavigationBar(
         backgroundColor: theme.colorScheme.surface,
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (idx) => _onNavTap(idx),
+        onDestinationSelected: _onNavTap,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         indicatorColor: theme.colorScheme.primary.withOpacity(0.14),
         destinations: [
@@ -95,18 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ---- TABS ----
-
-class _VaultTab extends StatelessWidget {
-  const _VaultTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: PlaceholderLogo(imageAsset: 'assets/icon/round_vaultLogo.png'),
-    );
-  }
-}
+// ---- SETTINGS TAB ONLY ----
 
 class _SettingsTab extends StatelessWidget {
   const _SettingsTab();

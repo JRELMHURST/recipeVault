@@ -10,6 +10,8 @@ import '../widgets/recipe_card.dart';
 import '../core/theme.dart';
 import '../model/recipe_card_model.dart';
 
+// ...imports stay the same...
+
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({super.key});
 
@@ -65,15 +67,18 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
       await docRef.set(recipe.toJson());
 
-      // ✅ Show confirmation snackbar
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Recipe saved! Taking you to your Vault...'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          duration: const Duration(seconds: 2),
+          content: Text(
+            '✅ Recipe saved! Taking you to your Vault...',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontSize: 14, color: Colors.white),
+          ),
         ),
       );
 
-      // ✅ Wait before navigating (so snackbar is visible)
       await Future.delayed(const Duration(milliseconds: 1500));
       GoRouter.of(context).go('/home?tab=1');
     } catch (e) {
@@ -88,8 +93,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   Widget build(BuildContext context) {
     final formattedRecipe = GoRouterState.of(context).extra as String? ?? '';
-
-    final bool hasValidContent =
+    final hasValidContent =
         formattedRecipe.trim().isNotEmpty &&
         !formattedRecipe.toLowerCase().contains('error');
 
@@ -122,36 +126,21 @@ class _ResultsScreenState extends State<ResultsScreen> {
             ),
         ],
       ),
+      floatingActionButton: hasValidContent
+          ? FloatingActionButton.extended(
+              onPressed: _isSaving ? null : () => _saveRecipe(formattedRecipe),
+              icon: const Icon(Icons.save_alt_rounded),
+              label: _isSaving
+                  ? const Text("Saving...")
+                  : const Text("Save to Vault"),
+              backgroundColor: AppTheme.primaryColor,
+            )
+          : null,
       body: Padding(
         padding: const EdgeInsets.all(18),
         child: hasValidContent
             ? SingleChildScrollView(
-                child: Column(
-                  children: [
-                    RecipeCard(recipeText: formattedRecipe),
-                    const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      onPressed: _isSaving
-                          ? null
-                          : () => _saveRecipe(formattedRecipe),
-                      icon: const Icon(Icons.save_alt_rounded),
-                      label: _isSaving
-                          ? const Text('Saving...')
-                          : const Text('Save to Vault'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 36,
-                          vertical: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                child: RecipeCard(recipeText: formattedRecipe),
               )
             : Center(
                 child: Card(

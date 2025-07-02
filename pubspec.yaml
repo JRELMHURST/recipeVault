@@ -48,6 +48,7 @@ flutter:
   assets:
     - assets/icon/recipe_vault_appLogo.png
     - assets/icon/recipe_vaultBG.png
+    - assets/icon/round_vaultLogo.png
 
 flutter_launcher_icons:
   image_path: assets/icon/recipe_vault_appLogo.png

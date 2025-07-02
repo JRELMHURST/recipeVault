@@ -12,22 +12,25 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
 
-  # ✅ Image selection and compression
+  # Image selection and compression
   image_picker: ^1.0.4
   flutter_image_compress: ^1.1.0
   path_provider: ^2.1.2
 
-  # ✅ Routing
+  # Routing
   go_router: ^13.2.5
 
-  # ✅ Networking
+  # Networking
   http: ^1.2.1
 
-  # ✅ Firebase Core + Storage + Functions (compatible versions)
+  # Firebase Core + Storage + Functions
   firebase_storage: ^12.0.0
   firebase_core: ^3.15.0
   firebase_auth: ^5.6.1
   cloud_functions: ^5.6.0
+
+  # Animation
+  flutter_spinkit: ^5.2.0
 
 dev_dependencies:
   flutter_test:
@@ -49,7 +52,7 @@ flutter_launcher_icons:
   remove_alpha_ios: true
 
 flutter_native_splash:
-  color: "#121014" # Background to match your dark theme
+  color: "#121014"
   image: assets/icon/recipe_vaultBG.png
   android: true
   ios: true

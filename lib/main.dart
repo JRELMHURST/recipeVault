@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:recipe_vault/firebase_auth.dart';
+import 'package:recipe_vault/widgets/processing_screen.dart';
 
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
@@ -36,6 +39,13 @@ final _router = GoRouter(
         return ResultsScreen(ocrText: ocrText);
       },
     ),
+    GoRoute(
+      path: '/processing',
+      builder: (context, state) {
+        final imageFiles = state.extra as List<File>;
+        return ProcessingScreen(imageFiles: imageFiles);
+      },
+    ),
   ],
 );
 
@@ -59,7 +69,7 @@ class RecipeVaultApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
-            themeMode: ThemeMode.system,
+            themeMode: ThemeMode.light,
             routerConfig: _router,
           ),
         );

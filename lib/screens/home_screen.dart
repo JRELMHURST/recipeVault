@@ -15,12 +15,28 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 1; // Start at the "Vault" tab
+  bool _useGrid = false; // 🔁 View toggle
 
-  final List<Widget> _pages = const [
-    SizedBox.shrink(), // <-- Upload tab doesn't need a page
-    RecipeVaultScreen(),
-    SettingsScreen(),
-  ];
+  final PageStorageBucket _bucket = PageStorageBucket();
+
+  void _toggleViewMode() {
+    setState(() {
+      _useGrid = !_useGrid;
+    });
+  }
+
+  Widget get _currentPage {
+    switch (_selectedIndex) {
+      case 0:
+        return const SizedBox.shrink();
+      case 1:
+        return RecipeVaultScreen(useGrid: _useGrid);
+      case 2:
+        return const SettingsScreen();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
 
   String get _appBarTitle {
     switch (_selectedIndex) {
@@ -57,6 +73,24 @@ class _HomeScreenState extends State<HomeScreen> {
         child: AppBar(
           elevation: 0,
           backgroundColor: Colors.transparent,
+          leading: _selectedIndex == 1
+              ? Padding(
+                  padding: const EdgeInsets.only(
+                    left: 12,
+                    top: 8,
+                  ), // Adjust as needed
+                  child: IconButton(
+                    iconSize: 30, // Bigger icon
+                    icon: Icon(
+                      _useGrid
+                          ? Icons.view_list_rounded
+                          : Icons.grid_view_rounded,
+                      color: Colors.white,
+                    ),
+                    onPressed: _toggleViewMode,
+                  ),
+                )
+              : null,
           flexibleSpace: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -73,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.only(top: 48), // lowered a bit
+                padding: const EdgeInsets.only(top: 48),
                 child: Text(
                   _appBarTitle,
                   style: const TextStyle(
@@ -81,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.5,
-                    fontFamily: 'SF Pro Display', // Custom font
+                    fontFamily: 'SF Pro Display',
                     shadows: [
                       Shadow(
                         offset: Offset(0, 1),
@@ -97,7 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       backgroundColor: theme.colorScheme.surface,
-      body: SafeArea(child: _pages[_selectedIndex]),
+      body: SafeArea(
+        child: PageStorage(bucket: _bucket, child: _currentPage),
+      ),
       bottomNavigationBar: NavigationBar(
         backgroundColor: theme.colorScheme.surface,
         selectedIndex: _selectedIndex,

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +8,8 @@ import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
 
 class RecipeVaultScreen extends StatefulWidget {
-  const RecipeVaultScreen({super.key});
+  final bool useGrid;
+  const RecipeVaultScreen({super.key, required this.useGrid});
 
   @override
   State<RecipeVaultScreen> createState() => _RecipeVaultScreenState();
@@ -57,7 +60,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         _allRecipes = recipes;
       });
     } catch (e) {
-      debugPrint("⚠️ Firestore fetch failed, loading from Hive: $e");
+      debugPrint("⚠️ Firestore fetch failed, loading from Hive: \$e");
       setState(() {
         _allRecipes = HiveRecipeService.getAll();
       });
@@ -89,21 +92,142 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   }
 
   void _toggleFavourite(RecipeCardModel recipe) {
-    debugPrint("⭐ Long pressed to favourite: ${recipe.title}");
+    debugPrint("⭐ Long pressed to favourite: \${recipe.title}");
   }
 
   String _formatRecipeMarkdown(RecipeCardModel recipe) {
     return '''
 ---
-Title: ${recipe.title}
+Title: \${recipe.title}
 
 Ingredients:
-${recipe.ingredients.map((i) => "- $i").join("\n")}
+\${recipe.ingredients.map((i) => "- \$i").join("\n")}
 
 Instructions:
-${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").join("\n")}
+\${recipe.instructions.asMap().entries.map((e) => "\${e.key + 1}. \${e.value}").join("\n")}
 ---
 ''';
+  }
+
+  Widget _buildRecipeList(List<RecipeCardModel> recipes, ThemeData theme) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: recipes.length,
+      itemBuilder: (context, index) {
+        final recipe = recipes[index];
+        return Dismissible(
+          key: Key(recipe.id),
+          background: Container(
+            color: Colors.red,
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            child: const Icon(Icons.delete, color: Colors.white),
+          ),
+          direction: DismissDirection.endToStart,
+          onDismissed: (_) => _deleteRecipe(recipe),
+          child: GestureDetector(
+            onTap: () => _showRecipeDialog(recipe),
+            onLongPress: () => _toggleFavourite(recipe),
+            child: Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: Colors.deepPurple.shade50,
+                      child: const Icon(
+                        Icons.restaurant_menu,
+                        color: Colors.deepPurple,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            recipe.title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Tap to view recipe',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRecipeGrid(List<RecipeCardModel> recipes, ThemeData theme) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(12),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 3 / 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: recipes.length,
+      itemBuilder: (context, index) {
+        final recipe = recipes[index];
+        return GestureDetector(
+          onTap: () => _showRecipeDialog(recipe),
+          onLongPress: () => _toggleFavourite(recipe),
+          child: Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 3,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recipe.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.restaurant_menu, color: Colors.deepPurple),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -115,108 +239,37 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
               .where((r) => r.categories.contains(_selectedCategory))
               .toList();
 
-    return Scaffold(
-      body: Column(
-        children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: _allCategories.map((category) {
-                final selected = category == _selectedCategory;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(category),
-                    selected: selected,
-                    onSelected: (_) =>
-                        setState(() => _selectedCategory = category),
-                  ),
-                );
-              }).toList(),
-            ),
+    return Column(
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: _allCategories.map((category) {
+              final selected = category == _selectedCategory;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(category),
+                  selected: selected,
+                  onSelected: (_) =>
+                      setState(() => _selectedCategory = category),
+                ),
+              );
+            }).toList(),
           ),
-          Expanded(
-            child: filteredRecipes.isEmpty
-                ? const Center(child: Text("No recipes found"))
-                : ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: filteredRecipes.length,
-                    itemBuilder: (context, index) {
-                      final recipe = filteredRecipes[index];
-                      return Dismissible(
-                        key: Key(recipe.id),
-                        background: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          child: const Icon(Icons.delete, color: Colors.white),
-                        ),
-                        direction: DismissDirection.endToStart,
-                        onDismissed: (_) => _deleteRecipe(recipe),
-                        child: GestureDetector(
-                          onTap: () => _showRecipeDialog(recipe),
-                          onLongPress: () => _toggleFavourite(recipe),
-                          child: Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 3,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 24,
-                                    backgroundColor: Colors.deepPurple.shade50,
-                                    child: const Icon(
-                                      Icons.restaurant_menu,
-                                      color: Colors.deepPurple,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          recipe.title,
-                                          style: theme.textTheme.titleMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Tap to view recipe',
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(color: Colors.grey),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.arrow_forward_ios,
-                                    size: 16,
-                                    color: Colors.grey,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: filteredRecipes.isEmpty
+              ? const Center(child: Text("No recipes found"))
+              : AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: widget.useGrid
+                      ? _buildRecipeGrid(filteredRecipes, theme)
+                      : _buildRecipeList(filteredRecipes, theme),
+                ),
+        ),
+      ],
     );
   }
 }

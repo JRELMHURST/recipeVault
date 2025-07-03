@@ -12,8 +12,6 @@ import '../widgets/recipe_card.dart';
 import '../core/theme.dart';
 import '../model/recipe_card_model.dart';
 
-// ...imports stay the same...
-
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({super.key});
 

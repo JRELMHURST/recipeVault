@@ -42,22 +42,18 @@ class CategorySpeedDial extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Positioned(
-      bottom: 24,
-      right: 24,
-      child: SpeedDial(
-        icon: Icons.add,
-        activeIcon: Icons.close,
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: Colors.white,
-        children: [
-          SpeedDialChild(
-            child: const Icon(Icons.category),
-            label: 'New Category',
-            onTap: () => _showAddCategoryDialog(context),
-          ),
-        ],
-      ),
+    return SpeedDial(
+      icon: Icons.add,
+      activeIcon: Icons.close,
+      backgroundColor: theme.colorScheme.primary,
+      foregroundColor: Colors.white,
+      children: [
+        SpeedDialChild(
+          child: const Icon(Icons.category),
+          label: 'New Category',
+          onTap: () => _showAddCategoryDialog(context),
+        ),
+      ],
     );
   }
 }

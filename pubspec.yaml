@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  flutter_speed_dial: ^7.0.0
 
   # Image selection and compression
   image_picker: ^1.0.4

@@ -51,25 +51,32 @@ class RecipeGridView extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween, // 💥 key fix
               children: [
-                Text(
-                  recipe.title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    recipe.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const Spacer(),
+                const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      recipe.categories.isNotEmpty
-                          ? recipe.categories.first
-                          : 'Uncategorised',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.hintColor,
+                    Expanded(
+                      child: Text(
+                        recipe.categories.isNotEmpty
+                            ? recipe.categories.first
+                            : 'Uncategorised',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.hintColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                     IconButton(
@@ -81,6 +88,9 @@ class RecipeGridView extends StatelessWidget {
                         size: 20,
                       ),
                       onPressed: () => onToggleFavourite(recipe),
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ),

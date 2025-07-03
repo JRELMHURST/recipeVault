@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
-import 'package:recipe_vault/screens/recipe_vault_screen.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_vault_screen.dart';
 import 'package:recipe_vault/settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {

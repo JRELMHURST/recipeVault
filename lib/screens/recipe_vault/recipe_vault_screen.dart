@@ -9,6 +9,7 @@ import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_dialog.dart';
+import 'package:recipe_vault/screens/recipe_vault/category_speed_dial.dart';
 
 enum ViewMode { list, grid, compact }
 
@@ -28,12 +29,9 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   final List<String> _allCategories = [
     'All',
     'Favourites',
-    'Dessert',
-    'Main',
-    'Vegan',
-    'Quick',
-    'Side',
     'Breakfast',
+    'Main',
+    'Dessert',
   ];
 
   List<RecipeCardModel> _allRecipes = [];
@@ -98,7 +96,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
     final filteredRecipes = switch (_selectedCategory) {
       'All' => _allRecipes,
       'Favourites' => _allRecipes.where((r) => r.isFavourite).toList(),
@@ -110,38 +107,50 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
     final ViewMode currentView = ViewMode.values[widget.viewMode];
 
-    return Column(
-      children: [
-        RecipeCategoryFilterBar(
-          categories: _allCategories,
-          selectedCategory: _selectedCategory,
-          onCategorySelected: (cat) => setState(() => _selectedCategory = cat),
-        ),
-        Expanded(
-          child: filteredRecipes.isEmpty
-              ? const Center(child: Text("No recipes found"))
-              : AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: switch (currentView) {
-                    ViewMode.list => RecipeListView(
-                      recipes: filteredRecipes,
-                      onDelete: _deleteRecipe,
-                      onTap: (r) => showRecipeDialog(context, r),
-                      onToggleFavourite: _toggleFavourite,
-                    ),
-                    ViewMode.grid => RecipeGridView(
-                      recipes: filteredRecipes,
-                      onTap: (r) => showRecipeDialog(context, r),
-                      onToggleFavourite: _toggleFavourite,
-                    ),
-                    ViewMode.compact => RecipeCompactView(
-                      recipes: filteredRecipes,
-                      onTap: (r) => showRecipeDialog(context, r),
-                    ),
-                  },
-                ),
-        ),
-      ],
+    return Scaffold(
+      body: Column(
+        children: [
+          RecipeCategoryFilterBar(
+            categories: _allCategories,
+            selectedCategory: _selectedCategory,
+            onCategorySelected: (cat) =>
+                setState(() => _selectedCategory = cat),
+          ),
+          Expanded(
+            child: filteredRecipes.isEmpty
+                ? const Center(child: Text("No recipes found"))
+                : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: switch (currentView) {
+                      ViewMode.list => RecipeListView(
+                        recipes: filteredRecipes,
+                        onDelete: _deleteRecipe,
+                        onTap: (r) => showRecipeDialog(context, r),
+                        onToggleFavourite: _toggleFavourite,
+                      ),
+                      ViewMode.grid => RecipeGridView(
+                        recipes: filteredRecipes,
+                        onTap: (r) => showRecipeDialog(context, r),
+                        onToggleFavourite: _toggleFavourite,
+                      ),
+                      ViewMode.compact => RecipeCompactView(
+                        recipes: filteredRecipes,
+                        onTap: (r) => showRecipeDialog(context, r),
+                      ),
+                    },
+                  ),
+          ),
+        ],
+      ),
+      floatingActionButton: CategorySpeedDial(
+        onCategoryAdded: (newCat) {
+          if (!_allCategories.contains(newCat)) {
+            setState(() {
+              _allCategories.add(newCat);
+            });
+          }
+        },
+      ),
     );
   }
 }

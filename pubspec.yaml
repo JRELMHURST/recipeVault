@@ -1,7 +1,6 @@
 name: recipe_vault
 description: "A new Flutter project."
 publish_to: 'none'
-
 version: 1.0.0+1
 
 environment:
@@ -21,7 +20,7 @@ dependencies:
   # Routing
   go_router: ^13.2.5
 
-  # Networking
+  # Networking & Utilities
   http: ^1.2.1
   uuid: ^4.3.3
   shared_preferences: ^2.2.2
@@ -31,7 +30,10 @@ dependencies:
   firebase_auth: ^5.6.1
   cloud_firestore: ^5.6.10
   cloud_functions: ^5.6.0
-  firebase_storage: ^12.4.8 
+  firebase_storage: ^12.4.8
+
+  # Authentication Providers
+  google_sign_in: ^6.2.1 # ✅ Google Sign-In
 
   # Animation and UI
   flutter_spinkit: ^5.2.0

@@ -1,10 +1,10 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:recipe_vault/widgets/placeholder_logo.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
-import 'package:recipe_vault/screens/recipe_vault_screen.dart'; // ✅ import it here
+import 'package:recipe_vault/screens/recipe_vault_screen.dart'; // ✅ Recipe vault tab
+import 'package:recipe_vault/settings/settings_screen.dart'; // ✅ Real settings screen
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,20 +17,31 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 1; // Start at the "Vault" tab
 
   final List<Widget> _pages = const [
-    SizedBox.shrink(), // <-- nothing for Upload tab
-    RecipeVaultScreen(), // ✅ replace with actual Vault screen
-    _SettingsTab(),
+    SizedBox.shrink(), // <-- Upload tab doesn't need a page
+    RecipeVaultScreen(),
+    SettingsScreen(),
   ];
+
+  String get _appBarTitle {
+    switch (_selectedIndex) {
+      case 0:
+        return 'Upload';
+      case 1:
+        return 'Recipe Vault';
+      case 2:
+        return 'Settings';
+      default:
+        return 'RecipeVault';
+    }
+  }
 
   Future<void> _onNavTap(int idx) async {
     if (idx == 0) {
-      // --- Trigger the upload flow ---
       final files = await ImageProcessingService.pickAndCompressImages();
       if (files.isNotEmpty && mounted) {
         ProcessingOverlay.show(context, files);
       }
-      // Optionally, return to Vault tab after processing
-      setState(() => _selectedIndex = 1);
+      setState(() => _selectedIndex = 1); // Back to vault after upload
       return;
     }
     setState(() => _selectedIndex = idx);
@@ -41,16 +52,47 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: theme.colorScheme.primary,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          'RecipeVault',
-          style: theme.textTheme.titleLarge?.copyWith(
-            color: theme.colorScheme.onPrimary,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.1,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primaryContainer,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(24),
+              ),
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 48), // lowered a bit
+                child: Text(
+                  _appBarTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                    fontFamily: 'SF Pro Display', // Custom font
+                    shadows: [
+                      Shadow(
+                        offset: Offset(0, 1),
+                        blurRadius: 4,
+                        color: Colors.black26,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -92,19 +134,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ---- SETTINGS TAB ONLY ----
-
-class _SettingsTab extends StatelessWidget {
-  const _SettingsTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: PlaceholderLogo(imageAsset: 'assets/icon/round_vaultLogo.png'),
     );
   }
 }

@@ -272,7 +272,7 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
         crossAxisCount: 3,
         crossAxisSpacing: 0,
         mainAxisSpacing: 0,
-        childAspectRatio: 6 / 6,
+        childAspectRatio: 7 / 7,
       ),
       itemCount: recipes.length,
       itemBuilder: (context, index) {

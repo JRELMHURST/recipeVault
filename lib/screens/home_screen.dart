@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:recipe_vault/screens/recipe_vault_screen.dart';
 import 'package:recipe_vault/settings/settings_screen.dart';
@@ -19,10 +20,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final PageStorageBucket _bucket = PageStorageBucket();
 
+  @override
+  void initState() {
+    super.initState();
+    _loadUserViewMode();
+  }
+
+  Future<void> _loadUserViewMode() async {
+    final storedMode = UserPreferencesService.getViewMode();
+    if (mounted) {
+      setState(() {
+        _viewMode = storedMode;
+      });
+    }
+  }
+
   void _toggleViewMode() {
     setState(() {
       _viewMode = (_viewMode + 1) % 3;
     });
+    UserPreferencesService.setViewMode(_viewMode);
   }
 
   Widget get _currentPage {

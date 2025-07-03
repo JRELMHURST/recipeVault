@@ -15,11 +15,12 @@ import 'screens/welcome_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/results_screen.dart';
 import 'login/login_screen.dart';
-import 'login/register_screen.dart'; // ✅ Added
-import 'settings/settings_screen.dart'; // ✅ Added
+import 'login/register_screen.dart';
+import 'settings/settings_screen.dart';
 import 'core/theme.dart';
 import 'core/accessibility.dart';
 import 'model/recipe_card_model.dart';
+import 'services/user_preference_service.dart'; // ✅ NEW
 
 /// Force welcome screen for dev/test
 const bool kAlwaysShowWelcome = true;
@@ -38,6 +39,9 @@ Future<void> main() async {
   await Hive.initFlutter();
   Hive.registerAdapter(RecipeCardModelAdapter());
   await Hive.openBox<RecipeCardModel>('recipes');
+
+  // ✅ Init user preferences box
+  await UserPreferencesService.init();
 
   runApp(const RecipeVaultApp());
 }
@@ -131,11 +135,11 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/register',
       builder: (context, state) => const RegisterScreen(),
-    ), // ✅ Added
+    ),
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),
-    ), // ✅ Added
+    ),
   ],
 );
 

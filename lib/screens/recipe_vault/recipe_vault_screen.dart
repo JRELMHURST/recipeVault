@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:recipe_vault/core/hive_recipe_service.dart';
+import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
+import 'package:recipe_vault/services/category_service.dart';
 
 import 'package:recipe_vault/screens/recipe_vault/recipe_category_filter_bar.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
@@ -26,7 +27,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   late final CollectionReference<Map<String, dynamic>> recipeCollection;
   String _selectedCategory = 'All';
 
-  final List<String> _allCategories = [
+  List<String> _allCategories = [
     'All',
     'Favourites',
     'Breakfast',
@@ -41,12 +42,15 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     super.initState();
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw Exception("User not authenticated");
+
     userId = user.uid;
     recipeCollection = FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
         .collection('recipes');
+
     _loadRecipes();
+    _loadCustomCategories();
   }
 
   Future<void> _loadRecipes() async {
@@ -69,6 +73,20 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         _allRecipes = HiveRecipeService.getAll();
       });
     }
+  }
+
+  Future<void> _loadCustomCategories() async {
+    final saved = await CategoryService.getAllCategories();
+    setState(() {
+      _allCategories = {
+        'All',
+        'Favourites',
+        'Breakfast',
+        'Main',
+        'Dessert',
+        ...saved,
+      }.toList();
+    });
   }
 
   void _deleteRecipe(RecipeCardModel recipe) async {
@@ -94,6 +112,18 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     });
   }
 
+  void _removeCategory(String category) async {
+    if (category == 'Favourites' || category == 'All') return;
+
+    await CategoryService.deleteCategory(category);
+    setState(() {
+      _allCategories.remove(category);
+      if (_selectedCategory == category) {
+        _selectedCategory = 'All';
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredRecipes = switch (_selectedCategory) {
@@ -115,6 +145,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
             selectedCategory: _selectedCategory,
             onCategorySelected: (cat) =>
                 setState(() => _selectedCategory = cat),
+            onCategoryDeleted: _removeCategory,
           ),
           Expanded(
             child: filteredRecipes.isEmpty
@@ -143,13 +174,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         ],
       ),
       floatingActionButton: CategorySpeedDial(
-        onCategoryAdded: (newCat) {
-          if (!_allCategories.contains(newCat)) {
-            setState(() {
-              _allCategories.add(newCat);
-            });
-          }
-        },
+        onCategoryChanged: _loadCustomCategories,
       ),
     );
   }

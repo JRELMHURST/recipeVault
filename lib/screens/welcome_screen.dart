@@ -4,10 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
-// import 'package:go_router/go_router.dart';
-
 import 'package:recipe_vault/widgets/dev_bypass_button.dart';
+import 'package:recipe_vault/login/auth_service.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -28,6 +26,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   void initState() {
     super.initState();
     _controller.forward();
+
+    // 🔍 Log the current user on screen load
+    AuthService().logCurrentUser();
   }
 
   Future<void> _startProcessingFlow() async {

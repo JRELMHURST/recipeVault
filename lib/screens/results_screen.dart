@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:recipe_vault/core/hive_recipe_service.dart';
+import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 
 import '../widgets/recipe_card.dart';

@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_vault/login/auth_service.dart';
+import 'package:recipe_vault/model/category_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -38,7 +39,10 @@ Future<void> main() async {
   // ✅ Initialise Hive
   await Hive.initFlutter();
   Hive.registerAdapter(RecipeCardModelAdapter());
+  Hive.registerAdapter(CategoryModelAdapter());
   await Hive.openBox<RecipeCardModel>('recipes');
+  await Hive.openBox<CategoryModel>('categories');
+  await Hive.openBox<String>('customCategories');
 
   // ✅ Init user preferences box
   await UserPreferencesService.init();

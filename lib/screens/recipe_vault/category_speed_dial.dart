@@ -1,10 +1,13 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:recipe_vault/services/category_service.dart';
 
 class CategorySpeedDial extends StatelessWidget {
-  final void Function(String categoryName) onCategoryAdded;
+  final VoidCallback onCategoryChanged;
 
-  const CategorySpeedDial({super.key, required this.onCategoryAdded});
+  const CategorySpeedDial({super.key, required this.onCategoryChanged});
 
   void _showAddCategoryDialog(BuildContext context) {
     final controller = TextEditingController();
@@ -24,10 +27,11 @@ class CategorySpeedDial extends StatelessWidget {
             child: const Text("Cancel"),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final newCategory = controller.text.trim();
               if (newCategory.isNotEmpty) {
-                onCategoryAdded(newCategory);
+                CategoryService.saveCategory(newCategory);
+                onCategoryChanged(); // Trigger UI update
               }
               Navigator.pop(context);
             },

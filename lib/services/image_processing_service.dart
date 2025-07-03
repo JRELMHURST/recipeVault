@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:recipe_vault/services/image_upload_service.dart';
+import 'package:recipe_vault/firebase_storage.dart';
 
 class ProcessedRecipeResult {
   final String formattedRecipe;
@@ -63,10 +63,11 @@ class ImageProcessingService {
 
   /// Uploads images to Firebase Storage and returns their download URLs.
   static Future<List<String>> uploadFiles(List<File> files) {
-    return ImageUploadService.uploadImages(files);
+    return FirebaseStorageService.uploadImages(files);
   }
 
   /// Runs OCR and GPT formatting via Firebase Callable Function.
+  /// Automatically deletes uploaded images afterwards.
   static Future<ProcessedRecipeResult> extractAndFormatRecipe(
     List<String> imageUrls,
   ) async {
@@ -92,6 +93,8 @@ class ImageProcessingService {
       );
     } catch (e) {
       throw Exception('❌ Failed to process recipe: $e');
+    } finally {
+      await FirebaseStorageService.deleteImages(imageUrls);
     }
   }
 

@@ -4,7 +4,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
-class ImageUploadService {
+typedef StorageUrl = String;
+
+class FirebaseStorageService {
   static final FirebaseStorage _storage = FirebaseStorage.instance;
   static final Uuid _uuid = const Uuid();
 
@@ -17,9 +19,9 @@ class ImageUploadService {
 
     for (final file in files) {
       try {
-        final recipeId = _uuid.v4(); // Unique ID per image
+        final recipeId = _uuid.v4();
         final ref = _storage.ref().child(
-          'users/${user.uid}/recipe_images/$recipeId.jpg',
+          'users/${user.uid}/tempUploads/$recipeId.jpg',
         );
 
         final uploadTask = ref.putFile(file);
@@ -38,20 +40,27 @@ class ImageUploadService {
     return urls;
   }
 
-  /// Deletes a list of Firebase Storage files by their download URLs.
-  static Future<void> deleteImagesByUrls(List<String> urls) async {
+  /// Deletes the images at the given list of download URLs.
+  static Future<void> deleteImages(List<StorageUrl> urls) async {
     for (final url in urls) {
       try {
         final ref = _storage.refFromURL(url);
         await ref.delete();
-        if (kDebugMode) {
-          print('🗑️ Deleted: $url');
-        }
-      } catch (e, st) {
-        if (kDebugMode) {
-          print('❌ Failed to delete $url: $e\n$st');
-        }
+        debugPrint('✅ Deleted image: $url');
+      } catch (e) {
+        debugPrint('⚠️ Failed to delete image: $url – $e');
       }
+    }
+  }
+
+  /// Deletes a single image by download URL.
+  static Future<void> deleteImage(String url) async {
+    try {
+      final ref = _storage.refFromURL(url);
+      await ref.delete();
+      debugPrint('✅ Deleted image: $url');
+    } catch (e) {
+      debugPrint('⚠️ Failed to delete image: $url – $e');
     }
   }
 }

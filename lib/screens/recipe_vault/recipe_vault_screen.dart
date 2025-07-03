@@ -28,13 +28,14 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   late final CollectionReference<Map<String, dynamic>> recipeCollection;
   String _selectedCategory = 'All';
 
-  List<String> _allCategories = [
-    'All',
+  static const List<String> _defaultCategories = [
     'Favourites',
     'Breakfast',
     'Main',
     'Dessert',
   ];
+
+  List<String> _allCategories = ['All', 'Favourites']; // Start with these fixed
 
   List<RecipeCardModel> _allRecipes = [];
 
@@ -50,8 +51,29 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         .doc(userId)
         .collection('recipes');
 
+    _initializeDefaultCategories().then((_) => _loadCustomCategories());
     _loadRecipes();
-    _loadCustomCategories();
+  }
+
+  Future<void> _initializeDefaultCategories() async {
+    final savedCategories = await CategoryService.getAllCategories();
+    for (final defaultCat in _defaultCategories) {
+      if (!savedCategories.contains(defaultCat)) {
+        await CategoryService.saveCategory(defaultCat);
+      }
+    }
+  }
+
+  Future<void> _loadCustomCategories() async {
+    final saved = await CategoryService.getAllCategories();
+    setState(() {
+      // Always keep 'All' and 'Favourites' at front, append others from saved
+      _allCategories = [
+        'All',
+        'Favourites',
+        ...saved.where((c) => c != 'Favourites'),
+      ];
+    });
   }
 
   Future<void> _loadRecipes() async {
@@ -74,20 +96,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         _allRecipes = HiveRecipeService.getAll();
       });
     }
-  }
-
-  Future<void> _loadCustomCategories() async {
-    final saved = await CategoryService.getAllCategories();
-    setState(() {
-      _allCategories = {
-        'All',
-        'Favourites',
-        'Breakfast',
-        'Main',
-        'Dessert',
-        ...saved,
-      }.toList();
-    });
   }
 
   void _deleteRecipe(RecipeCardModel recipe) async {
@@ -128,12 +136,12 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     if (category == 'Favourites' || category == 'All') return;
 
     await CategoryService.deleteCategory(category);
-    setState(() {
-      _allCategories.remove(category);
-      if (_selectedCategory == category) {
+    await _loadCustomCategories(); // reload after delete
+    if (_selectedCategory == category) {
+      setState(() {
         _selectedCategory = 'All';
-      }
-    });
+      });
+    }
   }
 
   @override

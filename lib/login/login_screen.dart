@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/login/auth_service.dart';
@@ -55,89 +53,143 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Redirect if already authenticated
     return StreamBuilder(
       stream: _authService.authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.active &&
             snapshot.hasData) {
-          // Already logged in – redirect
           Future.microtask(() => GoRouter.of(context).go('/home'));
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
+        final theme = Theme.of(context);
+
         return Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 48),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset('assets/icon/round_vaultLogo.png', width: 120),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Welcome to RecipeVault',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          controller: _emailController,
-                          decoration: const InputDecoration(labelText: 'Email'),
-                          validator: (value) =>
-                              value != null && value.contains('@')
-                              ? null
-                              : 'Enter a valid email',
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Password',
-                          ),
-                          validator: (value) =>
-                              value != null && value.length >= 6
-                              ? null
-                              : 'Minimum 6 characters',
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  if (_errorMessage != null)
-                    Text(
-                      _errorMessage!,
-                      style: const TextStyle(color: Colors.red),
-                      textAlign: TextAlign.center,
-                    ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _signIn,
-                    child: Text(
-                      _isLoading ? 'Signing in...' : 'Sign in with Email',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: _isLoading ? null : _signInWithGoogle,
-                    icon: const Icon(Icons.g_mobiledata),
-                    label: const Text('Sign in with Google'),
-                  ),
-                  const SizedBox(height: 18),
-                  TextButton(
-                    onPressed: () => GoRouter.of(context).push('/register'),
-                    child: const Text("Don't have an account? Register"),
-                  ),
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primaryContainer,
                 ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 48,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 12,
+                        offset: Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/icon/round_vaultLogo.png',
+                        width: 100,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Welcome to RecipeVault',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: _emailController,
+                              decoration: const InputDecoration(
+                                labelText: 'Email',
+                                border: OutlineInputBorder(),
+                              ),
+                              validator: (value) =>
+                                  value != null && value.contains('@')
+                                  ? null
+                                  : 'Enter a valid email',
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _passwordController,
+                              obscureText: true,
+                              decoration: const InputDecoration(
+                                labelText: 'Password',
+                                border: OutlineInputBorder(),
+                              ),
+                              validator: (value) =>
+                                  value != null && value.length >= 6
+                                  ? null
+                                  : 'Minimum 6 characters',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      if (_errorMessage != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(color: Colors.red),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _signIn,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          minimumSize: const Size.fromHeight(48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          _isLoading ? 'Signing in...' : 'Sign in with Email',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _isLoading ? null : _signInWithGoogle,
+                        icon: const Icon(Icons.g_mobiledata),
+                        label: const Text('Sign in with Google'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                          side: BorderSide(color: theme.colorScheme.primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextButton(
+                        onPressed: () => GoRouter.of(context).push('/register'),
+                        child: const Text("Don't have an account? Register"),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

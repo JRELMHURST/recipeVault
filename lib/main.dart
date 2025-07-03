@@ -15,6 +15,7 @@ import 'screens/welcome_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/results_screen.dart';
 import 'login/login_screen.dart';
+import 'login/register_screen.dart'; // ✅ Added
 import 'settings/settings_screen.dart'; // ✅ Added
 import 'core/theme.dart';
 import 'core/accessibility.dart';
@@ -127,6 +128,10 @@ final GoRouter _router = GoRouter(
       },
     ),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+    GoRoute(
+      path: '/register',
+      builder: (context, state) => const RegisterScreen(),
+    ), // ✅ Added
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),

@@ -13,7 +13,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmController = TextEditingController();
   final AuthService _authService = AuthService();
 
   bool _isLoading = false;
@@ -21,13 +20,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_passwordController.text != _confirmController.text) {
-      setState(() => _errorMessage = "Passwords do not match");
-      return;
-    }
 
     setState(() => _isLoading = true);
-
     try {
       await _authService.registerWithEmail(
         _emailController.text.trim(),
@@ -43,10 +37,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  Future<void> _signInWithGoogle() async {
+  Future<void> _registerWithGoogle() async {
     setState(() => _isLoading = true);
     try {
       await _authService.signInWithGoogle();
+
       if (!mounted) return;
       GoRouter.of(context).go('/home');
     } catch (e) {
@@ -66,14 +61,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset('assets/icon/round_vaultLogo.png', width: 100),
-              const SizedBox(height: 20),
+              Image.asset('assets/icon/round_vaultLogo.png', width: 120),
+              const SizedBox(height: 24),
               Text(
-                'Create your RecipeVault account',
+                'Create an Account',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
-                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
               Form(
@@ -96,17 +90,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ? null
                           : 'Minimum 6 characters',
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _confirmController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Confirm Password',
-                      ),
-                      validator: (value) => value != null && value.length >= 6
-                          ? null
-                          : 'Minimum 6 characters',
-                    ),
                   ],
                 ),
               ),
@@ -120,18 +103,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: _isLoading ? null : _register,
-                child: Text(_isLoading ? 'Registering...' : 'Register'),
+                child: Text(
+                  _isLoading ? 'Creating account...' : 'Register with Email',
+                ),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
-                onPressed: _isLoading ? null : _signInWithGoogle,
+                onPressed: _isLoading ? null : _registerWithGoogle,
                 icon: const Icon(Icons.g_mobiledata),
-                label: const Text('Sign up with Google'),
+                label: const Text('Register with Google'),
               ),
               const SizedBox(height: 18),
               TextButton(
-                onPressed: () => GoRouter.of(context).push('/login'),
-                child: const Text('Already have an account? Sign in'),
+                onPressed: () => GoRouter.of(context).go('/login'),
+                child: const Text('Already have an account? Login'),
               ),
             ],
           ),

@@ -17,7 +17,7 @@ class ImageUploadService {
 
     for (final file in files) {
       try {
-        final recipeId = _uuid.v4(); // Unique ID per image or recipe
+        final recipeId = _uuid.v4(); // Unique ID per image
         final ref = _storage.ref().child(
           'users/${user.uid}/recipe_images/$recipeId.jpg',
         );
@@ -38,15 +38,20 @@ class ImageUploadService {
     return urls;
   }
 
-  /// Deletes an image from the user's folder in Firebase Storage.
-  static Future<void> deleteImage(String recipeId) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) throw Exception('User not authenticated');
-
-    final ref = _storage.ref().child(
-      'users/${user.uid}/recipe_images/$recipeId.jpg',
-    );
-
-    await ref.delete();
+  /// Deletes a list of Firebase Storage files by their download URLs.
+  static Future<void> deleteImagesByUrls(List<String> urls) async {
+    for (final url in urls) {
+      try {
+        final ref = _storage.refFromURL(url);
+        await ref.delete();
+        if (kDebugMode) {
+          print('🗑️ Deleted: $url');
+        }
+      } catch (e, st) {
+        if (kDebugMode) {
+          print('❌ Failed to delete $url: $e\n$st');
+        }
+      }
+    }
   }
 }

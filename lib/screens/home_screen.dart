@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
-import 'package:recipe_vault/screens/recipe_vault_screen.dart'; // ✅ Recipe vault tab
-import 'package:recipe_vault/settings/settings_screen.dart'; // ✅ Real settings screen
+import 'package:recipe_vault/screens/recipe_vault_screen.dart';
+import 'package:recipe_vault/settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,13 +15,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 1; // Start at the "Vault" tab
-  bool _useGrid = false; // 🔁 View toggle
+  int _viewMode = 0; // 0 = list, 1 = grid, 2 = compact
 
   final PageStorageBucket _bucket = PageStorageBucket();
 
   void _toggleViewMode() {
     setState(() {
-      _useGrid = !_useGrid;
+      _viewMode = (_viewMode + 1) % 3;
     });
   }
 
@@ -30,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 0:
         return const SizedBox.shrink();
       case 1:
-        return RecipeVaultScreen(useGrid: _useGrid);
+        return RecipeVaultScreen(viewMode: _viewMode);
       case 2:
         return const SettingsScreen();
       default:
@@ -48,6 +48,19 @@ class _HomeScreenState extends State<HomeScreen> {
         return 'Settings';
       default:
         return 'RecipeVault';
+    }
+  }
+
+  IconData get _viewModeIcon {
+    switch (_viewMode) {
+      case 0:
+        return Icons.grid_view_rounded;
+      case 1:
+        return Icons.view_module_rounded;
+      case 2:
+        return Icons.view_agenda_rounded;
+      default:
+        return Icons.grid_view_rounded;
     }
   }
 
@@ -75,18 +88,10 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: Colors.transparent,
           leading: _selectedIndex == 1
               ? Padding(
-                  padding: const EdgeInsets.only(
-                    left: 12,
-                    top: 8,
-                  ), // Adjust as needed
+                  padding: const EdgeInsets.only(left: 12, top: 8),
                   child: IconButton(
-                    iconSize: 30, // Bigger icon
-                    icon: Icon(
-                      _useGrid
-                          ? Icons.view_list_rounded
-                          : Icons.grid_view_rounded,
-                      color: Colors.white,
-                    ),
+                    iconSize: 30,
+                    icon: Icon(_viewModeIcon, color: Colors.white),
                     onPressed: _toggleViewMode,
                   ),
                 )

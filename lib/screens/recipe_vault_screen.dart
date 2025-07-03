@@ -7,9 +7,11 @@ import 'package:recipe_vault/core/hive_recipe_service.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
 
+enum ViewMode { list, grid, compact }
+
 class RecipeVaultScreen extends StatefulWidget {
-  final bool useGrid;
-  const RecipeVaultScreen({super.key, required this.useGrid});
+  final int viewMode;
+  const RecipeVaultScreen({super.key, required this.viewMode});
 
   @override
   State<RecipeVaultScreen> createState() => _RecipeVaultScreenState();
@@ -92,19 +94,19 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   }
 
   void _toggleFavourite(RecipeCardModel recipe) {
-    debugPrint("⭐ Long pressed to favourite: ${recipe.title}");
+    debugPrint("⭐ Long pressed to favourite: \${recipe.title}");
   }
 
   String _formatRecipeMarkdown(RecipeCardModel recipe) {
     return '''
 ---
-Title: ${recipe.title}
+Title: \${recipe.title}
 
 Ingredients:
-${recipe.ingredients.map((i) => "- $i").join("\n")}
+\${recipe.ingredients.map((i) => "- \$i").join("\n")}
 
 Instructions:
-${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").join("\n")}
+\${recipe.instructions.asMap().entries.map((e) => "\${e.key + 1}. \${e.value}").join("\n")}
 ---
 ''';
   }
@@ -256,6 +258,57 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
     );
   }
 
+  Widget _buildCompactGalleryView(
+    List<RecipeCardModel> recipes,
+    ThemeData theme,
+  ) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(8),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 3 / 4,
+      ),
+      itemCount: recipes.length,
+      itemBuilder: (context, index) {
+        final recipe = recipes[index];
+        return GestureDetector(
+          onTap: () => _showRecipeDialog(recipe),
+          child: Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.restaurant_menu,
+                    size: 32,
+                    color: Colors.deepPurple,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    recipe.title,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -264,6 +317,8 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
         : _allRecipes
               .where((r) => r.categories.contains(_selectedCategory))
               .toList();
+
+    final ViewMode currentView = ViewMode.values[widget.viewMode];
 
     return Column(
       children: [
@@ -290,9 +345,11 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
               ? const Center(child: Text("No recipes found"))
               : AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
-                  child: widget.useGrid
+                  child: currentView == ViewMode.list
+                      ? _buildRecipeList(filteredRecipes, theme)
+                      : currentView == ViewMode.grid
                       ? _buildRecipeGrid(filteredRecipes, theme)
-                      : _buildRecipeList(filteredRecipes, theme),
+                      : _buildCompactGalleryView(filteredRecipes, theme),
                 ),
         ),
       ],

@@ -66,19 +66,17 @@ class RecipeCard extends StatelessWidget {
                             color: colorScheme.primary,
                             fontWeight: FontWeight.bold,
                           ),
-                          maxLines: 2,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Divider(
-                          thickness: 2,
-                          color: colorScheme.outline.withOpacity(0.3),
+                          thickness: 1.4,
+                          color: colorScheme.outline.withOpacity(0.25),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         MarkdownBody(
-                          data: recipeBody.trim().isEmpty
-                              ? '*No content found.*'
-                              : recipeBody.trim(),
+                          data: _getFormattedRecipeBody(recipeBody),
                           selectable: true,
                           styleSheet: mdStyle,
                         ),
@@ -112,5 +110,15 @@ class RecipeCard extends StatelessWidget {
     return lines
         .where((line) => !line.toLowerCase().startsWith('title:'))
         .join('\n');
+  }
+
+  String _getFormattedRecipeBody(String body) {
+    final cleaned = body.trim();
+    if (cleaned.isEmpty ||
+        !(cleaned.contains('Ingredients') ||
+            cleaned.contains('Instructions'))) {
+      return '*No formatted recipe found.*';
+    }
+    return cleaned;
   }
 }

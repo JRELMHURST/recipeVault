@@ -60,7 +60,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         _allRecipes = recipes;
       });
     } catch (e) {
-      debugPrint("⚠️ Firestore fetch failed, loading from Hive: \$e");
+      debugPrint("⚠️ Firestore fetch failed, loading from Hive: $e");
       setState(() {
         _allRecipes = HiveRecipeService.getAll();
       });
@@ -92,19 +92,19 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   }
 
   void _toggleFavourite(RecipeCardModel recipe) {
-    debugPrint("⭐ Long pressed to favourite: \${recipe.title}");
+    debugPrint("⭐ Long pressed to favourite: ${recipe.title}");
   }
 
   String _formatRecipeMarkdown(RecipeCardModel recipe) {
     return '''
 ---
-Title: \${recipe.title}
+Title: ${recipe.title}
 
 Ingredients:
-\${recipe.ingredients.map((i) => "- \$i").join("\n")}
+${recipe.ingredients.map((i) => "- $i").join("\n")}
 
 Instructions:
-\${recipe.instructions.asMap().entries.map((e) => "\${e.key + 1}. \${e.value}").join("\n")}
+${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").join("\n")}
 ---
 ''';
   }
@@ -191,7 +191,7 @@ Instructions:
       padding: const EdgeInsets.all(12),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 3 / 2,
+        childAspectRatio: 4 / 3,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
@@ -201,28 +201,54 @@ Instructions:
         return GestureDetector(
           onTap: () => _showRecipeDialog(recipe),
           onLongPress: () => _toggleFavourite(recipe),
-          child: Card(
-            shape: RoundedRectangleBorder(
+          child: Container(
+            decoration: BoxDecoration(
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    recipe.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const Spacer(),
-                  const Icon(Icons.restaurant_menu, color: Colors.deepPurple),
-                ],
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                width: 1.2,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.shadowColor.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  recipe.title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Spacer(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      recipe.categories.isNotEmpty
+                          ? recipe.categories.first
+                          : 'Uncategorised',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.hintColor,
+                      ),
+                    ),
+                    const Icon(
+                      Icons.restaurant_menu,
+                      color: Colors.deepPurple,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         );

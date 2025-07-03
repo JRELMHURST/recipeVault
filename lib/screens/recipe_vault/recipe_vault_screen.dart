@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
@@ -92,6 +93,17 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   void _deleteRecipe(RecipeCardModel recipe) async {
     await recipeCollection.doc(recipe.id).delete();
     await HiveRecipeService.delete(recipe.id);
+
+    // Delete associated uploaded images from Firebase Storage
+    for (final url in recipe.originalImageUrls) {
+      try {
+        final ref = FirebaseStorage.instance.refFromURL(url);
+        await ref.delete();
+      } catch (e) {
+        debugPrint('❌ Failed to delete image from storage: $e');
+      }
+    }
+
     setState(() {
       _allRecipes.removeWhere((r) => r.id == recipe.id);
     });

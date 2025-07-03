@@ -30,7 +30,10 @@ class RecipeCardModel extends HiveObject {
   final List<String> categories;
 
   @HiveField(8)
-  final bool isFavourite; // ✅ New field
+  final bool isFavourite;
+
+  @HiveField(9)
+  final List<String> originalImageUrls; // ✅ NEW FIELD
 
   RecipeCardModel({
     required this.id,
@@ -41,6 +44,7 @@ class RecipeCardModel extends HiveObject {
     this.imageUrl,
     this.categories = const [],
     this.isFavourite = false,
+    this.originalImageUrls = const [],
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -54,6 +58,7 @@ class RecipeCardModel extends HiveObject {
     if (imageUrl != null) 'imageUrl': imageUrl,
     'categories': categories,
     'isFavourite': isFavourite,
+    'originalImageUrls': originalImageUrls,
   };
 
   factory RecipeCardModel.fromJson(Map<String, dynamic> json) =>
@@ -67,6 +72,7 @@ class RecipeCardModel extends HiveObject {
         imageUrl: json['imageUrl'] as String?,
         categories: List<String>.from(json['categories'] ?? []),
         isFavourite: json['isFavourite'] as bool? ?? false,
+        originalImageUrls: List<String>.from(json['originalImageUrls'] ?? []),
       );
 
   String toRawJson() => jsonEncode(toJson());
@@ -74,8 +80,10 @@ class RecipeCardModel extends HiveObject {
   factory RecipeCardModel.fromRawJson(String str) =>
       RecipeCardModel.fromJson(jsonDecode(str));
 
-  /// Clone with modifications
-  RecipeCardModel copyWith({bool? isFavourite}) {
+  RecipeCardModel copyWith({
+    bool? isFavourite,
+    List<String>? originalImageUrls,
+  }) {
     return RecipeCardModel(
       id: id,
       userId: userId,
@@ -86,6 +94,7 @@ class RecipeCardModel extends HiveObject {
       imageUrl: imageUrl,
       categories: categories,
       isFavourite: isFavourite ?? this.isFavourite,
+      originalImageUrls: originalImageUrls ?? this.originalImageUrls,
     );
   }
 }

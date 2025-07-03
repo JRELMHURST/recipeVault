@@ -58,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String get _appBarTitle {
     switch (_selectedIndex) {
       case 0:
-        return 'Upload';
+        return 'Create';
       case 1:
         return 'Recipe Vault';
       case 2:
@@ -165,12 +165,12 @@ class _HomeScreenState extends State<HomeScreen> {
         destinations: [
           NavigationDestination(
             icon: Icon(
-              Icons.upload_rounded,
+              Icons.add,
               color: _selectedIndex == 0
                   ? theme.colorScheme.primary
                   : theme.colorScheme.onSurface.withOpacity(0.6),
             ),
-            label: "Upload",
+            label: "Create",
           ),
           NavigationDestination(
             icon: Icon(

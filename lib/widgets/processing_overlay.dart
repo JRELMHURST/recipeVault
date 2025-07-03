@@ -45,10 +45,17 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     'Finishing Up',
   ];
 
-  late final AnimationController _iconController = AnimationController(
+  late final AnimationController _iconSpinController = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 2),
   )..repeat();
+
+  late final AnimationController _pulseController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1000),
+    lowerBound: 0.95,
+    upperBound: 1.05,
+  )..repeat(reverse: true);
 
   late final AnimationController _barController = AnimationController(
     vsync: this,
@@ -63,7 +70,8 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
   @override
   void dispose() {
-    _iconController.dispose();
+    _iconSpinController.dispose();
+    _pulseController.dispose();
     _barController.dispose();
     super.dispose();
   }
@@ -109,6 +117,18 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     ProcessingOverlay.hide();
   }
 
+  IconData _stepIcon(int step) {
+    switch (step) {
+      case 0:
+        return Icons.cloud_upload_rounded;
+      case 1:
+        return Icons.auto_fix_high_rounded;
+      case 2:
+      default:
+        return Icons.hourglass_bottom_rounded;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -130,55 +150,59 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Animated Icon
                   RotationTransition(
-                    turns: _iconController,
-                    child: Icon(Icons.restaurant_menu, size: 40, color: accent),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const SizedBox(width: 44),
-                      Text(
-                        'Processing',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
+                    turns: _iconSpinController,
+                    child: ScaleTransition(
+                      scale: _pulseController,
+                      child: CircleAvatar(
+                        radius: 30,
+                        backgroundColor: accent.withOpacity(0.15),
+                        child: Icon(
+                          _stepIcon(_currentStep),
+                          color: accent,
+                          size: 30,
                         ),
                       ),
-                      GestureDetector(
-                        onTap: _cancel,
-                        child: Text(
-                          'Cancel',
-                          style: TextStyle(
-                            color: accent.withOpacity(0.82),
-                            fontWeight: FontWeight.w500,
-                            fontSize: 15,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Text(
-                    "We're turning your screenshots into\na delicious recipe card!",
+                    'Processing Your Recipe',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Hang tight while we turn your screenshots\ninto a delicious, formatted recipe card!",
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[700],
                       fontSize: 15,
                     ),
                   ),
-                  const SizedBox(height: 28),
-                  // Stepper
-                  _BrandedStepper(
-                    currentStep: _currentStep,
-                    accent: accent,
-                    steps: _steps,
+                  const SizedBox(height: 26),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) =>
+                        ScaleTransition(scale: animation, child: child),
+                    child: Column(
+                      key: ValueKey<int>(_currentStep),
+                      children: [
+                        Text(
+                          _steps[_currentStep],
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 30),
-                  // Animated loading bar
                   FadeTransition(
                     opacity: Tween<double>(
                       begin: 0.6,
@@ -193,96 +217,28 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
                       ),
                     ),
                   ),
+                  const SizedBox(height: 18),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: _cancel,
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: accent.withOpacity(0.82),
+                          fontWeight: FontWeight.w500,
+                          fontSize: 15,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _BrandedStepper extends StatelessWidget {
-  final int currentStep;
-  final Color accent;
-  final List<String> steps;
-
-  const _BrandedStepper({
-    required this.currentStep,
-    required this.accent,
-    required this.steps,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children:
-          List.generate(steps.length, (i) {
-              final isActive = i == currentStep;
-              final isDone = i < currentStep;
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 350),
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: isDone
-                          ? accent
-                          : isActive
-                          ? accent.withOpacity(0.8)
-                          : Colors.grey[300],
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isActive || isDone ? accent : Colors.grey[300]!,
-                        width: 2.2,
-                      ),
-                    ),
-                    child: Center(
-                      child: isDone
-                          ? const Icon(
-                              Icons.check,
-                              color: Colors.white,
-                              size: 18,
-                            )
-                          : isActive
-                          ? const Icon(
-                              Icons.hourglass_top,
-                              color: Colors.white,
-                              size: 18,
-                            )
-                          : Container(),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Text(
-                    steps[i],
-                    style: TextStyle(
-                      fontSize: 16.5,
-                      fontWeight: isActive
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: isActive ? accent : Colors.grey[500],
-                    ),
-                  ),
-                ],
-              );
-            }).expand((w) => [w, if (w != steps.last) _StepperLine()]).toList()
-            ..removeLast(),
-    );
-  }
-}
-
-class _StepperLine extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 18,
-      width: 2,
-      color: Colors.grey[300],
-      margin: const EdgeInsets.symmetric(vertical: 2),
     );
   }
 }

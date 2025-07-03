@@ -122,13 +122,11 @@ final GoRouter _router = GoRouter(
       path: '/results',
       builder: (context, state) {
         final extra = state.extra;
-        if (extra is Map<String, dynamic>) {
-          final result = extra['result'];
-          final imageUrls = extra['imageUrls'];
-
-          if (result is ProcessedRecipeResult && imageUrls is List<String>) {
-            return ResultsScreen(result: result, imageUrls: imageUrls);
-          }
+        if (extra is ResultPayload) {
+          return ResultsScreen(
+            result: extra.result,
+            imageUrls: extra.imageUrls,
+          );
         }
 
         return Scaffold(

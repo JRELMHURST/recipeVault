@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/model/result_payload.dart';
 
 class ProcessingOverlay {
   static OverlayEntry? _currentOverlay;
@@ -85,8 +86,9 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       if (_hasCancelled) return;
 
       await _setStep(1);
-      final formattedRecipe =
-          await ImageProcessingService.extractAndFormatRecipe(imageUrls);
+      final result = await ImageProcessingService.extractAndFormatRecipe(
+        imageUrls,
+      );
       if (_hasCancelled) return;
 
       await _setStep(2);
@@ -96,7 +98,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       ProcessingOverlay.hide();
       GoRouter.of(context).go(
         '/results',
-        extra: {'recipe': formattedRecipe, 'imageUrls': imageUrls},
+        extra: ResultPayload(result: result, imageUrls: imageUrls),
       );
     } catch (e, st) {
       debugPrint('❌ Processing failed: $e\n$st');

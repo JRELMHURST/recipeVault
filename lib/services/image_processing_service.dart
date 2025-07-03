@@ -67,7 +67,7 @@ class ImageProcessingService {
   }
 
   /// Runs OCR and GPT formatting via Firebase Callable Function.
-  /// Automatically deletes uploaded images afterwards.
+  /// Returns the formatted recipe result without deleting uploaded images.
   static Future<ProcessedRecipeResult> extractAndFormatRecipe(
     List<String> imageUrls,
   ) async {
@@ -93,8 +93,6 @@ class ImageProcessingService {
       );
     } catch (e) {
       throw Exception('❌ Failed to process recipe: $e');
-    } finally {
-      await FirebaseStorageService.deleteImages(imageUrls);
     }
   }
 

@@ -6,8 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
-import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/firebase_storage.dart';
+import 'package:recipe_vault/services/image_processing_service.dart';
 
 import '../widgets/recipe_card.dart';
 import '../core/theme.dart';
@@ -88,7 +88,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         ),
       );
 
-      // ✅ Delete uploaded screenshots
+      // ✅ Delete uploaded screenshots only after save is confirmed
       debugPrint('🧹 Deleting uploaded images: ${widget.imageUrls}');
       await FirebaseStorageService.deleteImages(widget.imageUrls);
 

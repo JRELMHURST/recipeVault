@@ -24,6 +24,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   final List<String> _allCategories = [
     'All',
+    'Favourites',
     'Dessert',
     'Main',
     'Vegan',
@@ -343,11 +344,14 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final filteredRecipes = _selectedCategory == 'All'
-        ? _allRecipes
-        : _allRecipes
-              .where((r) => r.categories.contains(_selectedCategory))
-              .toList();
+    final filteredRecipes = switch (_selectedCategory) {
+      'All' => _allRecipes,
+      'Favourites' => _allRecipes.where((r) => r.isFavourite).toList(),
+      _ =>
+        _allRecipes
+            .where((r) => r.categories.contains(_selectedCategory))
+            .toList(),
+    };
 
     final ViewMode currentView = ViewMode.values[widget.viewMode];
 

@@ -94,19 +94,19 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   }
 
   void _toggleFavourite(RecipeCardModel recipe) {
-    debugPrint("⭐ Long pressed to favourite: \${recipe.title}");
+    debugPrint("⭐ Long pressed to favourite: ${recipe.title}");
   }
 
   String _formatRecipeMarkdown(RecipeCardModel recipe) {
     return '''
 ---
-Title: \${recipe.title}
+Title: ${recipe.title}
 
 Ingredients:
-\${recipe.ingredients.map((i) => "- \$i").join("\n")}
+${recipe.ingredients.map((i) => "- $i").join("\n")}
 
 Instructions:
-\${recipe.instructions.asMap().entries.map((e) => "\${e.key + 1}. \${e.value}").join("\n")}
+${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").join("\n")}
 ---
 ''';
   }
@@ -134,6 +134,10 @@ Instructions:
               margin: const EdgeInsets.only(bottom: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: theme.colorScheme.primary.withOpacity(0.25),
+                  width: 2,
+                ),
               ),
               elevation: 3,
               child: Padding(
@@ -208,8 +212,8 @@ Instructions:
               color: theme.cardColor,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.1),
-                width: 1.2,
+                color: theme.colorScheme.primary.withOpacity(0.25),
+                width: 2,
               ),
               boxShadow: [
                 BoxShadow(
@@ -266,9 +270,9 @@ Instructions:
       padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-        childAspectRatio: 3 / 4,
+        crossAxisSpacing: 0,
+        mainAxisSpacing: 0,
+        childAspectRatio: 6 / 6,
       ),
       itemCount: recipes.length,
       itemBuilder: (context, index) {
@@ -278,6 +282,10 @@ Instructions:
           child: Card(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: theme.colorScheme.primary.withOpacity(0.25),
+                width: 2,
+              ),
             ),
             elevation: 2,
             child: Padding(

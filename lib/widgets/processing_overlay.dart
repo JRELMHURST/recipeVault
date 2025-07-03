@@ -94,7 +94,10 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
       if (!mounted) return;
       ProcessingOverlay.hide();
-      GoRouter.of(context).go('/results', extra: formattedRecipe);
+      GoRouter.of(context).go(
+        '/results',
+        extra: {'recipe': formattedRecipe, 'imageUrls': imageUrls},
+      );
     } catch (e, st) {
       debugPrint('❌ Processing failed: $e\n$st');
       if (mounted) {

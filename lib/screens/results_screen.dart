@@ -7,13 +7,21 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/firebase_storage.dart';
 
 import '../widgets/recipe_card.dart';
 import '../core/theme.dart';
 import '../model/recipe_card_model.dart';
 
 class ResultsScreen extends StatefulWidget {
-  const ResultsScreen({super.key});
+  final ProcessedRecipeResult result;
+  final List<String> imageUrls;
+
+  const ResultsScreen({
+    super.key,
+    required this.result,
+    required this.imageUrls,
+  });
 
   @override
   State<ResultsScreen> createState() => _ResultsScreenState();
@@ -22,14 +30,14 @@ class ResultsScreen extends StatefulWidget {
 class _ResultsScreenState extends State<ResultsScreen> {
   bool _isSaving = false;
 
-  Future<void> _saveRecipe(String formattedRecipe) async {
+  Future<void> _saveRecipe() async {
     setState(() => _isSaving = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception("Not signed in");
 
-      final lines = formattedRecipe.trim().split('\n');
+      final lines = widget.result.formattedRecipe.trim().split('\n');
       String title = 'Untitled';
       List<String> ingredients = [];
       List<String> instructions = [];
@@ -65,10 +73,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         instructions: instructions,
       );
 
-      // 🔄 Save to Firestore
       await docRef.set(recipe.toJson());
-
-      // 💾 Save locally to Hive
       await HiveRecipeService.save(recipe);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -83,6 +88,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
         ),
       );
 
+      // ✅ Delete uploaded screenshots
+      debugPrint('🧹 Deleting uploaded images: ${widget.imageUrls}');
+      await FirebaseStorageService.deleteImages(widget.imageUrls);
+
       await Future.delayed(const Duration(milliseconds: 1500));
       GoRouter.of(context).go('/home?tab=1');
     } catch (e) {
@@ -96,8 +105,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final result = GoRouterState.of(context).extra as ProcessedRecipeResult?;
-    final formattedRecipe = result?.formattedRecipe ?? '';
+    final formattedRecipe = widget.result.formattedRecipe;
     final hasValidContent =
         formattedRecipe.trim().isNotEmpty &&
         !formattedRecipe.toLowerCase().contains('error');
@@ -133,7 +141,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
       ),
       floatingActionButton: hasValidContent
           ? FloatingActionButton.extended(
-              onPressed: _isSaving ? null : () => _saveRecipe(formattedRecipe),
+              onPressed: _isSaving ? null : _saveRecipe,
               icon: const Icon(Icons.save_alt_rounded),
               label: _isSaving
                   ? const Text("Saving...")

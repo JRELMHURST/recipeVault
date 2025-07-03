@@ -7,6 +7,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_vault/login/auth_service.dart';
 import 'package:recipe_vault/model/category_model.dart';
+import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -21,7 +22,7 @@ import 'settings/settings_screen.dart';
 import 'core/theme.dart';
 import 'core/accessibility.dart';
 import 'model/recipe_card_model.dart';
-import 'services/user_preference_service.dart'; // ✅ NEW
+import 'services/user_preference_service.dart';
 
 /// Force welcome screen for dev/test
 const bool kAlwaysShowWelcome = true;
@@ -119,7 +120,24 @@ final GoRouter _router = GoRouter(
     GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
     GoRoute(
       path: '/results',
-      builder: (context, state) => const ResultsScreen(),
+      builder: (context, state) {
+        final extra = state.extra;
+        if (extra is Map<String, dynamic>) {
+          final result = extra['result'];
+          final imageUrls = extra['imageUrls'];
+
+          if (result is ProcessedRecipeResult && imageUrls is List<String>) {
+            return ResultsScreen(result: result, imageUrls: imageUrls);
+          }
+        }
+
+        return Scaffold(
+          appBar: AppBar(title: const Text("Error")),
+          body: const Center(
+            child: Text("❌ Invalid navigation to results screen."),
+          ),
+        );
+      },
     ),
     GoRoute(
       path: '/processing',

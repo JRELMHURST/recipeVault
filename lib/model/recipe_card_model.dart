@@ -27,7 +27,10 @@ class RecipeCardModel extends HiveObject {
   final String? imageUrl;
 
   @HiveField(7)
-  final List<String> categories; // ✅ Added missing categories field
+  final List<String> categories;
+
+  @HiveField(8)
+  final bool isFavourite; // ✅ New field
 
   RecipeCardModel({
     required this.id,
@@ -37,10 +40,10 @@ class RecipeCardModel extends HiveObject {
     required this.instructions,
     this.imageUrl,
     this.categories = const [],
+    this.isFavourite = false,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
-  /// For saving to Firestore or Shared Preferences
   Map<String, dynamic> toJson() => {
     'id': id,
     'userId': userId,
@@ -50,9 +53,9 @@ class RecipeCardModel extends HiveObject {
     'createdAt': createdAt.toIso8601String(),
     if (imageUrl != null) 'imageUrl': imageUrl,
     'categories': categories,
+    'isFavourite': isFavourite,
   };
 
-  /// For loading from Firestore or Shared Preferences
   factory RecipeCardModel.fromJson(Map<String, dynamic> json) =>
       RecipeCardModel(
         id: json['id'] as String,
@@ -63,10 +66,26 @@ class RecipeCardModel extends HiveObject {
         createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
         imageUrl: json['imageUrl'] as String?,
         categories: List<String>.from(json['categories'] ?? []),
+        isFavourite: json['isFavourite'] as bool? ?? false,
       );
 
   String toRawJson() => jsonEncode(toJson());
 
   factory RecipeCardModel.fromRawJson(String str) =>
       RecipeCardModel.fromJson(jsonDecode(str));
+
+  /// Clone with modifications
+  RecipeCardModel copyWith({bool? isFavourite}) {
+    return RecipeCardModel(
+      id: id,
+      userId: userId,
+      title: title,
+      ingredients: ingredients,
+      instructions: instructions,
+      createdAt: createdAt,
+      imageUrl: imageUrl,
+      categories: categories,
+      isFavourite: isFavourite ?? this.isFavourite,
+    );
+  }
 }

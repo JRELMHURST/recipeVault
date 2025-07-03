@@ -77,6 +77,21 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     });
   }
 
+  void _toggleFavourite(RecipeCardModel recipe) async {
+    final newFavourite = !recipe.isFavourite;
+    final updated = recipe.copyWith(isFavourite: newFavourite);
+
+    await recipeCollection.doc(recipe.id).update({'isFavourite': newFavourite});
+    await HiveRecipeService.save(updated);
+
+    setState(() {
+      final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
+      if (index != -1) {
+        _allRecipes[index] = updated;
+      }
+    });
+  }
+
   void _showRecipeDialog(RecipeCardModel recipe) {
     final markdown = _formatRecipeMarkdown(recipe);
     showDialog(
@@ -91,10 +106,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         ),
       ),
     );
-  }
-
-  void _toggleFavourite(RecipeCardModel recipe) {
-    debugPrint("⭐ Long pressed to favourite: ${recipe.title}");
   }
 
   String _formatRecipeMarkdown(RecipeCardModel recipe) {
@@ -129,7 +140,6 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
           onDismissed: (_) => _deleteRecipe(recipe),
           child: GestureDetector(
             onTap: () => _showRecipeDialog(recipe),
-            onLongPress: () => _toggleFavourite(recipe),
             child: Card(
               margin: const EdgeInsets.only(bottom: 12),
               shape: RoundedRectangleBorder(
@@ -177,10 +187,15 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
                         ],
                       ),
                     ),
-                    const Icon(
-                      Icons.arrow_forward_ios,
-                      size: 16,
-                      color: Colors.grey,
+                    IconButton(
+                      icon: Icon(
+                        recipe.isFavourite
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded,
+                        color: recipe.isFavourite ? Colors.amber : Colors.grey,
+                        size: 20,
+                      ),
+                      onPressed: () => _toggleFavourite(recipe),
                     ),
                   ],
                 ),
@@ -206,7 +221,6 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
         final recipe = recipes[index];
         return GestureDetector(
           onTap: () => _showRecipeDialog(recipe),
-          onLongPress: () => _toggleFavourite(recipe),
           child: Container(
             decoration: BoxDecoration(
               color: theme.cardColor,
@@ -247,10 +261,15 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
                         color: theme.hintColor,
                       ),
                     ),
-                    const Icon(
-                      Icons.restaurant_menu,
-                      color: Colors.deepPurple,
-                      size: 20,
+                    IconButton(
+                      icon: Icon(
+                        recipe.isFavourite
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded,
+                        color: recipe.isFavourite ? Colors.amber : Colors.grey,
+                        size: 20,
+                      ),
+                      onPressed: () => _toggleFavourite(recipe),
                     ),
                   ],
                 ),
@@ -294,9 +313,13 @@ ${recipe.instructions.asMap().entries.map((e) => "${e.key + 1}. ${e.value}").joi
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.restaurant_menu,
+                    recipe.isFavourite
+                        ? Icons.star_rounded
+                        : Icons.restaurant_menu,
                     size: 32,
-                    color: Colors.deepPurple,
+                    color: recipe.isFavourite
+                        ? Colors.amber
+                        : Colors.deepPurple,
                   ),
                   const SizedBox(height: 8),
                   Text(

@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 
 class RecipeGridView extends StatelessWidget {
@@ -50,22 +51,38 @@ class RecipeGridView extends StatelessWidget {
             ),
             padding: const EdgeInsets.all(12),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween, // 💥 key fix
               children: [
-                Expanded(
-                  child: Text(
-                    recipe.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                ClipOval(
+                  child: recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
+                      ? Image.network(
+                          recipe.imageUrl!,
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                        )
+                      : CircleAvatar(
+                          radius: 24,
+                          backgroundColor: Colors.deepPurple.shade50,
+                          child: Icon(
+                            LucideIcons.chefHat,
+                            size: 20,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  recipe.title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Expanded(
                       child: Text(
@@ -76,7 +93,7 @@ class RecipeGridView extends StatelessWidget {
                           color: theme.hintColor,
                         ),
                         overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
+                        textAlign: TextAlign.center,
                       ),
                     ),
                     IconButton(

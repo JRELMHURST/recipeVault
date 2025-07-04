@@ -55,8 +55,7 @@ class RecipeListView extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(28),
+                    ClipOval(
                       child:
                           recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
                           ? Image.network(
@@ -65,9 +64,11 @@ class RecipeListView extends StatelessWidget {
                               height: 56,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
-                                return CircleAvatar(
-                                  radius: 28,
-                                  backgroundColor: Colors.deepPurple.shade100,
+                                return Container(
+                                  width: 56,
+                                  height: 56,
+                                  color: Colors.deepPurple.shade100,
+                                  alignment: Alignment.center,
                                   child: Icon(
                                     LucideIcons.utensilsCrossed,
                                     size: 20,
@@ -76,9 +77,11 @@ class RecipeListView extends StatelessWidget {
                                 );
                               },
                             )
-                          : CircleAvatar(
-                              radius: 28,
-                              backgroundColor: Colors.deepPurple.shade100,
+                          : Container(
+                              width: 56,
+                              height: 56,
+                              color: Colors.deepPurple.shade100,
+                              alignment: Alignment.center,
                               child: Icon(
                                 LucideIcons.utensilsCrossed,
                                 size: 20,

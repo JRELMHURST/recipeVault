@@ -14,8 +14,33 @@ void showRecipeDialog(BuildContext context, RecipeCardModel recipe) {
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: RecipeCard(recipeText: markdown),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty)
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+                child: Image.network(
+                  recipe.imageUrl!,
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 200,
+                    color: Colors.deepPurple.shade50,
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.broken_image, size: 40),
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: RecipeCard(recipeText: markdown),
+            ),
+          ],
+        ),
       ),
     ),
   );

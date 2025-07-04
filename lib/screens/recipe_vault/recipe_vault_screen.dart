@@ -187,7 +187,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                       ViewMode.compact => RecipeCompactView(
                         recipes: filteredRecipes,
                         onTap: (r) => showRecipeDialog(context, r),
-                        onToggleFavourite: _toggleFavourite,
                       ),
                     },
                   ),

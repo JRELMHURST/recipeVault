@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 
 class RecipeListView extends StatelessWidget {
@@ -26,6 +27,7 @@ class RecipeListView extends StatelessWidget {
       itemCount: recipes.length,
       itemBuilder: (context, index) {
         final recipe = recipes[index];
+
         return Dismissible(
           key: Key(recipe.id),
           background: Container(
@@ -53,14 +55,36 @@ class RecipeListView extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: Colors.deepPurple.shade50,
-                      child: const Icon(
-                        Icons.restaurant_menu,
-                        color: Colors.deepPurple,
-                        size: 24,
-                      ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(28),
+                      child:
+                          recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
+                          ? Image.network(
+                              recipe.imageUrl!,
+                              width: 56,
+                              height: 56,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return CircleAvatar(
+                                  radius: 28,
+                                  backgroundColor: Colors.deepPurple.shade100,
+                                  child: Icon(
+                                    LucideIcons.utensilsCrossed,
+                                    size: 20,
+                                    color: Colors.deepPurple,
+                                  ),
+                                );
+                              },
+                            )
+                          : CircleAvatar(
+                              radius: 28,
+                              backgroundColor: Colors.deepPurple.shade100,
+                              child: Icon(
+                                LucideIcons.utensilsCrossed,
+                                size: 20,
+                                color: Colors.deepPurple,
+                              ),
+                            ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(

@@ -76,7 +76,7 @@ class ImageProcessingService {
   }) async {
     try {
       final storageRef = FirebaseStorage.instance.ref().child(
-        'users/$userId/recipes/$recipeId/recipe_image.jpg',
+        'users/$userId/recipe_images/$recipeId.jpg',
       );
 
       final uploadTask = await storageRef.putFile(imageFile);

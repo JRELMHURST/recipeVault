@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -35,8 +37,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     'Dessert',
   ];
 
-  List<String> _allCategories = ['All', 'Favourites']; // Start with these fixed
-
+  List<String> _allCategories = ['All', 'Favourites'];
   List<RecipeCardModel> _allRecipes = [];
 
   @override
@@ -67,7 +68,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   Future<void> _loadCustomCategories() async {
     final saved = await CategoryService.getAllCategories();
     setState(() {
-      // Always keep 'All' and 'Favourites' at front, append others from saved
       _allCategories = [
         'All',
         'Favourites',
@@ -98,23 +98,38 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     }
   }
 
-  void _deleteRecipe(RecipeCardModel recipe) async {
-    await recipeCollection.doc(recipe.id).delete();
-    await HiveRecipeService.delete(recipe.id);
+  Future<void> _deleteRecipe(RecipeCardModel recipe) async {
+    try {
+      // Delete Firestore entry
+      await recipeCollection.doc(recipe.id).delete();
+      await HiveRecipeService.delete(recipe.id);
 
-    // Delete associated uploaded images from Firebase Storage
-    for (final url in recipe.originalImageUrls) {
-      try {
-        final ref = FirebaseStorage.instance.refFromURL(url);
-        await ref.delete();
-      } catch (e) {
-        debugPrint('❌ Failed to delete image from storage: $e');
+      // Delete attached image (if any)
+      if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
+        try {
+          final ref = FirebaseStorage.instance.refFromURL(recipe.imageUrl!);
+          await ref.delete();
+        } catch (e) {
+          debugPrint('❌ Failed to delete attached image: $e');
+        }
       }
-    }
 
-    setState(() {
-      _allRecipes.removeWhere((r) => r.id == recipe.id);
-    });
+      // Delete original uploaded screenshots (if any)
+      for (final url in recipe.originalImageUrls) {
+        try {
+          final ref = FirebaseStorage.instance.refFromURL(url);
+          await ref.delete();
+        } catch (e) {
+          debugPrint('❌ Failed to delete original image: $e');
+        }
+      }
+
+      setState(() {
+        _allRecipes.removeWhere((r) => r.id == recipe.id);
+      });
+    } catch (e) {
+      debugPrint("❌ Error during recipe deletion: $e");
+    }
   }
 
   void _toggleFavourite(RecipeCardModel recipe) async {
@@ -136,7 +151,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     if (category == 'Favourites' || category == 'All') return;
 
     await CategoryService.deleteCategory(category);
-    await _loadCustomCategories(); // reload after delete
+    await _loadCustomCategories();
     if (_selectedCategory == category) {
       setState(() {
         _selectedCategory = 'All';

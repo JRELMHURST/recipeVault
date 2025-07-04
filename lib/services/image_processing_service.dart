@@ -3,9 +3,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:recipe_vault/firebase_storage.dart';
 
 class ProcessedRecipeResult {
@@ -64,6 +66,50 @@ class ImageProcessingService {
   /// Uploads images to Firebase Storage and returns their download URLs.
   static Future<List<String>> uploadFiles(List<File> files) {
     return FirebaseStorageService.uploadImages(files);
+  }
+
+  /// Uploads a single image to Firebase Storage for a specific recipe and user.
+  static Future<String> uploadRecipeImage({
+    required File imageFile,
+    required String userId,
+    required String recipeId,
+  }) async {
+    try {
+      final storageRef = FirebaseStorage.instance.ref().child(
+        'users/$userId/recipes/$recipeId/recipe_image.jpg',
+      );
+
+      final uploadTask = await storageRef.putFile(imageFile);
+      return await uploadTask.ref.getDownloadURL();
+    } catch (e) {
+      throw Exception('❌ Failed to upload recipe image: $e');
+    }
+  }
+
+  /// Crops an image using the image_cropper package.
+  static Future<File?> cropImage(File originalImage) async {
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: originalImage.path,
+      aspectRatioPresets: [
+        CropAspectRatioPreset.original,
+        CropAspectRatioPreset.square,
+        CropAspectRatioPreset.ratio16x9,
+      ],
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Crop Image',
+          toolbarColor: Colors.deepOrange,
+          toolbarWidgetColor: Colors.white,
+          initAspectRatio: CropAspectRatioPreset.original,
+          lockAspectRatio: false,
+        ),
+        IOSUiSettings(title: 'Crop Image'),
+      ],
+    );
+
+    if (croppedFile == null) return null;
+
+    return File(croppedFile.path);
   }
 
   /// Runs OCR and GPT formatting via Firebase Callable Function.

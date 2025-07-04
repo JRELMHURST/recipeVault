@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,7 @@ import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 
 import '../widgets/recipe_card.dart';
+import '../widgets/recipe_image_header.dart';
 import '../core/theme.dart';
 import '../model/recipe_card_model.dart';
 
@@ -21,6 +23,7 @@ class ResultsScreen extends StatefulWidget {
 
 class _ResultsScreenState extends State<ResultsScreen> {
   bool _isSaving = false;
+  String? _recipeImageUrl;
 
   Future<void> _saveRecipe(String formattedRecipe) async {
     setState(() => _isSaving = true);
@@ -33,21 +36,20 @@ class _ResultsScreenState extends State<ResultsScreen> {
       String title = 'Untitled';
       List<String> ingredients = [];
       List<String> instructions = [];
-      bool inIngredients = false, inInstructions = false;
 
       for (final line in lines) {
         if (line.toLowerCase().startsWith('title:')) {
-          title = line.split(':').skip(1).join(':').trim();
-        } else if (line.toLowerCase().contains('ingredients:')) {
-          inIngredients = true;
-          inInstructions = false;
-        } else if (line.toLowerCase().contains('instructions:')) {
-          inIngredients = false;
-          inInstructions = true;
-        } else if (inIngredients && line.trim().startsWith('-')) {
-          ingredients.add(line.replaceFirst('-', '').trim());
-        } else if (inInstructions && RegExp(r'^\d+').hasMatch(line.trim())) {
-          instructions.add(line.replaceFirst(RegExp(r'^\d+\.?'), '').trim());
+          title = line
+              .replaceFirst(RegExp(r'title:', caseSensitive: false), '')
+              .trim();
+        } else if (line.toLowerCase().startsWith('ingredients:')) {
+          continue;
+        } else if (line.toLowerCase().startsWith('instructions:')) {
+          continue;
+        } else if (line.startsWith('-')) {
+          ingredients.add(line.substring(1).trim());
+        } else if (RegExp(r'^\d+[\).]').hasMatch(line.trim())) {
+          instructions.add(line.trim());
         }
       }
 
@@ -63,12 +65,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
         title: title,
         ingredients: ingredients,
         instructions: instructions,
+        imageUrl: _recipeImageUrl,
       );
 
-      // 🔄 Save to Firestore
       await docRef.set(recipe.toJson());
-
-      // 💾 Save locally to Hive
       await HiveRecipeService.save(recipe);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -145,7 +145,54 @@ class _ResultsScreenState extends State<ResultsScreen> {
         padding: const EdgeInsets.all(18),
         child: hasValidContent
             ? SingleChildScrollView(
-                child: RecipeCard(recipeText: formattedRecipe),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    RecipeImageHeader(
+                      initialImages: [],
+                      onImagePicked: (localPath) async {
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user == null) {
+                          ImageProcessingService.showError(
+                            context,
+                            "❌ Not signed in",
+                          );
+                          return '';
+                        }
+
+                        final originalFile = File(localPath);
+                        final croppedFile =
+                            await ImageProcessingService.cropImage(
+                              originalFile,
+                            );
+
+                        if (croppedFile == null) {
+                          ImageProcessingService.showError(
+                            context,
+                            "❌ Image crop cancelled",
+                          );
+                          return '';
+                        }
+
+                        final recipeId =
+                            result?.formattedRecipe.hashCode.toString() ??
+                            DateTime.now().millisecondsSinceEpoch.toString();
+
+                        final url =
+                            await ImageProcessingService.uploadRecipeImage(
+                              imageFile: croppedFile,
+                              userId: user.uid,
+                              recipeId: recipeId,
+                            );
+
+                        setState(() => _recipeImageUrl = url);
+                        return url;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    RecipeCard(recipeText: formattedRecipe),
+                  ],
+                ),
               )
             : Center(
                 child: Card(
@@ -167,7 +214,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Whoops! Looks like something went wrong with formatting.\n\nPlease try again.',
+                          'Whoops! Something went wrong with formatting.\nPlease try again.',
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 color: Colors.red[700],

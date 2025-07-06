@@ -24,6 +24,7 @@ class ResultsScreen extends StatefulWidget {
 class _ResultsScreenState extends State<ResultsScreen> {
   bool _isSaving = false;
   String? _recipeImageUrl;
+  bool _showOriginalText = false;
 
   Future<void> _saveRecipe(String formattedRecipe) async {
     setState(() => _isSaving = true);
@@ -148,6 +149,48 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (result != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.language, size: 18),
+                            const SizedBox(width: 6),
+                            Text(
+                              result.translationUsed
+                                  ? 'Translated from ${result.language}'
+                                  : 'Language: ${result.language}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () {
+                                setState(
+                                  () => _showOriginalText = !_showOriginalText,
+                                );
+                              },
+                              child: Text(
+                                _showOriginalText ? 'Hide OCR' : 'Show OCR',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (_showOriginalText && result?.originalText != null)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[400]!),
+                        ),
+                        child: Text(
+                          result!.originalText,
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
                     RecipeImageHeader(
                       initialImages: [],
                       onImagePicked: (localPath) async {

@@ -3,12 +3,14 @@ class ProcessedRecipeResult {
   final String language;
   final bool translationUsed;
   final String originalText;
+  final List<String> imageUrls; // ✅ Add this
 
   ProcessedRecipeResult({
     required this.formattedRecipe,
     required this.language,
     required this.translationUsed,
     required this.originalText,
+    required this.imageUrls, // ✅ Include in constructor
   });
 
   factory ProcessedRecipeResult.fromMap(Map<String, dynamic> data) {
@@ -17,6 +19,7 @@ class ProcessedRecipeResult {
       originalText: data['originalText'] ?? '',
       translationUsed: data['translationUsed'] ?? false,
       language: data['detectedLanguage'] ?? 'unknown',
+      imageUrls: List<String>.from(data['imageUrls'] ?? []), // ✅ From map
     );
   }
 
@@ -26,6 +29,7 @@ class ProcessedRecipeResult {
       'originalText': originalText,
       'translationUsed': translationUsed,
       'detectedLanguage': language,
+      'imageUrls': imageUrls, // ✅ To map
     };
   }
 }

@@ -1,11 +1,17 @@
 import OpenAI from "openai";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export async function generateFormattedRecipe(text: string, sourceLang: string): Promise<string> {
+export async function generateFormattedRecipe(
+  text: string,
+  sourceLang: string
+): Promise<string> {
   const systemPrompt = `
-You are a recipe assistant. The original recipe was written in ${sourceLang.toUpperCase()}, but the text below has been translated into UK English.
+You are a UK-based recipe assistant. The original recipe was written in ${sourceLang.toUpperCase()}, but the text below has already been translated into UK English.
 
-Format the following recipe using this template:
+Please:
+1. Ensure all spelling and measurements follow British English conventions (e.g. grammes, litres, aubergine, courgette).
+2. Format the recipe using the following layout:
+
 ---
 Title: <title>
 
@@ -17,10 +23,12 @@ Instructions:
 1. Step one
 2. Step two
 ---
-Only return a single JSON object:
+
+Only return a single JSON object in this format:
 {
   "formattedRecipe": "<formatted recipe>"
-}`.trim();
+}
+`.trim();
 
   const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""`;
 
@@ -35,11 +43,15 @@ Only return a single JSON object:
   });
 
   const rawContent = completion.choices[0]?.message?.content?.trim();
-  const parsed = JSON.parse(rawContent || "{}");
 
-  if (!parsed || typeof parsed.formattedRecipe !== "string") {
+  try {
+    const parsed = JSON.parse(rawContent || "{}");
+    if (typeof parsed.formattedRecipe !== "string") {
+      throw new Error("Missing 'formattedRecipe' key in GPT response");
+    }
+    return parsed.formattedRecipe;
+  } catch (err) {
+    console.error("❌ Failed to parse GPT response:", rawContent);
     throw new Error("Invalid GPT response format");
   }
-
-  return parsed.formattedRecipe;
 }

@@ -9,20 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:recipe_vault/firebase_storage.dart';
-
-class ProcessedRecipeResult {
-  final String formattedRecipe;
-  final String language;
-  final bool translationUsed;
-  final String originalText;
-
-  ProcessedRecipeResult({
-    required this.formattedRecipe,
-    required this.language,
-    required this.translationUsed,
-    required this.originalText,
-  });
-}
+import 'package:recipe_vault/model/processed_recipe_result.dart';
 
 class ImageProcessingService {
   static const int _jpegQuality = 80;
@@ -119,12 +106,7 @@ class ImageProcessingService {
         throw Exception('Formatted recipe is missing or empty.');
       }
 
-      return ProcessedRecipeResult(
-        formattedRecipe: formatted,
-        language: data['detectedLanguage'] ?? 'unknown',
-        translationUsed: data['translationUsed'] == true,
-        originalText: data['originalText'] ?? '',
-      );
+      return ProcessedRecipeResult.fromMap(data);
     } catch (e) {
       throw Exception('❌ Failed to process recipe: $e');
     } finally {

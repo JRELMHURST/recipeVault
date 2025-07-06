@@ -8,11 +8,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
-
-import '../widgets/recipe_card.dart';
-import '../widgets/recipe_image_header.dart';
-import '../core/theme.dart';
-import '../model/recipe_card_model.dart';
+import 'package:recipe_vault/widgets/recipe_card.dart';
+import 'package:recipe_vault/widgets/recipe_image_header.dart';
+import 'package:recipe_vault/core/theme.dart';
+import 'package:recipe_vault/model/recipe_card_model.dart';
+import 'package:recipe_vault/model/processed_recipe_result.dart';
 
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({super.key});

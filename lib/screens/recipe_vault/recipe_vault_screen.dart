@@ -160,7 +160,9 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     RecipeCardModel recipe,
     List<String> selectedCategories,
   ) async {
-    final updated = recipe.copyWith(categories: selectedCategories);
+    final updated = recipe.copyWith(
+      categories: selectedCategories.toSet().toList(),
+    );
     await recipeCollection.doc(recipe.id).update({
       'categories': selectedCategories,
     });

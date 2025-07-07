@@ -114,6 +114,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
           .collection('recipes')
           .doc();
 
+      final translated =
+          (GoRouterState.of(context).extra as ProcessedRecipeResult?)
+              ?.translationUsed ??
+          false;
+
       final recipe = RecipeCardModel(
         id: docRef.id,
         userId: user.uid,
@@ -121,7 +126,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
         ingredients: ingredients,
         instructions: instructions,
         imageUrl: _recipeImageUrl,
+        categories: translated ? ['Translated'] : [],
+        isFavourite: false,
+        originalImageUrls:
+            (GoRouterState.of(context).extra as ProcessedRecipeResult?)
+                ?.imageUrls ??
+            [],
         hints: hints,
+        translationUsed: translated,
       );
 
       await docRef.set(recipe.toJson());

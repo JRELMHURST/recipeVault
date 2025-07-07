@@ -38,12 +38,22 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     with TickerProviderStateMixin {
   int _currentStep = 0;
   bool _hasCancelled = false;
+  bool _isTranslating = false;
 
-  final List<String> _steps = [
+  final List<String> _baseSteps = [
     'Uploading Images',
     'Extracting & Formatting',
     'Finishing Up',
   ];
+
+  final List<String> _translationSteps = [
+    'Uploading Images',
+    'Translating to UK English',
+    'Extracting & Formatting',
+    'Finishing Up',
+  ];
+
+  List<String> get _steps => _isTranslating ? _translationSteps : _baseSteps;
 
   late final AnimationController _iconSpinController = AnimationController(
     vsync: this,
@@ -84,17 +94,31 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       );
       if (_hasCancelled) return;
 
+      // Optional translating step will appear if translation is detected
       await _setStep(1);
-      final formattedRecipe =
-          await ImageProcessingService.extractAndFormatRecipe(imageUrls);
+      final result = await ImageProcessingService.extractAndFormatRecipe(
+        imageUrls,
+      );
       if (_hasCancelled) return;
 
-      await _setStep(2);
+      if (result.translationUsed) {
+        setState(() {
+          _isTranslating = true;
+        });
+        await _setStep(2); // Translating
+        await Future.delayed(const Duration(milliseconds: 600));
+        await _setStep(3); // Extracting & Formatting
+      } else {
+        await _setStep(2); // Extracting & Formatting
+      }
+
+      if (_hasCancelled) return;
+      await _setStep(_steps.length - 1);
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (!mounted) return;
       ProcessingOverlay.hide();
-      GoRouter.of(context).go('/results', extra: formattedRecipe);
+      GoRouter.of(context).go('/results', extra: result);
     } catch (e, st) {
       debugPrint('❌ Processing failed: $e\n$st');
       if (mounted) {
@@ -118,15 +142,13 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
   }
 
   IconData _stepIcon(int step) {
-    switch (step) {
-      case 0:
-        return Icons.cloud_upload_rounded;
-      case 1:
-        return Icons.auto_fix_high_rounded;
-      case 2:
-      default:
-        return Icons.hourglass_bottom_rounded;
-    }
+    final icons = [
+      Icons.cloud_upload_rounded,
+      Icons.translate,
+      Icons.auto_fix_high_rounded,
+      Icons.hourglass_bottom_rounded,
+    ];
+    return icons[step % icons.length];
   }
 
   @override

@@ -33,7 +33,10 @@ class RecipeCardModel extends HiveObject {
   final bool isFavourite;
 
   @HiveField(9)
-  final List<String> originalImageUrls; // ✅ NEW FIELD
+  final List<String> originalImageUrls;
+
+  @HiveField(10) // ✅ NEW FIELD
+  final List<String> hints;
 
   RecipeCardModel({
     required this.id,
@@ -45,6 +48,7 @@ class RecipeCardModel extends HiveObject {
     this.categories = const [],
     this.isFavourite = false,
     this.originalImageUrls = const [],
+    this.hints = const [], // ✅ NEW DEFAULT
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -59,6 +63,7 @@ class RecipeCardModel extends HiveObject {
     'categories': categories,
     'isFavourite': isFavourite,
     'originalImageUrls': originalImageUrls,
+    'hints': hints, // ✅ INCLUDED
   };
 
   factory RecipeCardModel.fromJson(Map<String, dynamic> json) =>
@@ -73,6 +78,7 @@ class RecipeCardModel extends HiveObject {
         categories: List<String>.from(json['categories'] ?? []),
         isFavourite: json['isFavourite'] as bool? ?? false,
         originalImageUrls: List<String>.from(json['originalImageUrls'] ?? []),
+        hints: List<String>.from(json['hints'] ?? []), // ✅ PARSED
       );
 
   String toRawJson() => jsonEncode(toJson());
@@ -83,6 +89,7 @@ class RecipeCardModel extends HiveObject {
   RecipeCardModel copyWith({
     bool? isFavourite,
     List<String>? originalImageUrls,
+    List<String>? hints, // ✅ ADDED
   }) {
     return RecipeCardModel(
       id: id,
@@ -95,6 +102,7 @@ class RecipeCardModel extends HiveObject {
       categories: categories,
       isFavourite: isFavourite ?? this.isFavourite,
       originalImageUrls: originalImageUrls ?? this.originalImageUrls,
+      hints: hints ?? this.hints, // ✅ APPLIED
     );
   }
 }

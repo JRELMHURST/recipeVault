@@ -103,12 +103,23 @@ class RecipeListView extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            'Tap to view recipe',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey,
+                          if (recipe.hints.isNotEmpty)
+                            Text(
+                              '💡 ${recipe.hints.first}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.deepPurple.shade700,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            )
+                          else
+                            Text(
+                              'Tap to view recipe',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.grey,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),

@@ -102,7 +102,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
             RegExp(r'^\d+[\).]').hasMatch(line.trim())) {
           instructions.add(line.trim());
         } else if (isInHints) {
-          hints.add(line.trim());
+          if (line.trim().isNotEmpty && line.trim() != '---') {
+            hints.add(line.replaceFirst(RegExp(r'^-\s*'), '').trim());
+          }
         }
       }
 
@@ -119,6 +121,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         ingredients: ingredients,
         instructions: instructions,
         imageUrl: _recipeImageUrl,
+        hints: hints,
       );
 
       await docRef.set(recipe.toJson());

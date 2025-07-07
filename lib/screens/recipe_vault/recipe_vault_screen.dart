@@ -133,17 +133,27 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   void _toggleFavourite(RecipeCardModel recipe) async {
     final newFavourite = !recipe.isFavourite;
-    final updated = recipe.copyWith(isFavourite: newFavourite);
+    final updated = recipe.copyWith(
+      isFavourite: newFavourite,
+      categories: recipe.categories,
+    );
 
-    await recipeCollection.doc(recipe.id).update({'isFavourite': newFavourite});
-    await HiveRecipeService.save(updated);
+    try {
+      await recipeCollection.doc(recipe.id).update({
+        'isFavourite': newFavourite,
+      });
+      await HiveRecipeService.save(updated);
 
-    setState(() {
-      final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
-      if (index != -1) {
-        _allRecipes[index] = updated;
-      }
-    });
+      setState(() {
+        final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
+        if (index != -1) {
+          _allRecipes[index] = updated;
+        }
+      });
+    } catch (e) {
+      debugPrint('Error toggling favourite: $e');
+      // Optionally show a snackbar or alert if needed
+    }
   }
 
   void _assignCategories(

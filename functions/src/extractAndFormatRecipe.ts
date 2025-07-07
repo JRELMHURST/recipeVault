@@ -64,34 +64,41 @@ export const extractAndFormatRecipe = onCall(
       }
 
       // 🌐 Translate to en-GB if needed
-      let translatedText = cleanInput;
-      let translationUsed = false;
+// 🌐 Translate to en-GB if needed
+let translatedText = cleanInput;
+let translationUsed = false;
 
-      try {
-        if (true) {
-          console.log(
-            `🚧 Attempting translation from "${detectedLanguage}" → en-GB...`
-          );
-          const result = await translateToEnglish(
-            cleanInput,
-            detectedLanguage,
-            projectId
-          );
+try {
+  const isEnglish =
+    detectedLanguage.toLowerCase() === 'en' ||
+    detectedLanguage.toLowerCase().startsWith('en-');
 
-          if (!result?.trim()) {
-            console.warn("⚠️ Translation returned empty result. Skipping.");
-          } else if (result.trim() === cleanInput.trim()) {
-            console.warn("⚠️ Translation identical to input. May have been skipped.");
-          } else {
-            translatedText = result;
-            translationUsed = true;
-            console.log(`✅ Translation applied. Length: ${translatedText.length}`);
-            previewText("📝 Translated preview", translatedText);
-          }
-        }
-      } catch (err) {
-        console.error("❌ Translation failed. Using original OCR text:", err);
-      }
+  if (!isEnglish) {
+    console.log(
+      `🚧 Attempting translation from "${detectedLanguage}" → en-GB...`
+    );
+    const result = await translateToEnglish(
+      cleanInput,
+      detectedLanguage,
+      projectId
+    );
+
+    if (!result?.trim()) {
+      console.warn("⚠️ Translation returned empty result. Skipping.");
+    } else if (result.trim() === cleanInput.trim()) {
+      console.warn("⚠️ Translation identical to input. May have been skipped.");
+    } else {
+      translatedText = result;
+      translationUsed = true;
+      console.log(`✅ Translation applied. Length: ${translatedText.length}`);
+      previewText("📝 Translated preview", translatedText);
+    }
+  } else {
+    console.log(`🟢 Skipping translation – already English`);
+  }
+} catch (err) {
+  console.error("❌ Translation failed. Using original OCR text:", err);
+}
 
       const usedText =
         translationUsed &&

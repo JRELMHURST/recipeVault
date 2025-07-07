@@ -38,7 +38,6 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     with TickerProviderStateMixin {
   int _currentStep = 0;
   bool _hasCancelled = false;
-  bool _isTranslating = false;
 
   final List<String> _baseSteps = [
     'Uploading Images',
@@ -53,7 +52,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     'Finishing Up',
   ];
 
-  List<String> get _steps => _isTranslating ? _translationSteps : _baseSteps;
+  late List<String> _currentSteps;
 
   late final AnimationController _iconSpinController = AnimationController(
     vsync: this,
@@ -75,6 +74,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
   @override
   void initState() {
     super.initState();
+    _currentSteps = _baseSteps;
     _runFullFlow();
   }
 
@@ -88,22 +88,27 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
   Future<void> _runFullFlow() async {
     try {
-      // Step 0: Uploading Images
       await _setStep(0);
       final imageUrls = await ImageProcessingService.uploadFiles(
         widget.imageFiles,
       );
       if (_hasCancelled) return;
 
-      // Step 1: Extracting & Formatting OR Translating
       final result = await ImageProcessingService.extractAndFormatRecipe(
         imageUrls,
       );
       if (_hasCancelled) return;
 
-      if (result.translationUsed) {
-        setState(() => _isTranslating = true); // ✅ Update step list now
-        await _setStep(1); // Now maps to "Translating"
+      final needsTranslation = result.translationUsed;
+
+      if (mounted) {
+        setState(() {
+          _currentSteps = needsTranslation ? _translationSteps : _baseSteps;
+        });
+      }
+
+      if (needsTranslation) {
+        await _setStep(1); // Translating
         await Future.delayed(const Duration(milliseconds: 600));
         await _setStep(2); // Extracting & Formatting
       } else {
@@ -111,7 +116,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       }
 
       if (_hasCancelled) return;
-      await _setStep(_steps.length - 1); // Finishing Up
+      await _setStep(_currentSteps.length - 1); // Finishing Up
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (!mounted) return;
@@ -146,7 +151,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       Icons.auto_fix_high_rounded,
       Icons.hourglass_bottom_rounded,
     ];
-    return icons[step % icons.length];
+    return icons[step.clamp(0, icons.length - 1)];
   }
 
   @override
@@ -212,7 +217,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
                       key: ValueKey<int>(_currentStep),
                       children: [
                         Text(
-                          _steps[_currentStep],
+                          _currentSteps[_currentStep],
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,

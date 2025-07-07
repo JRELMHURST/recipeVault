@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -163,17 +164,19 @@ class _ResultsScreenState extends State<ResultsScreen> {
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const Spacer(),
-                            TextButton(
-                              onPressed: () {
-                                setState(
-                                  () => _showOriginalText = !_showOriginalText,
-                                );
-                              },
-                              child: Text(
-                                _showOriginalText ? 'Hide OCR' : 'Show OCR',
-                                style: const TextStyle(fontSize: 12),
+                            if (kDebugMode)
+                              TextButton(
+                                onPressed: () {
+                                  setState(
+                                    () =>
+                                        _showOriginalText = !_showOriginalText,
+                                  );
+                                },
+                                child: Text(
+                                  _showOriginalText ? 'Hide OCR' : 'Show OCR',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),

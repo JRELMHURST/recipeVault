@@ -3,14 +3,14 @@ class ProcessedRecipeResult {
   final String language;
   final bool translationUsed;
   final String originalText;
-  final List<String> imageUrls; // ✅ Add this
+  final List<String> imageUrls;
 
   ProcessedRecipeResult({
     required this.formattedRecipe,
     required this.language,
     required this.translationUsed,
     required this.originalText,
-    required this.imageUrls, // ✅ Include in constructor
+    required this.imageUrls,
   });
 
   factory ProcessedRecipeResult.fromMap(Map<String, dynamic> data) {
@@ -19,7 +19,7 @@ class ProcessedRecipeResult {
       originalText: data['originalText'] ?? '',
       translationUsed: data['translationUsed'] ?? false,
       language: data['detectedLanguage'] ?? 'unknown',
-      imageUrls: List<String>.from(data['imageUrls'] ?? []), // ✅ From map
+      imageUrls: List<String>.from(data['imageUrls'] ?? []),
     );
   }
 
@@ -29,7 +29,24 @@ class ProcessedRecipeResult {
       'originalText': originalText,
       'translationUsed': translationUsed,
       'detectedLanguage': language,
-      'imageUrls': imageUrls, // ✅ To map
+      'imageUrls': imageUrls,
     };
+  }
+
+  /// Allows selective override of fields.
+  ProcessedRecipeResult copyWith({
+    String? formattedRecipe,
+    String? language,
+    bool? translationUsed,
+    String? originalText,
+    List<String>? imageUrls,
+  }) {
+    return ProcessedRecipeResult(
+      formattedRecipe: formattedRecipe ?? this.formattedRecipe,
+      language: language ?? this.language,
+      translationUsed: translationUsed ?? this.translationUsed,
+      originalText: originalText ?? this.originalText,
+      imageUrls: imageUrls ?? this.imageUrls,
+    );
   }
 }

@@ -15,7 +15,6 @@ export const extractAndFormatRecipe = onCall(
     const start = Date.now();
     const imageUrls: string[] = request.data?.imageUrls;
 
-    // ✅ Fix: properly resolve project ID
     const projectId =
       process.env.GCLOUD_PROJECT ||
       process.env.FUNCTIONS_PROJECT_ID ||
@@ -48,70 +47,62 @@ export const extractAndFormatRecipe = onCall(
 
       const cleanInput = cleanText(ocrText);
 
-      // 🌍 Detect language
+      // 🌍 Language detection
       let detectedLanguage = "unknown";
       let confidence = 0;
+
       try {
         const detection = await detectLanguage(cleanInput, projectId);
         detectedLanguage = detection.languageCode;
         confidence = detection.confidence;
-        console.log(
-          `🌐 Detected language: ${detectedLanguage} (confidence: ${confidence})`
-        );
+        console.log(`🌐 Detected language: ${detectedLanguage} (confidence: ${confidence})`);
         console.log(`✅ PRE-TRANSLATE CHECK complete`);
       } catch (err) {
         console.warn("⚠️ Language detection failed:", err);
       }
 
-      // 🌐 Translate to en-GB if needed
 // 🌐 Translate to en-GB if needed
 let translatedText = cleanInput;
 let translationUsed = false;
 
-try {
-  const isEnglish =
-    detectedLanguage.toLowerCase() === 'en' ||
-    detectedLanguage.toLowerCase().startsWith('en-');
+const isLikelyEnglish =
+  detectedLanguage.toLowerCase() === 'en' ||
+  detectedLanguage.toLowerCase().startsWith('en-');
 
-  if (!isEnglish) {
-    console.log(
-      `🚧 Attempting translation from "${detectedLanguage}" → en-GB...`
-    );
-    const result = await translateToEnglish(
-      cleanInput,
-      detectedLanguage,
-      projectId
-    );
+try {
+  if (!isLikelyEnglish) {
+    console.log(`🚧 Attempting translation from "${detectedLanguage}" → en-GB...`);
+
+    const result = await translateToEnglish(cleanInput, detectedLanguage, projectId);
 
     if (!result?.trim()) {
       console.warn("⚠️ Translation returned empty result. Skipping.");
-    } else if (result.trim() === cleanInput.trim()) {
-      console.warn("⚠️ Translation identical to input. May have been skipped.");
     } else {
-      translatedText = result;
+      translatedText = result.trim();
       translationUsed = true;
       console.log(`✅ Translation applied. Length: ${translatedText.length}`);
       previewText("📝 Translated preview", translatedText);
     }
   } else {
-    console.log(`🟢 Skipping translation – already English`);
+    console.log("🟢 Skipping translation – already English");
   }
 } catch (err) {
   console.error("❌ Translation failed. Using original OCR text:", err);
 }
 
-      const usedText =
-        translationUsed &&
-        translatedText.trim().length > 20 &&
-        translatedText.trim() !== ocrText.trim()
-          ? translatedText
-          : ocrText;
+// ✅ FINAL validation – discard translation if it's pointless
+const original = ocrText.trim();
+const translated = translatedText.trim();
 
-      if (translationUsed && usedText === ocrText) {
-        console.warn(
-          "⚠️ Translation marked as used, but fallback triggered due to similarity."
-        );
-      }
+const isEnglish = detectedLanguage.toLowerCase().startsWith("en");
+const unchanged = translated === original;
+
+if (translationUsed && (isEnglish || unchanged)) {
+  translationUsed = false;
+  console.warn("⚠️ Translation discarded – input already English or identical to OCR.");
+}
+
+const usedText = translationUsed ? translated : original;
 
       const finalText = decode(usedText.trim())
         .replace(/(?:\r\n|\r|\n){2,}/g, "\n\n")
@@ -119,13 +110,19 @@ try {
 
       previewText("🧠 GPT input preview", finalText);
 
-      const formattedRecipe = await generateFormattedRecipe(
-        finalText,
-        detectedLanguage
-      );
+      const formattedRecipe = await generateFormattedRecipe(finalText, detectedLanguage);
       console.log("✅ GPT formatting complete.");
 
-      // 🧹 Delete uploaded images
+      // 🔍 Debug info
+      console.log("🧪 Final debug result:", {
+        detectedLanguage,
+        translationUsed,
+        ocrSnippet: ocrText.slice(0, 100),
+        translatedSnippet: translatedText.slice(0, 100),
+        isDifferent: translatedText.trim() !== ocrText.trim(),
+      });
+
+      // 🧹 Clean up uploaded images
       await Promise.all(
         imageUrls.map(async (url) => {
           try {

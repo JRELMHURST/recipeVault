@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/model/processed_recipe_result.dart';
 
 class ProcessingOverlay {
   static OverlayEntry? _currentOverlay;
@@ -38,6 +39,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     with TickerProviderStateMixin {
   int _currentStep = 0;
   bool _hasCancelled = false;
+  late List<String> _currentSteps;
 
   final List<String> _baseSteps = [
     'Uploading Images',
@@ -51,8 +53,6 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     'Extracting & Formatting',
     'Finishing Up',
   ];
-
-  late List<String> _currentSteps;
 
   late final AnimationController _iconSpinController = AnimationController(
     vsync: this,
@@ -88,34 +88,58 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
   Future<void> _runFullFlow() async {
     try {
-      await _setStep(0);
+      await _setStep(0); // Uploading Images
       final imageUrls = await ImageProcessingService.uploadFiles(
         widget.imageFiles,
       );
       if (_hasCancelled) return;
 
-      final result = await ImageProcessingService.extractAndFormatRecipe(
+      var result = await ImageProcessingService.extractAndFormatRecipe(
         imageUrls,
       );
       if (_hasCancelled) return;
 
+      debugPrint('🧭 RAW FUNCTION RESPONSE = ${result.toMap()}');
+
+      // ✅ Patch logic if translationUsed was incorrectly marked true
+      final detected = result.language.toLowerCase();
+      final translationShouldBeFalse = detected.startsWith('en');
+
+      if (result.translationUsed && translationShouldBeFalse) {
+        debugPrint('🧭 Overriding translationUsed → false (already English)');
+        result = ProcessedRecipeResult(
+          formattedRecipe: result.formattedRecipe,
+          originalText: result.originalText,
+          translationUsed: false,
+          language: result.language,
+          imageUrls: result.imageUrls,
+        );
+      }
+
       final needsTranslation = result.translationUsed;
+      debugPrint('🧭 translationUsed = $needsTranslation');
+      debugPrint('🧭 detectedLanguage = ${result.language}');
 
       if (mounted) {
         setState(() {
           _currentSteps = needsTranslation ? _translationSteps : _baseSteps;
         });
+        debugPrint('🧭 Steps set to: $_currentSteps');
       }
 
       if (needsTranslation) {
+        debugPrint('🧭 Showing step: Translating');
         await _setStep(1); // Translating
         await Future.delayed(const Duration(milliseconds: 600));
         await _setStep(2); // Extracting & Formatting
       } else {
+        debugPrint('🧭 Skipping translation, going to Extracting & Formatting');
         await _setStep(1); // Extracting & Formatting
       }
 
       if (_hasCancelled) return;
+      await Future.delayed(const Duration(milliseconds: 600));
+
       await _setStep(_currentSteps.length - 1); // Finishing Up
       await Future.delayed(const Duration(milliseconds: 500));
 

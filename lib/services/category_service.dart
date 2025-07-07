@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class CategoryService {
   static const _boxName = 'customCategories';
+  static const _systemCategories = ['Favourites', 'Translated'];
 
   static Future<void> init() async {
     await Hive.openBox<String>(_boxName);
@@ -15,6 +16,10 @@ class CategoryService {
   }
 
   static Future<void> saveCategory(String category) async {
+    if (_systemCategories.contains(category)) {
+      return; // Skip saving system categories
+    }
+
     final box = Hive.box<String>(_boxName);
     if (!box.values.contains(category)) {
       await box.add(category);
@@ -31,6 +36,10 @@ class CategoryService {
   }
 
   static Future<void> deleteCategory(String category) async {
+    if (_systemCategories.contains(category)) {
+      return; // Prevent deletion of system categories
+    }
+
     final box = Hive.box<String>(_boxName);
     final key = box.keys.firstWhere(
       (k) => box.get(k) == category,
@@ -47,6 +56,27 @@ class CategoryService {
           .doc(user.uid)
           .collection('categories');
       await ref.doc(category).delete();
+    }
+  }
+
+  static Future<void> syncFromFirestore() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final ref = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('categories');
+
+    final snapshot = await ref.get();
+    final box = Hive.box<String>(_boxName);
+    await box.clear(); // Optional: reset local categories
+
+    for (final doc in snapshot.docs) {
+      final name = doc['name'];
+      if (name is String && !_systemCategories.contains(name)) {
+        await box.add(name);
+      }
     }
   }
 }

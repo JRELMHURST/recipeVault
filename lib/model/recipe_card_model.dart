@@ -97,7 +97,8 @@ class RecipeCardModel extends HiveObject {
     bool? isFavourite,
     List<String>? originalImageUrls,
     List<String>? hints,
-    bool? translationUsed, // ✅ COPY SUPPORT
+    bool? translationUsed,
+    required List<String> categories, // ✅ COPY SUPPORT
   }) {
     return RecipeCardModel(
       id: id,

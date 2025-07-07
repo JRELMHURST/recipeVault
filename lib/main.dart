@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_vault/login/auth_service.dart';
 import 'package:recipe_vault/model/category_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,7 +22,8 @@ import 'settings/settings_screen.dart';
 import 'core/theme.dart';
 import 'core/accessibility.dart';
 import 'model/recipe_card_model.dart';
-import 'services/user_preference_service.dart'; // ✅ NEW
+import 'services/user_preference_service.dart';
+import 'services/category_service.dart'; // ✅ ADDED
 
 /// Force welcome screen for dev/test
 const bool kAlwaysShowWelcome = true;
@@ -46,6 +48,12 @@ Future<void> main() async {
 
   // ✅ Init user preferences box
   await UserPreferencesService.init();
+
+  // ✅ Sync categories from Firestore
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    await CategoryService.syncFromFirestore();
+  }
 
   runApp(const RecipeVaultApp());
 }

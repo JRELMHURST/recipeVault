@@ -9,6 +9,8 @@ class RecipeListView extends StatelessWidget {
   final void Function(RecipeCardModel) onDelete;
   final void Function(RecipeCardModel) onTap;
   final void Function(RecipeCardModel) onToggleFavourite;
+  final List<String> categories;
+  final void Function(RecipeCardModel, List<String>) onAssignCategories;
 
   const RecipeListView({
     super.key,
@@ -16,7 +18,56 @@ class RecipeListView extends StatelessWidget {
     required this.onDelete,
     required this.onTap,
     required this.onToggleFavourite,
+    required this.categories,
+    required this.onAssignCategories,
   });
+
+  void _showCategoryDialog(BuildContext context, RecipeCardModel recipe) {
+    final selected = Set<String>.from(recipe.categories);
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('Assign Categories'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: categories
+                  .where(
+                    (c) => c != 'Favourites' && c != 'Translated' && c != 'All',
+                  )
+                  .map(
+                    (cat) => CheckboxListTile(
+                      value: selected.contains(cat),
+                      onChanged: (val) {
+                        if (val == true) {
+                          selected.add(cat);
+                        } else {
+                          selected.remove(cat);
+                        }
+                      },
+                      title: Text(cat),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                onAssignCategories(recipe, selected.toList());
+                Navigator.pop(context);
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,15 +174,26 @@ class RecipeListView extends StatelessWidget {
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(
-                        recipe.isFavourite
-                            ? Icons.star_rounded
-                            : Icons.star_border_rounded,
-                        color: recipe.isFavourite ? Colors.amber : Colors.grey,
-                        size: 20,
-                      ),
-                      onPressed: () => onToggleFavourite(recipe),
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'favourite') {
+                          onToggleFavourite(recipe);
+                        } else if (value == 'assign') {
+                          _showCategoryDialog(context, recipe);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'favourite',
+                          child: Text(
+                            recipe.isFavourite ? 'Unfavourite' : 'Favourite',
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'assign',
+                          child: Text('Assign Category'),
+                        ),
+                      ],
                     ),
                   ],
                 ),

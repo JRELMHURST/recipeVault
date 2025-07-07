@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/services/category_service.dart';
@@ -11,7 +12,6 @@ import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_category_filter_bar.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_dialog.dart';
 import 'package:recipe_vault/screens/recipe_vault/category_speed_dial.dart';
 
@@ -146,6 +146,24 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     });
   }
 
+  void _assignCategories(
+    RecipeCardModel recipe,
+    List<String> selectedCategories,
+  ) async {
+    final updated = recipe.copyWith(categories: selectedCategories);
+    await recipeCollection.doc(recipe.id).update({
+      'categories': selectedCategories,
+    });
+    await HiveRecipeService.save(updated);
+
+    setState(() {
+      final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
+      if (index != -1) {
+        _allRecipes[index] = updated;
+      }
+    });
+  }
+
   void _removeCategory(String category) async {
     if (category == 'Favourites' ||
         category == 'Translated' ||
@@ -197,15 +215,22 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                         onDelete: _deleteRecipe,
                         onTap: (r) => showRecipeDialog(context, r),
                         onToggleFavourite: _toggleFavourite,
+                        categories: _allCategories,
+                        onAssignCategories: _assignCategories,
                       ),
                       ViewMode.grid => RecipeGridView(
                         recipes: filteredRecipes,
                         onTap: (r) => showRecipeDialog(context, r),
                         onToggleFavourite: _toggleFavourite,
+                        categories: _allCategories,
+                        onAssignCategories: _assignCategories,
                       ),
                       ViewMode.compact => RecipeCompactView(
                         recipes: filteredRecipes,
                         onTap: (r) => showRecipeDialog(context, r),
+                        onToggleFavourite: _toggleFavourite,
+                        onAssignCategories: _assignCategories,
+                        categories: _allCategories,
                       ),
                     },
                   ),

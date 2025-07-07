@@ -1,3 +1,5 @@
+// lib/screens/recipe_vault/recipe_grid_view.dart
+
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
@@ -8,13 +10,65 @@ class RecipeGridView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
   final void Function(RecipeCardModel) onTap;
   final void Function(RecipeCardModel) onToggleFavourite;
+  final List<String> categories; // ✅ Add this
+  final void Function(RecipeCardModel, List<String>)
+  onAssignCategories; // ✅ Add this
 
   const RecipeGridView({
     super.key,
     required this.recipes,
     required this.onTap,
     required this.onToggleFavourite,
+    required this.categories, // ✅ Add this
+    required this.onAssignCategories, // ✅ Add this
   });
+
+  void _showCategoryDialog(BuildContext context, RecipeCardModel recipe) {
+    final selected = Set<String>.from(recipe.categories);
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('Assign Categories'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: categories
+                  .where(
+                    (c) => c != 'Favourites' && c != 'Translated' && c != 'All',
+                  )
+                  .map(
+                    (cat) => CheckboxListTile(
+                      value: selected.contains(cat),
+                      onChanged: (val) {
+                        if (val == true) {
+                          selected.add(cat);
+                        } else {
+                          selected.remove(cat);
+                        }
+                      },
+                      title: Text(cat),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                onAssignCategories(recipe, selected.toList());
+                Navigator.pop(context);
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +80,7 @@ class RecipeGridView extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 3 / 4, // Adjusted to allow more vertical room
+        childAspectRatio: 3 / 4,
       ),
       itemCount: recipes.length,
       itemBuilder: (context, index) {
@@ -104,20 +158,26 @@ class RecipeGridView extends StatelessWidget {
                           maxLines: 1,
                         ),
                       ),
-                      IconButton(
-                        icon: Icon(
-                          recipe.isFavourite
-                              ? Icons.star_rounded
-                              : Icons.star_border_rounded,
-                          color: recipe.isFavourite
-                              ? Colors.amber
-                              : Colors.grey,
-                          size: 20,
-                        ),
-                        onPressed: () => onToggleFavourite(recipe),
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                      PopupMenuButton<String>(
+                        onSelected: (value) {
+                          if (value == 'favourite') {
+                            onToggleFavourite(recipe);
+                          } else if (value == 'assign') {
+                            _showCategoryDialog(context, recipe);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'favourite',
+                            child: Text(
+                              recipe.isFavourite ? 'Unfavourite' : 'Favourite',
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'assign',
+                            child: Text('Assign Category'),
+                          ),
+                        ],
                       ),
                     ],
                   ),

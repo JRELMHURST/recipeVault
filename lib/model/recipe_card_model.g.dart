@@ -27,6 +27,7 @@ class RecipeCardModelAdapter extends TypeAdapter<RecipeCardModel> {
       isFavourite: fields[8] as bool,
       originalImageUrls: (fields[9] as List).cast<String>(),
       hints: (fields[10] as List).cast<String>(),
+      translationUsed: fields[11] as bool,
       createdAt: fields[5] as DateTime?,
     );
   }
@@ -34,7 +35,7 @@ class RecipeCardModelAdapter extends TypeAdapter<RecipeCardModel> {
   @override
   void write(BinaryWriter writer, RecipeCardModel obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -56,7 +57,9 @@ class RecipeCardModelAdapter extends TypeAdapter<RecipeCardModel> {
       ..writeByte(9)
       ..write(obj.originalImageUrls)
       ..writeByte(10)
-      ..write(obj.hints);
+      ..write(obj.hints)
+      ..writeByte(11)
+      ..write(obj.translationUsed);
   }
 
   @override

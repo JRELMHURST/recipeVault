@@ -32,12 +32,13 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   static const List<String> _defaultCategories = [
     'Favourites',
+    'Translated',
     'Breakfast',
     'Main',
     'Dessert',
   ];
 
-  List<String> _allCategories = ['All', 'Favourites'];
+  List<String> _allCategories = ['All', 'Favourites', 'Translated'];
   List<RecipeCardModel> _allRecipes = [];
 
   @override
@@ -71,7 +72,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       _allCategories = [
         'All',
         'Favourites',
-        ...saved.where((c) => c != 'Favourites'),
+        'Translated',
+        ...saved.where((c) => c != 'Favourites' && c != 'Translated'),
       ];
     });
   }
@@ -100,11 +102,9 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   Future<void> _deleteRecipe(RecipeCardModel recipe) async {
     try {
-      // Delete Firestore entry
       await recipeCollection.doc(recipe.id).delete();
       await HiveRecipeService.delete(recipe.id);
 
-      // Delete attached image (if any)
       if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
         try {
           final ref = FirebaseStorage.instance.refFromURL(recipe.imageUrl!);
@@ -114,7 +114,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         }
       }
 
-      // Delete original uploaded screenshots (if any)
       for (final url in recipe.originalImageUrls) {
         try {
           final ref = FirebaseStorage.instance.refFromURL(url);
@@ -148,7 +147,11 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   }
 
   void _removeCategory(String category) async {
-    if (category == 'Favourites' || category == 'All') return;
+    if (category == 'Favourites' ||
+        category == 'Translated' ||
+        category == 'All') {
+      return;
+    }
 
     await CategoryService.deleteCategory(category);
     await _loadCustomCategories();
@@ -164,6 +167,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     final filteredRecipes = switch (_selectedCategory) {
       'All' => _allRecipes,
       'Favourites' => _allRecipes.where((r) => r.isFavourite).toList(),
+      'Translated' => _allRecipes.where((r) => r.translationUsed).toList(),
       _ =>
         _allRecipes
             .where((r) => r.categories.contains(_selectedCategory))

@@ -25,7 +25,11 @@ class RecipeCategoryFilterBar extends StatelessWidget {
       child: Row(
         children: categories.map((category) {
           final selected = category == selectedCategory;
-          final isDeletable = category != 'Favourites' && category != 'All';
+          final isDeletable = ![
+            'All',
+            'Favourites',
+            'Translated',
+          ].contains(category);
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),

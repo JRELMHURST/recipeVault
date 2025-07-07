@@ -48,7 +48,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
   final List<String> _translationSteps = [
     'Uploading Images',
-    'Translating to UK English',
+    'Translating',
     'Extracting & Formatting',
     'Finishing Up',
   ];
@@ -88,32 +88,30 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
   Future<void> _runFullFlow() async {
     try {
+      // Step 0: Uploading Images
       await _setStep(0);
       final imageUrls = await ImageProcessingService.uploadFiles(
         widget.imageFiles,
       );
       if (_hasCancelled) return;
 
-      // Optional translating step will appear if translation is detected
-      await _setStep(1);
+      // Step 1: Extracting & Formatting OR Translating
       final result = await ImageProcessingService.extractAndFormatRecipe(
         imageUrls,
       );
       if (_hasCancelled) return;
 
       if (result.translationUsed) {
-        setState(() {
-          _isTranslating = true;
-        });
-        await _setStep(2); // Translating
+        setState(() => _isTranslating = true); // ✅ Update step list now
+        await _setStep(1); // Now maps to "Translating"
         await Future.delayed(const Duration(milliseconds: 600));
-        await _setStep(3); // Extracting & Formatting
-      } else {
         await _setStep(2); // Extracting & Formatting
+      } else {
+        await _setStep(1); // Extracting & Formatting
       }
 
       if (_hasCancelled) return;
-      await _setStep(_steps.length - 1);
+      await _setStep(_steps.length - 1); // Finishing Up
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (!mounted) return;

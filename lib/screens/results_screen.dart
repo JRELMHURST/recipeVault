@@ -27,6 +27,32 @@ class _ResultsScreenState extends State<ResultsScreen> {
   String? _recipeImageUrl;
   bool _showOriginalText = false;
 
+  /// Converts language codes into friendly names
+  String _mapLanguageCodeToLabel(String code) {
+    switch (code.toLowerCase()) {
+      case 'pl':
+        return 'Polish';
+      case 'fr':
+        return 'French';
+      case 'es':
+        return 'Spanish';
+      case 'de':
+        return 'German';
+      case 'it':
+        return 'Italian';
+      case 'pt':
+        return 'Portuguese';
+      case 'nl':
+        return 'Dutch';
+      case 'en':
+      case 'en-gb':
+      case 'en-us':
+        return 'English';
+      default:
+        return code.toUpperCase(); // fallback
+    }
+  }
+
   Future<void> _saveRecipe(String formattedRecipe) async {
     setState(() => _isSaving = true);
 
@@ -115,7 +141,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('❌ Failed to save recipe: \$e')));
+      ).showSnackBar(SnackBar(content: Text('❌ Failed to save recipe: $e')));
     } finally {
       setState(() => _isSaving = false);
     }
@@ -184,8 +210,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
                             const SizedBox(width: 6),
                             Text(
                               result.translationUsed
-                                  ? 'Translated from \${result.language}'
-                                  : 'Language: \${result.language}',
+                                  ? 'Translated from ${_mapLanguageCodeToLabel(result.language)}'
+                                  : 'Language: ${_mapLanguageCodeToLabel(result.language)}',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const Spacer(),

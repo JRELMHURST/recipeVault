@@ -2,14 +2,13 @@ import OpenAI from "openai";
 
 /**
  * Uses GPT to format a translated recipe text into a consistent structure.
- * Supports British English spelling, layout, and optional notes.
+ * Ensures consistent Hints & Tips inclusion, robust JSON handling, and UK English conventions.
  */
 export async function generateFormattedRecipe(
   text: string,
   sourceLang: string
 ): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
-
   if (!apiKey) {
     throw new Error("❌ Missing OPENAI_API_KEY in environment variables");
   }
@@ -19,9 +18,9 @@ export async function generateFormattedRecipe(
   const systemPrompt = `
 You are a UK-based recipe assistant. The original recipe was written in ${sourceLang.toUpperCase()}, but the text below has already been translated into UK English.
 
-Please:
+Your job is to:
 1. Ensure all spelling and measurements follow British English conventions (e.g. grammes, litres, aubergine, courgette).
-2. Format the recipe using the following layout:
+2. Format the recipe using the layout below, even if some sections are empty:
 
 ---
 Title: <title>
@@ -35,15 +34,19 @@ Instructions:
 2. Step two
 
 Hints & Tips:
-- Optional tips, serving suggestions, or variations here
+- Add any helpful advice, substitutions or serving suggestions.
+- If not available, return a placeholder like "No additional tips provided."
 ---
 
-Only return a single JSON object in this format:
+Return only a single JSON object **inside a JSON code block** like this:
+
+\`\`\`json
 {
-  "formattedRecipe": "<formatted recipe>",
-  "notes": "<optional notes or tips, or an empty string>"
+  "formattedRecipe": "<formatted recipe text here>",
+  "notes": "<extracted hints and tips or 'No additional tips provided.'>"
 }
-  `.trim();
+\`\`\`
+`.trim();
 
   const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""`;
 
@@ -57,19 +60,26 @@ Only return a single JSON object in this format:
     max_tokens: 1500,
   });
 
-  const rawContent = completion.choices[0]?.message?.content?.trim();
+  const rawContent = completion.choices[0]?.message?.content?.trim() || "";
+
+  // ✅ Strip markdown code block wrapper if present
+  const jsonText = rawContent
+    .replace(/^```json/i, '')
+    .replace(/```$/, '')
+    .trim();
 
   try {
-    const parsed = JSON.parse(rawContent || "{}");
+    const parsed = JSON.parse(jsonText);
 
     if (typeof parsed.formattedRecipe !== "string") {
       throw new Error("Missing 'formattedRecipe' key in GPT response");
     }
 
     const formatted = parsed.formattedRecipe.trim();
-    const notes = typeof parsed.notes === "string" ? parsed.notes.trim() : "";
+    const notes = parsed.notes?.trim() || "No additional tips provided.";
 
-    return notes ? `${formatted}\n\nNotes:\n${notes}` : formatted;
+    // ✅ Ensure Hints & Tips is always included at the end
+    return `${formatted}\n\nHints & Tips:\n${notes}`;
   } catch (err) {
     console.error("❌ Failed to parse GPT response:", rawContent);
     throw new Error("Invalid GPT response format");

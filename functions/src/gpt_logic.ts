@@ -1,5 +1,9 @@
 import OpenAI from "openai";
 
+/**
+ * Uses GPT to format a translated recipe text into a consistent structure.
+ * Supports British English spelling, layout, and optional notes.
+ */
 export async function generateFormattedRecipe(
   text: string,
   sourceLang: string
@@ -29,11 +33,15 @@ Ingredients:
 Instructions:
 1. Step one
 2. Step two
+
+Hints & Tips:
+- Optional tips, serving suggestions, or variations here
 ---
 
 Only return a single JSON object in this format:
 {
-  "formattedRecipe": "<formatted recipe>"
+  "formattedRecipe": "<formatted recipe>",
+  "notes": "<optional notes or tips, or an empty string>"
 }
   `.trim();
 
@@ -58,7 +66,10 @@ Only return a single JSON object in this format:
       throw new Error("Missing 'formattedRecipe' key in GPT response");
     }
 
-    return parsed.formattedRecipe;
+    const formatted = parsed.formattedRecipe.trim();
+    const notes = typeof parsed.notes === "string" ? parsed.notes.trim() : "";
+
+    return notes ? `${formatted}\n\nNotes:\n${notes}` : formatted;
   } catch (err) {
     console.error("❌ Failed to parse GPT response:", rawContent);
     throw new Error("Invalid GPT response format");

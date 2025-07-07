@@ -1,7 +1,7 @@
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
-import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { decode } from "html-entities";
+import fetch from "node-fetch";
 
 import { extractTextFromImages } from "./ocr";
 import { detectLanguage } from "./detect";
@@ -17,7 +17,30 @@ import {
   incrementGptRecipeUsage,
 } from "./gpt_recipe_sub_limits";
 
-const firestore = getFirestore();
+async function fetchRevenueCatTier(uid: string): Promise<string> {
+  try {
+    const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${uid}`, {
+      headers: {
+        Authorization: `Bearer ${process.env.REVENUECAT_SECRET_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.warn("⚠️ Failed to fetch RevenueCat subscriber info");
+      return "taster";
+    }
+
+    const json = await response.json();
+    const entitlements = json.subscriber.entitlements;
+
+    if (entitlements.masterChef?.is_active) return "masterChef";
+    if (entitlements.homeChef?.is_active) return "homeChef";
+    return "taster";
+  } catch (err) {
+    console.error("❌ RevenueCat API error:", err);
+    return "taster";
+  }
+}
 
 export const extractAndFormatRecipe = onCall(
   { region: "europe-west2" },
@@ -75,8 +98,7 @@ export const extractAndFormatRecipe = onCall(
         detectedLanguage.toLowerCase() === "en" ||
         detectedLanguage.toLowerCase().startsWith("en-");
 
-      const userDoc = await firestore.collection("users").doc(uid).get();
-      const tier = userDoc.data()?.tier || "taster";
+      const tier = await fetchRevenueCatTier(uid);
 
       if (!isLikelyEnglish) {
         await enforceTranslationPolicy(uid, tier);

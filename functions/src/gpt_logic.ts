@@ -1,10 +1,17 @@
 import OpenAI from "openai";
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function generateFormattedRecipe(
   text: string,
   sourceLang: string
 ): Promise<string> {
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("❌ Missing OPENAI_API_KEY in environment variables");
+  }
+
+  const openai = new OpenAI({ apiKey });
+
   const systemPrompt = `
 You are a UK-based recipe assistant. The original recipe was written in ${sourceLang.toUpperCase()}, but the text below has already been translated into UK English.
 
@@ -28,7 +35,7 @@ Only return a single JSON object in this format:
 {
   "formattedRecipe": "<formatted recipe>"
 }
-`.trim();
+  `.trim();
 
   const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""`;
 
@@ -46,9 +53,11 @@ Only return a single JSON object in this format:
 
   try {
     const parsed = JSON.parse(rawContent || "{}");
+
     if (typeof parsed.formattedRecipe !== "string") {
       throw new Error("Missing 'formattedRecipe' key in GPT response");
     }
+
     return parsed.formattedRecipe;
   } catch (err) {
     console.error("❌ Failed to parse GPT response:", rawContent);

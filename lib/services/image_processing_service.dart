@@ -15,6 +15,7 @@ class ImageProcessingService {
   static const int _jpegQuality = 80;
   static final ImagePicker _picker = ImagePicker();
 
+  /// Pick multiple images and compress them to JPEG format.
   static Future<List<File>> pickAndCompressImages() async {
     final pickedXFiles = await _picker.pickMultiImage();
     if (pickedXFiles.isEmpty) return [];
@@ -23,6 +24,7 @@ class ImageProcessingService {
     return _compressFiles(imageFiles);
   }
 
+  /// Compresses files to JPEG and stores them temporarily.
   static Future<List<File>> _compressFiles(List<File> files) async {
     final tempDir = await getTemporaryDirectory();
     final results = <File>[];
@@ -41,17 +43,19 @@ class ImageProcessingService {
           results.add(compressedFile);
         }
       } catch (e) {
-        debugPrint('Compression failed for ${file.path}: $e');
+        debugPrint('⚠️ Compression failed for ${file.path}: $e');
       }
     }
 
     return results;
   }
 
+  /// Uploads a list of image files and returns download URLs.
   static Future<List<String>> uploadFiles(List<File> files) {
     return FirebaseStorageService.uploadImages(files);
   }
 
+  /// Uploads a single cropped recipe image to the user's storage path.
   static Future<String> uploadRecipeImage({
     required File imageFile,
     required String userId,
@@ -68,6 +72,7 @@ class ImageProcessingService {
     }
   }
 
+  /// Optionally crops the given image using platform-specific UI.
   static Future<File?> cropImage(File originalImage) async {
     final croppedFile = await ImageCropper().cropImage(
       sourcePath: originalImage.path,
@@ -92,6 +97,7 @@ class ImageProcessingService {
     return File(croppedFile.path);
   }
 
+  /// Calls the backend function to extract, translate, and format a recipe.
   static Future<ProcessedRecipeResult> extractAndFormatRecipe(
     List<String> imageUrls,
   ) async {
@@ -109,11 +115,10 @@ class ImageProcessingService {
       return ProcessedRecipeResult.fromMap(data);
     } catch (e) {
       throw Exception('❌ Failed to process recipe: $e');
-    } finally {
-      await FirebaseStorageService.deleteImages(imageUrls);
     }
   }
 
+  /// Displays an error message using a snackbar.
   static void showError(BuildContext context, String message) {
     ScaffoldMessenger.of(
       context,

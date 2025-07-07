@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'firebase_options.dart';
 import 'widgets/processing_overlay.dart';
@@ -59,6 +60,10 @@ Future<void> main() async {
   await SubscriptionService().init();
   await AccessManager.initialise();
   await AccessManager.startTrialIfNeeded();
+
+  await Purchases.configure(
+    PurchasesConfiguration("appl_oqbgqmtmctjzzERpEkswCejmukh"),
+  );
 
   runApp(const RecipeVaultApp());
 }

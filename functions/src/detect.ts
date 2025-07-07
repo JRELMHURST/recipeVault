@@ -3,12 +3,12 @@ import { TranslationServiceClient } from "@google-cloud/translate";
 const client = new TranslationServiceClient();
 
 /**
- * Quickly cleans OCR text to improve detection reliability.
+ * Soft cleans OCR text to preserve food-related structure.
  */
 function cleanText(input: string): string {
   return input
-    .replace(/[^\w\s.,:;()%-]/g, '') // Strip symbols
-    .replace(/\s{2,}/g, ' ') // Collapse spaces
+    .replace(/[^\w\s.,:;()&%/-]/g, '') // Allow more useful characters
+    .replace(/\s{2,}/g, ' ') // Collapse multiple spaces
     .trim();
 }
 
@@ -29,7 +29,7 @@ export async function detectLanguage(
   const cleanedText = cleanText(text);
 
   console.log(`🔍 Detecting language for text (${text.length} chars, cleaned: ${cleanedText.length})`);
-  console.log(`🧪 Cleaned preview:\n${cleanedText.slice(0, 200)}\n`);
+  console.log(`🧪 Cleaned preview:\n${cleanedText.slice(0, 300)}\n`);
 
   try {
     const [response] = await client.detectLanguage({

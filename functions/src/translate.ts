@@ -3,12 +3,12 @@ import { TranslationServiceClient } from "@google-cloud/translate";
 const client = new TranslationServiceClient();
 
 /**
- * Cleans up noisy OCR artefacts that can confuse translation/detection.
+ * Soft cleans OCR text while preserving formatting and culinary context.
  */
 function cleanText(input: string): string {
   return input
-    .replace(/[^\w\s.,:;()%-]/g, '') // Remove weird symbols
-    .replace(/\s{2,}/g, ' ')         // Collapse multiple spaces
+    .replace(/[^\w\s.,:;()&%/-]/g, '') // Preserve useful characters
+    .replace(/\s{2,}/g, ' ') // Collapse multiple spaces
     .trim();
 }
 
@@ -28,7 +28,7 @@ export async function translateToEnglish(
 
   console.log(`🔤 Translating from ${sourceLanguage} → en-GB`);
   console.log(`📏 Original text length: ${text.length}, Cleaned: ${cleanedText.length}`);
-  console.log(`🧪 Text preview (cleaned):\n${cleanedText.slice(0, 300)}\n`);
+  console.log(`🧪 Cleaned preview:\n${cleanedText.slice(0, 300)}\n`);
 
   try {
     const [response] = await client.translateText({

@@ -38,20 +38,45 @@ class _ResultsScreenState extends State<ResultsScreen> {
       String title = 'Untitled';
       List<String> ingredients = [];
       List<String> instructions = [];
+      List<String> hints = [];
+
+      bool isInIngredients = false;
+      bool isInInstructions = false;
+      bool isInHints = false;
 
       for (final line in lines) {
-        if (line.toLowerCase().startsWith('title:')) {
+        final lower = line.toLowerCase();
+
+        if (lower.startsWith('title:')) {
           title = line
               .replaceFirst(RegExp(r'title:', caseSensitive: false), '')
               .trim();
-        } else if (line.toLowerCase().startsWith('ingredients:')) {
           continue;
-        } else if (line.toLowerCase().startsWith('instructions:')) {
+        } else if (lower.startsWith('ingredients:')) {
+          isInIngredients = true;
+          isInInstructions = false;
+          isInHints = false;
           continue;
-        } else if (line.startsWith('-')) {
+        } else if (lower.startsWith('instructions:')) {
+          isInIngredients = false;
+          isInInstructions = true;
+          isInHints = false;
+          continue;
+        } else if (lower.startsWith('hints & tips:') ||
+            lower.startsWith('hints and tips:')) {
+          isInIngredients = false;
+          isInInstructions = false;
+          isInHints = true;
+          continue;
+        }
+
+        if (isInIngredients && line.startsWith('-')) {
           ingredients.add(line.substring(1).trim());
-        } else if (RegExp(r'^\d+[\).]').hasMatch(line.trim())) {
+        } else if (isInInstructions &&
+            RegExp(r'^\d+[\).]').hasMatch(line.trim())) {
           instructions.add(line.trim());
+        } else if (isInHints) {
+          hints.add(line.trim());
         }
       }
 
@@ -90,7 +115,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('❌ Failed to save recipe: $e')));
+      ).showSnackBar(SnackBar(content: Text('❌ Failed to save recipe: \$e')));
     } finally {
       setState(() => _isSaving = false);
     }
@@ -159,8 +184,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
                             const SizedBox(width: 6),
                             Text(
                               result.translationUsed
-                                  ? 'Translated from ${result.language}'
-                                  : 'Language: ${result.language}',
+                                  ? 'Translated from \${result.language}'
+                                  : 'Language: \${result.language}',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const Spacer(),

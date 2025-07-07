@@ -27,7 +27,7 @@ class UpgradeBlockedScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               const Text(
-                'You’ve used all your available recipe creations for this plan.\n\nUpgrade to unlock more recipes and continue using RecipeVault AI.',
+                'You’ve reached your monthly recipe creation limit for your current plan.\n\nUpgrade to unlock more recipes and continue using RecipeVault AI.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),

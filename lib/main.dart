@@ -8,6 +8,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_vault/login/auth_service.dart';
 import 'package:recipe_vault/model/category_model.dart';
+import 'package:recipe_vault/payment_tiers/screens/pricing_screen.dart';
+import 'package:recipe_vault/payment_tiers/screens/subscription_success_screen.dart';
+import 'package:recipe_vault/payment_tiers/screens/upgrade_blocked_screen.dart';
+import 'package:recipe_vault/payment_tiers/services/subscription_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -23,7 +27,7 @@ import 'core/theme.dart';
 import 'core/accessibility.dart';
 import 'model/recipe_card_model.dart';
 import 'services/user_preference_service.dart';
-import 'services/category_service.dart'; // ✅ ADDED
+import 'services/category_service.dart';
 
 /// Force welcome screen for dev/test
 const bool kAlwaysShowWelcome = true;
@@ -54,6 +58,9 @@ Future<void> main() async {
   if (user != null) {
     await CategoryService.syncFromFirestore();
   }
+
+  // ✅ Init subscription service
+  await SubscriptionService().init();
 
   runApp(const RecipeVaultApp());
 }
@@ -151,6 +158,20 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),
+    ),
+
+    // ✅ Payment tiers routes
+    GoRoute(
+      path: '/pricing',
+      builder: (context, state) => const PricingScreen(),
+    ),
+    GoRoute(
+      path: '/upgrade-success',
+      builder: (context, state) => const SubscriptionSuccessScreen(),
+    ),
+    GoRoute(
+      path: '/upgrade-blocked',
+      builder: (context, state) => const UpgradeBlockedScreen(),
     ),
   ],
 );

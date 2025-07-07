@@ -1,5 +1,5 @@
-import { onCall } from "firebase-functions/v2/https";
-import * as functions from "firebase-functions";
+import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
+import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { decode } from "html-entities";
 
@@ -8,12 +8,22 @@ import { detectLanguage } from "./detect";
 import { translateToEnglish } from "./translate";
 import { generateFormattedRecipe } from "./gpt_logic";
 import { cleanText, previewText } from "./text_utils";
+import {
+  enforceTranslationPolicy,
+  incrementTranslationUsage,
+} from "./translation_sub_limits";
+import {
+  enforceGptRecipePolicy,
+  incrementGptRecipeUsage,
+} from "./gpt_recipe_sub_limits";
+
+const firestore = getFirestore();
 
 export const extractAndFormatRecipe = onCall(
   { region: "europe-west2" },
-  async (request) => {
+  async (request: CallableRequest<{ imageUrls: string[] }>) => {
     const start = Date.now();
-    const imageUrls: string[] = request.data?.imageUrls;
+    const imageUrls = request.data?.imageUrls;
 
     const projectId =
       process.env.GCLOUD_PROJECT ||
@@ -23,26 +33,23 @@ export const extractAndFormatRecipe = onCall(
     console.log(`🧭 Project ID used for translation: ${projectId}`);
 
     if (!Array.isArray(imageUrls) || imageUrls.length === 0) {
-      throw new functions.https.HttpsError(
-        "invalid-argument",
-        "Missing or invalid 'imageUrls' array"
-      );
+      throw new HttpsError("invalid-argument", "Missing or invalid 'imageUrls' array");
+    }
+
+    const uid = request.auth?.uid;
+    if (!uid) {
+      throw new HttpsError("unauthenticated", "User must be authenticated.");
     }
 
     try {
-      console.log(
-        `📸 [${new Date().toISOString()}] Starting processing of ${imageUrls.length} image(s)...`
-      );
+      console.log(`📸 Starting processing of ${imageUrls.length} image(s)...`);
 
       const ocrText = await extractTextFromImages(imageUrls);
       console.log(`📝 OCR result length: ${ocrText.length}`);
       previewText("🔎 Raw OCR text", ocrText);
 
       if (!ocrText.trim()) {
-        throw new functions.https.HttpsError(
-          "invalid-argument",
-          "No text detected in provided images."
-        );
+        throw new HttpsError("invalid-argument", "No text detected in provided images.");
       }
 
       const cleanInput = cleanText(ocrText);
@@ -56,53 +63,60 @@ export const extractAndFormatRecipe = onCall(
         detectedLanguage = detection.languageCode;
         confidence = detection.confidence;
         console.log(`🌐 Detected language: ${detectedLanguage} (confidence: ${confidence})`);
-        console.log(`✅ PRE-TRANSLATE CHECK complete`);
       } catch (err) {
         console.warn("⚠️ Language detection failed:", err);
       }
 
-// 🌐 Translate to en-GB if needed
-let translatedText = cleanInput;
-let translationUsed = false;
+      // 🌐 Translate if needed
+      let translatedText = cleanInput;
+      let translationUsed = false;
 
-const isLikelyEnglish =
-  detectedLanguage.toLowerCase() === 'en' ||
-  detectedLanguage.toLowerCase().startsWith('en-');
+      const isLikelyEnglish =
+        detectedLanguage.toLowerCase() === "en" ||
+        detectedLanguage.toLowerCase().startsWith("en-");
 
-try {
-  if (!isLikelyEnglish) {
-    console.log(`🚧 Attempting translation from "${detectedLanguage}" → en-GB...`);
+      const userDoc = await firestore.collection("users").doc(uid).get();
+      const tier = userDoc.data()?.tier || "taster";
 
-    const result = await translateToEnglish(cleanInput, detectedLanguage, projectId);
+      if (!isLikelyEnglish) {
+        await enforceTranslationPolicy(uid, tier);
 
-    if (!result?.trim()) {
-      console.warn("⚠️ Translation returned empty result. Skipping.");
-    } else {
-      translatedText = result.trim();
-      translationUsed = true;
-      console.log(`✅ Translation applied. Length: ${translatedText.length}`);
-      previewText("📝 Translated preview", translatedText);
-    }
-  } else {
-    console.log("🟢 Skipping translation – already English");
-  }
-} catch (err) {
-  console.error("❌ Translation failed. Using original OCR text:", err);
-}
+        try {
+          console.log(`🚧 Translating from "${detectedLanguage}" → en-GB...`);
+          const result = await translateToEnglish(cleanInput, detectedLanguage, projectId);
 
-// ✅ FINAL validation – discard translation if it's pointless
-const original = ocrText.trim();
-const translated = translatedText.trim();
+          if (!result?.trim()) {
+            console.warn("⚠️ Translation returned empty result. Skipping.");
+          } else {
+            translatedText = result.trim();
+            translationUsed = true;
+            console.log(`✅ Translation applied. Length: ${translatedText.length}`);
+            previewText("📝 Translated preview", translatedText);
+          }
+        } catch (err) {
+          console.error("❌ Translation failed. Using original OCR text:", err);
+        }
+      } else {
+        console.log("🟢 Skipping translation – already English");
+      }
 
-const isEnglish = detectedLanguage.toLowerCase().startsWith("en");
-const unchanged = translated === original;
+      // ✅ Discard if translation was unnecessary
+      const original = ocrText.trim();
+      const translated = translatedText.trim();
 
-if (translationUsed && (isEnglish || unchanged)) {
-  translationUsed = false;
-  console.warn("⚠️ Translation discarded – input already English or identical to OCR.");
-}
+      if (
+        translationUsed &&
+        (translated === original || detectedLanguage.toLowerCase().startsWith("en"))
+      ) {
+        translationUsed = false;
+        console.warn("⚠️ Translation discarded – already English or unchanged.");
+      }
 
-const usedText = translationUsed ? translated : original;
+      if (translationUsed) {
+        await incrementTranslationUsage(uid, tier);
+      }
+
+      const usedText = translationUsed ? translated : original;
 
       const finalText = decode(usedText.trim())
         .replace(/(?:\r\n|\r|\n){2,}/g, "\n\n")
@@ -110,8 +124,14 @@ const usedText = translationUsed ? translated : original;
 
       previewText("🧠 GPT input preview", finalText);
 
+      // 🚧 Enforce GPT recipe generation limit
+      await enforceGptRecipePolicy(uid, tier);
+
       const formattedRecipe = await generateFormattedRecipe(finalText, detectedLanguage);
       console.log("✅ GPT formatting complete.");
+
+      // ✅ Increment GPT usage after success
+      await incrementGptRecipeUsage(uid, tier);
 
       // 🔍 Debug info
       console.log("🧪 Final debug result:", {
@@ -161,7 +181,7 @@ const usedText = translationUsed ? translated : original;
       };
     } catch (err) {
       console.error("❌ extractAndFormatRecipe failed:", err);
-      throw new functions.https.HttpsError("internal", "Failed to process recipe.");
+      throw new HttpsError("internal", "Failed to process recipe.");
     }
   }
 );

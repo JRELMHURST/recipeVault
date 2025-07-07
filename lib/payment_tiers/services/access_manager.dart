@@ -5,6 +5,7 @@ class AccessManager {
   static const _trialUsageKey = 'trialRecipeCount';
   static const _proUsageKey = 'monthlyRecipeCount';
   static const _lastResetKey = 'lastUsageResetMonth';
+  static const _isTrialUsedKey = 'trialAlreadyUsed';
 
   static const int trialLimit = 3;
   static const int proMonthlyLimit = 20;
@@ -24,9 +25,14 @@ class AccessManager {
 
   static Future<void> startTrialIfNeeded() async {
     final box = await Hive.openBox('access');
+
+    final alreadyUsed = box.get(_isTrialUsedKey, defaultValue: false) as bool;
+    if (alreadyUsed) return;
+
     if (!box.containsKey(_trialStartKey)) {
       await box.put(_trialStartKey, DateTime.now().toIso8601String());
       await box.put(_trialUsageKey, 0);
+      await box.put(_isTrialUsedKey, true);
     }
   }
 

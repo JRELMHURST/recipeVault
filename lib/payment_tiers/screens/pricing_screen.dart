@@ -17,12 +17,16 @@ class PricingScreen extends StatelessWidget {
         children: [
           TierCard(
             emoji: '🥄',
-            title: 'Taster',
-            subtitle: 'Free for 7 days',
+            title: 'Taster (Trial)',
+            subtitle: 'Free for 7 days – full access',
             features: const [
-              '3 AI recipe creations',
-              'Full feature preview',
-              'Save recipes locally',
+              '✅ Unlimited AI recipe creations (7 days)',
+              '✅ Full feature preview',
+              '✅ Recipe image upload & crop',
+              '✅ Save & favourite recipes',
+              '✅ Smart GPT categorisation',
+              '✅ Offline access',
+              '✅ Unlimited translations (7 days)',
             ],
             buttonLabel: 'Start Free Trial',
             onPressed: () {
@@ -31,7 +35,7 @@ class PricingScreen extends StatelessWidget {
                   content: Text('Trial starts on first recipe creation'),
                 ),
               );
-              context.pop(); // or go to home screen
+              context.pop(); // Or navigate elsewhere
             },
           ),
           const SizedBox(height: 24),
@@ -45,11 +49,14 @@ class PricingScreen extends StatelessWidget {
               'Save & favourite recipes',
               'Smart GPT categorisation',
               'Offline access',
+              '🌍 Translate up to 5 recipes/month',
             ],
             buttonLabel: 'Go Home Chef',
-            onPressed: () async {
-              await SubscriptionService.activateHomeChef();
-              context.go('/subscription-success');
+            onPressed: () {
+              () async {
+                await SubscriptionService().activateHomeChef();
+                context.go('/subscription-success');
+              }();
             },
           ),
           const SizedBox(height: 24),
@@ -61,12 +68,15 @@ class PricingScreen extends StatelessWidget {
               'Unlimited AI recipe creations',
               'Priority processing',
               'Everything in Home Chef included',
+              '🌍 Unlimited recipe translations',
               'Lifetime access option',
             ],
             buttonLabel: 'Unlock Master Chef',
-            onPressed: () async {
-              await SubscriptionService.activateMasterChef();
-              context.go('/subscription-success');
+            onPressed: () {
+              () async {
+                await SubscriptionService().activateMasterChef();
+                context.go('/subscription-success');
+              }();
             },
           ),
         ],

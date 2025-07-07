@@ -1,13 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:recipe_vault/payment_tiers/services/subscription_service.dart';
 
 class SubscriptionSuccessScreen extends StatelessWidget {
   const SubscriptionSuccessScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tierName = SubscriptionService().getCurrentTierName();
+
+    String subtitle;
+    switch (tierName) {
+      case 'Home Chef':
+        subtitle =
+            'You’ve unlocked Home Chef!\nEnjoy 20 AI recipes per month, translation tools and smart features.';
+        break;
+      case 'Master Chef':
+        subtitle =
+            'Welcome, Master Chef!\nYou now have unlimited AI recipes, premium features and lifetime access.';
+        break;
+      default:
+        subtitle = 'You’ve upgraded your RecipeVault plan!';
+    }
+
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -19,14 +37,15 @@ class SubscriptionSuccessScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 Text(
                   'Subscription Activated!',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'You’ve unlocked your RecipeVault Pro tier.\nEnjoy smarter cooking with unlimited AI recipes!',
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),

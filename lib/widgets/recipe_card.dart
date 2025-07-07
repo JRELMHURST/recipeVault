@@ -164,7 +164,10 @@ class RecipeCard extends StatelessWidget {
       } else if (inInstructions && RegExp(r'^\d+[\).]').hasMatch(trimmed)) {
         instructions.add(trimmed);
       } else if (inHints) {
-        hints.add(trimmed);
+        final cleanHint = trimmed.replaceFirst(RegExp(r'^[-•]+\s*'), '').trim();
+        if (cleanHint.isEmpty) continue;
+        if (cleanHint.toLowerCase().contains('no additional tips')) continue;
+        hints.add(cleanHint);
       }
     }
 

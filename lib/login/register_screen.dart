@@ -29,7 +29,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (!mounted) return;
-      GoRouter.of(context).go('/home');
+
+      final isTrial =
+          GoRouterState.of(context).uri.queryParameters['trial'] == 'true';
+      if (isTrial) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ You’re now in your 7-day free trial!'),
+          ),
+        );
+      }
+
+      GoRouter.of(context).go(isTrial ? '/' : '/home');
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {
@@ -43,7 +54,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await _authService.signInWithGoogle();
 
       if (!mounted) return;
-      GoRouter.of(context).go('/home');
+
+      final isTrial =
+          GoRouterState.of(context).uri.queryParameters['trial'] == 'true';
+      if (isTrial) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ You’re now in your 7-day free trial!'),
+          ),
+        );
+      }
+
+      GoRouter.of(context).go(isTrial ? '/' : '/home');
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {
@@ -53,8 +75,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 48),
@@ -65,7 +89,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 24),
               Text(
                 'Create an Account',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),

@@ -16,7 +16,7 @@ class UpgradeBlockedScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.lock_outline, size: 72, color: Colors.redAccent),
+              const Text('🔒', style: TextStyle(fontSize: 64)),
               const SizedBox(height: 20),
               Text(
                 'Recipe Limit Reached',
@@ -26,8 +26,9 @@ class UpgradeBlockedScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'You’ve reached your monthly recipe creation limit for your current plan.\n\nUpgrade to unlock more recipes and continue using RecipeVault AI.',
+              Text(
+                'You’ve hit your current plan’s recipe limit.\n\nUpgrade to unlock more AI recipes and keep cooking with RecipeVault!',
+                style: theme.textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),

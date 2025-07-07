@@ -14,11 +14,13 @@ class SubscriptionSuccessScreen extends StatelessWidget {
     switch (tierName) {
       case 'Home Chef':
         subtitle =
-            'You’ve unlocked Home Chef!\nEnjoy 20 AI recipes per month, translation tools and smart features.';
+            'You’ve unlocked Home Chef!\n'
+            'Enjoy 20 AI recipes per month, translation tools and smart features.';
         break;
       case 'Master Chef':
         subtitle =
-            'Welcome, Master Chef!\nYou now have unlimited AI recipes, premium features and lifetime access.';
+            'Welcome, Master Chef!\n'
+            'You now have unlimited AI recipes, premium tools and lifetime access.';
         break;
       default:
         subtitle = 'You’ve upgraded your RecipeVault plan!';
@@ -33,7 +35,7 @@ class SubscriptionSuccessScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.emoji_events, size: 72, color: Colors.amber),
+                const Text('🎉', style: TextStyle(fontSize: 64)),
                 const SizedBox(height: 20),
                 Text(
                   'Subscription Activated!',
@@ -50,7 +52,7 @@ class SubscriptionSuccessScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 40),
                 ElevatedButton.icon(
-                  onPressed: () => context.go('/'),
+                  onPressed: () => context.go('/home'),
                   icon: const Icon(Icons.check_circle_outline),
                   label: const Text('Start Creating Recipes'),
                 ),

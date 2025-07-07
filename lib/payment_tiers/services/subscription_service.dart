@@ -34,11 +34,11 @@ class SubscriptionService {
     } else if (!trialExpired) {
       _currentTier = Tier.tasterTrial;
     } else {
-      _currentTier = Tier.tasterTrial; // Fallback or disable if needed
+      _currentTier = Tier.tasterTrial; // fallback
     }
   }
 
-  /// Activate 7-day free trial
+  /// Start 7-day free trial
   Future<void> activateTrial() async {
     final box = await Hive.openBox(_accessBox);
     final endsAt = DateTime.now()
@@ -64,7 +64,7 @@ class SubscriptionService {
     _currentTier = Tier.masterChef;
   }
 
-  /// Clear all subscription data (logout/dev)
+  /// Clear all subscription data (for logout/dev/testing)
   Future<void> clearSubscriptionStatus() async {
     final box = await Hive.openBox(_accessBox);
     await box.put(_isSubscribedKey, false);
@@ -73,7 +73,7 @@ class SubscriptionService {
     _currentTier = Tier.tasterTrial;
   }
 
-  /// Human-friendly tier label
+  /// Human-friendly tier name
   String getCurrentTierName() {
     switch (_currentTier) {
       case Tier.tasterTrial:
@@ -84,4 +84,29 @@ class SubscriptionService {
         return 'Master Chef';
     }
   }
+
+  /// Whether trial is still active
+  bool isTrialActive() {
+    final box = Hive.box(_accessBox);
+    final trialEndsAt = box.get(_trialEndsAtKey);
+    if (trialEndsAt is int) {
+      return DateTime.fromMillisecondsSinceEpoch(
+        trialEndsAt,
+      ).isAfter(DateTime.now());
+    }
+    return false;
+  }
+
+  /// Returns when trial ends (or null)
+  DateTime? getTrialEndDate() {
+    final box = Hive.box(_accessBox);
+    final trialEndsAt = box.get(_trialEndsAtKey);
+    if (trialEndsAt is int) {
+      return DateTime.fromMillisecondsSinceEpoch(trialEndsAt);
+    }
+    return null;
+  }
+
+  /// Check if user is already on the given tier
+  bool isCurrentTier(Tier tier) => _currentTier == tier;
 }

@@ -6,7 +6,7 @@ class TierCard extends StatelessWidget {
   final String subtitle;
   final List<String> features;
   final String buttonLabel;
-  final VoidCallback onPressed;
+  final Future<void> Function()? onPressed;
   final bool isTrial;
   final bool isDisabled;
 
@@ -65,7 +65,13 @@ class TierCard extends StatelessWidget {
               const SizedBox(height: 16),
               Center(
                 child: ElevatedButton(
-                  onPressed: isDisabled ? null : onPressed,
+                  onPressed: isDisabled
+                      ? null
+                      : () {
+                          if (onPressed != null) {
+                            onPressed!();
+                          }
+                        },
                   style: isTrial
                       ? ElevatedButton.styleFrom(
                           backgroundColor: Colors.orange,

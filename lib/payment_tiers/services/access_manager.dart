@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'subscription_service.dart';
 
 class AccessManager {
   static const _trialStartKey = 'trialStartDate';
@@ -10,10 +11,9 @@ class AccessManager {
   static const int trialLimit = 3;
   static const int proMonthlyLimit = 20;
 
-  /// Call this once on app start to ensure monthly reset logic is enforced
+  /// Call this once on app start to ensure monthly usage resets
   static Future<void> initialise() async {
     final box = await Hive.openBox('access');
-
     final now = DateTime.now();
     final lastMonth = box.get(_lastResetKey) as int?;
 
@@ -23,9 +23,9 @@ class AccessManager {
     }
   }
 
+  /// Start trial if needed (used in PricingScreen)
   static Future<void> startTrialIfNeeded() async {
     final box = await Hive.openBox('access');
-
     final alreadyUsed = box.get(_isTrialUsedKey, defaultValue: false) as bool;
     if (alreadyUsed) return;
 
@@ -33,6 +33,7 @@ class AccessManager {
       await box.put(_trialStartKey, DateTime.now().toIso8601String());
       await box.put(_trialUsageKey, 0);
       await box.put(_isTrialUsedKey, true);
+      await SubscriptionService().activateTrial();
     }
   }
 
@@ -40,7 +41,9 @@ class AccessManager {
     final box = await Hive.openBox('access');
     if (!box.containsKey(_trialStartKey)) return false;
 
-    final start = DateTime.parse(box.get(_trialStartKey));
+    final start = DateTime.tryParse(box.get(_trialStartKey) ?? '');
+    if (start == null) return false;
+
     return DateTime.now().difference(start).inDays < 7;
   }
 
@@ -54,48 +57,45 @@ class AccessManager {
     return box.get(_proUsageKey, defaultValue: 0) as int;
   }
 
-  /// Simulated flag for whether user has paid.
-  static Future<bool> isProUser() async {
-    final box = await Hive.openBox('access');
-    return box.get('isSubscribed', defaultValue: false) as bool;
-  }
-
-  /// Simulated flag for whether user is on Master Chef tier.
-  static Future<bool> isMasterChef() async {
-    final box = await Hive.openBox('access');
-    return box.get('isMasterChef', defaultValue: false) as bool;
-  }
-
+  /// Whether user can create a recipe (based on tier & limits)
   static Future<bool> canCreateRecipe() async {
-    if (await isMasterChef()) return true;
+    final sub = SubscriptionService();
 
-    if (await isProUser()) {
-      final used = await getProRecipesUsedThisMonth();
-      return used < proMonthlyLimit;
+    switch (sub.currentTier) {
+      case Tier.masterChef:
+        return true;
+
+      case Tier.homeChef:
+        final used = await getProRecipesUsedThisMonth();
+        return used < proMonthlyLimit;
+
+      case Tier.tasterTrial:
+        if (!await isTrialActive()) return false;
+        final used = await getTrialRecipesUsed();
+        return used < trialLimit;
     }
-
-    if (await isTrialActive()) {
-      final used = await getTrialRecipesUsed();
-      return used < trialLimit;
-    }
-
-    return false;
   }
 
+  /// Increments usage count depending on tier
   static Future<void> incrementRecipeUsage() async {
     final box = await Hive.openBox('access');
+    final sub = SubscriptionService();
 
-    if (await isMasterChef()) return;
+    switch (sub.currentTier) {
+      case Tier.masterChef:
+        return;
 
-    if (await isProUser()) {
-      final used = await getProRecipesUsedThisMonth();
-      await box.put(_proUsageKey, used + 1);
-      return;
-    }
+      case Tier.homeChef:
+        final used = await getProRecipesUsedThisMonth();
+        await box.put(_proUsageKey, used + 1);
+        return;
 
-    if (await isTrialActive()) {
-      final used = await getTrialRecipesUsed();
-      await box.put(_trialUsageKey, used + 1);
+      case Tier.tasterTrial:
+        if (await isTrialActive()) {
+          final used = await getTrialRecipesUsed();
+          await box.put(_trialUsageKey, used + 1);
+        }
+        return;
     }
   }
 }

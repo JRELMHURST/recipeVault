@@ -31,7 +31,16 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (!mounted) return;
-      GoRouter.of(context).go('/home');
+      final isTrial =
+          GoRouterState.of(context).uri.queryParameters['trial'] == 'true';
+      if (isTrial) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ You’re now in your 7-day free trial!'),
+          ),
+        );
+      }
+      GoRouter.of(context).go(isTrial ? '/' : '/home');
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {
@@ -45,7 +54,16 @@ class _LoginScreenState extends State<LoginScreen> {
       await _authService.signInWithGoogle();
 
       if (!mounted) return;
-      GoRouter.of(context).go('/home');
+      final isTrial =
+          GoRouterState.of(context).uri.queryParameters['trial'] == 'true';
+      if (isTrial) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ You’re now in your 7-day free trial!'),
+          ),
+        );
+      }
+      GoRouter.of(context).go(isTrial ? '/' : '/home');
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {
@@ -60,7 +78,12 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.active &&
             snapshot.hasData) {
-          Future.microtask(() => GoRouter.of(context).go('/home'));
+          Future.microtask(() {
+            final isTrial =
+                GoRouterState.of(context).uri.queryParameters['trial'] ==
+                'true';
+            GoRouter.of(context).go(isTrial ? '/' : '/home');
+          });
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
@@ -91,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
                         color: Colors.black26,
                         blurRadius: 12,

@@ -2,14 +2,19 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:recipe_vault/payment_tiers/widgets/tier_card.dart';
 import 'package:recipe_vault/payment_tiers/services/subscription_service.dart';
+import 'package:recipe_vault/payment_tiers/services/access_manager.dart';
 
 class PricingScreen extends StatelessWidget {
   const PricingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final currentTier = SubscriptionService().currentTier;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Upgrade Your Plan')),
       body: ListView(
@@ -29,14 +34,24 @@ class PricingScreen extends StatelessWidget {
               '✅ Unlimited translations (7 days)',
             ],
             buttonLabel: 'Start Free Trial',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Trial starts on first recipe creation'),
-                ),
-              );
-              context.pop(); // Or navigate elsewhere
-            },
+            onPressed: currentTier == Tier.tasterTrial
+                ? null
+                : () async {
+                    final user = FirebaseAuth.instance.currentUser;
+
+                    if (user == null) {
+                      context.push('/login');
+                      return;
+                    }
+
+                    await AccessManager.startTrialIfNeeded();
+
+                    final prefs = await SharedPreferences.getInstance();
+                    final hasSeenWelcome =
+                        prefs.getBool('hasSeenWelcome') ?? false;
+
+                    context.go(hasSeenWelcome ? '/home' : '/welcome');
+                  },
           ),
           const SizedBox(height: 24),
           TierCard(
@@ -52,12 +67,19 @@ class PricingScreen extends StatelessWidget {
               '🌍 Translate up to 5 recipes/month',
             ],
             buttonLabel: 'Go Home Chef',
-            onPressed: () {
-              () async {
-                await SubscriptionService().activateHomeChef();
-                context.go('/subscription-success');
-              }();
-            },
+            onPressed: currentTier == Tier.homeChef
+                ? null
+                : () async {
+                    final user = FirebaseAuth.instance.currentUser;
+
+                    if (user == null) {
+                      context.push('/login');
+                      return;
+                    }
+
+                    await SubscriptionService().activateHomeChef();
+                    context.go('/upgrade-success');
+                  },
           ),
           const SizedBox(height: 24),
           TierCard(
@@ -72,12 +94,19 @@ class PricingScreen extends StatelessWidget {
               'Lifetime access option',
             ],
             buttonLabel: 'Unlock Master Chef',
-            onPressed: () {
-              () async {
-                await SubscriptionService().activateMasterChef();
-                context.go('/subscription-success');
-              }();
-            },
+            onPressed: currentTier == Tier.masterChef
+                ? null
+                : () async {
+                    final user = FirebaseAuth.instance.currentUser;
+
+                    if (user == null) {
+                      context.push('/login');
+                      return;
+                    }
+
+                    await SubscriptionService().activateMasterChef();
+                    context.go('/upgrade-success');
+                  },
           ),
         ],
       ),

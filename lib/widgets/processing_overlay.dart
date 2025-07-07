@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/model/processed_recipe_result.dart';
+import 'package:recipe_vault/widgets/processing_messages.dart';
 
 class ProcessingOverlay {
   static OverlayEntry? _currentOverlay;
@@ -40,19 +41,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
   int _currentStep = 0;
   bool _hasCancelled = false;
   late List<String> _currentSteps;
-
-  final List<String> _baseSteps = [
-    'Uploading Images',
-    'Extracting & Formatting',
-    'Finishing Up',
-  ];
-
-  final List<String> _translationSteps = [
-    'Uploading Images',
-    'Translating',
-    'Extracting & Formatting',
-    'Finishing Up',
-  ];
+  late List<String> _currentFunMessages;
 
   late final AnimationController _iconSpinController = AnimationController(
     vsync: this,
@@ -74,7 +63,16 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
   @override
   void initState() {
     super.initState();
-    _currentSteps = _baseSteps;
+    _currentSteps = [
+      'Uploading Images',
+      'Extracting & Formatting',
+      'Finishing Up',
+    ];
+    _currentFunMessages = [
+      ProcessingMessages.pickRandom(ProcessingMessages.uploading),
+      ProcessingMessages.pickRandom(ProcessingMessages.formatting),
+      ProcessingMessages.pickRandom(ProcessingMessages.completed),
+    ];
     _runFullFlow();
   }
 
@@ -101,7 +99,6 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
       debugPrint('🧭 RAW FUNCTION RESPONSE = ${result.toMap()}');
 
-      // ✅ Patch logic if translationUsed was incorrectly marked true
       final detected = result.language.toLowerCase();
       final translationShouldBeFalse = detected.startsWith('en');
 
@@ -121,19 +118,39 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       debugPrint('🧭 detectedLanguage = ${result.language}');
 
       if (mounted) {
-        setState(() {
-          _currentSteps = needsTranslation ? _translationSteps : _baseSteps;
-        });
-        debugPrint('🧭 Steps set to: $_currentSteps');
+        if (needsTranslation) {
+          _currentSteps = [
+            'Uploading Images',
+            'Translating',
+            'Extracting & Formatting',
+            'Finishing Up',
+          ];
+          _currentFunMessages = [
+            ProcessingMessages.pickRandom(ProcessingMessages.uploading),
+            ProcessingMessages.pickRandom(ProcessingMessages.translating),
+            ProcessingMessages.pickRandom(ProcessingMessages.formatting),
+            ProcessingMessages.pickRandom(ProcessingMessages.completed),
+          ];
+        } else {
+          _currentSteps = [
+            'Uploading Images',
+            'Extracting & Formatting',
+            'Finishing Up',
+          ];
+          _currentFunMessages = [
+            ProcessingMessages.pickRandom(ProcessingMessages.uploading),
+            ProcessingMessages.pickRandom(ProcessingMessages.formatting),
+            ProcessingMessages.pickRandom(ProcessingMessages.completed),
+          ];
+        }
+        setState(() {});
       }
 
       if (needsTranslation) {
-        debugPrint('🧭 Showing step: Translating');
         await _setStep(1); // Translating
         await Future.delayed(const Duration(milliseconds: 600));
         await _setStep(2); // Extracting & Formatting
       } else {
-        debugPrint('🧭 Skipping translation, going to Extracting & Formatting');
         await _setStep(1); // Extracting & Formatting
       }
 
@@ -225,11 +242,12 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Hang tight while we turn your screenshots\ninto a delicious, formatted recipe card!",
+                    _currentFunMessages[_currentStep],
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[700],
                       fontSize: 15,
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
                   const SizedBox(height: 26),

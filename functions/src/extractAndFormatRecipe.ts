@@ -191,14 +191,17 @@ export const extractAndFormatRecipe = onCall(
 
       console.log(`🏁 Processing complete in ${Date.now() - start}ms`);
 
-      return {
-        formattedRecipe,
-        originalText: ocrText,
-        detectedLanguage,
-        translationUsed,
-        targetLanguage: "en-GB",
-        imageUrls,
-      };
+return {
+  formattedRecipe,
+  originalText: ocrText,
+  detectedLanguage,
+  translationUsed,
+  targetLanguage: "en-GB",
+  imageUrls,
+  // ✅ NEW FIELDS
+  isTranslated: translationUsed,
+  translatedFromLanguage: translationUsed ? detectedLanguage : null,
+};
     } catch (err) {
       console.error("❌ extractAndFormatRecipe failed:", err);
       throw new HttpsError("internal", "Failed to process recipe.");

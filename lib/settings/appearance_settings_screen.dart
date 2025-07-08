@@ -3,8 +3,56 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 enum AppThemeMode { system, light, dark }
 
+class ThemeNotifier extends ChangeNotifier {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  ThemeMode get themeMode => _themeMode;
+
+  Future<void> loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('themeMode') ?? 'system';
+    _themeMode = _fromAppThemeMode(
+      AppThemeMode.values.firstWhere(
+        (e) => e.name == saved,
+        orElse: () => AppThemeMode.system,
+      ),
+    );
+    notifyListeners();
+  }
+
+  Future<void> updateTheme(AppThemeMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('themeMode', mode.name);
+    _themeMode = _fromAppThemeMode(mode);
+    notifyListeners();
+  }
+
+  ThemeMode _fromAppThemeMode(AppThemeMode mode) {
+    switch (mode) {
+      case AppThemeMode.light:
+        return ThemeMode.light;
+      case AppThemeMode.dark:
+        return ThemeMode.dark;
+      case AppThemeMode.system:
+        return ThemeMode.system;
+    }
+  }
+
+  AppThemeMode get currentAppThemeMode {
+    switch (_themeMode) {
+      case ThemeMode.light:
+        return AppThemeMode.light;
+      case ThemeMode.dark:
+        return AppThemeMode.dark;
+      case ThemeMode.system:
+        return AppThemeMode.system;
+    }
+  }
+}
+
 class AppearanceSettingsScreen extends StatefulWidget {
-  const AppearanceSettingsScreen({super.key});
+  final ThemeNotifier themeNotifier;
+  const AppearanceSettingsScreen({super.key, required this.themeNotifier});
 
   @override
   State<AppearanceSettingsScreen> createState() =>
@@ -12,28 +60,16 @@ class AppearanceSettingsScreen extends StatefulWidget {
 }
 
 class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
-  AppThemeMode _themeMode = AppThemeMode.system;
+  late AppThemeMode _themeMode;
 
   @override
   void initState() {
     super.initState();
-    _loadThemePreference();
-  }
-
-  Future<void> _loadThemePreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString('themeMode') ?? 'system';
-    setState(() {
-      _themeMode = AppThemeMode.values.firstWhere(
-        (e) => e.name == saved,
-        orElse: () => AppThemeMode.system,
-      );
-    });
+    _themeMode = widget.themeNotifier.currentAppThemeMode;
   }
 
   Future<void> _updateTheme(AppThemeMode mode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('themeMode', mode.name);
+    await widget.themeNotifier.updateTheme(mode);
     setState(() => _themeMode = mode);
   }
 

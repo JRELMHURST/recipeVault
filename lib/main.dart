@@ -24,7 +24,8 @@ import 'screens/results_screen.dart';
 import 'login/login_screen.dart';
 import 'login/register_screen.dart';
 import 'settings/settings_screen.dart';
-import 'settings/account_settings_screen.dart';
+import 'settings/acount_settings/account_settings_screen.dart';
+import 'settings/acount_settings/change_password.dart';
 import 'settings/appearance_settings_screen.dart';
 import 'settings/notifications_settings_screen.dart';
 import 'settings/subscription_settings_screen.dart';
@@ -37,7 +38,7 @@ import 'revcat_paywall/screens/paywall_screen.dart';
 import 'revcat_paywall/services/subscription_service.dart';
 import 'revcat_paywall/services/access_manager.dart';
 import 'revcat_paywall/services/subscription_manager.dart';
-import 'login/dev_testing_screen.dart';
+import 'login/dev_tool_screen.dart';
 
 late final FirebaseFunctions functions;
 final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -103,6 +104,10 @@ final GoRouter _router = GoRouter(
       builder: (context, state) => const AccountSettingsScreen(),
     ),
     GoRoute(
+      path: '/settings/account/change-password',
+      builder: (context, state) => const ChangePasswordScreen(),
+    ),
+    GoRoute(
       path: '/settings/appearance',
       builder: (context, state) => const AppearanceSettingsScreen(),
     ),
@@ -139,7 +144,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/dev-tools',
-      builder: (context, state) => const DevTestingScreen(),
+      builder: (context, state) => const DevToolScreen(),
     ),
   ],
 );

@@ -1,6 +1,10 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/login/auth_service.dart';
+import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
+import 'package:recipe_vault/revcat_paywall/widgets/taster_trial_dialog.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,6 +22,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  Future<void> _maybeOfferTasterTrial(BuildContext context) async {
+    final tier = SubscriptionService().getCurrentTierName();
+    if (tier == 'Free') {
+      await showDialog(
+        context: context,
+        builder: (_) => const TasterTrialDialog(),
+      );
+    }
+  }
+
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -32,6 +46,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       final isTrial =
           GoRouterState.of(context).uri.queryParameters['trial'] == 'true';
+
       if (isTrial) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -40,7 +55,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       }
 
-      GoRouter.of(context).go(isTrial ? '/' : '/home');
+      await _maybeOfferTasterTrial(context);
+
+      final tier = SubscriptionService().getCurrentTierName();
+      if (tier == 'Free' || tier == 'Taster') {
+        context.go('/pricing');
+      } else {
+        context.go('/home');
+      }
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {
@@ -57,6 +79,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       final isTrial =
           GoRouterState.of(context).uri.queryParameters['trial'] == 'true';
+
       if (isTrial) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -65,7 +88,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       }
 
-      GoRouter.of(context).go(isTrial ? '/' : '/home');
+      await _maybeOfferTasterTrial(context);
+
+      final tier = SubscriptionService().getCurrentTierName();
+      if (tier == 'Free' || tier == 'Taster') {
+        context.go('/pricing');
+      } else {
+        context.go('/home');
+      }
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {

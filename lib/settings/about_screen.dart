@@ -50,23 +50,23 @@ class _AboutSettingsScreenState extends State<AboutSettingsScreen> {
           ListTile(
             title: const Text('Privacy Policy'),
             leading: const Icon(Icons.privacy_tip_outlined),
-            onTap: () => _openURL('https://yourdomain.com/privacy'),
+            onTap: () => _openURL('https://badger-creations.co.uk/privacy'),
           ),
           ListTile(
             title: const Text('Terms of Service'),
             leading: const Icon(Icons.description_outlined),
-            onTap: () => _openURL('https://yourdomain.com/terms'),
+            onTap: () => _openURL('https://badger-creations.co.uk/terms'),
           ),
           const Divider(),
           ListTile(
             title: const Text('Website'),
             leading: const Icon(Icons.link),
-            onTap: () => _openURL('https://yourdomain.com'),
+            onTap: () => _openURL('https://badger-creations.co.uk/'),
           ),
           ListTile(
             title: const Text('Contact Support'),
             leading: const Icon(Icons.mail_outline),
-            onTap: () => _openURL('mailto:support@yourdomain.com'),
+            onTap: () => _openURL('https://badger-creations.co.uk/support'),
           ),
         ],
       ),

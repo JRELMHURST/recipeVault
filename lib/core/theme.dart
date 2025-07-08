@@ -7,6 +7,7 @@ class AppTheme {
 
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
+    fontFamily: 'Roboto',
     scaffoldBackgroundColor: backgroundLight,
     colorScheme: const ColorScheme.light(
       primary: primaryColor,
@@ -18,6 +19,7 @@ class AppTheme {
       elevation: 0,
       centerTitle: true,
       titleTextStyle: TextStyle(
+        fontFamily: 'Roboto',
         fontSize: 22,
         fontWeight: FontWeight.bold,
         color: Colors.white,
@@ -36,16 +38,22 @@ class AppTheme {
     ),
     textTheme: const TextTheme(
       titleLarge: TextStyle(
+        fontFamily: 'Roboto',
         fontSize: 26,
         fontWeight: FontWeight.bold,
         color: primaryColor,
       ),
       titleMedium: TextStyle(
+        fontFamily: 'Roboto',
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: Colors.black87,
       ),
-      bodyMedium: TextStyle(fontSize: 16, color: Colors.black87),
+      bodyMedium: TextStyle(
+        fontFamily: 'Roboto',
+        fontSize: 16,
+        color: Colors.black87,
+      ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -53,13 +61,17 @@ class AppTheme {
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        textStyle: const TextStyle(fontWeight: FontWeight.bold),
+        textStyle: const TextStyle(
+          fontFamily: 'Roboto',
+          fontWeight: FontWeight.bold,
+        ),
       ),
     ),
   );
 
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
+    fontFamily: 'Roboto',
     scaffoldBackgroundColor: backgroundDark,
     colorScheme: const ColorScheme.dark(
       primary: primaryColor,
@@ -71,6 +83,7 @@ class AppTheme {
       elevation: 0,
       centerTitle: true,
       titleTextStyle: TextStyle(
+        fontFamily: 'Roboto',
         fontSize: 22,
         fontWeight: FontWeight.bold,
         color: Colors.white,
@@ -89,16 +102,22 @@ class AppTheme {
     ),
     textTheme: const TextTheme(
       titleLarge: TextStyle(
+        fontFamily: 'Roboto',
         fontSize: 26,
         fontWeight: FontWeight.bold,
         color: primaryColor,
       ),
       titleMedium: TextStyle(
+        fontFamily: 'Roboto',
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: Colors.white,
       ),
-      bodyMedium: TextStyle(fontSize: 16, color: Colors.white70),
+      bodyMedium: TextStyle(
+        fontFamily: 'Roboto',
+        fontSize: 16,
+        color: Colors.white70,
+      ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
@@ -106,7 +125,10 @@ class AppTheme {
         foregroundColor: Colors.black,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        textStyle: const TextStyle(fontWeight: FontWeight.bold),
+        textStyle: const TextStyle(
+          fontFamily: 'Roboto',
+          fontWeight: FontWeight.bold,
+        ),
       ),
     ),
   );

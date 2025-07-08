@@ -68,6 +68,13 @@ class _SubscriptionSettingsScreenState
             title: const Text('Active Entitlements'),
             subtitle: Text(_entitlements),
           ),
+          const ListTile(
+            leading: Icon(Icons.cancel_outlined),
+            title: Text('Cancel Anytime'),
+            subtitle: Text(
+              'Manage or cancel your plan anytime from your App Store account.',
+            ),
+          ),
 
           const SizedBox(height: 24),
           _buildSectionHeader('ACTIONS'),

@@ -55,6 +55,23 @@ class SubscriptionService {
   /// Refresh the tier manually (e.g. after a purchase or restore)
   Future<void> refresh() async => await init();
 
+  /// Manually activate the Taster Trial if user opts in
+  Future<void> activateTasterTrial() async {
+    try {
+      final info = await Purchases.getCustomerInfo();
+      final hasTrial = info.entitlements.active.containsKey('taster');
+
+      if (!hasTrial) {
+        // Logic placeholder — use Firestore or a backend API to flag trial if needed
+        _currentTier = Tier.tasterTrial;
+        // You may also want to call Purchases.logIn(...) if custom user identifiers apply
+      }
+      await refresh();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Debug helper
   @override
   String toString() => 'SubscriptionService(currentTier: $_currentTier)';

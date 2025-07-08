@@ -1,6 +1,9 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/services.dart'; // ✅ Needed for PlatformException
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -53,11 +56,23 @@ class _PaywallScreenState extends State<PaywallScreen> {
     try {
       await Purchases.purchasePackage(package);
       if (mounted) context.go('/upgrade-success');
+    } on PlatformException catch (e) {
+      if (e.code == '1' ||
+          e.message?.toLowerCase().contains('cancelled') == true) {
+        debugPrint('🟡 Purchase cancelled by user.');
+        return;
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Purchase failed: ${e.message}')),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Purchase failed: $e')));
+        ).showSnackBar(SnackBar(content: Text('Something went wrong: $e')));
       }
     }
   }
@@ -91,7 +106,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
       return Scaffold(body: Center(child: Text(_error!)));
     }
 
-    // Group plans
     final homeChef = _packages
         .where((pkg) => pkg.storeProduct.title.toLowerCase().contains('home'))
         .toList();
@@ -144,28 +158,74 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Widget _buildPackageCard(Package pkg, ThemeData theme) {
+    final planBenefits = _getPlanBenefits(pkg);
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(pkg.storeProduct.title, style: theme.textTheme.titleLarge),
-            const SizedBox(height: 4),
-            Text(
-              pkg.storeProduct.description,
-              style: theme.textTheme.bodyMedium,
+      child: ExpansionTile(
+        title: Text(pkg.storeProduct.title, style: theme.textTheme.titleLarge),
+        subtitle: Text(pkg.storeProduct.priceString),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
             ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () => _purchase(pkg),
-              child: Text(pkg.storeProduct.priceString),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final benefit in planBenefits) ...[
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle,
+                        size: 20,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(benefit)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                ],
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () => _purchase(pkg),
+                  child: const Text('Subscribe'),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+  }
+
+  List<String> _getPlanBenefits(Package pkg) {
+    final title = pkg.storeProduct.title.toLowerCase();
+    if (title.contains('home')) {
+      return [
+        '5 AI translations per month',
+        '20 AI recipe creations',
+        'Recipe image uploads',
+        'Cancel anytime',
+      ];
+    } else if (title.contains('master')) {
+      return [
+        'Unlimited AI translations',
+        'Priority processing queue',
+        'Advanced recipe filtering',
+        'All Home Chef features included',
+        'Cancel anytime',
+      ];
+    } else {
+      return [
+        'Full access for 7 days',
+        'Unlimited AI recipe creations',
+        'Recipe image upload support',
+        'Cancel anytime',
+      ];
+    }
   }
 }

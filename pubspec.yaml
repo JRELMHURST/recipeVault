@@ -73,6 +73,15 @@ flutter:
     - assets/icon/recipe_vaultBG.png
     - assets/icon/round_vaultLogo.png
 
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+
 flutter_launcher_icons:
   image_path: assets/icon/recipe_vault_appLogo.png
   android: true

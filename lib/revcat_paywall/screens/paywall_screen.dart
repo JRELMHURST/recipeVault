@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:go_router/go_router.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -17,22 +17,28 @@ class _PaywallScreenState extends State<PaywallScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUniquePackages();
+    _loadAllPackages();
   }
 
-  Future<void> _loadUniquePackages() async {
+  Future<void> _loadAllPackages() async {
     try {
       final offerings = await Purchases.getOfferings();
-      final Map<String, Package> dedupedPackages = {};
+
+      final seen = <String>{};
+      final uniquePackages = <Package>[];
 
       for (final offering in offerings.all.values) {
         for (final pkg in offering.availablePackages) {
-          dedupedPackages[pkg.identifier] = pkg;
+          final id = pkg.storeProduct.identifier;
+          if (!seen.contains(id)) {
+            seen.add(id);
+            uniquePackages.add(pkg);
+          }
         }
       }
 
       setState(() {
-        _packages = dedupedPackages.values.toList();
+        _packages = uniquePackages;
         _isLoading = false;
       });
     } catch (e) {
@@ -75,7 +81,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
+    final theme = Theme.of(context);
 
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -85,93 +91,77 @@ class _PaywallScreenState extends State<PaywallScreen> {
       return Scaffold(body: Center(child: Text(_error!)));
     }
 
+    // Group plans
+    final homeChef = _packages
+        .where((pkg) => pkg.storeProduct.title.toLowerCase().contains('home'))
+        .toList();
+
+    final masterChef = _packages
+        .where((pkg) => pkg.storeProduct.title.toLowerCase().contains('master'))
+        .toList();
+
     return Scaffold(
       appBar: AppBar(title: const Text('Choose Your Plan')),
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: _packages.length,
-              itemBuilder: (context, index) {
-                final pkg = _packages[index];
-                return SubscriptionCard(
-                  title: pkg.storeProduct.title,
-                  description: pkg.storeProduct.description,
-                  price: pkg.storeProduct.priceString,
-                  onTap: () => _purchase(pkg),
-                );
-              },
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                if (homeChef.isNotEmpty) ...[
+                  Text(
+                    '🏠 Home Chef Plan',
+                    style: theme.textTheme.titleMedium!.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...homeChef.map((pkg) => _buildPackageCard(pkg, theme)),
+                  const SizedBox(height: 24),
+                ],
+                if (masterChef.isNotEmpty) ...[
+                  Text(
+                    '👨‍🍳 Master Chef Plans',
+                    style: theme.textTheme.titleMedium!.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...masterChef.map((pkg) => _buildPackageCard(pkg, theme)),
+                ],
+              ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           TextButton(
             onPressed: _restorePurchases,
-            child: const Text(
-              'Restore Purchases',
-              style: TextStyle(fontSize: 16, color: Colors.deepPurple),
-            ),
+            child: const Text('Restore Purchases'),
           ),
           const SizedBox(height: 12),
         ],
       ),
     );
   }
-}
 
-class SubscriptionCard extends StatelessWidget {
-  final String title;
-  final String description;
-  final String price;
-  final VoidCallback onTap;
-
-  const SubscriptionCard({
-    super.key,
-    required this.title,
-    required this.description,
-    required this.price,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
+  Widget _buildPackageCard(Package pkg, ThemeData theme) {
     return Card(
-      elevation: 4,
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(pkg.storeProduct.title, style: theme.textTheme.titleLarge),
+            const SizedBox(height: 4),
             Text(
-              title,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              pkg.storeProduct.description,
+              style: theme.textTheme.bodyMedium,
             ),
-            const SizedBox(height: 6),
-            Text(description, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: onTap,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD5C9F3),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-                child: Text(price, style: const TextStyle(fontSize: 16)),
-              ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () => _purchase(pkg),
+              child: Text(pkg.storeProduct.priceString),
             ),
           ],
         ),

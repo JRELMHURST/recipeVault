@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:recipe_vault/payment_tiers/services/subscription_service.dart';
+import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
 
 class SubscriptionSuccessScreen extends StatelessWidget {
   const SubscriptionSuccessScreen({super.key});

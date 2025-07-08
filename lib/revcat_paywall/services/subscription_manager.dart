@@ -1,5 +1,5 @@
-import 'package:recipe_vault/payment_tiers/services/subscription_service.dart';
-import 'package:recipe_vault/payment_tiers/services/access_manager.dart';
+import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
+import 'package:recipe_vault/revcat_paywall/services/access_manager.dart';
 
 class SubscriptionManager {
   static final SubscriptionManager _instance = SubscriptionManager._internal();

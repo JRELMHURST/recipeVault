@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -26,12 +27,13 @@ import 'login/register_screen.dart';
 import 'settings/settings_screen.dart';
 import 'services/user_preference_service.dart';
 import 'services/category_service.dart';
-import 'payment_tiers/screens/pricing_screen.dart';
-import 'payment_tiers/screens/subscription_success_screen.dart';
-import 'payment_tiers/screens/upgrade_blocked_screen.dart';
-import 'payment_tiers/services/subscription_service.dart';
-import 'payment_tiers/services/access_manager.dart';
-import 'payment_tiers/services/subscription_manager.dart';
+import 'revcat_paywall/screens/subscription_success_screen.dart';
+import 'revcat_paywall/screens/upgrade_blocked_screen.dart';
+import 'revcat_paywall/screens/paywall_screen.dart';
+import 'revcat_paywall/services/subscription_service.dart';
+import 'revcat_paywall/services/access_manager.dart';
+import 'revcat_paywall/services/subscription_manager.dart';
+import 'login/dev_testing_screen.dart';
 
 late final FirebaseFunctions functions;
 final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -45,6 +47,11 @@ Future<void> main() async {
     PurchasesConfiguration("appl_oqbgqmtmctjzzERpEkswCejmukh"),
   );
 
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    await Purchases.logIn(user.uid);
+  }
+
   await Hive.initFlutter();
   Hive.registerAdapter(RecipeCardModelAdapter());
   Hive.registerAdapter(CategoryModelAdapter());
@@ -54,14 +61,12 @@ Future<void> main() async {
 
   await UserPreferencesService.init();
 
-  final user = FirebaseAuth.instance.currentUser;
   if (user != null) {
     await CategoryService.syncFromFirestore();
   }
 
   await SubscriptionService().init();
   await AccessManager.initialise();
-  // Removed auto trial start; now triggered from PricingScreen only
 
   runApp(const RecipeVaultApp());
 }
@@ -78,7 +83,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/pricing',
-      builder: (context, state) => const PricingScreen(),
+      builder: (context, state) => const PaywallScreen(),
     ),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     GoRoute(
@@ -108,6 +113,11 @@ final GoRouter _router = GoRouter(
       path: '/upgrade-blocked',
       builder: (context, state) => const UpgradeBlockedScreen(),
     ),
+    if (!kReleaseMode)
+      GoRoute(
+        path: '/dev-tools',
+        builder: (context, state) => const DevTestingScreen(),
+      ),
   ],
 );
 

@@ -33,7 +33,9 @@ class UpgradeBlockedScreen extends StatelessWidget {
               ),
               const SizedBox(height: 40),
               ElevatedButton.icon(
-                onPressed: () => context.push('/pricing'),
+                onPressed: () {
+                  context.go('/pricing');
+                },
                 icon: const Icon(Icons.upgrade),
                 label: const Text('See Plans & Pricing'),
               ),

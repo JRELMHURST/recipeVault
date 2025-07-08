@@ -6,15 +6,32 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:recipe_vault/payment_tiers/widgets/tier_card.dart';
 import 'package:recipe_vault/payment_tiers/services/subscription_service.dart';
-import 'package:recipe_vault/payment_tiers/services/access_manager.dart';
 
-class PricingScreen extends StatelessWidget {
+class PricingScreen extends StatefulWidget {
   const PricingScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final currentTier = SubscriptionService().currentTier;
+  State<PricingScreen> createState() => _PricingScreenState();
+}
 
+class _PricingScreenState extends State<PricingScreen> {
+  final SubscriptionService _subscriptionService = SubscriptionService();
+  late Tier _currentTier;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentTier = _subscriptionService.currentTier;
+  }
+
+  void _refreshTier() {
+    setState(() {
+      _currentTier = _subscriptionService.currentTier;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Upgrade Your Plan')),
       body: ListView(
@@ -34,17 +51,18 @@ class PricingScreen extends StatelessWidget {
               '✅ Unlimited translations (7 days)',
             ],
             buttonLabel: 'Start Free Trial',
-            onPressed: currentTier == Tier.tasterTrial
+            onPressed: _currentTier == Tier.tasterTrial
                 ? null
                 : () async {
                     final user = FirebaseAuth.instance.currentUser;
-
                     if (user == null) {
                       context.push('/login');
                       return;
                     }
 
-                    await AccessManager.startTrialIfNeeded();
+                    await SubscriptionService().activateTrial();
+
+                    _refreshTier();
 
                     final prefs = await SharedPreferences.getInstance();
                     final hasSeenWelcome =
@@ -67,17 +85,17 @@ class PricingScreen extends StatelessWidget {
               '🌍 Translate up to 5 recipes/month',
             ],
             buttonLabel: 'Go Home Chef',
-            onPressed: currentTier == Tier.homeChef
+            onPressed: _currentTier == Tier.homeChef
                 ? null
                 : () async {
                     final user = FirebaseAuth.instance.currentUser;
-
                     if (user == null) {
                       context.push('/login');
                       return;
                     }
 
-                    await SubscriptionService().activateHomeChef();
+                    await _subscriptionService.activateHomeChef();
+                    _refreshTier();
                     context.go('/upgrade-success');
                   },
           ),
@@ -94,17 +112,17 @@ class PricingScreen extends StatelessWidget {
               'Lifetime access option',
             ],
             buttonLabel: 'Unlock Master Chef',
-            onPressed: currentTier == Tier.masterChef
+            onPressed: _currentTier == Tier.masterChef
                 ? null
                 : () async {
                     final user = FirebaseAuth.instance.currentUser;
-
                     if (user == null) {
                       context.push('/login');
                       return;
                     }
 
-                    await SubscriptionService().activateMasterChef();
+                    await _subscriptionService.activateMasterChef();
+                    _refreshTier();
                     context.go('/upgrade-success');
                   },
           ),

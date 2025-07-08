@@ -11,11 +11,9 @@ import { cleanText, previewText } from "./text_utils";
 import {
   enforceTranslationPolicy,
   incrementTranslationUsage,
-} from "./translation_sub_limits";
-import {
   enforceGptRecipePolicy,
   incrementGptRecipeUsage,
-} from "./gpt_recipe_sub_limits";
+} from "./policy";
 
 async function fetchRevenueCatTier(uid: string): Promise<string> {
   try {

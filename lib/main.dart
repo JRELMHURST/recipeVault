@@ -31,17 +31,19 @@ import 'payment_tiers/screens/subscription_success_screen.dart';
 import 'payment_tiers/screens/upgrade_blocked_screen.dart';
 import 'payment_tiers/services/subscription_service.dart';
 import 'payment_tiers/services/access_manager.dart';
+import 'payment_tiers/services/subscription_manager.dart';
 
 late final FirebaseFunctions functions;
 final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-/// Set to true to always show pricing screen (for development/testing)
-const bool kForcePricingScreen = true;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
+
+  await Purchases.configure(
+    PurchasesConfiguration("appl_oqbgqmtmctjzzERpEkswCejmukh"),
+  );
 
   await Hive.initFlutter();
   Hive.registerAdapter(RecipeCardModelAdapter());
@@ -59,11 +61,7 @@ Future<void> main() async {
 
   await SubscriptionService().init();
   await AccessManager.initialise();
-  await AccessManager.startTrialIfNeeded();
-
-  await Purchases.configure(
-    PurchasesConfiguration("appl_oqbgqmtmctjzzERpEkswCejmukh"),
-  );
+  // Removed auto trial start; now triggered from PricingScreen only
 
   runApp(const RecipeVaultApp());
 }
@@ -99,14 +97,7 @@ final GoRouter _router = GoRouter(
       path: '/processing',
       builder: (context, state) {
         final List<File>? imageFiles = state.extra as List<File>?;
-        if (imageFiles != null && imageFiles.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            ProcessingOverlay.show(context, imageFiles);
-          });
-        } else {
-          debugPrint('⚠️ No image files passed to /processing route.');
-        }
-        return const SizedBox.shrink();
+        return ProcessingOverlayScreen(imageFiles: imageFiles);
       },
     ),
     GoRoute(
@@ -164,7 +155,7 @@ class _RedirectDeciderState extends State<RedirectDecider> {
     final prefs = await SharedPreferences.getInstance();
     final hasSeenWelcome = prefs.getBool('hasSeenWelcome') ?? false;
 
-    if (kForcePricingScreen) {
+    if (!SubscriptionManager().hasAccess) {
       context.go('/pricing');
     } else if (user == null) {
       context.go('/login');
@@ -177,6 +168,22 @@ class _RedirectDeciderState extends State<RedirectDecider> {
 
   @override
   Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
+}
+
+/// Temporary screen wrapper for processing overlay
+class ProcessingOverlayScreen extends StatelessWidget {
+  final List<File>? imageFiles;
+  const ProcessingOverlayScreen({super.key, this.imageFiles});
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageFiles != null && imageFiles!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ProcessingOverlay.show(context, imageFiles!);
+      });
+    }
     return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

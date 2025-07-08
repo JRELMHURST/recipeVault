@@ -1,7 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
 
@@ -19,8 +18,6 @@ class _DevTestingScreenState extends State<DevTestingScreen> {
   Future<void> _resetAppState() async {
     setState(() => _status = 'Resetting...');
     await FirebaseAuth.instance.signOut();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
     await SubscriptionService().refresh();
     final tier = SubscriptionService().getCurrentTierName();
     setState(() {
@@ -39,8 +36,7 @@ class _DevTestingScreenState extends State<DevTestingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (kReleaseMode) return const SizedBox.shrink();
-
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Dev Testing Tools')),
       body: Padding(
@@ -48,22 +44,70 @@ class _DevTestingScreenState extends State<DevTestingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ElevatedButton.icon(
+            _buildSectionHeader('🛠 Dev Actions'),
+            _buildButton(
+              label: 'Reset App State (Logout + Clear + Hive)',
+              icon: Icons.refresh,
               onPressed: _resetAppState,
-              icon: const Icon(Icons.restart_alt),
-              label: const Text('Reset App State'),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
+            _buildButton(
+              label: 'Print RevenueCat Entitlements',
+              icon: Icons.info_outline,
               onPressed: _printEntitlements,
-              icon: const Icon(Icons.info_outline),
-              label: const Text('Print RevenueCat Entitlements'),
             ),
             const SizedBox(height: 32),
-            Text('Status: $_status'),
-            Text('Current Tier: $_tier'),
+            _buildSectionHeader('🧭 Navigation Shortcuts'),
+            _buildButton(
+              label: 'Go to Paywall Screen',
+              onPressed: () => context.push('/pricing'),
+            ),
+            _buildButton(
+              label: 'Go to Home Screen',
+              onPressed: () => context.push('/home'),
+            ),
+            const SizedBox(height: 32),
+            Text('Status: $_status', style: theme.textTheme.bodyMedium),
+            Text('Current Tier: $_tier', style: theme.textTheme.bodyMedium),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButton({
+    required String label,
+    required VoidCallback onPressed,
+    IconData? icon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFD5C9F3),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(32),
+          ),
+          elevation: 2,
+        ),
+        onPressed: onPressed,
+        icon: Icon(icon ?? Icons.open_in_new),
+        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
       ),
     );
   }

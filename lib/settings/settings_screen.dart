@@ -15,73 +15,124 @@ class SettingsScreen extends StatelessWidget {
       return const Scaffold(body: Center(child: Text("No user signed in")));
     }
 
-    final photoUrl = user.photoURL;
-    final displayName = user.displayName ?? 'No name';
     final email = user.email ?? '';
+    final displayName = user.displayName ?? 'No name';
+    final photoUrl = user.photoURL;
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          /// Profile Section
+          Center(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Material(
-                  elevation: 3,
-                  borderRadius: BorderRadius.circular(16),
-                  color: theme.colorScheme.surface,
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 48,
-                          backgroundImage: photoUrl != null
-                              ? NetworkImage(photoUrl)
-                              : null,
-                          child: photoUrl == null
-                              ? const Icon(Icons.person, size: 48)
-                              : null,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          displayName,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(email, style: theme.textTheme.bodyMedium),
-                      ],
-                    ),
+                CircleAvatar(
+                  radius: 48,
+                  backgroundImage: photoUrl != null
+                      ? NetworkImage(photoUrl)
+                      : null,
+                  child: photoUrl == null
+                      ? const Icon(Icons.person, size: 48)
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  displayName,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 32),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    await AuthService().signOut();
-                    if (context.mounted) context.go('/login');
-                  },
-                  icon: const Icon(Icons.logout),
-                  label: const Text("Sign Out"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.error,
-                    foregroundColor: theme.colorScheme.onError,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 14,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(32),
-                    ),
-                  ),
-                ),
+                const SizedBox(height: 4),
+                Text(email, style: theme.textTheme.bodyMedium),
               ],
             ),
           ),
+
+          const SizedBox(height: 32),
+          _buildSectionHeader('Account'),
+          ListTile(
+            leading: const Icon(Icons.manage_accounts_outlined),
+            title: const Text('Account Settings'),
+            onTap: () => context.push('/settings/account'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.logout),
+            title: const Text('Sign Out'),
+            textColor: theme.colorScheme.error,
+            iconColor: theme.colorScheme.error,
+            onTap: () async {
+              await AuthService().signOut();
+              if (context.mounted) context.go('/login');
+            },
+          ),
+
+          const SizedBox(height: 32),
+          _buildSectionHeader('Preferences'),
+          ListTile(
+            leading: const Icon(Icons.brightness_6_outlined),
+            title: const Text('Appearance'),
+            onTap: () => context.push('/settings/appearance'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.notifications_outlined),
+            title: const Text('Notifications'),
+            onTap: () => context.push('/settings/notifications'),
+          ),
+
+          const SizedBox(height: 32),
+          _buildSectionHeader('Storage & Sync'),
+          ListTile(
+            leading: const Icon(Icons.cloud_done_outlined),
+            title: const Text('Sync Status'),
+            onTap: () {},
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_outline),
+            title: const Text('Clear Cache'),
+            onTap: () {},
+          ),
+
+          const SizedBox(height: 32),
+          _buildSectionHeader('Subscription'),
+          ListTile(
+            leading: const Icon(Icons.card_membership_outlined),
+            title: const Text('Manage Subscription'),
+            onTap: () => context.push('/settings/subscription'),
+          ),
+
+          const SizedBox(height: 32),
+          _buildSectionHeader('About'),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('About & Legal'),
+            onTap: () => context.push('/settings/about'),
+          ),
+
+          if (email == 'jnriggall@gmail.com') ...[
+            const SizedBox(height: 32),
+            _buildSectionHeader('Developer'),
+            ListTile(
+              leading: const Icon(Icons.developer_mode),
+              title: const Text('Developer Tools'),
+              onTap: () => context.push('/dev-tools'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
+          letterSpacing: 0.5,
         ),
       ),
     );

@@ -2,7 +2,6 @@
 
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -25,6 +24,11 @@ import 'screens/results_screen.dart';
 import 'login/login_screen.dart';
 import 'login/register_screen.dart';
 import 'settings/settings_screen.dart';
+import 'settings/account_settings_screen.dart';
+import 'settings/appearance_settings_screen.dart';
+import 'settings/notifications_settings_screen.dart';
+import 'settings/subscription_settings_screen.dart';
+import 'settings/about_screen.dart';
 import 'services/user_preference_service.dart';
 import 'services/category_service.dart';
 import 'revcat_paywall/screens/subscription_success_screen.dart';
@@ -95,6 +99,26 @@ final GoRouter _router = GoRouter(
       builder: (context, state) => const SettingsScreen(),
     ),
     GoRoute(
+      path: '/settings/account',
+      builder: (context, state) => const AccountSettingsScreen(),
+    ),
+    GoRoute(
+      path: '/settings/appearance',
+      builder: (context, state) => const AppearanceSettingsScreen(),
+    ),
+    GoRoute(
+      path: '/settings/notifications',
+      builder: (context, state) => const NotificationsSettingsScreen(),
+    ),
+    GoRoute(
+      path: '/settings/subscription',
+      builder: (context, state) => const SubscriptionSettingsScreen(),
+    ),
+    GoRoute(
+      path: '/settings/about',
+      builder: (context, state) => const AboutSettingsScreen(),
+    ),
+    GoRoute(
       path: '/results',
       builder: (context, state) => const ResultsScreen(),
     ),
@@ -113,11 +137,10 @@ final GoRouter _router = GoRouter(
       path: '/upgrade-blocked',
       builder: (context, state) => const UpgradeBlockedScreen(),
     ),
-    if (!kReleaseMode)
-      GoRoute(
-        path: '/dev-tools',
-        builder: (context, state) => const DevTestingScreen(),
-      ),
+    GoRoute(
+      path: '/dev-tools',
+      builder: (context, state) => const DevTestingScreen(),
+    ),
   ],
 );
 

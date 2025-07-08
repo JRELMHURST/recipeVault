@@ -29,14 +29,16 @@ dependencies:
   path_provider: ^2.1.2
 
   # ───── Sharing & Output ─────
-  share_plus: ^7.2.2       # ✅ Compatible with Firebase
-  pdf: ^3.10.4              # ✅ PDF generation
-  printing: ^5.12.0         # ✅ Previewing and sharing PDFs
+  share_plus: ^7.2.2
+  pdf: ^3.10.4
+  printing: ^5.12.0
 
   # ───── Utilities ─────
   http: ^1.2.1
   uuid: ^4.3.3
   shared_preferences: ^2.2.2
+  package_info_plus: ^8.3.0
+  url_launcher: ^6.2.5
 
   # ───── Firebase ─────
   firebase_core: ^3.15.0

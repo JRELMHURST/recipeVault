@@ -13,17 +13,18 @@ class DevTestingScreen extends StatefulWidget {
 
 class _DevTestingScreenState extends State<DevTestingScreen> {
   String _status = 'Idle';
-  String _tier = 'Unknown';
+  final String _tier = 'Unknown';
 
   Future<void> _resetAppState() async {
     setState(() => _status = 'Resetting...');
     await FirebaseAuth.instance.signOut();
     await SubscriptionService().refresh();
-    final tier = SubscriptionService().getCurrentTierName();
-    setState(() {
-      _status = 'App state cleared';
-      _tier = tier;
-    });
+
+    if (!mounted) return;
+
+    context.go(
+      '/login',
+    ); // Navigate to login screen to avoid unauthenticated crash
   }
 
   Future<void> _printEntitlements() async {

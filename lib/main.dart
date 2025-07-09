@@ -31,6 +31,7 @@ import 'settings/appearance_settings_screen.dart';
 import 'settings/notifications_settings_screen.dart';
 import 'settings/subscription_settings_screen.dart';
 import 'settings/about_screen.dart';
+import 'settings/storage_sync_screen.dart';
 import 'services/user_preference_service.dart';
 import 'services/category_service.dart';
 import 'revcat_paywall/screens/subscription_success_screen.dart';
@@ -135,6 +136,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/settings/about',
       builder: (context, state) => const AboutSettingsScreen(),
+    ),
+    GoRoute(
+      path: '/settings/storage-sync',
+      builder: (context, state) => const StorageSyncScreen(),
     ),
     GoRoute(
       path: '/results',

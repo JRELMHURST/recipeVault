@@ -69,18 +69,12 @@ class SettingsScreen extends StatelessWidget {
           ),
 
           const SizedBox(height: 32),
-          _buildSectionHeader('Storage & Sync'),
+          _buildSectionHeader('Overview'),
           ListTile(
             leading: const Icon(Icons.cloud_done_outlined),
-            title: const Text('Sync Status'),
-            onTap: () {},
+            title: const Text('Storage & Sync'),
+            onTap: () => context.push('/settings/storage-sync'),
           ),
-          ListTile(
-            leading: const Icon(Icons.delete_outline),
-            title: const Text('Clear Cache'),
-            onTap: () {},
-          ),
-
           const SizedBox(height: 32),
           _buildSectionHeader('Subscription'),
           ListTile(

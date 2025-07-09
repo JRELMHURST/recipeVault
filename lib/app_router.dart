@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:recipe_vault/settings/acount_settings/change_password.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -52,6 +53,10 @@ GoRouter createAppRouter(ThemeNotifier themeNotifier) {
       GoRoute(
         path: '/settings/account',
         builder: (context, state) => const AccountSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/account/change-password',
+        builder: (context, state) => const ChangePasswordScreen(),
       ),
       GoRoute(
         path: '/settings/appearance',

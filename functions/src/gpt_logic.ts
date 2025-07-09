@@ -1,4 +1,8 @@
 import OpenAI from "openai";
+import { defineSecret } from "firebase-functions/params";
+
+// 🔐 Pull secret securely via Firebase Functions' Secret Manager
+const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
 /**
  * Uses GPT to format a translated recipe text into a consistent structure.
@@ -8,9 +12,10 @@ export async function generateFormattedRecipe(
   text: string,
   sourceLang: string
 ): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = OPENAI_API_KEY.value();
+
   if (!apiKey) {
-    throw new Error("❌ Missing OPENAI_API_KEY in environment variables");
+    throw new Error("❌ OPENAI_API_KEY is not set via Secret Manager.");
   }
 
   const openai = new OpenAI({ apiKey });
@@ -62,7 +67,6 @@ Return only a single JSON object **inside a JSON code block** like this:
 
   const rawContent = completion.choices[0]?.message?.content?.trim() || "";
 
-  // ✅ Strip markdown code block (any trailing ``` or leading ```json etc.)
   const jsonText = rawContent
     .replace(/^```json\s*/i, '')
     .replace(/```$/, '')

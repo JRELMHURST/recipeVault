@@ -1,4 +1,5 @@
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
+import { defineSecret } from "firebase-functions/params";
 import { getStorage } from "firebase-admin/storage";
 import { decode } from "html-entities";
 import fetch from "node-fetch";
@@ -15,11 +16,14 @@ import {
   incrementGptRecipeUsage,
 } from "./policy";
 
+const REVENUECAT_SECRET_KEY = defineSecret("REVENUECAT_SECRET_KEY");
+const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
+
 async function fetchRevenueCatTier(uid: string): Promise<string> {
   try {
     const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${uid}`, {
       headers: {
-        Authorization: `Bearer ${process.env.REVENUECAT_SECRET_KEY}`,
+        Authorization: `Bearer ${await REVENUECAT_SECRET_KEY.value()}`,
       },
     });
 
@@ -65,7 +69,10 @@ async function deleteUploadedImage(url: string) {
 }
 
 export const extractAndFormatRecipe = onCall(
-  { region: "europe-west2" },
+  {
+    region: "europe-west2",
+    secrets: [REVENUECAT_SECRET_KEY, OPENAI_API_KEY],
+  },
   async (request: CallableRequest<{ imageUrls: string[] }>) => {
     const start = Date.now();
     const imageUrls = request.data?.imageUrls;

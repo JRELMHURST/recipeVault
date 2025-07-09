@@ -41,13 +41,14 @@ import 'revcat_paywall/services/subscription_service.dart';
 import 'revcat_paywall/services/access_manager.dart';
 import 'revcat_paywall/services/subscription_manager.dart';
 
-late final FirebaseFunctions functions;
+final FirebaseFunctions functions = FirebaseFunctions.instanceFor(
+  region: 'europe-west2',
+);
 final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
 
   await Purchases.configure(
     PurchasesConfiguration("appl_oqbgqmtmctjzzERpEkswCejmukh"),

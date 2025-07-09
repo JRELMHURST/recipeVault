@@ -112,11 +112,6 @@ class SettingsScreen extends StatelessWidget {
           if (email == 'jnriggall@gmail.com') ...[
             const SizedBox(height: 32),
             _buildSectionHeader('Developer'),
-            ListTile(
-              leading: const Icon(Icons.developer_mode),
-              title: const Text('Developer Tools'),
-              onTap: () => context.push('/dev-tools'),
-            ),
           ],
         ],
       ),

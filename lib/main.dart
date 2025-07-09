@@ -10,11 +10,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'widgets/processing_overlay.dart';
 import 'core/theme.dart';
 import 'core/accessibility.dart';
+import 'core/theme_notifier.dart';
 import 'model/recipe_card_model.dart';
 import 'model/category_model.dart';
 import 'screens/welcome_screen.dart';
@@ -40,9 +42,6 @@ import 'revcat_paywall/services/subscription_manager.dart';
 
 late final FirebaseFunctions functions;
 final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-// ✅ Define globally so it's accessible to routes
-final ThemeNotifier themeNotifier = ThemeNotifier();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,9 +73,12 @@ Future<void> main() async {
   await SubscriptionService().init();
   await AccessManager.initialise();
 
-  await themeNotifier.loadTheme();
-
-  runApp(RecipeVaultApp(themeNotifier: themeNotifier));
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeNotifier()..loadTheme(),
+      child: const RecipeVaultApp(),
+    ),
+  );
 }
 
 final GoRouter _router = GoRouter(
@@ -111,8 +113,9 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/settings/appearance',
-      builder: (context, state) =>
-          AppearanceSettingsScreen(themeNotifier: themeNotifier),
+      builder: (context, state) => AppearanceSettingsScreen(
+        themeNotifier: Provider.of<ThemeNotifier>(context, listen: false),
+      ),
     ),
     GoRoute(
       path: '/settings/notifications',
@@ -149,11 +152,12 @@ final GoRouter _router = GoRouter(
 );
 
 class RecipeVaultApp extends StatelessWidget {
-  final ThemeNotifier themeNotifier;
-  const RecipeVaultApp({super.key, required this.themeNotifier});
+  const RecipeVaultApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(
         textScaler: TextScaler.linear(

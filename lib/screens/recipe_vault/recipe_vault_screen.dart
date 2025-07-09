@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
@@ -208,49 +210,55 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     };
 
     final ViewMode currentView = ViewMode.values[widget.viewMode];
+    final textScaleFactor = Provider.of<TextScaleNotifier>(context).scaleFactor;
 
     return Scaffold(
-      body: Column(
-        children: [
-          RecipeCategoryFilterBar(
-            categories: _allCategories,
-            selectedCategory: _selectedCategory,
-            onCategorySelected: (cat) =>
-                setState(() => _selectedCategory = cat),
-            onCategoryDeleted: _removeCategory,
-          ),
-          Expanded(
-            child: filteredRecipes.isEmpty
-                ? const Center(child: Text("No recipes found"))
-                : AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: switch (currentView) {
-                      ViewMode.list => RecipeListView(
-                        recipes: filteredRecipes,
-                        onDelete: _deleteRecipe,
-                        onTap: (r) => showRecipeDialog(context, r),
-                        onToggleFavourite: _toggleFavourite,
-                        categories: _allCategories,
-                        onAssignCategories: _assignCategories,
-                      ),
-                      ViewMode.grid => RecipeGridView(
-                        recipes: filteredRecipes,
-                        onTap: (r) => showRecipeDialog(context, r),
-                        onToggleFavourite: _toggleFavourite,
-                        categories: _allCategories,
-                        onAssignCategories: _assignCategories,
-                      ),
-                      ViewMode.compact => RecipeCompactView(
-                        recipes: filteredRecipes,
-                        onTap: (r) => showRecipeDialog(context, r),
-                        onToggleFavourite: _toggleFavourite,
-                        onAssignCategories: _assignCategories,
-                        categories: _allCategories,
-                      ),
-                    },
-                  ),
-          ),
-        ],
+      body: MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScaleFactor)),
+        child: Column(
+          children: [
+            RecipeCategoryFilterBar(
+              categories: _allCategories,
+              selectedCategory: _selectedCategory,
+              onCategorySelected: (cat) =>
+                  setState(() => _selectedCategory = cat),
+              onCategoryDeleted: _removeCategory,
+            ),
+            Expanded(
+              child: filteredRecipes.isEmpty
+                  ? const Center(child: Text("No recipes found"))
+                  : AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: switch (currentView) {
+                        ViewMode.list => RecipeListView(
+                          recipes: filteredRecipes,
+                          onDelete: _deleteRecipe,
+                          onTap: (r) => showRecipeDialog(context, r),
+                          onToggleFavourite: _toggleFavourite,
+                          categories: _allCategories,
+                          onAssignCategories: _assignCategories,
+                        ),
+                        ViewMode.grid => RecipeGridView(
+                          recipes: filteredRecipes,
+                          onTap: (r) => showRecipeDialog(context, r),
+                          onToggleFavourite: _toggleFavourite,
+                          categories: _allCategories,
+                          onAssignCategories: _assignCategories,
+                        ),
+                        ViewMode.compact => RecipeCompactView(
+                          recipes: filteredRecipes,
+                          onTap: (r) => showRecipeDialog(context, r),
+                          onToggleFavourite: _toggleFavourite,
+                          onAssignCategories: _assignCategories,
+                          categories: _allCategories,
+                        ),
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: CategorySpeedDial(
         onCategoryChanged: _loadCustomCategories,

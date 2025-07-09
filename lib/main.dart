@@ -15,8 +15,8 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'widgets/processing_overlay.dart';
 import 'core/theme.dart';
-import 'core/accessibility.dart';
 import 'core/theme_notifier.dart';
+import 'core/text_scale_notifier.dart';
 import 'model/recipe_card_model.dart';
 import 'model/category_model.dart';
 import 'screens/welcome_screen.dart';
@@ -74,8 +74,11 @@ Future<void> main() async {
   await AccessManager.initialise();
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeNotifier()..loadTheme(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeNotifier()..loadTheme()),
+        ChangeNotifierProvider(create: (_) => TextScaleNotifier()..loadScale()),
+      ],
       child: const RecipeVaultApp(),
     ),
   );
@@ -115,6 +118,10 @@ final GoRouter _router = GoRouter(
       path: '/settings/appearance',
       builder: (context, state) => AppearanceSettingsScreen(
         themeNotifier: Provider.of<ThemeNotifier>(context, listen: false),
+        textScaleNotifier: Provider.of<TextScaleNotifier>(
+          context,
+          listen: false,
+        ),
       ),
     ),
     GoRoute(
@@ -157,13 +164,12 @@ class RecipeVaultApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final textScaleNotifier = Provider.of<TextScaleNotifier>(context);
 
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(
-          Accessibility.constrainedTextScale(context),
-        ),
-      ),
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: TextScaler.linear(textScaleNotifier.scaleFactor)),
       child: MaterialApp.router(
         title: 'RecipeVault',
         debugShowCheckedModeBanner: false,

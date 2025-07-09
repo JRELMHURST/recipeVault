@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
-import 'package:recipe_vault/login/auth_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -56,17 +55,6 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Account Settings'),
             onTap: () => context.push('/settings/account'),
           ),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Sign Out'),
-            textColor: theme.colorScheme.error,
-            iconColor: theme.colorScheme.error,
-            onTap: () async {
-              await AuthService().signOut();
-              if (context.mounted) context.go('/login');
-            },
-          ),
-
           const SizedBox(height: 32),
           _buildSectionHeader('Preferences'),
           ListTile(

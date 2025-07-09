@@ -1,14 +1,12 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/services/category_service.dart';
-
 import 'package:recipe_vault/screens/recipe_vault/recipe_category_filter_bar.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
@@ -26,7 +24,7 @@ class RecipeVaultScreen extends StatefulWidget {
 }
 
 class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
-  late final String userId;
+  String? userId;
   late final CollectionReference<Map<String, dynamic>> recipeCollection;
   String _selectedCategory = 'All';
 
@@ -45,7 +43,13 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   void initState() {
     super.initState();
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) throw Exception("User not authenticated");
+
+    if (user == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        GoRouter.of(context).go('/login');
+      });
+      return;
+    }
 
     userId = user.uid;
     recipeCollection = FirebaseFirestore.instance
@@ -152,7 +156,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       });
     } catch (e) {
       debugPrint('Error toggling favourite: $e');
-      // Optionally show a snackbar or alert if needed
     }
   }
 

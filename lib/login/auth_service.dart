@@ -14,6 +14,9 @@ class AuthService {
   /// ✅ Get currently logged in user
   User? get currentUser => _auth.currentUser;
 
+  /// ✅ Getter-style method (for compatibility with old code)
+  User? getCurrentUser() => _auth.currentUser;
+
   /// 🔐 Email & Password Sign In
   Future<UserCredential> signInWithEmail(String email, String password) {
     return _auth.signInWithEmailAndPassword(email: email, password: password);
@@ -47,11 +50,19 @@ class AuthService {
   /// 🔓 Google Sign-In Flow
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null; // ❌ User cancelled login
+      final GoogleSignIn googleSignIn = GoogleSignIn.standard();
+
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+
+      // ❌ User cancelled login – exit early
+      if (googleUser == null) {
+        debugPrint('⚠️ Google Sign-In cancelled by user');
+        return null;
+      }
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
+
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
@@ -59,15 +70,15 @@ class AuthService {
 
       final userCredential = await _auth.signInWithCredential(credential);
 
-      // 👉 Link to RevenueCat
+      // 🔗 Link to RevenueCat
       await Purchases.logIn(userCredential.user!.uid);
-
-      // 👉 Refresh subscription info
       await SubscriptionService().refresh();
 
       return userCredential;
-    } catch (e) {
-      rethrow;
+    } catch (e, stackTrace) {
+      debugPrint('❌ Google Sign-In failed: $e');
+      debugPrint(stackTrace.toString());
+      return null;
     }
   }
 

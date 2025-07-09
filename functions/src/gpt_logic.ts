@@ -62,26 +62,25 @@ Return only a single JSON object **inside a JSON code block** like this:
 
   const rawContent = completion.choices[0]?.message?.content?.trim() || "";
 
-  // ✅ Strip markdown code block wrapper if present
+  // ✅ Strip markdown code block (any trailing ``` or leading ```json etc.)
   const jsonText = rawContent
-    .replace(/^```json/i, '')
+    .replace(/^```json\s*/i, '')
     .replace(/```$/, '')
     .trim();
 
   try {
     const parsed = JSON.parse(jsonText);
 
-    if (typeof parsed.formattedRecipe !== "string") {
-      throw new Error("Missing 'formattedRecipe' key in GPT response");
+    if (!parsed || typeof parsed.formattedRecipe !== "string") {
+      throw new Error("Missing or invalid 'formattedRecipe' in GPT response");
     }
 
     const formatted = parsed.formattedRecipe.trim();
-    const notes = parsed.notes?.trim() || "No additional tips provided.";
+    const notes = (parsed.notes?.trim() || "No additional tips provided.").replace(/^[-•]\s*/, "");
 
-    // ✅ Ensure Hints & Tips is always included at the end
     return `${formatted}\n\nHints & Tips:\n${notes}`;
   } catch (err) {
-    console.error("❌ Failed to parse GPT response:", rawContent);
-    throw new Error("Invalid GPT response format");
+    console.error("❌ Failed to parse GPT response:", rawContent.slice(0, 300));
+    throw new Error("Invalid GPT response format – could not parse recipe JSON.");
   }
 }

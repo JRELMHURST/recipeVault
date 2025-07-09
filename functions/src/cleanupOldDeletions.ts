@@ -1,11 +1,10 @@
+import "./firebase"; // 👈 Ensures initializeApp() runs once before all admin calls
+
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as logger from "firebase-functions/logger";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { getStorage } from "firebase-admin/storage";
-import { initializeApp } from "firebase-admin/app";
-
-initializeApp();
 
 const firestore = getFirestore();
 const auth = getAuth();

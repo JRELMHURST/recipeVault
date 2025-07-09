@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum AppThemeMode { system, light, dark }
+enum AppThemeMode { light, dark }
 
 class ThemeNotifier extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.light;
 
   ThemeMode get themeMode => _themeMode;
 
   Future<void> loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getString('themeMode') ?? 'system';
-    _themeMode = _fromAppThemeMode(
-      AppThemeMode.values.firstWhere(
-        (e) => e.name == saved,
-        orElse: () => AppThemeMode.system,
-      ),
+    final saved = prefs.getString('themeMode') ?? 'light';
+
+    final mode = AppThemeMode.values.firstWhere(
+      (e) => e.name == saved,
+      orElse: () => AppThemeMode.light,
     );
+
+    _themeMode = _fromAppThemeMode(mode);
     notifyListeners();
   }
 
@@ -33,8 +34,6 @@ class ThemeNotifier extends ChangeNotifier {
         return ThemeMode.light;
       case AppThemeMode.dark:
         return ThemeMode.dark;
-      case AppThemeMode.system:
-        return ThemeMode.system;
     }
   }
 
@@ -45,7 +44,7 @@ class ThemeNotifier extends ChangeNotifier {
       case ThemeMode.dark:
         return AppThemeMode.dark;
       case ThemeMode.system:
-        return AppThemeMode.system;
+        return AppThemeMode.light; // shouldn't happen now
     }
   }
 }
@@ -92,11 +91,6 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           _buildSectionHeader('APP THEME'),
-          _buildThemeOption(
-            AppThemeMode.system,
-            'System Default',
-            Icons.phone_android,
-          ),
           _buildThemeOption(
             AppThemeMode.light,
             'Light Mode',

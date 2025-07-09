@@ -5,6 +5,21 @@ class AppTheme {
   static const Color backgroundLight = Color(0xFFF6F4FA);
   static const Color backgroundDark = Color(0xFF17141E);
 
+  static AppBarTheme buildAppBarTheme(Color backgroundColor) {
+    return AppBarTheme(
+      backgroundColor: backgroundColor,
+      elevation: 0,
+      centerTitle: true,
+      titleTextStyle: const TextStyle(
+        fontFamily: 'Roboto',
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+      iconTheme: const IconThemeData(color: Colors.white),
+    );
+  }
+
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     fontFamily: 'Roboto',
@@ -14,18 +29,7 @@ class AppTheme {
       surface: Colors.white,
       surfaceContainerHighest: Color(0xFFE8E6F0),
     ),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: primaryColor,
-      elevation: 0,
-      centerTitle: true,
-      titleTextStyle: TextStyle(
-        fontFamily: 'Roboto',
-        fontSize: 22,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-      iconTheme: IconThemeData(color: Colors.white),
-    ),
+    appBarTheme: buildAppBarTheme(primaryColor),
     cardTheme: const CardThemeData(
       color: Colors.white,
       elevation: 6,
@@ -75,21 +79,10 @@ class AppTheme {
     scaffoldBackgroundColor: backgroundDark,
     colorScheme: const ColorScheme.dark(
       primary: primaryColor,
-      surface: Color(0xFF23202A),
+      surface: Color(0xFF1E1B26),
       surfaceContainerHighest: Color(0xFF272333),
     ),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: primaryColor,
-      elevation: 0,
-      centerTitle: true,
-      titleTextStyle: TextStyle(
-        fontFamily: 'Roboto',
-        fontSize: 22,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-      ),
-      iconTheme: IconThemeData(color: Colors.white),
-    ),
+    appBarTheme: buildAppBarTheme(Color(0xFF1E1B26)),
     cardTheme: const CardThemeData(
       color: Color(0xFF23202A),
       elevation: 6,

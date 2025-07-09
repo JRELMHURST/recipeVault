@@ -6,18 +6,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:recipe_vault/app_router.dart';
 import 'package:recipe_vault/settings/appearance_settings_screen.dart';
 
+import 'app_router.dart';
 import 'firebase_options.dart';
+import 'core/theme.dart';
+import 'core/accessibility.dart';
 import 'model/recipe_card_model.dart';
 import 'model/category_model.dart';
 import 'services/user_preference_service.dart';
 import 'services/category_service.dart';
 import 'revcat_paywall/services/subscription_service.dart';
 import 'revcat_paywall/services/access_manager.dart';
-import 'core/theme.dart';
-import 'core/accessibility.dart';
 
 late final FirebaseFunctions functions;
 final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -58,7 +58,10 @@ Future<void> main() async {
   runApp(
     ChangeNotifierProvider(
       create: (_) => themeNotifier,
-      child: RecipeVaultApp(themeNotifier: themeNotifier),
+      child: Consumer<ThemeNotifier>(
+        builder: (context, notifier, _) =>
+            RecipeVaultApp(themeNotifier: notifier),
+      ),
     ),
   );
 }
@@ -81,7 +84,7 @@ class RecipeVaultApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeNotifier.themeMode,
-        routerConfig: createAppRouter(themeNotifier), // <--- use the router
+        routerConfig: createAppRouter(themeNotifier),
       ),
     );
   }

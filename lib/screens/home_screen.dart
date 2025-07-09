@@ -98,59 +98,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70),
-        child: AppBar(
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          leading: _selectedIndex == 1
-              ? Padding(
-                  padding: const EdgeInsets.only(left: 12, top: 8),
-                  child: IconButton(
-                    iconSize: 30,
-                    icon: Icon(_viewModeIcon, color: Colors.white),
-                    onPressed: _toggleViewMode,
-                  ),
-                )
-              : null,
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.primaryContainer,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(24),
-              ),
-            ),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 48),
-                child: Text(
-                  _appBarTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                    fontFamily: 'SF Pro Display',
-                    shadows: [
-                      Shadow(
-                        offset: Offset(0, 1),
-                        blurRadius: 4,
-                        color: Colors.black26,
-                      ),
-                    ],
-                  ),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        title: Text(_appBarTitle, style: theme.appBarTheme.titleTextStyle),
+        centerTitle: true,
+        leading: _selectedIndex == 1
+            ? IconButton(
+                icon: Icon(
+                  _viewModeIcon,
+                  color: theme.appBarTheme.iconTheme?.color,
                 ),
-              ),
-            ),
-          ),
-        ),
+                onPressed: _toggleViewMode,
+              )
+            : null,
       ),
       backgroundColor: theme.colorScheme.surface,
       body: SafeArea(

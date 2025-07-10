@@ -1,5 +1,4 @@
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
@@ -65,8 +64,8 @@ class AccountSettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.delete_forever),
             title: const Text('Delete Account'),
-            textColor: Theme.of(context).colorScheme.error,
-            iconColor: Theme.of(context).colorScheme.error,
+            textColor: theme.colorScheme.error,
+            iconColor: theme.colorScheme.error,
             onTap: () => _confirmDeleteAccount(context),
           ),
         ],
@@ -123,9 +122,8 @@ class AccountSettingsScreen extends StatelessWidget {
       builder: (_) => AlertDialog(
         title: const Text('Delete Your Account?'),
         content: const Text(
-          'This will mark your account for permanent deletion in 30 days.\n'
-          'You will be signed out immediately.\n\n'
-          'This action cannot be undone.',
+          'This will permanently delete your account and all associated data including recipes, images, and preferences.\n\n'
+          'This action is irreversible.',
         ),
         actions: [
           TextButton(
@@ -147,29 +145,27 @@ class AccountSettingsScreen extends StatelessWidget {
       try {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) {
-          if (kDebugMode) {
-            print("❌ No user signed in.");
-          }
+          debugPrint("❌ No user signed in.");
           return;
         }
 
-        if (kDebugMode) {
-          print('➡️ Calling deleteAccount Callable Function...');
-        }
+        debugPrint('➡️ Calling deleteAccount Callable Function...');
         final deleteFn = FirebaseFunctions.instanceFor(
           region: 'europe-west2',
         ).httpsCallable('deleteAccount');
+
         final result = await deleteFn();
-        if (kDebugMode) {
-          print('✅ deleteAccount result: $result');
-        }
+        debugPrint('✅ deleteAccount result: ${result.data}');
 
         await FirebaseAuth.instance.signOut();
-        if (context.mounted) context.go('/login');
-      } catch (e) {
-        if (kDebugMode) {
-          print('❌ Cloud Function error: $e');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Account deleted successfully.')),
+          );
+          context.go('/login');
         }
+      } catch (e) {
+        debugPrint('❌ Cloud Function error: $e');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to delete account: $e')),

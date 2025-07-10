@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
     "module": "NodeNext",
-    "esModuleInterop": true,
     "moduleResolution": "nodenext",
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
+    "target": "es2022",
     "outDir": "lib",
     "sourceMap": true,
     "strict": true,
-    "target": "es2017"
+    "esModuleInterop": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true
   },
   "compileOnSave": true,
   "include": ["src"]

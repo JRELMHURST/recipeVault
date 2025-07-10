@@ -1,4 +1,5 @@
-name: projects/140256184353/policies/iam.allowedPolicyMemberDomains
-spec:
-  rules:
-    - allowAll: true
+bindings:
+- role: roles/firestore.user
+  members:
+    - serviceAccount:140256184353-compute@developer.gserviceaccount.com
+etag: BwYAAA==

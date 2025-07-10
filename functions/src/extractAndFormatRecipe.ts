@@ -4,17 +4,17 @@ import { getStorage } from "firebase-admin/storage";
 import { decode } from "html-entities";
 import fetch from "node-fetch";
 
-import { extractTextFromImages } from "./ocr";
-import { detectLanguage } from "./detect";
-import { translateToEnglish } from "./translate";
-import { generateFormattedRecipe } from "./gpt_logic";
-import { cleanText, previewText } from "./text_utils";
+import { extractTextFromImages } from "./ocr.js";
+import { detectLanguage } from "./detect.js";
+import { translateToEnglish } from "./translate.js";
+import { generateFormattedRecipe } from "./gpt_logic.js";
+import { cleanText, previewText } from "./text_utils.js";
 import {
   enforceTranslationPolicy,
   incrementTranslationUsage,
   enforceGptRecipePolicy,
   incrementGptRecipeUsage,
-} from "./policy";
+} from "./policy.js";
 
 const REVENUECAT_SECRET_KEY = defineSecret("REVENUECAT_SECRET_KEY");
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
@@ -32,7 +32,15 @@ async function fetchRevenueCatTier(uid: string): Promise<string> {
       return "taster";
     }
 
-    const json = await response.json();
+    const json = (await response.json()) as {
+      subscriber?: {
+        entitlements?: {
+          masterChef?: { is_active: boolean };
+          homeChef?: { is_active: boolean };
+        };
+      };
+    };
+
     const entitlements = json?.subscriber?.entitlements;
 
     if (entitlements?.masterChef?.is_active) return "masterChef";
@@ -179,9 +187,10 @@ export const extractAndFormatRecipe = onCall(
         isTranslated: translationUsed,
         translatedFromLanguage: translationUsed ? detectedLanguage : null,
       };
-    } catch (err) {
+    } catch (err: any) {
       console.error("❌ extractAndFormatRecipe failed:", err);
-      throw new HttpsError("internal", "Failed to process recipe.");
+      const message = err?.message || "Unknown error";
+      throw new HttpsError("internal", `Failed to process recipe: ${message}`);
     }
   }
 );

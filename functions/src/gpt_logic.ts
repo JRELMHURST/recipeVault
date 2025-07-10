@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 import { defineSecret } from "firebase-functions/params";
 
-// 🔐 Pull secret securely via Firebase Functions' Secret Manager
-const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
+// 🔐 Securely pull the OpenAI API key from Firebase Secret Manager
+export const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
 /**
  * Uses GPT to format a translated recipe text into a consistent structure.
@@ -12,7 +12,7 @@ export async function generateFormattedRecipe(
   text: string,
   sourceLang: string
 ): Promise<string> {
-  const apiKey = OPENAI_API_KEY.value();
+  const apiKey = await OPENAI_API_KEY.value(); // ✅ FIXED
 
   if (!apiKey) {
     throw new Error("❌ OPENAI_API_KEY is not set via Secret Manager.");
@@ -55,17 +55,29 @@ Return only a single JSON object **inside a JSON code block** like this:
 
   const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""`;
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    temperature: 0.3,
-    max_tokens: 1500,
-  });
+  console.log("🧠 Sending prompt to OpenAI...");
 
-  const rawContent = completion.choices[0]?.message?.content?.trim() || "";
+  let rawContent = "";
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.3,
+      max_tokens: 1500,
+    });
+
+    rawContent = completion.choices[0]?.message?.content?.trim() || "";
+
+    console.log("✅ GPT response received:");
+    console.log(rawContent.slice(0, 300));
+  } catch (err) {
+    console.error("❌ OpenAI API call failed:", err);
+    throw new Error("OpenAI API call failed.");
+  }
 
   const jsonText = rawContent
     .replace(/^```json\s*/i, '')

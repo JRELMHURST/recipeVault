@@ -1,9 +1,10 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
 
 class PaywallScreen extends StatefulWidget {
@@ -109,116 +110,221 @@ class _PaywallScreenState extends State<PaywallScreen> {
       return Scaffold(body: Center(child: Text(_error!)));
     }
 
-    final homeChef = _packages
-        .where((pkg) => pkg.storeProduct.title.toLowerCase().contains('home'))
-        .toList();
-
-    final masterChef = _packages
-        .where((pkg) => pkg.storeProduct.title.toLowerCase().contains('master'))
-        .toList();
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Choose Your Plan')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Text(
-              'Your current plan: ${subscriptionService.getCurrentTierName()}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontStyle: FontStyle.italic,
+      backgroundColor: theme.colorScheme.surface,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(theme),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Your current plan: ${subscriptionService.getCurrentTierName()}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                if (homeChef.isNotEmpty) ...[
-                  Text(
-                    '🏠 Home Chef Plan',
-                    style: theme.textTheme.titleMedium!.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...homeChef.map(
-                    (pkg) => _buildPackageCard(pkg, theme, currentTier),
-                  ),
-                  const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  if (!subscriptionService.hasTasterTrialBeenUsed)
+                    _buildTasterTrialCard(context),
+                  ..._packages.map((pkg) {
+                    final isCurrent = pkg.storeProduct.title
+                        .toLowerCase()
+                        .contains(currentTier.name.toLowerCase());
+                    return _buildPlanCard(pkg, isCurrent);
+                  }),
                 ],
-                if (masterChef.isNotEmpty) ...[
-                  Text(
-                    '👨‍🍳 Master Chef Plans',
-                    style: theme.textTheme.titleMedium!.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...masterChef.map(
-                    (pkg) => _buildPackageCard(pkg, theme, currentTier),
-                  ),
-                ],
-              ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: TextButton(
+                onPressed: _restorePurchases,
+                child: const Text('Restore Purchases'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.primaryContainer,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Choose Your Plan',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: theme.colorScheme.onPrimary,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: _restorePurchases,
-            child: const Text('Restore Purchases'),
+          const SizedBox(height: 8),
+          Text(
+            'Unlock unlimited AI recipes, smart tools, and more!',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onPrimary,
+            ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 12),
         ],
       ),
     );
   }
 
-  Widget _buildPackageCard(Package pkg, ThemeData theme, Tier currentTier) {
-    final title = pkg.storeProduct.title.toLowerCase();
-    final isCurrentPlan =
-        (title.contains('home') && currentTier == Tier.homeChef) ||
-        (title.contains('master') && currentTier == Tier.masterChef);
+  Widget _buildTasterTrialCard(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '🥄 Taster Trial (7 Days)',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '£0.00 (Free)',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...[
+              'Unlimited AI recipes for 7 days',
+              'Full access to translation & image uploads',
+              'No card required – trial auto-expires',
+            ].map(
+              (b) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      size: 18,
+                      color: Colors.green,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(b)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () async {
+                await SubscriptionService().activateTasterTrial();
+                final prefs = await SharedPreferences.getInstance();
+                final hasSeenWelcome = prefs.getBool('hasSeenWelcome') ?? false;
 
-    final planBenefits = _getPlanBenefits(pkg);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('✅ Taster Trial activated!')),
+                );
+                context.go(hasSeenWelcome ? '/home' : '/welcome');
+              },
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Start Free Trial'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlanCard(Package pkg, bool isCurrent) {
+    final theme = Theme.of(context);
+    final title = pkg.storeProduct.title;
+    final price = pkg.storeProduct.priceString;
+    final benefits = _getPlanBenefits(pkg);
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ExpansionTile(
-        title: Text(pkg.storeProduct.title, style: theme.textTheme.titleLarge),
-        subtitle: Text(pkg.storeProduct.priceString),
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final benefit in planBenefits) ...[
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.check_circle,
-                        size: 20,
-                        color: Colors.green,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(benefit)),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                ],
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: isCurrentPlan ? null : () => _purchase(pkg),
-                  child: Text(isCurrentPlan ? 'Current Plan' : 'Subscribe'),
+            const SizedBox(height: 4),
+            Text(
+              price,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...benefits.map(
+              (b) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      size: 18,
+                      color: Colors.green,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(b)),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: isCurrent ? null : () => _purchase(pkg),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(isCurrent ? 'Current Plan' : 'Subscribe'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -227,26 +333,20 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final title = pkg.storeProduct.title.toLowerCase();
     if (title.contains('home')) {
       return [
-        '5 AI translations per month',
-        '20 AI recipe creations',
+        '20 AI recipes per month',
+        '5 AI translations',
         'Recipe image uploads',
-        'Cancel anytime',
+        'Smart filters + sync',
       ];
     } else if (title.contains('master')) {
       return [
-        'Unlimited AI translations',
-        'Priority processing queue',
-        'Advanced recipe filtering',
+        'Unlimited AI recipes & translations',
+        'Priority queue processing',
+        'Advanced filtering & tools',
         'All Home Chef features included',
-        'Cancel anytime',
       ];
     } else {
-      return [
-        'Full access for 7 days',
-        'Unlimited AI recipe creations',
-        'Recipe image upload support',
-        'Cancel anytime',
-      ];
+      return ['Standard access'];
     }
   }
 }

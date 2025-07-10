@@ -1,10 +1,9 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
-import 'package:recipe_vault/screens/welcome_screen/dev_bypass_button.dart';
 import 'package:recipe_vault/login/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -67,6 +66,18 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _skipToHome() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasSeenWelcome', true);
+    if (mounted) context.pushReplacement('/home');
+  }
+
+  Future<void> _goToPricing() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasSeenWelcome', true);
+    if (mounted) context.go('/pricing');
   }
 
   Future<void> _logOut() async {
@@ -160,11 +171,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           TextButton(
-                            onPressed: () => context.go('/home'),
+                            onPressed: _skipToHome,
                             child: const Text('Skip to Home'),
                           ),
                           TextButton(
-                            onPressed: () => context.go('/pricing'),
+                            onPressed: _goToPricing,
                             child: const Text('Back to Pricing'),
                           ),
                           TextButton(
@@ -173,8 +184,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      const DevBypassButton(),
                       const SizedBox(height: 12),
                       Text(
                         'No faff. No ads. Just recipes.',

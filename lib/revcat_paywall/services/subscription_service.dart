@@ -1,4 +1,5 @@
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Your app's defined subscription tiers
 enum Tier { none, tasterTrial, homeChef, masterChef }
@@ -11,9 +12,14 @@ class SubscriptionService {
   Tier _currentTier = Tier.none;
   Tier get currentTier => _currentTier;
 
+  late final SharedPreferences _prefs;
+  static const _trialUsedKey = 'taster_trial_used';
+
   /// Call this once during app start (after Purchases.configure)
   Future<void> init() async {
     try {
+      _prefs = await SharedPreferences.getInstance();
+
       final info = await Purchases.getCustomerInfo();
       final entitlements = info.entitlements.active;
 
@@ -69,6 +75,11 @@ class SubscriptionService {
   bool get allowCloudSync =>
       _currentTier != Tier.tasterTrial && _currentTier != Tier.none;
 
+  bool get hasTasterTrialBeenUsed => _prefs.getBool(_trialUsedKey) ?? false;
+
+  /// ✅ New: Returns true if any active tier is present
+  bool get hasActiveSubscription => hasAccess;
+
   /// Refresh the tier manually (e.g. after purchase or restore)
   Future<void> refresh() async => await init();
 
@@ -81,6 +92,7 @@ class SubscriptionService {
       if (!hasTrial) {
         // ⛳ Add logic to activate via backend or Firestore
         _currentTier = Tier.tasterTrial;
+        await _prefs.setBool(_trialUsedKey, true);
       }
 
       await refresh(); // Always refresh to confirm

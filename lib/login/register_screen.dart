@@ -21,6 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _isLoading = false;
   String? _errorMessage;
+  bool _obscurePassword = true;
 
   Future<void> _maybeOfferTasterTrial(BuildContext context) async {
     final tier = SubscriptionService().getCurrentTierName();
@@ -46,7 +47,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       final isTrial =
           GoRouterState.of(context).uri.queryParameters['trial'] == 'true';
-
       if (isTrial) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -79,7 +79,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       final isTrial =
           GoRouterState.of(context).uri.queryParameters['trial'] == 'true';
-
       if (isTrial) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -130,7 +129,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     TextFormField(
                       controller: _emailController,
-                      decoration: const InputDecoration(labelText: 'Email'),
+                      keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(),
+                      ),
                       validator: (value) => value != null && value.contains('@')
                           ? null
                           : 'Enter a valid email',
@@ -138,8 +142,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(labelText: 'Password'),
+                      obscureText: _obscurePassword,
+                      autofillHints: const [AutofillHints.password],
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: () {
+                            setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            );
+                          },
+                        ),
+                      ),
                       validator: (value) => value != null && value.length >= 6
                           ? null
                           : 'Minimum 6 characters',
@@ -155,17 +175,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   textAlign: TextAlign.center,
                 ),
               const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _register,
-                child: Text(
-                  _isLoading ? 'Creating account...' : 'Register with Email',
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _register,
+                  child: Text(
+                    _isLoading ? 'Creating account...' : 'Register with Email',
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: _isLoading ? null : _registerWithGoogle,
-                icon: const Icon(Icons.g_mobiledata),
-                label: const Text('Register with Google'),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(
+                    Icons.g_mobiledata,
+                  ), // Or use Image.asset('google_icon.png')
+                  label: const Text('Register with Google'),
+                  onPressed: _isLoading ? null : _registerWithGoogle,
+                ),
               ),
               const SizedBox(height: 18),
               TextButton(

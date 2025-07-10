@@ -1,5 +1,8 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
 
 class SubscriptionSuccessScreen extends StatelessWidget {
@@ -71,7 +74,12 @@ class SubscriptionSuccessScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 40),
                 ElevatedButton.icon(
-                  onPressed: () => context.go('/home'),
+                  onPressed: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    final hasSeenWelcome =
+                        prefs.getBool('hasSeenWelcome') ?? false;
+                    context.go(hasSeenWelcome ? '/home' : '/welcome');
+                  },
                   icon: const Icon(Icons.check_circle_outline),
                   label: const Text('Start Creating Recipes'),
                 ),

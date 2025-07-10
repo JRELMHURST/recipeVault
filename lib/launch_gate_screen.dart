@@ -1,7 +1,8 @@
-// ignore_for_file: use_build_context_synchronously, duplicate_ignore
+// ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 
 class LaunchGateScreen extends StatefulWidget {
@@ -19,16 +20,26 @@ class _LaunchGateScreenState extends State<LaunchGateScreen> {
   }
 
   Future<void> _checkAccessState() async {
-    try {
-      final result = await FirebaseFunctions.instance
-          .httpsCallable('getUserAccessState')
-          .call();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      debugPrint('🔒 No Firebase user found. Redirecting to login.');
+      context.go('/login');
+      return;
+    }
 
-      final redirectTo = result.data['redirectTo'] as String?;
-      // ignore: use_build_context_synchronously
+    try {
+      debugPrint('🟡 Calling getUserAccessState...');
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
+
+      final result = await functions.httpsCallable('getUserAccessState').call();
+      final data = result.data;
+      debugPrint('🟢 Function response: $data');
+
+      final redirectTo = data['route'] as String?;
       context.go(redirectTo ?? '/home');
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('🔴 Access state error: $e');
+      debugPrint('📛 Stack trace:\n$stack');
       context.go('/error');
     }
   }

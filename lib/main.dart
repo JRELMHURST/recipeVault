@@ -117,6 +117,7 @@ class RecipeVaultApp extends StatelessWidget {
 GoRouter _buildRouter() {
   return GoRouter(
     initialLocation: '/',
+    redirect: null, // <-- Explicitly disables redirect logic (important!)
     routes: [
       GoRoute(path: '/', builder: (context, state) => const LaunchGateScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
@@ -182,6 +183,19 @@ GoRouter _buildRouter() {
       GoRoute(
         path: '/upgrade-blocked',
         builder: (context, state) => const UpgradeBlockedScreen(),
+      ),
+
+      // ✅ Added fallback error screen
+      GoRoute(
+        path: '/error',
+        builder: (context, state) => const Scaffold(
+          body: Center(
+            child: Text(
+              'Something went wrong.\nPlease try again.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
       ),
     ],
   );

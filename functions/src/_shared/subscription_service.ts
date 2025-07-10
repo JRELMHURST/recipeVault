@@ -1,3 +1,5 @@
+// functions/src/_shared/subscription_service.ts
+
 export const SubscriptionService = {
   isPaid: (tier: string): boolean => {
     return ["home_chef", "master_chef"].includes(tier);

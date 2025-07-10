@@ -9,7 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:recipe_vault/z_main_idgets/redirect_logic.dart';
+import 'package:recipe_vault/launch_gate_screen.dart';
 import 'package:recipe_vault/z_main_idgets/user_session_service.dart';
 
 import 'firebase_options.dart';
@@ -93,7 +93,7 @@ class RecipeVaultApp extends StatelessWidget {
 
         final user = snapshot.data;
 
-        // 🔁 Handle login, logout, sync
+        // 🖁 Handle login, logout, sync
         UserSessionService.handleUserChange(user);
 
         return MediaQuery(
@@ -106,7 +106,7 @@ class RecipeVaultApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeNotifier.themeMode,
-            routerConfig: _buildRouter(user),
+            routerConfig: _buildRouter(),
           ),
         );
       },
@@ -114,11 +114,11 @@ class RecipeVaultApp extends StatelessWidget {
   }
 }
 
-GoRouter _buildRouter(User? user) {
+GoRouter _buildRouter() {
   return GoRouter(
     initialLocation: '/',
-    redirect: (context, state) => handleAuthRedirect(user),
     routes: [
+      GoRoute(path: '/', builder: (context, state) => const LaunchGateScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/welcome',

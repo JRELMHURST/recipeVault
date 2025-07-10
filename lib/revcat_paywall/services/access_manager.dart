@@ -51,6 +51,10 @@ class AccessManager {
         if (!trialActive) return false;
         final used = await getTrialRecipesUsed();
         return used < trialLimit;
+
+      case Tier.none:
+        // No access by default for undefined or unrecognised tier
+        return false;
     }
   }
 
@@ -76,6 +80,10 @@ class AccessManager {
           final used = await getTrialRecipesUsed();
           await box.put(_trialUsageKey, used + 1);
         }
+        return;
+
+      case Tier.none:
+        // Do nothing — user has no tier access
         return;
     }
   }

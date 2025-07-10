@@ -1,14 +1,14 @@
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 /// Your app's defined subscription tiers
-enum Tier { tasterTrial, homeChef, masterChef }
+enum Tier { none, tasterTrial, homeChef, masterChef }
 
 class SubscriptionService {
   static final SubscriptionService _instance = SubscriptionService._internal();
   factory SubscriptionService() => _instance;
   SubscriptionService._internal();
 
-  Tier _currentTier = Tier.tasterTrial;
+  Tier _currentTier = Tier.none;
   Tier get currentTier => _currentTier;
 
   /// Call this once during app start (after Purchases.configure)
@@ -22,11 +22,13 @@ class SubscriptionService {
         _currentTier = Tier.masterChef;
       } else if (entitlements.containsKey('home_chef_monthly')) {
         _currentTier = Tier.homeChef;
-      } else {
+      } else if (entitlements.containsKey('taster')) {
         _currentTier = Tier.tasterTrial;
+      } else {
+        _currentTier = Tier.none;
       }
     } catch (e) {
-      _currentTier = Tier.tasterTrial; // fallback if RevenueCat errors
+      _currentTier = Tier.none; // fallback on RevenueCat error
     }
   }
 
@@ -39,23 +41,21 @@ class SubscriptionService {
         return 'Home Chef';
       case Tier.masterChef:
         return 'Master Chef';
+      case Tier.none:
+        return 'No Access';
     }
   }
 
-  /// Whether the current tier is a paid subscription
   bool isPaidTier() =>
       _currentTier == Tier.homeChef || _currentTier == Tier.masterChef;
 
-  /// Check if current tier matches
   bool isCurrentTier(Tier tier) => _currentTier == tier;
 
-  /// Check if user is on the free trial tier
   bool isTrialActive() => _currentTier == Tier.tasterTrial;
 
-  /// Whether the user has access to the app (trial or paid tier)
-  bool get hasAccess => isTrialActive() || isPaidTier();
+  bool get hasAccess =>
+      isTrialActive() || isPaidTier(); // will return false for Tier.none
 
-  /// Per-tier feature access logic
   bool get allowTranslation =>
       _currentTier == Tier.homeChef || _currentTier == Tier.masterChef;
 
@@ -63,11 +63,13 @@ class SubscriptionService {
 
   bool get allowSmartSearch => _currentTier == Tier.masterChef;
 
-  bool get allowImageUpload => _currentTier != Tier.tasterTrial;
+  bool get allowImageUpload =>
+      _currentTier != Tier.tasterTrial && _currentTier != Tier.none;
 
-  bool get allowCloudSync => _currentTier != Tier.tasterTrial;
+  bool get allowCloudSync =>
+      _currentTier != Tier.tasterTrial && _currentTier != Tier.none;
 
-  /// Refresh the tier manually (e.g. after a purchase or restore)
+  /// Refresh the tier manually (e.g. after purchase or restore)
   Future<void> refresh() async => await init();
 
   /// Manually activate the Taster Trial if user opts in
@@ -77,17 +79,16 @@ class SubscriptionService {
       final hasTrial = info.entitlements.active.containsKey('taster');
 
       if (!hasTrial) {
-        // Logic placeholder — use Firestore or a backend API to flag trial if needed
+        // ⛳ Add logic to activate via backend or Firestore
         _currentTier = Tier.tasterTrial;
-        // You may also want to call Purchases.logIn(...) if custom user identifiers apply
       }
-      await refresh();
+
+      await refresh(); // Always refresh to confirm
     } catch (e) {
       rethrow;
     }
   }
 
-  /// Debug helper
   @override
   String toString() => 'SubscriptionService(currentTier: $_currentTier)';
 }

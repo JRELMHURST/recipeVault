@@ -29,6 +29,11 @@ class SubscriptionSuccessScreen extends StatelessWidget {
             'Taster Trial activated!\n'
             'Try out RecipeVault AI for 7 days, with unlimited access.';
         break;
+      case Tier.none:
+        subtitle =
+            'Welcome to RecipeVault!\n'
+            'Upgrade to unlock powerful AI recipe tools and features.';
+        break;
     }
 
     return Scaffold(

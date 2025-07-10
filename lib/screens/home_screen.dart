@@ -1,11 +1,13 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_vault_screen.dart';
 import 'package:recipe_vault/settings/settings_screen.dart';
+import 'package:recipe_vault/revcat_paywall/utils/trial_prompt_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,7 +25,24 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserViewMode();
+    _checkAccessAndInit();
+  }
+
+  Future<void> _checkAccessAndInit() async {
+    final subscription = SubscriptionService();
+    if (!subscription.hasAccess) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed('/pricing');
+      });
+      return;
+    }
+
+    await _loadUserViewMode();
+
+    // Prompt for trial if eligible
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      TrialPromptHelper.checkAndPromptTrial(context);
+    });
   }
 
   Future<void> _loadUserViewMode() async {

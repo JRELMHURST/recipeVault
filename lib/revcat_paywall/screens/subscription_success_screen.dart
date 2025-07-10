@@ -8,22 +8,27 @@ class SubscriptionSuccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    final tier = SubscriptionService().currentTier;
     final tierName = SubscriptionService().getCurrentTierName();
 
     String subtitle;
-    switch (tierName) {
-      case 'Home Chef':
+    switch (tier) {
+      case Tier.homeChef:
         subtitle =
             'You’ve unlocked Home Chef!\n'
             'Enjoy 20 AI recipes per month, translation tools and smart features.';
         break;
-      case 'Master Chef':
+      case Tier.masterChef:
         subtitle =
             'Welcome, Master Chef!\n'
             'You now have unlimited AI recipes, premium tools and lifetime access.';
         break;
-      default:
-        subtitle = 'You’ve upgraded your RecipeVault plan!';
+      case Tier.tasterTrial:
+        subtitle =
+            'Taster Trial activated!\n'
+            'Try out RecipeVault AI for 7 days, with unlimited access.';
+        break;
     }
 
     return Scaffold(
@@ -41,6 +46,15 @@ class SubscriptionSuccessScreen extends StatelessWidget {
                   'Subscription Activated!',
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Plan: $tierName',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.primary,
                   ),
                   textAlign: TextAlign.center,
                 ),

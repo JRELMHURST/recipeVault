@@ -16,14 +16,14 @@ class TasterTrialDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
-            'Get full access to AI recipes, translation, and more for 7 days. No card needed.',
+            'Get full access to AI recipes, translation, and more for 7 days.\nNo credit card required.',
           ),
           const SizedBox(height: 16),
           Row(
             children: const [
               Icon(Icons.lock_open_rounded, size: 20),
               SizedBox(width: 8),
-              Text('No credit card required'),
+              Text('No credit card needed'),
             ],
           ),
           const SizedBox(height: 8),
@@ -31,7 +31,7 @@ class TasterTrialDialog extends StatelessWidget {
             children: const [
               Icon(Icons.timer_rounded, size: 20),
               SizedBox(width: 8),
-              Text('7-day trial, auto expires'),
+              Text('7-day trial, auto-expires'),
             ],
           ),
         ],
@@ -43,13 +43,27 @@ class TasterTrialDialog extends StatelessWidget {
         ),
         ElevatedButton(
           onPressed: () async {
-            await SubscriptionService().activateTasterTrial();
-            if (context.mounted) {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('✅ Taster trial activated!')),
-              );
-              context.go('/home');
+            try {
+              await SubscriptionService().activateTasterTrial();
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Taster trial activated!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+                context.go('/home');
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('❌ Failed to start trial: $e'),
+                    backgroundColor: Colors.red[400],
+                  ),
+                );
+              }
             }
           },
           child: const Text('Start Free Trial'),

@@ -3,7 +3,7 @@ import 'subscription_service.dart';
 
 class AccessManager {
   static const _proUsageKey = 'monthlyRecipeCount';
-  static const _lastResetKey = 'lastUsageResetMonth';
+  static const _lastResetKey = 'lastUsageReset';
   static const _trialUsageKey = 'trialRecipeCount';
 
   static const int trialLimit = 3;
@@ -13,11 +13,12 @@ class AccessManager {
   static Future<void> initialise() async {
     final box = await Hive.openBox('access');
     final now = DateTime.now();
-    final lastMonth = box.get(_lastResetKey) as int?;
+    final current = now.year * 100 + now.month;
+    final lastReset = box.get(_lastResetKey, defaultValue: 0) as int;
 
-    if (lastMonth == null || lastMonth != now.month) {
+    if (lastReset != current) {
       await box.put(_proUsageKey, 0);
-      await box.put(_lastResetKey, now.month);
+      await box.put(_lastResetKey, current);
     }
   }
 
@@ -34,6 +35,7 @@ class AccessManager {
   /// Whether user can create a recipe (based on tier & limits)
   static Future<bool> canCreateRecipe() async {
     final sub = SubscriptionService();
+    await sub.refresh(); // Ensure currentTier is loaded
     final tier = sub.currentTier;
     final trialActive = sub.isTrialActive();
 
@@ -56,6 +58,7 @@ class AccessManager {
   static Future<void> incrementRecipeUsage() async {
     final box = await Hive.openBox('access');
     final sub = SubscriptionService();
+    await sub.refresh();
     final tier = sub.currentTier;
     final trialActive = sub.isTrialActive();
 

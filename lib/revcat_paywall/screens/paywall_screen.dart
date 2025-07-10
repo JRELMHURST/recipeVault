@@ -3,7 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter/services.dart'; // ✅ Needed for PlatformException
+import 'package:flutter/services.dart';
+import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -97,6 +98,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final subscriptionService = SubscriptionService();
+    final currentTier = subscriptionService.currentTier;
 
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -118,6 +121,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
       appBar: AppBar(title: const Text('Choose Your Plan')),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Text(
+              'Your current plan: ${subscriptionService.getCurrentTierName()}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(16),
@@ -130,7 +142,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ...homeChef.map((pkg) => _buildPackageCard(pkg, theme)),
+                  ...homeChef.map(
+                    (pkg) => _buildPackageCard(pkg, theme, currentTier),
+                  ),
                   const SizedBox(height: 24),
                 ],
                 if (masterChef.isNotEmpty) ...[
@@ -141,7 +155,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ...masterChef.map((pkg) => _buildPackageCard(pkg, theme)),
+                  ...masterChef.map(
+                    (pkg) => _buildPackageCard(pkg, theme, currentTier),
+                  ),
                 ],
               ],
             ),
@@ -157,7 +173,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
-  Widget _buildPackageCard(Package pkg, ThemeData theme) {
+  Widget _buildPackageCard(Package pkg, ThemeData theme, Tier currentTier) {
+    final title = pkg.storeProduct.title.toLowerCase();
+    final isCurrentPlan =
+        (title.contains('home') && currentTier == Tier.homeChef) ||
+        (title.contains('master') && currentTier == Tier.masterChef);
+
     final planBenefits = _getPlanBenefits(pkg);
 
     return Card(
@@ -191,8 +212,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 ],
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () => _purchase(pkg),
-                  child: const Text('Subscribe'),
+                  onPressed: isCurrentPlan ? null : () => _purchase(pkg),
+                  child: Text(isCurrentPlan ? 'Current Plan' : 'Subscribe'),
                 ),
               ],
             ),

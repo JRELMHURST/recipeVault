@@ -90,11 +90,6 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('About & Legal'),
             onTap: () => context.push('/settings/about'),
           ),
-
-          if (email == 'jnriggall@gmail.com') ...[
-            const SizedBox(height: 32),
-            _buildSectionHeader('Developer'),
-          ],
         ],
       ),
     );

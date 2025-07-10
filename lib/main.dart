@@ -19,7 +19,7 @@ import 'core/theme_notifier.dart';
 import 'core/text_scale_notifier.dart';
 import 'model/recipe_card_model.dart';
 import 'model/category_model.dart';
-import 'screens/welcome_screen.dart';
+import 'screens/welcome_screen/welcome_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/results_screen.dart';
 import 'login/login_screen.dart';
@@ -39,7 +39,6 @@ import 'revcat_paywall/screens/upgrade_blocked_screen.dart';
 import 'revcat_paywall/screens/paywall_screen.dart';
 import 'revcat_paywall/services/subscription_service.dart';
 import 'revcat_paywall/services/access_manager.dart';
-import 'revcat_paywall/services/subscription_manager.dart';
 
 final FirebaseFunctions functions = FirebaseFunctions.instanceFor(
   region: 'europe-west2',
@@ -204,19 +203,33 @@ class _RedirectDeciderState extends State<RedirectDecider> {
   }
 
   Future<void> _handleRedirect() async {
-    final user = FirebaseAuth.instance.currentUser;
     final prefs = await SharedPreferences.getInstance();
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      context.go('/login');
+      return;
+    }
+
+    // ✅ Corrected method name
+    await SubscriptionService().refresh();
+    final hasAccess =
+        SubscriptionService().isPaidTier() ||
+        SubscriptionService().isTrialActive();
+
     final hasSeenWelcome = prefs.getBool('hasSeenWelcome') ?? false;
 
-    if (!SubscriptionManager().hasAccess) {
+    if (!hasAccess) {
       context.go('/pricing');
-    } else if (user == null) {
-      context.go('/login');
-    } else if (!hasSeenWelcome) {
-      context.go('/welcome');
-    } else {
-      context.go('/home');
+      return;
     }
+
+    if (!hasSeenWelcome) {
+      context.go('/welcome');
+      return;
+    }
+
+    context.go('/home');
   }
 
   @override

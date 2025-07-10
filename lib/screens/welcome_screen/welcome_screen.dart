@@ -4,8 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
-import 'package:recipe_vault/widgets/dev_bypass_button.dart';
+import 'package:recipe_vault/screens/welcome_screen/dev_bypass_button.dart';
 import 'package:recipe_vault/login/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
+import 'package:recipe_vault/screens/welcome_screen/bouncy_button.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -26,8 +30,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   void initState() {
     super.initState();
     _controller.forward();
-
-    // 🔍 Log the current user on screen load
     AuthService().logCurrentUser();
   }
 
@@ -35,6 +37,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     setState(() => _isLoading = true);
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('hasSeenWelcome', true);
+
       final compressedFiles =
           await ImageProcessingService.pickAndCompressImages();
 
@@ -62,6 +67,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _logOut() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) context.go('/login');
   }
 
   @override
@@ -125,7 +135,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           color: theme.colorScheme.primary.withOpacity(0.75),
                           fontStyle: FontStyle.italic,
                           fontWeight: FontWeight.w500,
-                          letterSpacing: 0.0,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -139,7 +148,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         ),
                       ),
                       const SizedBox(height: 42),
-                      _BouncyButton(
+                      BouncyButton(
                         onPressed: _startProcessingFlow,
                         label: 'Generate Recipe Card',
                         icon: Icons.camera_alt_rounded,
@@ -147,7 +156,24 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         textColor: Colors.white,
                       ),
                       const SizedBox(height: 18),
-                      // 👇 DEV BYPASS BUTTON
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          TextButton(
+                            onPressed: () => context.go('/home'),
+                            child: const Text('Skip to Home'),
+                          ),
+                          TextButton(
+                            onPressed: () => context.go('/pricing'),
+                            child: const Text('Back to Pricing'),
+                          ),
+                          TextButton(
+                            onPressed: _logOut,
+                            child: const Text('Log Out'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
                       const DevBypassButton(),
                       const SizedBox(height: 12),
                       Text(
@@ -165,125 +191,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         ),
         if (_isLoading) const LoadingOverlay(),
       ],
-    );
-  }
-}
-
-// --- Place this at the bottom of the file if not already ---
-class _BouncyButton extends StatefulWidget {
-  final VoidCallback onPressed;
-  final String label;
-  final IconData icon;
-  final Color color;
-  final Color textColor;
-
-  const _BouncyButton({
-    required this.onPressed,
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.textColor,
-  });
-
-  @override
-  State<_BouncyButton> createState() => _BouncyButtonState();
-}
-
-class _BouncyButtonState extends State<_BouncyButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    duration: const Duration(milliseconds: 140),
-    lowerBound: 0.0,
-    upperBound: 0.08,
-    vsync: this,
-  );
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onTap() async {
-    await _controller.forward();
-    await _controller.reverse();
-    widget.onPressed();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final gradient = LinearGradient(
-      colors: [
-        widget.color,
-        widget.color.withOpacity(0.92),
-        Colors.deepPurpleAccent.withOpacity(0.7),
-      ],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
-
-    return GestureDetector(
-      onTap: _onTap,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Transform.scale(scale: 1 - _controller.value, child: child);
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: gradient,
-            borderRadius: BorderRadius.circular(40),
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withOpacity(0.28),
-                blurRadius: 16,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: ElevatedButton.icon(
-            onPressed: null, // All tap handled by parent GestureDetector
-            icon: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 1.0, end: 1.12),
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeInOut,
-              builder: (context, scale, icon) {
-                return Transform.scale(
-                  scale: scale - (_controller.value * 0.06),
-                  child: icon,
-                );
-              },
-              child: Icon(widget.icon, size: 26, color: widget.textColor),
-            ),
-            label: Text(
-              widget.label,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.2,
-                color: widget.textColor,
-                shadows: [
-                  Shadow(
-                    blurRadius: 6,
-                    color: Colors.black26,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              foregroundColor: widget.textColor,
-              shadowColor: Colors.transparent,
-              padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(40),
-              ),
-              elevation: 0,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

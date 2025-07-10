@@ -52,6 +52,21 @@ class SubscriptionService {
   /// Check if user is on the free trial tier
   bool isTrialActive() => _currentTier == Tier.tasterTrial;
 
+  /// Whether the user has access to the app (trial or paid tier)
+  bool get hasAccess => isTrialActive() || isPaidTier();
+
+  /// Per-tier feature access logic
+  bool get allowTranslation =>
+      _currentTier == Tier.homeChef || _currentTier == Tier.masterChef;
+
+  bool get allowUnlimitedTranslation => _currentTier == Tier.masterChef;
+
+  bool get allowSmartSearch => _currentTier == Tier.masterChef;
+
+  bool get allowImageUpload => _currentTier != Tier.tasterTrial;
+
+  bool get allowCloudSync => _currentTier != Tier.tasterTrial;
+
   /// Refresh the tier manually (e.g. after a purchase or restore)
   Future<void> refresh() async => await init();
 

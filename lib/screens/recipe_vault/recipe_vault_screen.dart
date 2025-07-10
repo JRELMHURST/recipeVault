@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
+import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
@@ -49,6 +50,14 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     if (user == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         GoRouter.of(context).go('/login');
+      });
+      return;
+    }
+
+    final subscription = SubscriptionService();
+    if (!subscription.hasAccess) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        GoRouter.of(context).go('/pricing');
       });
       return;
     }

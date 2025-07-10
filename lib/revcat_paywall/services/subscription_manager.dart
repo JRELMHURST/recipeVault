@@ -6,46 +6,37 @@ class SubscriptionManager {
   factory SubscriptionManager() => _instance;
   SubscriptionManager._internal();
 
-  final _service = SubscriptionService();
+  final SubscriptionService _service = SubscriptionService();
 
   Tier get currentTier => _service.currentTier;
 
-  /// Whether the user can currently access the app (trial or paid)
-  bool get hasAccess {
-    return currentTier == Tier.masterChef ||
-        currentTier == Tier.homeChef ||
-        _service.isTrialActive();
-  }
+  /// Whether the user has access to the app (trial or paid tier)
+  bool get hasAccess => _service.hasAccess;
 
-  /// Whether the trial is still active
-  bool get isTrialActive => _service.isTrialActive();
-
-  /// Whether the user is on a free trial tier
+  /// Whether the user is currently on the Taster trial tier
   bool get isTrialTier => currentTier == Tier.tasterTrial;
 
-  /// Whether the user is fully subscribed (any paid tier)
-  bool get isPaidUser =>
-      currentTier == Tier.homeChef || currentTier == Tier.masterChef;
+  /// Whether the user has an active Taster trial
+  bool get isTrialActive => _service.isTrialActive();
 
-  /// Whether the user is a Master Chef subscriber
+  /// Whether the user is subscribed to any paid tier
+  bool get isPaidUser => _service.isPaidTier();
+
+  /// Whether the user is subscribed to Master Chef
   bool get isMasterChef => currentTier == Tier.masterChef;
 
-  /// Whether the user is a Home Chef subscriber
+  /// Whether the user is subscribed to Home Chef
   bool get isHomeChef => currentTier == Tier.homeChef;
 
-  /// Whether the user can translate based on tier
+  /// Whether the user can use translation
   Future<bool> canTranslate() async {
-    if (isMasterChef) return true;
-    if (isHomeChef) {
-      // Could later check limits here
-      return true;
-    }
-    return false;
+    return _service.allowTranslation;
   }
 
-  /// Whether the user can create another recipe
-  Future<bool> canCreateRecipe() => AccessManager.canCreateRecipe();
+  /// Whether the user can create another recipe (respects tier and usage caps)
+  Future<bool> canCreateRecipe() async => await AccessManager.canCreateRecipe();
 
-  /// Updates usage count (per recipe creation)
-  Future<void> incrementRecipeUsage() => AccessManager.incrementRecipeUsage();
+  /// Increments usage count after recipe creation
+  Future<void> incrementRecipeUsage() async =>
+      await AccessManager.incrementRecipeUsage();
 }

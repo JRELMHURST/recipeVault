@@ -2,7 +2,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
+import 'package:recipe_vault/model/recipe_card_model.dart';
+import 'package:recipe_vault/model/category_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -16,6 +20,9 @@ class AuthService {
 
   /// ✅ Getter-style method (for compatibility with old code)
   User? getCurrentUser() => _auth.currentUser;
+
+  /// 🧠 Check login state
+  bool get isLoggedIn => _auth.currentUser != null;
 
   /// 🔐 Email & Password Sign In
   Future<UserCredential> signInWithEmail(String email, String password) {
@@ -32,10 +39,7 @@ class AuthService {
       password: password,
     );
 
-    // 👉 Link to RevenueCat
     await Purchases.logIn(credential.user!.uid);
-
-    // 👉 Refresh subscription info for immediate tier detection
     await SubscriptionService().refresh();
 
     return credential;
@@ -47,14 +51,24 @@ class AuthService {
     await _auth.signOut();
   }
 
+  /// 🧹 Full logout (including local cleanup)
+  Future<void> fullLogout() async {
+    await Purchases.logOut();
+    await signOut();
+    await Hive.box<RecipeCardModel>('recipes').clear();
+    await Hive.box<CategoryModel>('categories').clear();
+    await Hive.box<String>('customCategories').clear();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    debugPrint('✅ Signed out + Cleared Hive + Cleared SharedPreferences');
+  }
+
   /// 🔓 Google Sign-In Flow
   Future<UserCredential?> signInWithGoogle() async {
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn.standard();
-
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
-      // ❌ User cancelled login – exit early
       if (googleUser == null) {
         debugPrint('⚠️ Google Sign-In cancelled by user');
         return null;
@@ -70,7 +84,6 @@ class AuthService {
 
       final userCredential = await _auth.signInWithCredential(credential);
 
-      // 🔗 Link to RevenueCat
       await Purchases.logIn(userCredential.user!.uid);
       await SubscriptionService().refresh();
 

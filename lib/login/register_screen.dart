@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:recipe_vault/login/auth_service.dart';
+import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
 import 'package:recipe_vault/revcat_paywall/widgets/taster_trial_dialog.dart';
 

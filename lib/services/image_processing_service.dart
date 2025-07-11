@@ -12,8 +12,10 @@ import 'package:recipe_vault/firebase_storage.dart';
 import 'package:recipe_vault/model/processed_recipe_result.dart';
 
 class ImageProcessingService {
-  static const int _jpegQuality = 80;
+  static const int _jpegQualityAndroid = 80;
+  static const int _jpegQualityIOS = 85;
   static final ImagePicker _picker = ImagePicker();
+  static const bool _debug = false;
 
   /// Pick multiple images and compress them to JPEG format.
   static Future<List<File>> pickAndCompressImages() async {
@@ -33,14 +35,17 @@ class ImageProcessingService {
       try {
         final targetPath =
             '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+
         final compressedFile = await FlutterImageCompress.compressAndGetFile(
           file.path,
           targetPath,
-          quality: _jpegQuality,
+          quality: Platform.isIOS ? _jpegQualityIOS : _jpegQualityAndroid,
           format: CompressFormat.jpeg,
         );
+
         if (compressedFile != null) {
           results.add(compressedFile);
+          if (_debug) debugPrint('✅ Compressed: ${compressedFile.path}');
         }
       } catch (e) {
         debugPrint('⚠️ Compression failed for ${file.path}: $e');
@@ -51,7 +56,10 @@ class ImageProcessingService {
   }
 
   /// Uploads a list of image files and returns download URLs.
-  static Future<List<String>> uploadFiles(List<File> files) {
+  static Future<List<String>> uploadFiles(List<File> files) async {
+    if (_debug) {
+      debugPrint('⏫ Uploading ${files.length} files to Firebase Storage...');
+    }
     return FirebaseStorageService.uploadImages(files);
   }
 
@@ -66,7 +74,10 @@ class ImageProcessingService {
         'users/$userId/recipe_images/$recipeId.jpg',
       );
       final uploadTask = await storageRef.putFile(imageFile);
-      return await uploadTask.ref.getDownloadURL();
+      final url = await uploadTask.ref.getDownloadURL();
+
+      if (_debug) debugPrint('✅ Recipe image uploaded: $url');
+      return url;
     } catch (e) {
       throw Exception('❌ Failed to upload recipe image: $e');
     }
@@ -99,19 +110,31 @@ class ImageProcessingService {
 
   /// Calls the backend function to extract, translate, and format a recipe.
   static Future<ProcessedRecipeResult> extractAndFormatRecipe(
-    List<String> imageUrls,
-  ) async {
+    List<String> imageUrls, {
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
       final callable = functions.httpsCallable('extractAndFormatRecipe');
-      final result = await callable.call({'imageUrls': imageUrls});
-      final data = result.data as Map<String, dynamic>;
 
+      if (_debug) {
+        debugPrint(
+          '🤖 Calling Cloud Function with ${imageUrls.length} image(s)...',
+        );
+      }
+
+      final result = await callable
+          .call({'imageUrls': imageUrls})
+          .timeout(timeout);
+
+      final data = result.data as Map<String, dynamic>;
       final formatted = data['formattedRecipe'] as String?;
+
       if (formatted == null || formatted.isEmpty) {
         throw Exception('Formatted recipe is missing or empty.');
       }
 
+      if (_debug) debugPrint('✅ Recipe formatted successfully.');
       return ProcessedRecipeResult.fromMap(data);
     } catch (e) {
       throw Exception('❌ Failed to process recipe: $e');

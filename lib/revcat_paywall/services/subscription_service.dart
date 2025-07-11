@@ -40,22 +40,33 @@ class SubscriptionService {
         _currentTier = Tier.none;
       }
 
-      // 🔐 SuperUser flag from Firestore
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
+      // ✅ Ensure user is available (await auth restore if needed)
+      final user =
+          FirebaseAuth.instance.currentUser ??
+          await FirebaseAuth.instance.authStateChanges().first;
+
+      if (user != null) {
         final doc = await FirebaseFirestore.instance
             .collection('users')
-            .doc(uid)
+            .doc(user.uid)
             .get();
+
         _superUser = doc.data()?['superUser'] == true;
-        if (_superUser) {
+        if (_superUser && kDebugMode) {
           if (kDebugMode) {
             print('🛠 SuperUser override enabled');
           }
         }
+      } else {
+        _superUser = false;
       }
-    } catch (e) {
+    } catch (e, stack) {
       _currentTier = Tier.none;
+      _superUser = false;
+      if (kDebugMode) {
+        print('⚠️ SubscriptionService init failed: $e');
+        print(stack);
+      }
     }
   }
 
@@ -102,7 +113,7 @@ class SubscriptionService {
 
   bool get hasTasterTrialBeenUsed => _prefs.getBool(_trialUsedKey) ?? false;
 
-  /// ✅ New: Returns true if any active tier is present
+  /// ✅ Returns true if any active tier is present
   bool get hasActiveSubscription => hasAccess;
 
   /// Refresh the tier manually (e.g. after purchase or restore)

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 // Screens
 import 'package:recipe_vault/screens/home_screen.dart';
@@ -24,22 +23,17 @@ import 'package:recipe_vault/core/theme_notifier.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/z_main_widgets/auth_change_notifier.dart';
+import 'package:recipe_vault/z_main_widgets/launch_gate_screen.dart'; // ✅ New import
 
 GoRouter buildRouter() {
   return GoRouter(
-    refreshListenable: AuthChangeNotifier(), // Replaces GoRouterRefreshStream
-    redirect: (context, state) {
-      final user = FirebaseAuth.instance.currentUser;
-      final loggingIn =
-          state.matchedLocation == '/login' ||
-          state.matchedLocation == '/register';
-
-      if (user == null && !loggingIn) return '/login';
-      if (user != null && loggingIn) return '/home';
-      return null;
-    },
+    initialLocation: '/launch',
+    refreshListenable: AuthChangeNotifier(),
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+      GoRoute(
+        path: '/launch',
+        builder: (context, state) => const LaunchGateScreen(),
+      ),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
@@ -58,6 +52,16 @@ GoRouter buildRouter() {
         path: '/pricing',
         builder: (context, state) => const PaywallScreen(),
       ),
+      GoRoute(
+        path: '/upgrade-success',
+        builder: (context, state) => const SubscriptionSuccessScreen(),
+      ),
+      GoRoute(
+        path: '/upgrade-blocked',
+        builder: (context, state) => const UpgradeBlockedScreen(),
+      ),
+
+      // Settings grouped
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
@@ -103,14 +107,8 @@ GoRouter buildRouter() {
         path: '/settings/storage-sync',
         builder: (context, state) => const StorageSyncScreen(),
       ),
-      GoRoute(
-        path: '/upgrade-success',
-        builder: (context, state) => const SubscriptionSuccessScreen(),
-      ),
-      GoRoute(
-        path: '/upgrade-blocked',
-        builder: (context, state) => const UpgradeBlockedScreen(),
-      ),
+
+      // Fallback route
       GoRoute(
         path: '/error',
         builder: (context, state) => const Scaffold(
@@ -123,5 +121,7 @@ GoRouter buildRouter() {
         ),
       ),
     ],
+    errorBuilder: (context, state) =>
+        const Scaffold(body: Center(child: Text('Page not found'))),
   );
 }

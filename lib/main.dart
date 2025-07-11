@@ -10,7 +10,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/launch_gate_screen.dart';
-import 'package:recipe_vault/z_main_idgets/user_session_service.dart';
+import 'package:recipe_vault/z_main_widgets/user_session_service.dart';
+import 'package:recipe_vault/z_main_widgets/dev_tools_screen.dart';
 
 import 'firebase_options.dart';
 import 'core/theme.dart';
@@ -60,7 +61,6 @@ Future<void> main() async {
 
   await UserPreferencesService.init();
   await SubscriptionService().init();
-  await SubscriptionService().refresh();
   await AccessManager.initialise();
 
   runApp(
@@ -92,6 +92,16 @@ class RecipeVaultApp extends StatelessWidget {
         }
 
         final user = snapshot.data;
+
+        // 🖁 Handle login, logout, sync
+
+        if (user != null) {
+          debugPrint('✅ Firebase user detected at launch:');
+          debugPrint('📧 Email: ${user.email}');
+          debugPrint('🆔 UID: ${user.uid}');
+        } else {
+          debugPrint('🚫 No Firebase user is currently signed in.');
+        }
 
         // 🖁 Handle login, logout, sync
         UserSessionService.handleUserChange(user);
@@ -184,8 +194,10 @@ GoRouter _buildRouter() {
         path: '/upgrade-blocked',
         builder: (context, state) => const UpgradeBlockedScreen(),
       ),
-
-      // ✅ Added fallback error screen
+      GoRoute(
+        path: '/dev-tools',
+        builder: (context, state) => const DevToolsScreen(),
+      ),
       GoRoute(
         path: '/error',
         builder: (context, state) => const Scaffold(

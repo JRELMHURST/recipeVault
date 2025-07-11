@@ -57,9 +57,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       await _maybeOfferTasterTrial(context);
 
-      final tier = SubscriptionService().getCurrentTierName();
+      final service = SubscriptionService();
+      final tier = service.getCurrentTierName();
+      final isSuper = service.isSuperUser;
+
       if (tier == 'Free' || tier == 'Taster') {
-        context.go('/pricing');
+        context.go(isSuper ? '/home' : '/pricing');
       } else {
         context.go('/home');
       }
@@ -89,9 +92,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       await _maybeOfferTasterTrial(context);
 
-      final tier = SubscriptionService().getCurrentTierName();
+      final service = SubscriptionService();
+      final tier = service.getCurrentTierName();
+      final isSuper = service.isSuperUser;
+
       if (tier == 'Free' || tier == 'Taster') {
-        context.go('/pricing');
+        context.go(isSuper ? '/home' : '/pricing');
       } else {
         context.go('/home');
       }
@@ -188,9 +194,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  icon: const Icon(
-                    Icons.g_mobiledata,
-                  ), // Or use Image.asset('google_icon.png')
+                  icon: const Icon(Icons.g_mobiledata),
                   label: const Text('Register with Google'),
                   onPressed: _isLoading ? null : _registerWithGoogle,
                 ),

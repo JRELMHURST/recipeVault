@@ -6,7 +6,6 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
-import 'package:recipe_vault/widgets/dev_bypass_button.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -124,11 +123,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   fontStyle: FontStyle.italic,
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: DevBypassButton(route: '/home', label: 'Dev Bypass'),
             ),
             const SizedBox(height: 20),
             Expanded(

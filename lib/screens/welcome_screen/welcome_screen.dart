@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
@@ -71,7 +72,19 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   Future<void> _skipToHome() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('hasSeenWelcome', true);
-    if (mounted) context.pushReplacement('/home');
+
+    await SubscriptionService().refresh();
+
+    final isSuper = SubscriptionService().isSuperUser;
+    final hasAccess = SubscriptionService().hasAccess;
+
+    if (!mounted) return;
+
+    if (isSuper || hasAccess) {
+      context.pushReplacement('/home');
+    } else {
+      context.go('/pricing');
+    }
   }
 
   Future<void> _goToPricing() async {

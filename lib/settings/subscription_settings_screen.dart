@@ -26,10 +26,12 @@ class _SubscriptionSettingsScreenState
 
   Future<void> _loadSubscriptionInfo() async {
     final tier = SubscriptionService().getCurrentTierName();
+    final isSuperUser = SubscriptionService().isSuperUser;
     final info = await Purchases.getCustomerInfo();
     final entitlements = info.entitlements.active.keys.join(', ');
+
     setState(() {
-      _currentTier = tier;
+      _currentTier = isSuperUser ? '$tier (Super User)' : tier;
       _entitlements = entitlements.isEmpty ? 'None' : entitlements;
     });
   }

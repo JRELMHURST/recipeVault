@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -17,6 +18,7 @@ class SettingsScreen extends StatelessWidget {
     final email = user.email ?? '';
     final displayName = user.displayName ?? 'No name';
     final photoUrl = user.photoURL;
+    final isSuperUser = SubscriptionService().isSuperUser;
 
     return Scaffold(
       body: ListView(
@@ -55,6 +57,7 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Account Settings'),
             onTap: () => context.push('/settings/account'),
           ),
+
           const SizedBox(height: 32),
           _buildSectionHeader('Preferences'),
           ListTile(
@@ -75,6 +78,7 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Storage & Sync'),
             onTap: () => context.push('/settings/storage-sync'),
           ),
+
           const SizedBox(height: 32),
           _buildSectionHeader('Subscription'),
           ListTile(
@@ -90,6 +94,16 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('About & Legal'),
             onTap: () => context.push('/settings/about'),
           ),
+
+          if (isSuperUser) ...[
+            const SizedBox(height: 32),
+            _buildSectionHeader('Developer'),
+            ListTile(
+              leading: const Icon(Icons.bug_report_outlined),
+              title: const Text('Developer Tools'),
+              onTap: () => context.push('/dev-tools'),
+            ),
+          ],
         ],
       ),
     );

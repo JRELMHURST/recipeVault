@@ -1,5 +1,7 @@
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Your app's defined subscription tiers
 enum Tier { none, tasterTrial, homeChef, masterChef }
@@ -14,6 +16,9 @@ class SubscriptionService {
 
   late final SharedPreferences _prefs;
   static const _trialUsedKey = 'taster_trial_used';
+
+  bool _isSuperUser = false;
+  bool get isSuperUser => _isSuperUser;
 
   /// Call this once during app start (after Purchases.configure)
   Future<void> init() async {
@@ -33,8 +38,21 @@ class SubscriptionService {
       } else {
         _currentTier = Tier.none;
       }
+
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .get();
+
+        _isSuperUser = doc.data()?['superUser'] == true;
+      } else {
+        _isSuperUser = false;
+      }
     } catch (e) {
-      _currentTier = Tier.none; // fallback on RevenueCat error
+      _currentTier = Tier.none;
+      _isSuperUser = false;
     }
   }
 

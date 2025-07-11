@@ -7,6 +7,7 @@ import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:recipe_vault/z_main_widgets/local_flags.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/screens/welcome_screen/bouncy_button.dart';
@@ -37,8 +38,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     setState(() => _isLoading = true);
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('hasSeenWelcome', true);
+      await LocalFlags.setHasSeenWelcome(true);
 
       final compressedFiles =
           await ImageProcessingService.pickAndCompressImages();
@@ -70,19 +70,24 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 
   Future<void> _skipToHome() async {
+    debugPrint('🟡 _skipToHome() called');
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('hasSeenWelcome', true);
 
     await SubscriptionService().refresh();
-
     final hasAccess = SubscriptionService().hasAccess;
+
+    debugPrint('🔓 hasAccess: $hasAccess');
 
     if (!mounted) return;
 
     if (hasAccess) {
-      context.pushReplacement('/home');
+      debugPrint('⏩ Navigating to /home');
+      context.go('/home');
     } else {
-      context.go('/pricing');
+      debugPrint('💸 Navigating to /paywall');
+      context.go('/paywall');
     }
   }
 

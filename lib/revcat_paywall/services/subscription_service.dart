@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:recipe_vault/z_main_widgets/local_flags.dart';
 
 /// Your app's defined subscription tiers
 enum Tier { none, tasterTrial, homeChef, masterChef }
@@ -14,17 +14,19 @@ class SubscriptionService {
 
   Tier _currentTier = Tier.none;
   bool _superUser = false;
+  bool _initialised = false;
+  bool _tasterTrialActive = false;
 
   Tier get currentTier => _currentTier;
   bool get isSuperUser => _superUser;
-
-  late final SharedPreferences _prefs;
-  static const _trialUsedKey = 'taster_trial_used';
+  bool get tasterTrialActive => _tasterTrialActive;
 
   /// Call this once during app start (after Purchases.configure)
   Future<void> init() async {
+    if (_initialised) return;
+
     try {
-      _prefs = await SharedPreferences.getInstance();
+      _initialised = true;
 
       final info = await Purchases.getCustomerInfo();
       final entitlements = info.entitlements.active;
@@ -40,7 +42,8 @@ class SubscriptionService {
         _currentTier = Tier.none;
       }
 
-      // ✅ Ensure user is available (await auth restore if needed)
+      _tasterTrialActive = await LocalFlags.getTasterTrialUsed();
+
       final user =
           FirebaseAuth.instance.currentUser ??
           await FirebaseAuth.instance.authStateChanges().first;
@@ -89,7 +92,8 @@ class SubscriptionService {
 
   bool isCurrentTier(Tier tier) => _currentTier == tier;
 
-  bool get isTrialActive => _currentTier == Tier.tasterTrial;
+  bool get isTrialActive =>
+      _currentTier == Tier.tasterTrial || _tasterTrialActive;
 
   bool get hasAccess => _superUser || isTrialActive || isPaidTier;
 
@@ -111,13 +115,38 @@ class SubscriptionService {
       _superUser ||
       (_currentTier != Tier.tasterTrial && _currentTier != Tier.none);
 
-  bool get hasTasterTrialBeenUsed => _prefs.getBool(_trialUsedKey) ?? false;
+  bool get hasTasterTrialBeenUsed => LocalFlags.tasterTrialUsed;
 
   /// ✅ Returns true if any active tier is present
   bool get hasActiveSubscription => hasAccess;
 
   /// Refresh the tier manually (e.g. after purchase or restore)
-  Future<void> refresh() async => await init();
+  Future<void> refresh() async {
+    if (!_initialised) await init();
+
+    try {
+      final info = await Purchases.getCustomerInfo();
+      final entitlements = info.entitlements.active;
+
+      if (entitlements.containsKey('master_chef_monthly') ||
+          entitlements.containsKey('master_chef_yearly')) {
+        _currentTier = Tier.masterChef;
+      } else if (entitlements.containsKey('home_chef_monthly')) {
+        _currentTier = Tier.homeChef;
+      } else if (entitlements.containsKey('taster')) {
+        _currentTier = Tier.tasterTrial;
+      } else {
+        _currentTier = Tier.none;
+      }
+
+      _tasterTrialActive = await LocalFlags.getTasterTrialUsed();
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('⚠️ SubscriptionService refresh failed: $e');
+        print(stack);
+      }
+    }
+  }
 
   /// Manually activate the Taster Trial if user opts in
   Future<void> activateTasterTrial() async {
@@ -127,7 +156,8 @@ class SubscriptionService {
 
       if (!hasTrial) {
         _currentTier = Tier.tasterTrial;
-        await _prefs.setBool(_trialUsedKey, true);
+        await LocalFlags.setTasterTrialUsed(true);
+        _tasterTrialActive = true;
       }
 
       await refresh();
@@ -138,5 +168,5 @@ class SubscriptionService {
 
   @override
   String toString() =>
-      'SubscriptionService(currentTier: $_currentTier, superUser: $_superUser)';
+      'SubscriptionService(currentTier: $_currentTier, superUser: $_superUser, tasterTrialActive: $_tasterTrialActive)';
 }

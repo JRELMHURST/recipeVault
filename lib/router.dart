@@ -22,61 +22,47 @@ import 'package:recipe_vault/revcat_paywall/screens/paywall_screen.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:provider/provider.dart';
-import 'package:recipe_vault/z_main_widgets/auth_change_notifier.dart';
 import 'package:recipe_vault/z_main_widgets/launch_gate_screen.dart'; // ✅ New import
 
 GoRouter buildRouter() {
   return GoRouter(
+    debugLogDiagnostics: true,
     initialLocation: '/launch',
-    refreshListenable: AuthChangeNotifier(),
     routes: [
-      GoRoute(
-        path: '/launch',
-        builder: (context, state) => const LaunchGateScreen(),
-      ),
-      GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(
-        path: '/register',
-        builder: (context, state) => const RegisterScreen(),
-      ),
-      GoRoute(
-        path: '/welcome',
-        builder: (context, state) => const WelcomeScreen(),
-      ),
-      GoRoute(
-        path: '/results',
-        builder: (context, state) => const ResultsScreen(),
-      ),
-      GoRoute(
-        path: '/pricing',
-        builder: (context, state) => const PaywallScreen(),
-      ),
+      /// 🔐 Auth & Launch
+      GoRoute(path: '/launch', builder: (_, __) => const LaunchGateScreen()),
+      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
+
+      /// 🏡 App Flow
+      GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
+      GoRoute(path: '/results', builder: (_, __) => const ResultsScreen()),
+      GoRoute(path: '/welcome', builder: (_, __) => const WelcomeScreen()),
+
+      /// 💸 Subscription
+      GoRoute(path: '/paywall', builder: (_, __) => const PaywallScreen()),
       GoRoute(
         path: '/upgrade-success',
-        builder: (context, state) => const SubscriptionSuccessScreen(),
+        builder: (_, __) => const SubscriptionSuccessScreen(),
       ),
       GoRoute(
         path: '/upgrade-blocked',
-        builder: (context, state) => const UpgradeBlockedScreen(),
+        builder: (_, __) => const UpgradeBlockedScreen(),
       ),
 
-      // Settings grouped
-      GoRoute(
-        path: '/settings',
-        builder: (context, state) => const SettingsScreen(),
-      ),
+      /// ⚙️ Settings
+      GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
       GoRoute(
         path: '/settings/account',
-        builder: (context, state) => const AccountSettingsScreen(),
+        builder: (_, __) => const AccountSettingsScreen(),
       ),
       GoRoute(
         path: '/settings/account/change-password',
-        builder: (context, state) => const ChangePasswordScreen(),
+        builder: (_, __) => const ChangePasswordScreen(),
       ),
       GoRoute(
         path: '/settings/appearance',
-        builder: (context, state) {
+        builder: (context, _) {
           final themeNotifier = Provider.of<ThemeNotifier>(
             context,
             listen: false,
@@ -93,25 +79,25 @@ GoRouter buildRouter() {
       ),
       GoRoute(
         path: '/settings/notifications',
-        builder: (context, state) => const NotificationsSettingsScreen(),
+        builder: (_, __) => const NotificationsSettingsScreen(),
       ),
       GoRoute(
         path: '/settings/subscription',
-        builder: (context, state) => const SubscriptionSettingsScreen(),
+        builder: (_, __) => const SubscriptionSettingsScreen(),
       ),
       GoRoute(
         path: '/settings/about',
-        builder: (context, state) => const AboutSettingsScreen(),
+        builder: (_, __) => const AboutSettingsScreen(),
       ),
       GoRoute(
         path: '/settings/storage-sync',
-        builder: (context, state) => const StorageSyncScreen(),
+        builder: (_, __) => const StorageSyncScreen(),
       ),
 
-      // Fallback route
+      /// 🚫 Fallback
       GoRoute(
         path: '/error',
-        builder: (context, state) => const Scaffold(
+        builder: (_, __) => const Scaffold(
           body: Center(
             child: Text(
               'Something went wrong.\nPlease try again.',
@@ -121,7 +107,7 @@ GoRouter buildRouter() {
         ),
       ),
     ],
-    errorBuilder: (context, state) =>
+    errorBuilder: (_, __) =>
         const Scaffold(body: Center(child: Text('Page not found'))),
   );
 }

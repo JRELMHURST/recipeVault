@@ -7,7 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:recipe_vault/z_main_widgets/local_flags.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'firebase_options.dart';
@@ -41,13 +41,15 @@ Future<void> main() async {
   Hive.registerAdapter(CategoryModelAdapter());
 
   // 🔧 DEV RESET BLOCK — remove when stable
-  await FirebaseAuth.instance.signOut();
-  await Hive.deleteBoxFromDisk('recipes');
-  await Hive.deleteBoxFromDisk('categories');
-  await Hive.deleteBoxFromDisk('customCategories');
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.clear();
-  debugPrint('✅ Signed out + Cleared Hive + Cleared SharedPreferences');
+  if (skipAuthForDev) {
+    await FirebaseAuth.instance.signOut();
+    await Hive.deleteBoxFromDisk('recipes');
+    await Hive.deleteBoxFromDisk('categories');
+    await Hive.deleteBoxFromDisk('customCategories');
+    await LocalFlags.init();
+    await LocalFlags.reset();
+    debugPrint('✅ Signed out + Cleared Hive + Cleared SharedPreferences');
+  }
 
   await Hive.openBox<RecipeCardModel>('recipes');
   await Hive.openBox<CategoryModel>('categories');

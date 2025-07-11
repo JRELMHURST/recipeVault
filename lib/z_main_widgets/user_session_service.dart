@@ -12,28 +12,22 @@ class UserSessionService {
       // 🔗 Link to RevenueCat by UID
       await Purchases.logIn(user.uid);
 
-      // 🔄 Refresh Subscription Tier + SuperUser flag
+      // 🔄 Refresh Subscription Tier
       await SubscriptionService().refresh();
 
-      // 🔄 Sync categories from Firestore (optional)
+      // 🔄 Sync categories from Firestore
       await CategoryService.syncFromFirestore();
 
-      // 🧪 Debug output
-      final sub = SubscriptionService();
-      if (sub.isSuperUser) {
-        if (kDebugMode) {
-          print('🟢 Super user mode enabled.');
-        }
-      } else {
-        if (kDebugMode) {
-          print('⚪ Standard user mode.');
-        }
+      // 🧾 Debug output
+      if (kDebugMode) {
+        print(
+          '🟢 User session initialised with tier: '
+          '${SubscriptionService().getCurrentTierName()}',
+        );
       }
     } catch (e, stack) {
       if (kDebugMode) {
         print('⚠️ Error in UserSessionService.handleUserChange: $e');
-      }
-      if (kDebugMode) {
         print(stack);
       }
     }

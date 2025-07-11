@@ -10,9 +10,10 @@ class TrialPromptHelper {
 
     final sub = SubscriptionService();
     final hasAccess = sub.hasAccess;
-    final isTrialTier = sub.isTrialActive();
+    final isTrialTier = sub.isTrialActive;
+    final isSuperUser = sub.isSuperUser;
 
-    if (!hasAccess && !isTrialTier) {
+    if (!hasAccess && !isTrialTier && !isSuperUser) {
       // Ensure dialog is shown only once per session
       _shown = true;
 

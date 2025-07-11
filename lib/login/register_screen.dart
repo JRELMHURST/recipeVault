@@ -24,8 +24,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
 
   Future<void> _maybeOfferTasterTrial(BuildContext context) async {
-    final tier = SubscriptionService().getCurrentTierName();
-    if (tier == 'Free') {
+    final tier = SubscriptionService().currentTier;
+    if (tier == Tier.none) {
       await showDialog(
         context: context,
         builder: (_) => const TasterTrialDialog(),
@@ -57,12 +57,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       await _maybeOfferTasterTrial(context);
 
-      final service = SubscriptionService();
-      final tier = service.getCurrentTierName();
-      final isSuper = service.isSuperUser;
+      final tier = SubscriptionService().currentTier;
 
-      if (tier == 'Free' || tier == 'Taster') {
-        context.go(isSuper ? '/home' : '/pricing');
+      if (tier == Tier.none || tier == Tier.tasterTrial) {
+        context.go('/pricing');
       } else {
         context.go('/home');
       }
@@ -92,12 +90,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       await _maybeOfferTasterTrial(context);
 
-      final service = SubscriptionService();
-      final tier = service.getCurrentTierName();
-      final isSuper = service.isSuperUser;
+      final tier = SubscriptionService().currentTier;
 
-      if (tier == 'Free' || tier == 'Taster') {
-        context.go(isSuper ? '/home' : '/pricing');
+      if (tier == Tier.none || tier == Tier.tasterTrial) {
+        context.go('/pricing');
       } else {
         context.go('/home');
       }
@@ -160,9 +156,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 : Icons.visibility,
                           ),
                           onPressed: () {
-                            setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            );
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
                           },
                         ),
                       ),

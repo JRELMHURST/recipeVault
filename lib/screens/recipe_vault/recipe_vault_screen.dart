@@ -55,7 +55,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     }
 
     final subscription = SubscriptionService();
-    if (!subscription.hasAccess && !subscription.isSuperUser) {
+    if (!subscription.hasAccess) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         GoRouter.of(context).go('/pricing');
       });

@@ -201,7 +201,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     final accent = theme.colorScheme.primary;
 
     return Material(
-      color: Colors.black.withOpacity(0.35),
+      color: Colors.transparent,
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 380),

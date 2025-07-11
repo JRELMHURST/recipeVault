@@ -1,8 +1,11 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 
 class AppTheme {
   static const Color primaryColor = Color(0xFFBDAFFF);
-  static const Color backgroundLight = Color(0xFFF6F4FA);
+  static const Color loginBackground = Color(0xFFE6E2FF);
+  static const Color backgroundLight = loginBackground;
   static const Color backgroundDark = Color(0xFF17141E);
 
   static AppBarTheme buildAppBarTheme(Color backgroundColor) {
@@ -23,22 +26,19 @@ class AppTheme {
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     fontFamily: 'Roboto',
-    scaffoldBackgroundColor: backgroundLight,
+    scaffoldBackgroundColor: loginBackground,
     colorScheme: const ColorScheme.light(
       primary: primaryColor,
       surface: Colors.white,
-      surfaceContainerHighest: Color(0xFFE8E6F0),
+      surfaceContainerHighest: Color(0xFFF7F4FB),
     ),
     appBarTheme: buildAppBarTheme(primaryColor),
-    cardTheme: const CardThemeData(
+    cardTheme: CardThemeData(
       color: Colors.white,
       elevation: 6,
-      margin: EdgeInsets.all(18),
-      shadowColor: Color(0x22000000),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(20)),
-        side: BorderSide(color: primaryColor, width: 1.3),
-      ),
+      margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shadowColor: Colors.black.withOpacity(0.05),
     ),
     textTheme: const TextTheme(
       titleLarge: TextStyle(
@@ -64,10 +64,23 @@ class AppTheme {
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         textStyle: const TextStyle(
           fontFamily: 'Roboto',
           fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: primaryColor,
+        side: const BorderSide(color: primaryColor),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        textStyle: const TextStyle(
+          fontFamily: 'Roboto',
+          fontWeight: FontWeight.w500,
         ),
       ),
     ),
@@ -83,12 +96,12 @@ class AppTheme {
       surfaceContainerHighest: Color(0xFF272333),
     ),
     appBarTheme: buildAppBarTheme(Color(0xFF1E1B26)),
-    cardTheme: const CardThemeData(
-      color: Color(0xFF23202A),
+    cardTheme: CardThemeData(
+      color: const Color(0xFF23202A),
       elevation: 6,
-      margin: EdgeInsets.all(18),
-      shadowColor: Color(0x77000000),
-      shape: RoundedRectangleBorder(
+      margin: const EdgeInsets.all(18),
+      shadowColor: const Color(0x77000000),
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(20)),
         side: BorderSide(color: primaryColor, width: 1.3),
       ),
@@ -117,10 +130,23 @@ class AppTheme {
         backgroundColor: primaryColor,
         foregroundColor: Colors.black,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         textStyle: const TextStyle(
           fontFamily: 'Roboto',
           fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.white,
+        side: const BorderSide(color: Colors.white70),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        textStyle: const TextStyle(
+          fontFamily: 'Roboto',
+          fontWeight: FontWeight.w500,
         ),
       ),
     ),

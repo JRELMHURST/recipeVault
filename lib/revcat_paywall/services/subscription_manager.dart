@@ -17,10 +17,10 @@ class SubscriptionManager {
   bool get isTrialTier => currentTier == Tier.tasterTrial;
 
   /// Whether the user has an active Taster trial
-  bool get isTrialActive => _service.isTrialActive();
+  bool get isTrialActive => _service.isTrialActive;
 
   /// Whether the user is subscribed to any paid tier
-  bool get isPaidUser => _service.isPaidTier();
+  bool get isPaidUser => _service.isPaidTier;
 
   /// Whether the user is subscribed to Master Chef
   bool get isMasterChef => currentTier == Tier.masterChef;
@@ -28,10 +28,11 @@ class SubscriptionManager {
   /// Whether the user is subscribed to Home Chef
   bool get isHomeChef => currentTier == Tier.homeChef;
 
+  /// Whether the user is a super user
+  bool get isSuperUser => _service.isSuperUser;
+
   /// Whether the user can use translation
-  Future<bool> canTranslate() async {
-    return _service.allowTranslation;
-  }
+  Future<bool> canTranslate() async => _service.allowTranslation;
 
   /// Whether the user can create another recipe (respects tier and usage caps)
   Future<bool> canCreateRecipe() async => await AccessManager.canCreateRecipe();

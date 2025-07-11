@@ -35,9 +35,12 @@ class AccessManager {
   /// Whether user can create a recipe (based on tier & limits)
   static Future<bool> canCreateRecipe() async {
     final sub = SubscriptionService();
-    await sub.refresh(); // Ensure currentTier is loaded
+    await sub.refresh(); // Ensure latest tier and flags
     final tier = sub.currentTier;
-    final trialActive = sub.isTrialActive();
+    final trialActive = sub.isTrialActive;
+    final superUser = sub.isSuperUser;
+
+    if (superUser) return true;
 
     switch (tier) {
       case Tier.masterChef:
@@ -53,18 +56,21 @@ class AccessManager {
         return used < trialLimit;
 
       case Tier.none:
-        // No access by default for undefined or unrecognised tier
         return false;
     }
   }
 
   /// Increments usage count depending on tier
   static Future<void> incrementRecipeUsage() async {
-    final box = await Hive.openBox('access');
     final sub = SubscriptionService();
     await sub.refresh();
     final tier = sub.currentTier;
-    final trialActive = sub.isTrialActive();
+    final trialActive = sub.isTrialActive;
+    final superUser = sub.isSuperUser;
+
+    if (superUser) return;
+
+    final box = await Hive.openBox('access');
 
     switch (tier) {
       case Tier.masterChef:
@@ -83,7 +89,6 @@ class AccessManager {
         return;
 
       case Tier.none:
-        // Do nothing — user has no tier access
         return;
     }
   }

@@ -27,19 +27,19 @@ dependencies:
   flutter_image_compress: ^1.1.0
   image_cropper: ^5.0.0
   path_provider: ^2.1.2
+
+  # ───── State & Utilities ─────
   provider: ^6.1.2
-
-  # ───── Sharing & Output ─────
-  share_plus: ^7.2.2
-  pdf: ^3.10.4
-  printing: ^5.12.0
-
-  # ───── Utilities ─────
   http: ^1.2.1
   uuid: ^4.3.3
   shared_preferences: ^2.2.2
   package_info_plus: ^8.3.0
   url_launcher: ^6.2.5
+
+  # ───── Sharing & Output ─────
+  share_plus: ^7.2.2
+  pdf: ^3.10.4
+  printing: ^5.12.0
 
   # ───── Firebase ─────
   firebase_core: ^3.15.0

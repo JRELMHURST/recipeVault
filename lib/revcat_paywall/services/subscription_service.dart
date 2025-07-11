@@ -1,7 +1,8 @@
-import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Your app's defined subscription tiers
 enum Tier { none, tasterTrial, homeChef, masterChef }
@@ -12,13 +13,13 @@ class SubscriptionService {
   SubscriptionService._internal();
 
   Tier _currentTier = Tier.none;
+  bool _superUser = false;
+
   Tier get currentTier => _currentTier;
+  bool get isSuperUser => _superUser;
 
   late final SharedPreferences _prefs;
   static const _trialUsedKey = 'taster_trial_used';
-
-  bool _isSuperUser = false;
-  bool get isSuperUser => _isSuperUser;
 
   /// Call this once during app start (after Purchases.configure)
   Future<void> init() async {
@@ -39,20 +40,22 @@ class SubscriptionService {
         _currentTier = Tier.none;
       }
 
+      // 🔐 SuperUser flag from Firestore
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
         final doc = await FirebaseFirestore.instance
             .collection('users')
             .doc(uid)
             .get();
-
-        _isSuperUser = doc.data()?['superUser'] == true;
-      } else {
-        _isSuperUser = false;
+        _superUser = doc.data()?['superUser'] == true;
+        if (_superUser) {
+          if (kDebugMode) {
+            print('🛠 SuperUser override enabled');
+          }
+        }
       }
     } catch (e) {
       _currentTier = Tier.none;
-      _isSuperUser = false;
     }
   }
 
@@ -70,28 +73,32 @@ class SubscriptionService {
     }
   }
 
-  bool isPaidTier() =>
+  bool get isPaidTier =>
       _currentTier == Tier.homeChef || _currentTier == Tier.masterChef;
 
   bool isCurrentTier(Tier tier) => _currentTier == tier;
 
-  bool isTrialActive() => _currentTier == Tier.tasterTrial;
+  bool get isTrialActive => _currentTier == Tier.tasterTrial;
 
-  bool get hasAccess =>
-      isTrialActive() || isPaidTier(); // will return false for Tier.none
+  bool get hasAccess => _superUser || isTrialActive || isPaidTier;
 
   bool get allowTranslation =>
-      _currentTier == Tier.homeChef || _currentTier == Tier.masterChef;
+      _superUser ||
+      _currentTier == Tier.homeChef ||
+      _currentTier == Tier.masterChef;
 
-  bool get allowUnlimitedTranslation => _currentTier == Tier.masterChef;
+  bool get allowUnlimitedTranslation =>
+      _superUser || _currentTier == Tier.masterChef;
 
-  bool get allowSmartSearch => _currentTier == Tier.masterChef;
+  bool get allowSmartSearch => _superUser || _currentTier == Tier.masterChef;
 
   bool get allowImageUpload =>
-      _currentTier != Tier.tasterTrial && _currentTier != Tier.none;
+      _superUser ||
+      (_currentTier != Tier.tasterTrial && _currentTier != Tier.none);
 
   bool get allowCloudSync =>
-      _currentTier != Tier.tasterTrial && _currentTier != Tier.none;
+      _superUser ||
+      (_currentTier != Tier.tasterTrial && _currentTier != Tier.none);
 
   bool get hasTasterTrialBeenUsed => _prefs.getBool(_trialUsedKey) ?? false;
 
@@ -108,17 +115,17 @@ class SubscriptionService {
       final hasTrial = info.entitlements.active.containsKey('taster');
 
       if (!hasTrial) {
-        // ⛳ Add logic to activate via backend or Firestore
         _currentTier = Tier.tasterTrial;
         await _prefs.setBool(_trialUsedKey, true);
       }
 
-      await refresh(); // Always refresh to confirm
+      await refresh();
     } catch (e) {
       rethrow;
     }
   }
 
   @override
-  String toString() => 'SubscriptionService(currentTier: $_currentTier)';
+  String toString() =>
+      'SubscriptionService(currentTier: $_currentTier, superUser: $_superUser)';
 }

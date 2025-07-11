@@ -75,12 +75,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
     await SubscriptionService().refresh();
 
-    final isSuper = SubscriptionService().isSuperUser;
     final hasAccess = SubscriptionService().hasAccess;
 
     if (!mounted) return;
 
-    if (isSuper || hasAccess) {
+    if (hasAccess) {
       context.pushReplacement('/home');
     } else {
       context.go('/pricing');

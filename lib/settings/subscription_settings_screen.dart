@@ -26,12 +26,11 @@ class _SubscriptionSettingsScreenState
 
   Future<void> _loadSubscriptionInfo() async {
     final tier = SubscriptionService().getCurrentTierName();
-    final isSuperUser = SubscriptionService().isSuperUser;
     final info = await Purchases.getCustomerInfo();
     final entitlements = info.entitlements.active.keys.join(', ');
 
     setState(() {
-      _currentTier = isSuperUser ? '$tier (Super User)' : tier;
+      _currentTier = tier;
       _entitlements = entitlements.isEmpty ? 'None' : entitlements;
     });
   }
@@ -39,7 +38,7 @@ class _SubscriptionSettingsScreenState
   Future<void> _restorePurchases() async {
     try {
       await Purchases.restorePurchases();
-      _loadSubscriptionInfo();
+      await _loadSubscriptionInfo();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Purchases restored.")));
@@ -52,8 +51,6 @@ class _SubscriptionSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(title: const Text('Manage Subscription')),
       body: ListView(

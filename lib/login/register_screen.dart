@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 
@@ -32,7 +33,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await AuthService().registerWithEmail(email, password);
+      final credential = await AuthService().registerWithEmail(email, password);
+      final user = credential.user;
+      if (user != null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'tier': 'taster',
+          'trialStartDate': DateTime.now().toUtc().toIso8601String(),
+        });
+      }
+
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
@@ -48,7 +57,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _signUpWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      await AuthService().signInWithGoogle();
+      final credential = await AuthService().signInWithGoogle();
+      if (credential == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google sign-up was cancelled.')),
+        );
+        return;
+      }
+
+      final user = credential.user;
+      if (user != null) {
+        final docRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid);
+        final doc = await docRef.get();
+        if (!doc.exists) {
+          await docRef.set({
+            'tier': 'taster',
+            'trialStartDate': DateTime.now().toUtc().toIso8601String(),
+          });
+        }
+      }
+
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
@@ -113,6 +144,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.deepPurple,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Free 7-day trial. No card needed. Full access.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black54,
                               ),
                             ),
                             const SizedBox(height: 24),

@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 
@@ -15,12 +16,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // optional: hide any overlays
-  }
 
   Future<void> _signInWithEmail() async {
     setState(() => _isLoading = true);
@@ -44,7 +39,29 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      await AuthService().signInWithGoogle();
+      final credential = await AuthService().signInWithGoogle();
+      if (credential == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google sign-in was cancelled.')),
+        );
+        return;
+      }
+
+      final user = credential.user;
+      if (user != null) {
+        final docRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid);
+        final doc = await docRef.get();
+        if (!doc.exists) {
+          await docRef.set({
+            'tier': 'taster',
+            'trialStartDate': DateTime.now().toUtc().toIso8601String(),
+          });
+        }
+      }
+
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
@@ -109,6 +126,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.deepPurple,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Free 7-day trial. No card needed. Full access.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black54,
                               ),
                             ),
                             const SizedBox(height: 24),

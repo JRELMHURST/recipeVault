@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
@@ -27,7 +26,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
   String? _recipeImageUrl;
   bool _showOriginalText = false;
 
-  /// Converts language codes into friendly names
   String _mapLanguageCodeToLabel(String code) {
     switch (code.toLowerCase()) {
       case 'pl':
@@ -49,11 +47,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
       case 'en-us':
         return 'English';
       default:
-        return code.toUpperCase(); // fallback
+        return code.toUpperCase();
     }
   }
 
-  Future<void> _saveRecipe(String formattedRecipe) async {
+  Future<void> _saveRecipe(
+    String formattedRecipe,
+    ProcessedRecipeResult result,
+  ) async {
     setState(() => _isSaving = true);
 
     try {
@@ -77,32 +78,25 @@ class _ResultsScreenState extends State<ResultsScreen> {
           title = line
               .replaceFirst(RegExp(r'title:', caseSensitive: false), '')
               .trim();
-          continue;
         } else if (lower.startsWith('ingredients:')) {
           isInIngredients = true;
-          isInInstructions = false;
-          isInHints = false;
-          continue;
+          isInInstructions = isInHints = false;
         } else if (lower.startsWith('instructions:')) {
-          isInIngredients = false;
           isInInstructions = true;
-          isInHints = false;
-          continue;
+          isInIngredients = isInHints = false;
         } else if (lower.startsWith('hints & tips:') ||
             lower.startsWith('hints and tips:')) {
-          isInIngredients = false;
-          isInInstructions = false;
           isInHints = true;
-          continue;
-        }
-
-        if (isInIngredients && line.startsWith('-')) {
-          ingredients.add(line.substring(1).trim());
-        } else if (isInInstructions &&
-            RegExp(r'^\d+[\).]').hasMatch(line.trim())) {
-          instructions.add(line.trim());
-        } else if (isInHints) {
-          if (line.trim().isNotEmpty && line.trim() != '---') {
+          isInIngredients = isInInstructions = false;
+        } else {
+          if (isInIngredients && line.startsWith('-')) {
+            ingredients.add(line.substring(1).trim());
+          } else if (isInInstructions &&
+              RegExp(r'^\d+[\).]').hasMatch(line.trim())) {
+            instructions.add(line.trim());
+          } else if (isInHints &&
+              line.trim().isNotEmpty &&
+              line.trim() != '---') {
             hints.add(line.replaceFirst(RegExp(r'^-\s*'), '').trim());
           }
         }
@@ -114,11 +108,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
           .collection('recipes')
           .doc();
 
-      final translated =
-          (GoRouterState.of(context).extra as ProcessedRecipeResult?)
-              ?.translationUsed ??
-          false;
-
       final recipe = RecipeCardModel(
         id: docRef.id,
         userId: user.uid,
@@ -126,33 +115,24 @@ class _ResultsScreenState extends State<ResultsScreen> {
         ingredients: ingredients,
         instructions: instructions,
         imageUrl: _recipeImageUrl,
-        categories: translated ? ['Translated'] : [],
+        categories: result.translationUsed ? ['Translated'] : [],
         isFavourite: false,
-        originalImageUrls:
-            (GoRouterState.of(context).extra as ProcessedRecipeResult?)
-                ?.imageUrls ??
-            [],
+        originalImageUrls: result.imageUrls,
         hints: hints,
-        translationUsed: translated,
+        translationUsed: result.translationUsed,
       );
 
       await docRef.set(recipe.toJson());
       await HiveRecipeService.save(recipe);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          duration: const Duration(seconds: 2),
-          content: Text(
-            '✅ Recipe saved! Taking you to your Vault...',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(fontSize: 14, color: Colors.white),
-          ),
+        const SnackBar(
+          content: Text('✅ Recipe saved! Taking you to your Vault...'),
         ),
       );
 
       await Future.delayed(const Duration(milliseconds: 1500));
-      GoRouter.of(context).go('/home?tab=1');
+      Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -164,7 +144,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final result = GoRouterState.of(context).extra as ProcessedRecipeResult?;
+    final result =
+        ModalRoute.of(context)?.settings.arguments as ProcessedRecipeResult?;
     final formattedRecipe = result?.formattedRecipe ?? '';
     final hasValidContent =
         formattedRecipe.trim().isNotEmpty &&
@@ -201,7 +182,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
       ),
       floatingActionButton: hasValidContent
           ? FloatingActionButton.extended(
-              onPressed: _isSaving ? null : () => _saveRecipe(formattedRecipe),
+              onPressed: _isSaving
+                  ? null
+                  : () => _saveRecipe(formattedRecipe, result!),
               icon: const Icon(Icons.save_alt_rounded),
               label: _isSaving
                   ? const Text("Saving...")
@@ -232,12 +215,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
                             const Spacer(),
                             if (kDebugMode)
                               TextButton(
-                                onPressed: () {
-                                  setState(
-                                    () =>
-                                        _showOriginalText = !_showOriginalText,
-                                  );
-                                },
+                                onPressed: () => setState(
+                                  () => _showOriginalText = !_showOriginalText,
+                                ),
                                 child: Text(
                                   _showOriginalText ? 'Hide OCR' : 'Show OCR',
                                   style: const TextStyle(fontSize: 12),
@@ -277,7 +257,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
                             await ImageProcessingService.cropImage(
                               originalFile,
                             );
-
                         if (croppedFile == null) {
                           ImageProcessingService.showError(
                             context,

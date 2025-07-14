@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:go_router/go_router.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -53,7 +52,7 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.manage_accounts_outlined),
             title: const Text('Account Settings'),
-            onTap: () => context.push('/settings/account'),
+            onTap: () => Navigator.pushNamed(context, '/settings/account'),
           ),
 
           const SizedBox(height: 32),
@@ -61,12 +60,13 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.brightness_6_outlined),
             title: const Text('Appearance'),
-            onTap: () => context.push('/settings/appearance'),
+            onTap: () => Navigator.pushNamed(context, '/settings/appearance'),
           ),
           ListTile(
             leading: const Icon(Icons.notifications_outlined),
             title: const Text('Notifications'),
-            onTap: () => context.push('/settings/notifications'),
+            onTap: () =>
+                Navigator.pushNamed(context, '/settings/notifications'),
           ),
 
           const SizedBox(height: 32),
@@ -74,7 +74,7 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.cloud_done_outlined),
             title: const Text('Storage & Sync'),
-            onTap: () => context.push('/settings/storage-sync'),
+            onTap: () => Navigator.pushNamed(context, '/settings/storage-sync'),
           ),
 
           const SizedBox(height: 32),
@@ -82,7 +82,7 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.card_membership_outlined),
             title: const Text('Manage Subscription'),
-            onTap: () => context.push('/settings/subscription'),
+            onTap: () => Navigator.pushNamed(context, '/settings/subscription'),
           ),
 
           const SizedBox(height: 32),
@@ -90,7 +90,7 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('About & Legal'),
-            onTap: () => context.push('/settings/about'),
+            onTap: () => Navigator.pushNamed(context, '/settings/about'),
           ),
         ],
       ),

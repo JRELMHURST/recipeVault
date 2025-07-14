@@ -4,44 +4,48 @@ import 'package:flutter/material.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
   bool _isLoading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    // optional: hide any overlays
-  }
+  Future<void> _registerWithEmail() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+    final confirm = confirmPasswordController.text.trim();
 
-  Future<void> _signInWithEmail() async {
+    if (password != confirm) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      return;
+    }
+
     setState(() => _isLoading = true);
-    try {
-      final email = emailController.text.trim();
-      final password = passwordController.text.trim();
-      await AuthService().signInWithEmail(email, password);
 
+    try {
+      await AuthService().registerWithEmail(email, password);
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Login failed: ${e.toString()}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Registration failed: ${e.toString()}')),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _signInWithGoogle() async {
+  Future<void> _signUpWithGoogle() async {
     setState(() => _isLoading = true);
     try {
       await AuthService().signInWithGoogle();
@@ -50,15 +54,15 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google sign-in failed: ${e.toString()}')),
+        SnackBar(content: Text('Google sign-up failed: ${e.toString()}')),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _goToRegister() {
-    Navigator.pushNamed(context, '/register');
+  void _goToLogin() {
+    Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
@@ -104,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Welcome to\nRecipeVault',
+                              'Create your\nRecipeVault account',
                               textAlign: TextAlign.center,
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
@@ -125,9 +129,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             TextField(
                               controller: passwordController,
                               obscureText: true,
-                              textInputAction: TextInputAction.done,
+                              textInputAction: TextInputAction.next,
                               decoration: const InputDecoration(
                                 labelText: 'Password',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: confirmPasswordController,
+                              obscureText: true,
+                              textInputAction: TextInputAction.done,
+                              decoration: const InputDecoration(
+                                labelText: 'Confirm Password',
                                 border: OutlineInputBorder(),
                               ),
                             ),
@@ -135,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: _signInWithEmail,
+                                onPressed: _registerWithEmail,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.deepPurple,
                                   padding: const EdgeInsets.symmetric(
@@ -143,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                                 child: const Text(
-                                  'Sign in with Email',
+                                  'Register with Email',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -154,16 +168,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(height: 12),
                             OutlinedButton.icon(
                               icon: const Icon(Icons.login),
-                              label: const Text('Sign in with Google'),
-                              onPressed: _signInWithGoogle,
+                              label: const Text('Sign up with Google'),
+                              onPressed: _signUpWithGoogle,
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 20),
                       TextButton(
-                        onPressed: _goToRegister,
-                        child: const Text("Don't have an account? Register"),
+                        onPressed: _goToLogin,
+                        child: const Text('Already have an account? Log in'),
                       ),
                     ],
                   ),

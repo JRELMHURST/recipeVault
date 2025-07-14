@@ -9,6 +9,7 @@ import 'package:recipe_vault/core/text_scale_notifier.dart';
 
 // Auth
 import 'package:recipe_vault/login/login_screen.dart';
+import 'package:recipe_vault/login/register_screen.dart';
 
 // Screens
 import 'package:recipe_vault/screens/home_screen.dart';
@@ -35,6 +36,7 @@ Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
       return user == null ? const LoginScreen() : const HomeScreen();
     },
     '/login': (context) => const LoginScreen(),
+    '/register': (context) => const RegisterScreen(),
     '/home': (context) => const HomeScreen(),
     '/results': (context) => const ResultsScreen(),
 

@@ -1,7 +1,6 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:go_router/go_router.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
@@ -48,7 +47,6 @@ class AccountSettingsScreen extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(height: 32),
           _buildSectionHeader('Security'),
           ListTile(
@@ -119,9 +117,7 @@ class AccountSettingsScreen extends StatelessWidget {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Signed out')));
-        context.go(
-          '/login',
-        ); // Navigate to login screen // Return to previous screen
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
       }
     }
   }
@@ -172,7 +168,11 @@ class AccountSettingsScreen extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Account deleted successfully.')),
           );
-          Navigator.of(context).pop(); // Return to previous screen
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/login',
+            (route) => false,
+          );
         }
       } catch (e) {
         debugPrint('❌ Cloud Function error: $e');

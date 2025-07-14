@@ -2,7 +2,6 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/model/processed_recipe_result.dart';
 import 'package:recipe_vault/widgets/processing_messages.dart';
@@ -162,7 +161,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
       if (!mounted) return;
       ProcessingOverlay.hide();
-      GoRouter.of(context).go('/results', extra: result);
+      Navigator.pushNamed(context, '/results', arguments: result);
     } catch (e, st) {
       debugPrint('❌ Processing failed: $e\n$st');
       if (mounted) {

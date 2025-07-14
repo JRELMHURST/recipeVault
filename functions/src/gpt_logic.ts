@@ -12,7 +12,7 @@ export async function generateFormattedRecipe(
   text: string,
   sourceLang: string
 ): Promise<string> {
-  const apiKey = await OPENAI_API_KEY.value(); // ✅ FIXED
+  const apiKey = await OPENAI_API_KEY.value();
 
   if (!apiKey) {
     throw new Error("❌ OPENAI_API_KEY is not set via Secret Manager.");
@@ -67,16 +67,22 @@ Return only a single JSON object **inside a JSON code block** like this:
         { role: "user", content: userPrompt },
       ],
       temperature: 0.3,
-      max_tokens: 1500,
+      max_tokens: 1200, // Slightly lower for safety
     });
 
     rawContent = completion.choices[0]?.message?.content?.trim() || "";
 
     console.log("✅ GPT response received:");
-    console.log(rawContent.slice(0, 300));
+    console.log("🧾 Full GPT output:\n" + rawContent);
   } catch (err) {
     console.error("❌ OpenAI API call failed:", err);
     throw new Error("OpenAI API call failed.");
+  }
+
+  // Safety check before JSON parsing
+  if (!rawContent.includes('formattedRecipe')) {
+    console.error("❌ GPT output missing 'formattedRecipe':\n" + rawContent);
+    throw new Error("GPT did not return a valid formatted recipe.");
   }
 
   const jsonText = rawContent
@@ -96,7 +102,7 @@ Return only a single JSON object **inside a JSON code block** like this:
 
     return `${formatted}\n\nHints & Tips:\n${notes}`;
   } catch (err) {
-    console.error("❌ Failed to parse GPT response:", rawContent.slice(0, 300));
+    console.error("❌ Failed to parse GPT response:\n" + rawContent);
     throw new Error("Invalid GPT response format – could not parse recipe JSON.");
   }
 }

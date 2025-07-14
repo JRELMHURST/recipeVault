@@ -1,5 +1,5 @@
 // text_utils.ts
-
+import "./firebase.js";
 /**
  * Cleans OCR or user-generated text to improve language detection and translation accuracy.
  */

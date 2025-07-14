@@ -1,4 +1,5 @@
 import { TranslationServiceClient } from "@google-cloud/translate";
+import "./firebase.js";
 
 const client = new TranslationServiceClient();
 

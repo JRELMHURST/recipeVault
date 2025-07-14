@@ -19,6 +19,10 @@ import {
 const REVENUECAT_SECRET_KEY = defineSecret("REVENUECAT_SECRET_KEY");
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
+/**
+ * Fetches the current active tier from RevenueCat for the given user.
+ * If no active entitlement is found, defaults to "taster" (i.e. on trial).
+ */
 async function fetchRevenueCatTier(uid: string): Promise<string> {
   try {
     const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${uid}`, {
@@ -188,7 +192,11 @@ export const extractAndFormatRecipe = onCall(
         translatedFromLanguage: translationUsed ? detectedLanguage : null,
       };
     } catch (err: any) {
-      console.error("❌ extractAndFormatRecipe failed:", err);
+      console.error("❌ extractAndFormatRecipe failed:");
+      console.error("📛 Error message:", err?.message || err);
+      console.error("🧵 Stack trace:\n", err?.stack || "No stack trace");
+      console.error("📥 Request data:", JSON.stringify(request.data, null, 2));
+
       const message = err?.message || "Unknown error";
       throw new HttpsError("internal", `Failed to process recipe: ${message}`);
     }

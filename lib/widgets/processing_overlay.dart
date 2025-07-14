@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/model/processed_recipe_result.dart';
 import 'package:recipe_vault/widgets/processing_messages.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProcessingOverlay {
   static OverlayEntry? _currentOverlay;
@@ -85,6 +86,11 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
   Future<void> _runFullFlow() async {
     try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not signed in.');
+      }
+
       await _setStep(0); // Uploading Images
       final imageUrls = await ImageProcessingService.uploadFiles(
         widget.imageFiles,

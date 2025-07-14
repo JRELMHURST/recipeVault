@@ -1226,6 +1226,11 @@ PODS:
   - Firebase/Storage (11.15.0):
     - Firebase/CoreOnly
     - FirebaseStorage (~> 11.15.0)
+  - firebase_app_check (0.3.2-9):
+    - Firebase/CoreOnly (~> 11.15.0)
+    - firebase_core
+    - FirebaseAppCheck (~> 11.15.0)
+    - Flutter
   - firebase_auth (5.6.2):
     - Firebase/Auth (= 11.15.0)
     - firebase_core
@@ -1237,6 +1242,12 @@ PODS:
     - Firebase/Storage (= 11.15.0)
     - firebase_core
     - Flutter
+  - FirebaseAppCheck (11.15.0):
+    - AppCheckCore (~> 11.0)
+    - FirebaseAppCheckInterop (~> 11.0)
+    - FirebaseCore (~> 11.15.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
   - FirebaseAppCheckInterop (11.15.0)
   - FirebaseAuth (11.15.0):
     - FirebaseAppCheckInterop (~> 11.0)
@@ -1511,6 +1522,7 @@ PODS:
 DEPENDENCIES:
   - cloud_firestore (from `.symlinks/plugins/cloud_firestore/ios`)
   - cloud_functions (from `.symlinks/plugins/cloud_functions/ios`)
+  - firebase_app_check (from `.symlinks/plugins/firebase_app_check/ios`)
   - firebase_auth (from `.symlinks/plugins/firebase_auth/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_storage (from `.symlinks/plugins/firebase_storage/ios`)
@@ -1536,6 +1548,7 @@ SPEC REPOS:
     - AppCheckCore
     - BoringSSL-GRPC
     - Firebase
+    - FirebaseAppCheck
     - FirebaseAppCheckInterop
     - FirebaseAuth
     - FirebaseAuthInterop
@@ -1571,6 +1584,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/cloud_firestore/ios"
   cloud_functions:
     :path: ".symlinks/plugins/cloud_functions/ios"
+  firebase_app_check:
+    :path: ".symlinks/plugins/firebase_app_check/ios"
   firebase_auth:
     :path: ".symlinks/plugins/firebase_auth/ios"
   firebase_core:
@@ -1612,9 +1627,11 @@ SPEC CHECKSUMS:
   cloud_firestore: 8b8ad857da9a98527dab9c7ae520d0eba975bef9
   cloud_functions: 2deea2254d9a845af7e6bcfe37bd2cb9887600fe
   Firebase: d99ac19b909cd2c548339c2241ecd0d1599ab02e
+  firebase_app_check: 100edcd23a22677ab58a133b72a690f20101997c
   firebase_auth: dad1f2f9c317dba1b300933a3f7622fa30eb721c
   firebase_core: ece862f94b2bc72ee0edbeec7ab5c7cb09fe1ab5
   firebase_storage: cda26bf5db7c2d71a7202a9e7cec99fca56418c5
+  FirebaseAppCheck: 4574d7180be2a8b514f588099fc5262f032a92c7
   FirebaseAppCheckInterop: 06fe5a3799278ae4667e6c432edd86b1030fa3df
   FirebaseAuth: a6575e5fbf46b046c58dc211a28a5fbdd8d4c83b
   FirebaseAuthInterop: 7087d7a4ee4bc4de019b2d0c240974ed5d89e2fd

@@ -1,4 +1,5 @@
 import vision from "@google-cloud/vision";
+import "./firebase.js";
 
 const visionClient = new vision.ImageAnnotatorClient();
 

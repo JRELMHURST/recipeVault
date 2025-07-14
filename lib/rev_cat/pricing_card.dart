@@ -20,8 +20,10 @@ class PricingCard extends StatelessWidget {
     final theme = Theme.of(context);
     final product = package.storeProduct;
     final price = product.priceString;
-    final title = product.title;
-    final description = product.description;
+
+    final title = _getTitle(package);
+    final description = _getDescription(package);
+    final features = _getFeatures(package);
 
     return Opacity(
       opacity: isDisabled ? 0.6 : 1.0,
@@ -55,19 +57,48 @@ class PricingCard extends StatelessWidget {
                         color: Colors.deepPurple,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: isDisabled ? null : onTap,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        disabledBackgroundColor: Colors.grey.shade400,
+                    const SizedBox(height: 16),
+
+                    ...features.map(
+                      (feature) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle,
+                              size: 18,
+                              color: Colors.green,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                feature,
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Text(isDisabled ? 'Unavailable' : 'Subscribe'),
+                    ),
+
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: isDisabled ? null : onTap,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          disabledBackgroundColor: Colors.grey.shade400,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: Text(isDisabled ? 'Unavailable' : 'Subscribe'),
+                      ),
                     ),
                   ],
                 ),
-
-                // Badge (e.g. "Trial")
                 if (badge != null)
                   Positioned(
                     top: 0,
@@ -96,5 +127,66 @@ class PricingCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getTitle(Package package) {
+    final offering = package.offeringIdentifier;
+    final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
+
+    if (offering == 'home_chef_plan') {
+      return 'Home Chef Plan';
+    }
+
+    if (offering == 'master_chef_plan') {
+      return period.contains('y')
+          ? 'Master Chef Annual'
+          : 'Master Chef Monthly';
+    }
+
+    return 'RecipeVault Plan';
+  }
+
+  String _getDescription(Package package) {
+    final offering = package.offeringIdentifier;
+    final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
+
+    if (offering == 'home_chef_plan') {
+      return 'Unlock 20 recipes/month with AI integration.';
+    }
+
+    if (offering == 'master_chef_plan') {
+      return period.contains('y')
+          ? 'Save 30% with a yearly subscription.'
+          : 'Unlimited AI recipes & translations.';
+    }
+
+    return 'Enjoy full access to RecipeVault features.';
+  }
+
+  List<String> _getFeatures(Package package) {
+    final offering = package.offeringIdentifier;
+
+    if (offering == 'home_chef_plan') {
+      return [
+        'AI recipe formatting',
+        'Image uploads (up to 10)',
+        '5 translations per month',
+        'Save recipes to your vault',
+        'Category sorting',
+      ];
+    }
+
+    if (offering == 'master_chef_plan') {
+      return [
+        'Unlimited AI recipe formatting',
+        'Unlimited image uploads',
+        'Unlimited translations',
+        'Save recipes to your vault',
+        'Category sorting & management',
+        'Priority processing',
+      ];
+    }
+
+    return ['AI recipe formatting', 'Save recipes to your vault'];
   }
 }

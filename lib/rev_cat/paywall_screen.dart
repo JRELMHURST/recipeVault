@@ -12,9 +12,10 @@ class PaywallScreen extends StatefulWidget {
 }
 
 class _PaywallScreenState extends State<PaywallScreen> {
+  final _subscriptionService = SubscriptionService();
   bool _isLoading = true;
   bool _isPurchasing = false;
-  SubscriptionService? _subscriptionService;
+  List<Package> _availablePackages = [];
 
   @override
   void initState() {
@@ -23,26 +24,39 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _loadSubscriptionData() async {
-    final service = SubscriptionService();
-    await service.init();
-    if (!mounted) return;
-    setState(() {
-      _subscriptionService = service;
-      _isLoading = false;
-    });
+    await _subscriptionService.init();
+
+    try {
+      final offerings = await Purchases.getOfferings();
+
+      final homeChef = offerings.getOffering('home_chef_plan');
+      final masterChef = offerings.getOffering('master_chef_plan');
+
+      _availablePackages = [
+        ...?homeChef?.availablePackages,
+        ...?masterChef?.availablePackages,
+      ];
+    } catch (e) {
+      debugPrint('❌ Failed to load offerings: $e');
+    }
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _handlePurchase(Package package) async {
     setState(() => _isPurchasing = true);
     try {
       await Purchases.purchasePackage(package);
-      await _subscriptionService?.refresh();
+      await _subscriptionService.refresh();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('🎉 Subscription successful!')),
       );
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('❌ Purchase failed: $e')));
@@ -55,8 +69,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (_isLoading || _subscriptionService == null) {
-      return const LoadingOverlay();
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -77,38 +91,31 @@ class _PaywallScreenState extends State<PaywallScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Home Chef
-              if (_subscriptionService!.homeChefPackage != null)
-                PricingCard(
-                  package: _subscriptionService!.homeChefPackage!,
-                  onTap: _isPurchasing
-                      ? () {}
-                      : () => _handlePurchase(
-                          _subscriptionService!.homeChefPackage!,
-                        ),
-                ),
-              const SizedBox(height: 16),
+              ..._availablePackages.map((pkg) {
+                final isAnnual = pkg.storeProduct.subscriptionPeriod == 'P1Y';
+                final badge = isAnnual ? 'Best Value' : null;
 
-              // Master Chef
-              if (_subscriptionService!.masterChefMonthlyPackage != null)
-                PricingCard(
-                  package: _subscriptionService!.masterChefMonthlyPackage!,
-                  onTap: _isPurchasing
-                      ? () {}
-                      : () => _handlePurchase(
-                          _subscriptionService!.masterChefMonthlyPackage!,
-                        ),
-                ),
-              const SizedBox(height: 16),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: PricingCard(
+                    package: pkg,
+                    onTap: () {
+                      if (!_isPurchasing) _handlePurchase(pkg);
+                    },
+                    isDisabled: false,
+                    badge: badge,
+                  ),
+                );
+              }),
 
-              // Taster (if still active)
-              if (_subscriptionService!.isTaster &&
-                  !_subscriptionService!.isTrialExpired)
-                PricingCard(
-                  package: _subscriptionService!.homeChefPackage!,
-                  onTap: () {}, // Disabled
-                  isDisabled: true,
-                  badge: 'Trial',
+              if (_availablePackages.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(top: 24),
+                  child: Text(
+                    'No subscription plans are currently available. Please try again later.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
             ],
           ),

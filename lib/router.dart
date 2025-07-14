@@ -23,6 +23,9 @@ import 'package:recipe_vault/settings/subscription_settings_screen.dart';
 import 'package:recipe_vault/settings/about_screen.dart';
 import 'package:recipe_vault/settings/storage_sync_screen.dart';
 
+// Paywall
+import 'package:recipe_vault/rev_cat/paywall_screen.dart';
+
 Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
   final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
   final textScaleNotifier = Provider.of<TextScaleNotifier>(
@@ -53,6 +56,9 @@ Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
     '/settings/subscription': (context) => const SubscriptionSettingsScreen(),
     '/settings/about': (context) => const AboutSettingsScreen(),
     '/settings/storage-sync': (context) => const StorageSyncScreen(),
+
+    // Paywall
+    '/paywall': (context) => const PaywallScreen(),
   };
 }
 
@@ -84,7 +90,7 @@ Widget buildAppWithRouter() {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeNotifier.themeMode,
-        initialRoute: '/', // ✅ Let '/' handle the login/home branching
+        initialRoute: '/',
         onGenerateRoute: generateRoute,
         builder: (context, child) {
           return MediaQuery(

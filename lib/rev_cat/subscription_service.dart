@@ -24,6 +24,14 @@ class SubscriptionService extends ChangeNotifier {
   bool get allowImageUpload => isMasterChef || isHomeChef;
   bool get allowSaveToVault => isMasterChef || isHomeChef || isTaster;
 
+  bool get isTasterTrialActive {
+    final entitlement = _customerInfo?.entitlements.active.values.firstOrNull;
+    return entitlement?.periodType == PeriodType.intro &&
+        entitlement?.productIdentifier == 'master_chef_monthly';
+  }
+
+  bool get isTrialExpired => !isTasterTrialActive && isTaster;
+
   // Package references for the paywall
   Package? homeChefPackage;
   Package? masterChefMonthlyPackage;
@@ -90,11 +98,6 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   String get currentEntitlement => _tier;
-
-  bool get isTrialExpired {
-    final expiry = trialEndDate;
-    return expiry != null && expiry.isBefore(DateTime.now());
-  }
 
   String get trialEndDateFormatted {
     final date = trialEndDate;

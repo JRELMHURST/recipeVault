@@ -8,6 +8,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'firebase_options.dart';
 import 'core/theme.dart';
@@ -16,6 +17,7 @@ import 'core/text_scale_notifier.dart';
 import 'model/recipe_card_model.dart';
 import 'model/category_model.dart';
 import 'services/user_preference_service.dart';
+import 'rev_cat/subscription_service.dart';
 import 'router.dart'; // This will now provide Navigator 1.0 route definitions
 
 const bool skipAuthForDev = false;
@@ -30,10 +32,15 @@ Future<void> main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // ✅ Activate Firebase App Check with debug providers for Android/iOS
+  // ✅ Activate Firebase App Check
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.debug,
     appleProvider: AppleProvider.debug,
+  );
+
+  // ✅ Initialise RevenueCat
+  await Purchases.configure(
+    PurchasesConfiguration('appl_oqbgqmtmctjzzERpEkswCejmukh'),
   );
 
   await Hive.initFlutter();
@@ -59,6 +66,7 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeNotifier()..loadTheme()),
         ChangeNotifierProvider(create: (_) => TextScaleNotifier()..loadScale()),
+        ChangeNotifierProvider(create: (_) => SubscriptionService()..refresh()),
       ],
       child: const RecipeVaultApp(),
     ),

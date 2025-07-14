@@ -23,19 +23,18 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
   Future<void> _loadPackages() async {
     await _subscriptionService.init();
     if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
-  void _handlePurchase(Package package) async {
+  Future<void> _handlePurchase(Package package) async {
     try {
       await Purchases.purchasePackage(package);
       await _subscriptionService.refresh();
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('❌ Purchase failed: $e')));
@@ -46,9 +45,8 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    final homeChef = _subscriptionService.homeChefPackage;
+    final masterChef = _subscriptionService.masterChefMonthlyPackage;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F7FE),
@@ -64,81 +62,86 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
           ),
         ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 12),
-              Text(
-                'Your 7-day free trial has ended',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Continue enjoying RecipeVault with one of our plans below:',
-                style: theme.textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-
-              Expanded(
-                child: ListView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (_subscriptionService.homeChefPackage != null)
-                      PricingCard(
-                        package: _subscriptionService.homeChefPackage!,
-                        onTap: () => _handlePurchase(
-                          _subscriptionService.homeChefPackage!,
-                        ),
-                      ),
                     const SizedBox(height: 12),
-                    if (_subscriptionService.masterChefMonthlyPackage != null)
-                      PricingCard(
-                        package: _subscriptionService.masterChefMonthlyPackage!,
-                        onTap: () => _handlePurchase(
-                          _subscriptionService.masterChefMonthlyPackage!,
-                        ),
+                    Text(
+                      'Your 7-day free trial has ended',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepPurple,
                       ),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 12),
-                    // Add yearly plan support here when available
+                    Text(
+                      'Continue enjoying RecipeVault with one of our plans below:',
+                      style: theme.textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    Expanded(
+                      child: ListView(
+                        children: [
+                          if (homeChef != null)
+                            PricingCard(
+                              package: homeChef,
+                              onTap: () => _handlePurchase(homeChef),
+                            ),
+                          if (homeChef != null) const SizedBox(height: 12),
+                          if (masterChef != null)
+                            PricingCard(
+                              package: masterChef,
+                              onTap: () => _handlePurchase(masterChef),
+                            ),
+                          if (masterChef != null) const SizedBox(height: 12),
+                          if (homeChef == null && masterChef == null)
+                            const Text(
+                              'No subscription packages available at the moment. Please try again later.',
+                              textAlign: TextAlign.center,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    TextButton(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Limited Free Access'),
+                            content: const Text(
+                              'RecipeVault will still allow limited viewing and access. '
+                              'However, new recipe processing and translation features will be locked.\n\n'
+                              'Upgrade to continue enjoying full functionality. 🙂',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Got it'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Want to continue with limited access?',
+                        style: TextStyle(decoration: TextDecoration.underline),
+                      ),
+                    ),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 24),
-              TextButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text('Limited Free Access'),
-                      content: const Text(
-                        'RecipeVault will still allow limited viewing and access. However, new recipe processing and translation features will be locked.\n\nUpgrade to continue enjoying full functionality. 🙂',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Got it'),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                child: const Text(
-                  'Want to continue with limited access?',
-                  style: TextStyle(decoration: TextDecoration.underline),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }

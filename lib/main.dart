@@ -15,9 +15,9 @@ import 'core/text_scale_notifier.dart';
 import 'model/recipe_card_model.dart';
 import 'model/category_model.dart';
 import 'services/user_preference_service.dart';
-import 'router.dart';
+import 'router.dart'; // This will now provide Navigator 1.0 route definitions
 
-const bool skipAuthForDev = false; // ✅ Set to false before release
+const bool skipAuthForDev = false;
 
 final FirebaseFunctions functions = FirebaseFunctions.instanceFor(
   region: 'europe-west2',
@@ -40,7 +40,6 @@ Future<void> main() async {
     debugPrint('✅ Dev mode: Signed out + Cleared Hive');
   }
 
-  // ✅ Open Hive boxes
   await Hive.openBox<RecipeCardModel>('recipes');
   await Hive.openBox<CategoryModel>('categories');
   await Hive.openBox<String>('customCategories');
@@ -65,18 +64,21 @@ class RecipeVaultApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
     final textScaleNotifier = Provider.of<TextScaleNotifier>(context);
+    final user = FirebaseAuth.instance.currentUser;
 
     return MediaQuery(
       data: MediaQuery.of(
         context,
       ).copyWith(textScaler: TextScaler.linear(textScaleNotifier.scaleFactor)),
-      child: MaterialApp.router(
+      child: MaterialApp(
         title: 'RecipeVault',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeNotifier.themeMode,
-        routerConfig: buildRouter(), // LaunchGate is handled via initial route
+        initialRoute: user == null ? '/login' : '/home',
+        routes: buildRoutes(context),
+        onGenerateRoute: generateRoute,
       ),
     );
   }

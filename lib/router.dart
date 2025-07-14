@@ -1,12 +1,18 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+// Core services
+import 'package:recipe_vault/core/theme_notifier.dart';
+import 'package:recipe_vault/core/text_scale_notifier.dart';
+
+// Auth
+import 'package:recipe_vault/login/login_screen.dart';
 
 // Screens
 import 'package:recipe_vault/screens/home_screen.dart';
-import 'package:recipe_vault/screens/welcome_screen/welcome_screen.dart';
 import 'package:recipe_vault/screens/results_screen.dart';
-import 'package:recipe_vault/login/login_screen.dart';
-import 'package:recipe_vault/login/register_screen.dart';
 import 'package:recipe_vault/settings/settings_screen.dart';
 import 'package:recipe_vault/settings/acount_settings/account_settings_screen.dart';
 import 'package:recipe_vault/settings/acount_settings/change_password.dart';
@@ -15,40 +21,30 @@ import 'package:recipe_vault/settings/notifications_settings_screen.dart';
 import 'package:recipe_vault/settings/subscription_settings_screen.dart';
 import 'package:recipe_vault/settings/about_screen.dart';
 import 'package:recipe_vault/settings/storage_sync_screen.dart';
-import 'package:recipe_vault/revcat_paywall/screens/subscription_success_screen.dart';
-import 'package:recipe_vault/revcat_paywall/screens/upgrade_blocked_screen.dart';
-import 'package:recipe_vault/revcat_paywall/screens/paywall_screen.dart';
-
-import 'package:recipe_vault/core/theme_notifier.dart';
-import 'package:recipe_vault/core/text_scale_notifier.dart';
-import 'package:provider/provider.dart';
-import 'package:recipe_vault/z_main_widgets/launch_gate_screen.dart'; // ✅ New import
 
 GoRouter buildRouter() {
   return GoRouter(
     debugLogDiagnostics: true,
-    initialLocation: '/launch',
-    routes: [
-      /// 🔐 Auth & Launch
-      GoRoute(path: '/launch', builder: (_, __) => const LaunchGateScreen()),
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
+    initialLocation: '/home',
+    redirect: (context, state) {
+      final user = FirebaseAuth.instance.currentUser;
+      final isLoggingIn = state.uri.toString() == '/login';
 
-      /// 🏡 App Flow
+      // Redirect unauthenticated users to /login
+      if (user == null && !isLoggingIn) return '/login';
+
+      // Redirect authenticated users away from /login
+      if (user != null && isLoggingIn) return '/home';
+
+      return null; // no redirect
+    },
+    routes: [
+      /// 🔐 Auth
+      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+
+      /// 🏡 Main App Flow
       GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
       GoRoute(path: '/results', builder: (_, __) => const ResultsScreen()),
-      GoRoute(path: '/welcome', builder: (_, __) => const WelcomeScreen()),
-
-      /// 💸 Subscription
-      GoRoute(path: '/paywall', builder: (_, __) => const PaywallScreen()),
-      GoRoute(
-        path: '/upgrade-success',
-        builder: (_, __) => const SubscriptionSuccessScreen(),
-      ),
-      GoRoute(
-        path: '/upgrade-blocked',
-        builder: (_, __) => const UpgradeBlockedScreen(),
-      ),
 
       /// ⚙️ Settings
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
@@ -94,7 +90,7 @@ GoRouter buildRouter() {
         builder: (_, __) => const StorageSyncScreen(),
       ),
 
-      /// 🚫 Fallback
+      /// 🚫 Error fallback
       GoRoute(
         path: '/error',
         builder: (_, __) => const Scaffold(
@@ -107,7 +103,9 @@ GoRouter buildRouter() {
         ),
       ),
     ],
-    errorBuilder: (_, __) =>
-        const Scaffold(body: Center(child: Text('Page not found'))),
+    errorBuilder: (_, state) {
+      debugPrint('❌ Route not found: ${state.uri.toString()}');
+      return const Scaffold(body: Center(child: Text('Page not found')));
+    },
   );
 }

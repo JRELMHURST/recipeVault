@@ -2,10 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
-import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
@@ -45,31 +43,21 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   @override
   void initState() {
     super.initState();
-    final user = FirebaseAuth.instance.currentUser;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
 
-    if (user == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        GoRouter.of(context).go('/login');
-      });
-      return;
-    }
+      final user = FirebaseAuth.instance.currentUser;
+      userId = user?.uid;
 
-    final subscription = SubscriptionService();
-    if (!subscription.hasAccess) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        GoRouter.of(context).go('/pricing');
-      });
-      return;
-    }
+      recipeCollection = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('recipes');
 
-    userId = user.uid;
-    recipeCollection = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('recipes');
-
-    _initializeDefaultCategories().then((_) => _loadCustomCategories());
-    _loadRecipes();
+      await _initializeDefaultCategories();
+      await _loadCustomCategories();
+      await _loadRecipes();
+    });
   }
 
   Future<void> _initializeDefaultCategories() async {
@@ -83,12 +71,13 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   Future<void> _loadCustomCategories() async {
     final saved = await CategoryService.getAllCategories();
+    if (!mounted) return;
     setState(() {
       _allCategories = [
         'All',
         'Favourites',
         'Translated',
-        ...saved.where((c) => c != 'Favourites' && c != 'Translated'),
+        ...saved.where((c) => !_defaultCategories.contains(c)),
       ];
     });
   }
@@ -104,13 +93,16 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       for (final recipe in recipes) {
         await HiveRecipeService.save(recipe);
       }
+      if (!mounted) return;
       setState(() {
         _allRecipes = recipes;
       });
     } catch (e) {
       debugPrint("⚠️ Firestore fetch failed, loading from Hive: $e");
+      final fallback = HiveRecipeService.getAll();
+      if (!mounted) return;
       setState(() {
-        _allRecipes = HiveRecipeService.getAll();
+        _allRecipes = fallback;
       });
     }
   }
@@ -120,7 +112,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       await recipeCollection.doc(recipe.id).delete();
       await HiveRecipeService.delete(recipe.id);
 
-      if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
+      if (recipe.imageUrl?.isNotEmpty ?? false) {
         try {
           final ref = FirebaseStorage.instance.refFromURL(recipe.imageUrl!);
           await ref.delete();
@@ -191,11 +183,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   }
 
   void _removeCategory(String category) async {
-    if (category == 'Favourites' ||
-        category == 'Translated' ||
-        category == 'All') {
-      return;
-    }
+    if (_defaultCategories.contains(category) || category == 'All') return;
 
     await CategoryService.deleteCategory(category);
     await _loadCustomCategories();

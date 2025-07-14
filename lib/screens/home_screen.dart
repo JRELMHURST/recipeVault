@@ -1,15 +1,11 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:recipe_vault/revcat_paywall/services/subscription_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_vault_screen.dart';
 import 'package:recipe_vault/settings/settings_screen.dart';
-import 'package:recipe_vault/revcat_paywall/utils/trial_prompt_helper.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,42 +15,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 1; // Start at the "Vault" tab
-  int _viewMode = 0; // 0 = list, 1 = grid, 2 = compact
-
+  int _selectedIndex = 1;
+  int _viewMode = 0;
   final PageStorageBucket _bucket = PageStorageBucket();
 
   @override
   void initState() {
     super.initState();
-    _checkAccessAndInit();
+    _checkWelcomeFlagAndInit();
   }
 
-  Future<void> _checkAccessAndInit() async {
-    final subscription = SubscriptionService();
-    final prefs = await SharedPreferences.getInstance();
-    final hasSeenWelcome = prefs.getBool('hasSeenWelcome') ?? false;
-
-    if (!subscription.hasAccess) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.go('/pricing');
-      });
-      return;
-    }
-
-    if (!hasSeenWelcome) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.go('/welcome');
-      });
-      return;
-    }
-
+  Future<void> _checkWelcomeFlagAndInit() async {
     await _loadUserViewMode();
-
-    // Prompt for trial if eligible
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      TrialPromptHelper.checkAndPromptTrial(context);
-    });
   }
 
   Future<void> _loadUserViewMode() async {
@@ -118,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (files.isNotEmpty && mounted) {
         ProcessingOverlay.show(context, files);
       }
-      setState(() => _selectedIndex = 1); // Back to vault after upload
+      setState(() => _selectedIndex = 1);
       return;
     }
     setState(() => _selectedIndex = idx);

@@ -54,7 +54,10 @@ class AccountSettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.lock_outline),
             title: const Text('Change Password'),
-            onTap: () => context.push('/settings/account/change-password'),
+            onTap: () => Navigator.pushNamed(
+              context,
+              '/settings/account/change-password',
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.logout),
@@ -112,7 +115,14 @@ class AccountSettingsScreen extends StatelessWidget {
 
     if (confirm == true) {
       await FirebaseAuth.instance.signOut();
-      if (context.mounted) context.go('/login');
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Signed out')));
+        context.go(
+          '/login',
+        ); // Navigate to login screen // Return to previous screen
+      }
     }
   }
 
@@ -162,7 +172,7 @@ class AccountSettingsScreen extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Account deleted successfully.')),
           );
-          context.go('/login');
+          Navigator.of(context).pop(); // Return to previous screen
         }
       } catch (e) {
         debugPrint('❌ Cloud Function error: $e');

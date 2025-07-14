@@ -122,7 +122,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
         translationUsed: result.translationUsed,
       );
 
-      await docRef.set(recipe.toJson());
+      debugPrint('📄 Saving recipe "$title" at ${recipe.createdAt}');
+
+      final serverTimestamp = FieldValue.serverTimestamp();
+      await docRef.set({...recipe.toJson(), 'createdAt': serverTimestamp});
       await HiveRecipeService.save(recipe);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -252,6 +255,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           return '';
                         }
 
+                        debugPrint('🔐 Current user UID: ${user.uid}');
+
                         final originalFile = File(localPath);
                         final croppedFile =
                             await ImageProcessingService.cropImage(
@@ -269,15 +274,24 @@ class _ResultsScreenState extends State<ResultsScreen> {
                             result?.formattedRecipe.hashCode.toString() ??
                             DateTime.now().millisecondsSinceEpoch.toString();
 
-                        final url =
-                            await ImageProcessingService.uploadRecipeImage(
-                              imageFile: croppedFile,
-                              userId: user.uid,
-                              recipeId: recipeId,
-                            );
+                        try {
+                          final url =
+                              await ImageProcessingService.uploadRecipeImage(
+                                imageFile: croppedFile,
+                                userId: user.uid,
+                                recipeId: recipeId,
+                              );
 
-                        setState(() => _recipeImageUrl = url);
-                        return url;
+                          debugPrint('✅ Image uploaded URL: $url');
+                          setState(() => _recipeImageUrl = url);
+                          return url;
+                        } catch (e) {
+                          ImageProcessingService.showError(
+                            context,
+                            '❌ Upload failed: $e',
+                          );
+                          return '';
+                        }
                       },
                     ),
                     const SizedBox(height: 16),

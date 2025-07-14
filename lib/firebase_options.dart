@@ -63,6 +63,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '140256184353',
     projectId: 'recipevault-bg-ai',
     storageBucket: 'recipevault-bg-ai.firebasestorage.app',
+    iosClientId: '140256184353-7h32sfm21fg78icmq8csdn7v6v1q43c9.apps.googleusercontent.com',
     iosBundleId: 'com.badgercreations.recipevault',
   );
+
 }

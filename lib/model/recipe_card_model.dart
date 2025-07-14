@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:hive/hive.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 part 'recipe_card_model.g.dart'; // Generates the adapter
 
@@ -38,7 +39,7 @@ class RecipeCardModel extends HiveObject {
   @HiveField(10)
   final List<String> hints;
 
-  @HiveField(11) // ✅ NEW FIELD
+  @HiveField(11)
   final bool translationUsed;
 
   RecipeCardModel({
@@ -52,7 +53,7 @@ class RecipeCardModel extends HiveObject {
     this.isFavourite = false,
     this.originalImageUrls = const [],
     this.hints = const [],
-    this.translationUsed = false, // ✅ DEFAULT VALUE
+    this.translationUsed = false,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -68,25 +69,36 @@ class RecipeCardModel extends HiveObject {
     'isFavourite': isFavourite,
     'originalImageUrls': originalImageUrls,
     'hints': hints,
-    'translationUsed': translationUsed, // ✅ TO JSON
+    'translationUsed': translationUsed,
   };
 
-  factory RecipeCardModel.fromJson(Map<String, dynamic> json) =>
-      RecipeCardModel(
-        id: json['id'] as String,
-        userId: json['userId'] as String? ?? '',
-        title: json['title'] as String,
-        ingredients: List<String>.from(json['ingredients'] ?? []),
-        instructions: List<String>.from(json['instructions'] ?? []),
-        createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
-        imageUrl: json['imageUrl'] as String?,
-        categories: List<String>.from(json['categories'] ?? []),
-        isFavourite: json['isFavourite'] as bool? ?? false,
-        originalImageUrls: List<String>.from(json['originalImageUrls'] ?? []),
-        hints: List<String>.from(json['hints'] ?? []),
-        translationUsed:
-            json['translationUsed'] as bool? ?? false, // ✅ FROM JSON
-      );
+  factory RecipeCardModel.fromJson(Map<String, dynamic> json) {
+    final rawCreatedAt = json['createdAt'];
+    DateTime parsedCreatedAt;
+
+    if (rawCreatedAt is Timestamp) {
+      parsedCreatedAt = rawCreatedAt.toDate();
+    } else if (rawCreatedAt is String) {
+      parsedCreatedAt = DateTime.tryParse(rawCreatedAt) ?? DateTime.now();
+    } else {
+      parsedCreatedAt = DateTime.now();
+    }
+
+    return RecipeCardModel(
+      id: json['id'] as String,
+      userId: json['userId'] as String? ?? '',
+      title: json['title'] as String,
+      ingredients: List<String>.from(json['ingredients'] ?? []),
+      instructions: List<String>.from(json['instructions'] ?? []),
+      createdAt: parsedCreatedAt,
+      imageUrl: json['imageUrl'] as String?,
+      categories: List<String>.from(json['categories'] ?? []),
+      isFavourite: json['isFavourite'] as bool? ?? false,
+      originalImageUrls: List<String>.from(json['originalImageUrls'] ?? []),
+      hints: List<String>.from(json['hints'] ?? []),
+      translationUsed: json['translationUsed'] as bool? ?? false,
+    );
+  }
 
   String toRawJson() => jsonEncode(toJson());
 
@@ -98,7 +110,7 @@ class RecipeCardModel extends HiveObject {
     List<String>? originalImageUrls,
     List<String>? hints,
     bool? translationUsed,
-    required List<String> categories, // ✅ COPY SUPPORT
+    required List<String> categories,
   }) {
     return RecipeCardModel(
       id: id,

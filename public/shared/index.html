@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>RecipeVault</title>
+
+    <!-- Open Graph for previews -->
+    <meta property="og:title" content="View this recipe on RecipeVault" />
+    <meta property="og:description" content="Tap to open this recipe in the RecipeVault app." />
+    <meta property="og:image" content="https://recipevault.app/assets/icon/round_vaultLogo.png" />
+    <meta property="og:url" content="https://recipevault.app/shared" />
+
+    <!-- Smart App Banner (iOS Safari) -->
+    <meta name="apple-itunes-app" content="app-id=6748146354, app-argument=https://recipevault.app/shared" />
+
+    <!-- Redirect logic -->
+    <script>
+      window.onload = function () {
+        // Attempt to open the app via your custom scheme
+        window.location.href = 'recipevault://shared';
+
+        // Fallback to App Store after 2s
+        setTimeout(() => {
+          window.location.href = 'https://apps.apple.com/app/id6748146354';
+        }, 2000);
+      };
+    </script>
+  </head>
+  <body>
+    <p>Opening RecipeVault...</p>
+  </body>
+</html>

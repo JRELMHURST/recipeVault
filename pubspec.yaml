@@ -85,7 +85,7 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   color: "#F6F4FA"
-  image: assets/icon/recipe_vaultBG.png
+  image: assets/icon/round_vaultLogo.png
   android: true
   ios: true
   fullscreen: true

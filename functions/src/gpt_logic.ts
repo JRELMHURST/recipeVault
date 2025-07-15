@@ -20,12 +20,19 @@ export async function generateFormattedRecipe(
 
   const openai = new OpenAI({ apiKey });
 
+  // Heuristic: Check if recipe seems to use Thermomix terms
+  const isThermomix = /Varoma|koszyczek|obr\.\s*\d|motylka|obr\.|przystawka/i.test(text);
+
   const systemPrompt = `
 You are a UK-based recipe assistant. The original recipe was written in ${sourceLang.toUpperCase()}, but the text below has already been translated into UK English.
 
 Your job is to:
 1. Ensure all spelling and measurements follow British English conventions (e.g. grammes, litres, aubergine, courgette).
-2. Format the recipe using the layout below, even if some sections are empty:
+2. Detect and remove any device-specific instructions (e.g. Thermomix terms like "Varoma", "obr.", "koszyczek", "insert butterfly whisk", "mixing bowl lid").
+   - Replace these with simple everyday cooking equivalents (e.g. steam, simmer, sauté, boil).
+   - If time and temperature are mentioned in device-specific format, convert them to approximate stovetop equivalents (e.g. "cook on medium heat for 10 minutes").
+3. Use clear, everyday cooking instructions suitable for standard kitchen tools (e.g. saucepan, frying pan, steamer).
+4. Format the recipe using the layout below, even if some sections are empty:
 
 ---
 Title: <title>
@@ -53,7 +60,11 @@ Return only a single JSON object **inside a JSON code block** like this:
 \`\`\`
 `.trim();
 
-  const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""`;
+  const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""${
+    isThermomix
+      ? '\n\nNote: This appears to be a Thermomix-style recipe. Please adapt it for everyday home cooking using common kitchen equipment and natural instructions.'
+      : ''
+  }`;
 
   console.log("🧠 Sending prompt to OpenAI...");
 
@@ -67,7 +78,7 @@ Return only a single JSON object **inside a JSON code block** like this:
         { role: "user", content: userPrompt },
       ],
       temperature: 0.3,
-      max_tokens: 1200, // Slightly lower for safety
+      max_tokens: 1200,
     });
 
     rawContent = completion.choices[0]?.message?.content?.trim() || "";

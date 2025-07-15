@@ -19,10 +19,6 @@ import {
 const REVENUECAT_SECRET_KEY = defineSecret("REVENUECAT_SECRET_KEY");
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
-/**
- * Fetches the current active tier from RevenueCat for the given user.
- * If no active entitlement is found, defaults to "taster" (i.e. on trial).
- */
 async function fetchRevenueCatTier(uid: string): Promise<string> {
   try {
     const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${uid}`, {
@@ -114,7 +110,6 @@ export const extractAndFormatRecipe = onCall(
       const cleanInput = cleanText(ocrText);
       previewText("🔎 Raw OCR text", ocrText);
 
-      // 🌍 Detect language
       let detectedLanguage = "unknown";
       let confidence = 0;
 
@@ -127,10 +122,8 @@ export const extractAndFormatRecipe = onCall(
         console.warn("⚠️ Language detection failed:", err);
       }
 
-      // 🔐 Check subscription tier
       const tier = await fetchRevenueCatTier(uid);
 
-      // 🔄 Translation logic
       let translatedText = cleanInput;
       let translationUsed = false;
 
@@ -139,7 +132,15 @@ export const extractAndFormatRecipe = onCall(
         detectedLanguage.toLowerCase().startsWith("en-");
 
       if (!isLikelyEnglish) {
-        await enforceTranslationPolicy(uid, tier);
+        try {
+          await enforceTranslationPolicy(uid, tier);
+        } catch (e) {
+          throw new HttpsError(
+            "permission-denied",
+            "Translation blocked due to plan limit."
+          );
+        }
+
         try {
           console.log(`🚧 Translating from "${detectedLanguage}" → en-GB...`);
           const result = await translateToEnglish(cleanInput, detectedLanguage, projectId);
@@ -170,7 +171,6 @@ export const extractAndFormatRecipe = onCall(
 
       previewText("🧠 GPT input preview", finalText);
 
-      // ✅ GPT limit check
       await enforceGptRecipePolicy(uid, tier);
 
       const formattedRecipe = await generateFormattedRecipe(finalText, detectedLanguage);
@@ -197,8 +197,11 @@ export const extractAndFormatRecipe = onCall(
       console.error("🧵 Stack trace:\n", err?.stack || "No stack trace");
       console.error("📥 Request data:", JSON.stringify(request.data, null, 2));
 
-      const message = err?.message || "Unknown error";
-      throw new HttpsError("internal", `Failed to process recipe: ${message}`);
+      if (err instanceof HttpsError) {
+        throw err;
+      }
+
+      throw new HttpsError("internal", "An unexpected error occurred while processing your recipe.");
     }
   }
 );

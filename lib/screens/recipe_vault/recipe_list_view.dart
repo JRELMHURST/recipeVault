@@ -131,9 +131,11 @@ class RecipeListView extends StatelessWidget {
                               recipe.title,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
+                                fontSize: 14,
                               ),
                               maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                              overflow: TextOverflow.fade,
+                              softWrap: true,
                             ),
                             const SizedBox(height: 4),
                             Text(

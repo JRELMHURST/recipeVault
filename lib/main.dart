@@ -31,14 +31,11 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // ✅ Activate Firebase App Check
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.debug,
     appleProvider: AppleProvider.debug,
   );
 
-  // ✅ Initialise RevenueCat
   await Purchases.configure(
     PurchasesConfiguration('appl_oqbgqmtmctjzzERpEkswCejmukh'),
   );
@@ -56,10 +53,12 @@ Future<void> main() async {
   }
 
   await Hive.openBox<RecipeCardModel>('recipes');
-  await Hive.openBox<CategoryModel>('categories');
+  await Hive.openBox<CategoryModelAdapter>('categories');
   await Hive.openBox<String>('customCategories');
 
   await UserPreferencesService.init();
+
+  final initialRoute = _getInitialRouteFromDeepLink();
 
   runApp(
     MultiProvider(
@@ -68,19 +67,30 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => TextScaleNotifier()..loadScale()),
         ChangeNotifierProvider(create: (_) => SubscriptionService()..refresh()),
       ],
-      child: const RecipeVaultApp(),
+      child: RecipeVaultApp(initialRoute: initialRoute),
     ),
   );
 }
 
+/// Detects launch route from universal link like https://recipevault.app/shared/abc123
+String _getInitialRouteFromDeepLink() {
+  final uri = Uri.base;
+  if (uri.pathSegments.isNotEmpty && uri.pathSegments.first == 'shared') {
+    final id = uri.pathSegments.length > 1 ? uri.pathSegments[1] : null;
+    if (id != null) return '/shared/$id';
+  }
+  return '/'; // fallback
+}
+
 class RecipeVaultApp extends StatelessWidget {
-  const RecipeVaultApp({super.key});
+  final String initialRoute;
+
+  const RecipeVaultApp({super.key, required this.initialRoute});
 
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
     final textScaleNotifier = Provider.of<TextScaleNotifier>(context);
-    final user = FirebaseAuth.instance.currentUser;
 
     return MediaQuery(
       data: MediaQuery.of(
@@ -92,8 +102,7 @@ class RecipeVaultApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeNotifier.themeMode,
-        initialRoute: user == null ? '/login' : '/home',
-        routes: buildRoutes(context),
+        initialRoute: initialRoute, // ✅ Now defined properly
         onGenerateRoute: generateRoute,
       ),
     );

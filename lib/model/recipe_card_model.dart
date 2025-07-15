@@ -57,6 +57,7 @@ class RecipeCardModel extends HiveObject {
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
+  /// 🔁 Convert to Firestore/JSON-safe map
   Map<String, dynamic> toJson() => {
     'id': id,
     'userId': userId,
@@ -72,6 +73,7 @@ class RecipeCardModel extends HiveObject {
     'translationUsed': translationUsed,
   };
 
+  /// 🔁 Create from Firestore snapshot or JSON
   factory RecipeCardModel.fromJson(Map<String, dynamic> json) {
     final rawCreatedAt = json['createdAt'];
     DateTime parsedCreatedAt;
@@ -100,11 +102,19 @@ class RecipeCardModel extends HiveObject {
     );
   }
 
+  /// 🔁 Needed for Firestore reads (e.g. from `doc.data()`)
+  factory RecipeCardModel.fromMap(Map<String, dynamic> map) {
+    return RecipeCardModel.fromJson(map);
+  }
+
+  /// 📦 Serialise to a raw JSON string
   String toRawJson() => jsonEncode(toJson());
 
+  /// 📥 Deserialize from raw JSON string
   factory RecipeCardModel.fromRawJson(String str) =>
       RecipeCardModel.fromJson(jsonDecode(str));
 
+  /// 🛠️ Clone with updates
   RecipeCardModel copyWith({
     bool? isFavourite,
     List<String>? originalImageUrls,
@@ -126,5 +136,17 @@ class RecipeCardModel extends HiveObject {
       hints: hints ?? this.hints,
       translationUsed: translationUsed ?? this.translationUsed,
     );
+  }
+
+  /// 📝 For rendering in shared screens etc
+  String get formattedText {
+    final ingredientsStr = ingredients.join('\n• ');
+    final instructionsStr = instructions
+        .asMap()
+        .entries
+        .map((e) => '${e.key + 1}. ${e.value}')
+        .join('\n\n');
+
+    return 'Ingredients:\n• $ingredientsStr\n\nInstructions:\n$instructionsStr';
   }
 }

@@ -1,13 +1,8 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_utils.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:pdf/pdf.dart';
 
 void showRecipeDialog(BuildContext context, RecipeCardModel recipe) {
   final markdown = formatRecipeMarkdown(recipe);
@@ -22,6 +17,7 @@ void showRecipeDialog(BuildContext context, RecipeCardModel recipe) {
         markdown: markdown,
         title: recipe.title,
         imageUrl: recipe.imageUrl,
+        recipeId: recipe.id,
       ),
     ),
   );
@@ -31,50 +27,19 @@ class _ShareableRecipeCard extends StatelessWidget {
   final String markdown;
   final String title;
   final String? imageUrl;
+  final String recipeId;
 
   const _ShareableRecipeCard({
     required this.markdown,
     required this.title,
+    required this.recipeId,
     this.imageUrl,
   });
 
-  Future<void> _shareAsPdf(BuildContext context) async {
-    final pdf = pw.Document();
-
-    Uint8List? imageBytes;
-    if (imageUrl != null && imageUrl!.isNotEmpty) {
-      imageBytes = await networkImageToBytes(imageUrl!);
-    }
-
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(20),
-        build: (pw.Context context) => [
-          if (imageBytes != null)
-            pw.Container(
-              margin: const pw.EdgeInsets.only(bottom: 20),
-              child: pw.Image(
-                pw.MemoryImage(imageBytes),
-                height: 200,
-                fit: pw.BoxFit.cover,
-              ),
-            ),
-          pw.Text(
-            title,
-            style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 12),
-          pw.Text(markdown, style: const pw.TextStyle(fontSize: 12)),
-        ],
-      ),
-    );
-
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/$title.pdf');
-    await file.writeAsBytes(await pdf.save());
-
-    await Share.shareXFiles([XFile(file.path)], text: 'Check out this recipe!');
+  Future<void> _shareLink(BuildContext context) async {
+    final recipeLink =
+        'https://recipevault.app/shared/${Uri.encodeComponent(recipeId)}';
+    await Share.share(recipeLink, subject: 'Check out this recipe!');
   }
 
   @override
@@ -118,7 +83,7 @@ class _ShareableRecipeCard extends StatelessWidget {
             children: [
               IconButton(
                 icon: const Icon(Icons.share),
-                onPressed: () => _shareAsPdf(context),
+                onPressed: () => _shareLink(context),
               ),
               IconButton(
                 icon: const Icon(Icons.close),
@@ -130,13 +95,4 @@ class _ShareableRecipeCard extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Helper to load image bytes from network for PDF embedding.
-Future<Uint8List> networkImageToBytes(String url) async {
-  final httpClient = HttpClient();
-  final request = await httpClient.getUrl(Uri.parse(url));
-  final response = await request.close();
-  final bytes = await consolidateHttpClientResponseBytes(response);
-  return bytes;
 }

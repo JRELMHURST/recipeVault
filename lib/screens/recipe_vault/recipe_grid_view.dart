@@ -82,7 +82,6 @@ class RecipeGridView extends StatelessWidget {
       ),
       itemBuilder: (context, index) {
         final recipe = recipes[index];
-
         final primaryCategory = recipe.categories.isNotEmpty
             ? recipe.categories.first
             : 'Uncategorised';
@@ -105,100 +104,111 @@ class RecipeGridView extends StatelessWidget {
                 ),
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(14),
-                  ),
-                  child: recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
-                      ? Image.network(
-                          recipe.imageUrl!,
-                          height: 120,
-                          fit: BoxFit.cover,
-                        )
-                      : Container(
-                          height: 120,
-                          color: Colors.deepPurple.shade50,
-                          alignment: Alignment.center,
-                          child: Icon(
-                            LucideIcons.chefHat,
-                            size: 36,
-                            color: Colors.deepPurple.shade200,
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Text(
-                    recipe.title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (recipe.hints.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    child: Text(
-                      '💡 ${recipe.hints.first}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.deepPurple.shade700,
-                        fontStyle: FontStyle.italic,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(14),
                       ),
-                    ),
-                  ),
-                const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          primaryCategory,
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.hintColor,
-                          ),
-                        ),
-                      ),
-                      PopupMenuButton<String>(
-                        onSelected: (value) {
-                          if (value == 'favourite') {
-                            onToggleFavourite(recipe);
-                          } else if (value == 'assign') {
-                            _showCategoryDialog(context, recipe);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'favourite',
-                            child: Text(
-                              recipe.isFavourite ? 'Unfavourite' : 'Favourite',
+                      child:
+                          recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
+                          ? Image.network(
+                              recipe.imageUrl!,
+                              height: 120,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              height: 120,
+                              color: Colors.deepPurple.shade50,
+                              alignment: Alignment.center,
+                              child: Icon(
+                                LucideIcons.chefHat,
+                                size: 36,
+                                color: Colors.deepPurple.shade200,
+                              ),
                             ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'assign',
-                            child: Text('Assign Category'),
-                          ),
-                        ],
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              recipe.title,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (recipe.hints.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  '💡 ${recipe.hints.first}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: Colors.deepPurple.shade700,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            const Spacer(),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    primaryCategory,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.hintColor,
+                                    ),
+                                  ),
+                                ),
+                                PopupMenuButton<String>(
+                                  padding: EdgeInsets.zero,
+                                  onSelected: (value) {
+                                    if (value == 'favourite') {
+                                      onToggleFavourite(recipe);
+                                    } else if (value == 'assign') {
+                                      _showCategoryDialog(context, recipe);
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    PopupMenuItem(
+                                      value: 'favourite',
+                                      child: Text(
+                                        recipe.isFavourite
+                                            ? 'Unfavourite'
+                                            : 'Favourite',
+                                      ),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'assign',
+                                      child: Text('Assign Category'),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         );

@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFFBDAFFF);
-  static const Color loginBackground = Color(0xFFE6E2FF);
+  static const Color primaryColor = Color(0xFF673AB7); // Deep Purple
+  static const Color loginBackground = Color(0xFFF3EEFF); // soft lavender
   static const Color backgroundLight = loginBackground;
   static const Color backgroundDark = Color(0xFF17141E);
 
@@ -26,7 +26,7 @@ class AppTheme {
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     fontFamily: 'Roboto',
-    scaffoldBackgroundColor: loginBackground,
+    scaffoldBackgroundColor: backgroundLight,
     colorScheme: const ColorScheme.light(
       primary: primaryColor,
       surface: Colors.white,

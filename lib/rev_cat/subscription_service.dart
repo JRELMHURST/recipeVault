@@ -30,6 +30,15 @@ class SubscriptionService extends ChangeNotifier {
         entitlement?.productIdentifier == 'master_chef_monthly';
   }
 
+  bool get isTasterTrialExpired {
+    final entitlement = _customerInfo?.entitlements.active.values.firstOrNull;
+    final isTrial =
+        entitlement?.periodType == PeriodType.intro ||
+        entitlement?.periodType == PeriodType.trial;
+    final trialEnded = isTrial && entitlement?.willRenew == false;
+    return trialEnded && isTaster;
+  }
+
   bool get isTrialExpired => !isTasterTrialActive && isTaster;
 
   // Package references for the paywall

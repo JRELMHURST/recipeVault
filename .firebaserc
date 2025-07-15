@@ -3,6 +3,12 @@
     "default": "recipevault-bg-ai",
     "prod": "recipevault-bg-ai"
   },
-  "targets": {},
+  "targets": {
+    "recipevault-bg-ai": {
+      "hosting": {
+        "recipevault-bg-ai": ["default"]
+      }
+    }
+  },
   "etags": {}
 }

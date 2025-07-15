@@ -76,5 +76,11 @@
     <key>NSAllowsArbitraryLoads</key>
     <true/>
   </dict>
+
+  <!-- ✅ Universal Links (Associated Domains) -->
+  <key>com.apple.developer.associated-domains</key>
+  <array>
+    <string>applinks:recipevault.app</string>
+  </array>
 </dict>
 </plist>

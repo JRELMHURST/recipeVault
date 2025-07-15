@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "Q53ULNN8PL.com.badgercreations.recipevault",
+        "paths": [ "/shared/*" ]
+      }
+    ]
+  }
+}

@@ -13,8 +13,8 @@ import 'package:recipe_vault/login/register_screen.dart';
 
 // Screens
 import 'package:recipe_vault/screens/home_screen.dart';
-import 'package:recipe_vault/screens/recipe_vault/shared_recipe_screen.dart';
 import 'package:recipe_vault/screens/results_screen.dart';
+import 'package:recipe_vault/screens/recipe_vault/shared_recipe_screen.dart'; // ✅ This is correct
 import 'package:recipe_vault/settings/settings_screen.dart';
 import 'package:recipe_vault/settings/acount_settings/account_settings_screen.dart';
 import 'package:recipe_vault/settings/acount_settings/change_password.dart';
@@ -67,7 +67,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
   if (settings.name != null && settings.name!.startsWith('/shared/')) {
     final recipeId = settings.name!.split('/').last;
     return MaterialPageRoute(
-      builder: (_) => SharedRecipeScreen(recipeId: recipeId),
+      builder: (context) => SharedRecipeScreen(recipeId: recipeId),
       settings: settings,
     );
   }
@@ -79,7 +79,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       if (builder != null) {
         return builder(context);
       } else {
-        debugPrint("❌ Route not found: \${settings.name}");
+        debugPrint("❌ Route not found: ${settings.name}");
         return const Scaffold(body: Center(child: Text('Page not found')));
       }
     },

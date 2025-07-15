@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
-import 'package:recipe_vault/widgets/recipe_card.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
+import 'package:recipe_vault/widgets/recipe_card.dart';
 
 class SharedRecipeScreen extends StatefulWidget {
   final String recipeId;
@@ -56,9 +56,7 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const LoadingOverlay();
-    }
+    if (_loading) return const LoadingOverlay();
 
     if (_error != null) {
       return Scaffold(

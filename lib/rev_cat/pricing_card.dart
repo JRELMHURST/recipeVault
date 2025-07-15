@@ -30,20 +30,20 @@ class PricingCard extends StatelessWidget {
     return Opacity(
       opacity: isDisabled ? 0.6 : 1.0,
       child: LayoutBuilder(
-        // ✅ Add for responsive control
         builder: (context, constraints) {
           return GestureDetector(
             onTap: isDisabled ? null : onTap,
-            child: Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Stack(
-                  children: [
-                    Column(
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -62,8 +62,18 @@ class PricingCard extends StatelessWidget {
                             color: Colors.deepPurple,
                           ),
                         ),
+                        if (_isAnnual(package))
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              '🏷️ Best Value – Save £34/year vs monthly & equivalent to £4.17/mo',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: Colors.deepPurple,
+                              ),
+                            ),
+                          ),
                         const SizedBox(height: 16),
-
                         ...features.map(
                           (feature) => Padding(
                             padding: const EdgeInsets.symmetric(vertical: 2),
@@ -86,7 +96,6 @@ class PricingCard extends StatelessWidget {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 16),
                         SizedBox(
                           width: double.infinity,
@@ -107,36 +116,52 @@ class PricingCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (badge != null)
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.shade700,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            badge!,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                  ),
+                ),
+                if (badge != null)
+                  Positioned(
+                    top: -12,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade700,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
                             ),
+                          ],
+                        ),
+                        child: Text(
+                          badge!,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
                       ),
-                  ],
-                ),
-              ),
+                    ),
+                  ),
+              ],
             ),
           );
         },
       ),
     );
+  }
+
+  bool _isAnnual(Package package) {
+    final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
+    return package.offeringIdentifier == 'master_chef_plan' &&
+        period.contains('y');
   }
 
   String _getTitle(Package package) {
@@ -161,13 +186,13 @@ class PricingCard extends StatelessWidget {
     final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
 
     if (offering == 'home_chef_plan') {
-      return 'Unlock 20 recipes/month with AI integration.';
+      return 'Sweet spot. 20 recipes, 5 translations, upload allowed for';
     }
 
     if (offering == 'master_chef_plan') {
       return period.contains('y')
-          ? 'Save 30% with a yearly subscription.'
-          : 'Unlimited AI recipes & translations.';
+          ? 'Unlimited everything, save 40% – 3+ months free'
+          : 'Unlimited everything – AI, images, translations, categories.';
     }
 
     return 'Enjoy full access to RecipeVault features.';
@@ -178,8 +203,8 @@ class PricingCard extends StatelessWidget {
 
     if (offering == 'home_chef_plan') {
       return [
-        'AI recipe formatting',
-        'Image uploads (up to 10)',
+        '20 AI recipe cards',
+        'Recipe Image uploads (up to 20)',
         '5 translations per month',
         'Save recipes to your vault',
         'Category sorting',
@@ -188,7 +213,7 @@ class PricingCard extends StatelessWidget {
 
     if (offering == 'master_chef_plan') {
       return [
-        'Unlimited AI recipe formatting',
+        'Unlimited AI recipe cards',
         'Unlimited image uploads',
         'Unlimited translations',
         'Save recipes to your vault',

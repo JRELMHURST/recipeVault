@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
@@ -37,6 +39,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ...?homeChef?.availablePackages,
         ...?masterChef?.availablePackages,
       ];
+
+      // Move annual Master Chef to the top
+      _availablePackages.sort((a, b) {
+        final isBAnnual = b.storeProduct.subscriptionPeriod == 'P1Y';
+        return isBAnnual ? 1 : -1;
+      });
     } catch (e) {
       debugPrint('❌ Failed to load offerings: $e');
     }
@@ -87,7 +95,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
             padding: const EdgeInsets.all(24),
             children: [
               ResponsiveWrapper(
-                // ✅ Add wrapper here
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

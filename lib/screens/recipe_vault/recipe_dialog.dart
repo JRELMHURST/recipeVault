@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_utils.dart';
@@ -23,7 +24,7 @@ void showRecipeDialog(BuildContext context, RecipeCardModel recipe) {
   );
 }
 
-class _ShareableRecipeCard extends StatelessWidget {
+class _ShareableRecipeCard extends StatefulWidget {
   final String markdown;
   final String title;
   final String? imageUrl;
@@ -36,9 +37,44 @@ class _ShareableRecipeCard extends StatelessWidget {
     this.imageUrl,
   });
 
+  @override
+  State<_ShareableRecipeCard> createState() => _ShareableRecipeCardState();
+}
+
+class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
+  Color iconColor = Colors.black;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty) {
+      _updateIconColor(widget.imageUrl!);
+    }
+  }
+
+  Future<void> _updateIconColor(String imageUrl) async {
+    try {
+      final palette = await PaletteGenerator.fromImageProvider(
+        NetworkImage(imageUrl),
+        size: const Size(100, 100),
+      );
+
+      final brightness = palette.dominantColor?.color.computeLuminance();
+      if (brightness != null) {
+        setState(() {
+          iconColor = brightness > 0.5 ? Colors.black : Colors.white;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        iconColor = Colors.black;
+      });
+    }
+  }
+
   Future<void> _shareLink(BuildContext context) async {
     final recipeLink =
-        'https://recipevault.app/shared/${Uri.encodeComponent(recipeId)}';
+        'https://recipevault.app/shared/${Uri.encodeComponent(widget.recipeId)}';
     await Share.share(recipeLink, subject: 'Check out this recipe!');
   }
 
@@ -50,13 +86,13 @@ class _ShareableRecipeCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (imageUrl != null && imageUrl!.isNotEmpty)
+              if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(16),
                   ),
                   child: Image.network(
-                    imageUrl!,
+                    widget.imageUrl!,
                     height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -70,7 +106,7 @@ class _ShareableRecipeCard extends StatelessWidget {
                 ),
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: RecipeCard(recipeText: markdown),
+                child: RecipeCard(recipeText: widget.markdown),
               ),
             ],
           ),
@@ -82,11 +118,11 @@ class _ShareableRecipeCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
-                icon: const Icon(Icons.share),
+                icon: Icon(Icons.share, color: iconColor),
                 onPressed: () => _shareLink(context),
               ),
               IconButton(
-                icon: const Icon(Icons.close),
+                icon: Icon(Icons.close, color: iconColor),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],

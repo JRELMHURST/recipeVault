@@ -75,8 +75,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     setState(() {
       _allCategories = [
         'All',
-        'Favourites',
-        'Translated',
+        ..._defaultCategories,
         ...saved.where((c) => !_defaultCategories.contains(c)),
       ];
     });

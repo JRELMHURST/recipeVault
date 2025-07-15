@@ -85,7 +85,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F6FF),
       appBar: AppBar(
-        title: const Text('Upgrade Your RecipeVault'),
+        title: const Text('Chef Mode: ON'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),

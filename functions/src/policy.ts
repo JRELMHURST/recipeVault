@@ -22,7 +22,7 @@ async function isTrialActive(uid: string): Promise<boolean> {
 
 /**
  * Enforces GPT recipe generation policy by subscription tier.
- * Trial users have unlimited access during trial. After that:
+ * Trial users get 5 total recipe generations. After that:
  * - Taster: blocked
  * - Home Chef: 20/month
  * - Master Chef: unlimited
@@ -30,38 +30,45 @@ async function isTrialActive(uid: string): Promise<boolean> {
 async function enforceGptRecipePolicy(uid: string, tier: string): Promise<void> {
   const normTier = normaliseTier(tier);
 
-  if (await isTrialActive(uid)) return;
-
   const monthKey = new Date().toISOString().slice(0, 7);
+  const usageDoc = await firestore.collection("aiUsage").doc(uid).get();
+  const monthlyUsed = usageDoc.data()?.[monthKey] || 0;
+  const totalUsed = usageDoc.data()?.total || 0;
+
+  if (await isTrialActive(uid)) {
+    if (totalUsed >= 5) {
+      throw new HttpsError("permission-denied", "Taster trial includes up to 5 AI recipes. Upgrade to continue.");
+    }
+    return;
+  }
 
   if (normTier === "taster") {
     throw new HttpsError("permission-denied", "Your 7-day trial has ended. Please subscribe to continue using RecipeVault.");
   }
 
-  if (normTier === "homeChef") {
-    const usageDoc = await firestore.collection("aiUsage").doc(uid).get();
-    const used = usageDoc.data()?.[monthKey] || 0;
-    if (used >= 20) {
-      throw new HttpsError("resource-exhausted", "Home Chef plan allows up to 20 recipe generations per month.");
-    }
+  if (normTier === "homeChef" && monthlyUsed >= 20) {
+    throw new HttpsError("resource-exhausted", "Home Chef plan allows up to 20 recipe generations per month.");
   }
 }
 
-/** Increments monthly GPT recipe usage counter */
+/** Increments monthly and total GPT recipe usage counter */
 async function incrementGptRecipeUsage(uid: string, tier: string): Promise<void> {
   const normTier = normaliseTier(tier);
-  if (normTier === "masterChef" || await isTrialActive(uid)) return;
+  if (normTier === "masterChef") return;
+
+  const updates: Record<string, any> = {
+    total: FieldValue.increment(1),
+  };
 
   const monthKey = new Date().toISOString().slice(0, 7);
-  await firestore.collection("aiUsage").doc(uid).set(
-    { [monthKey]: FieldValue.increment(1) },
-    { merge: true }
-  );
+  updates[monthKey] = FieldValue.increment(1);
+
+  await firestore.collection("aiUsage").doc(uid).set(updates, { merge: true });
 }
 
 /**
  * Enforces translation usage policy by subscription tier.
- * Trial users have unlimited access. After that:
+ * Trial users get 1 total translation. After that:
  * - Taster: blocked
  * - Home Chef: 5/month
  * - Master Chef: unlimited
@@ -69,33 +76,40 @@ async function incrementGptRecipeUsage(uid: string, tier: string): Promise<void>
 async function enforceTranslationPolicy(uid: string, tier: string): Promise<void> {
   const normTier = normaliseTier(tier);
 
-  if (await isTrialActive(uid)) return;
-
   const monthKey = new Date().toISOString().slice(0, 7);
+  const usageDoc = await firestore.collection("translationUsage").doc(uid).get();
+  const monthlyUsed = usageDoc.data()?.[monthKey] || 0;
+  const totalUsed = usageDoc.data()?.total || 0;
+
+  if (await isTrialActive(uid)) {
+    if (totalUsed >= 1) {
+      throw new HttpsError("permission-denied", "Taster trial includes 1 translation. Upgrade to continue.");
+    }
+    return;
+  }
 
   if (normTier === "taster") {
     throw new HttpsError("permission-denied", "Translation is only available during your trial or with a paid plan.");
   }
 
-  if (normTier === "homeChef") {
-    const usageDoc = await firestore.collection("translationUsage").doc(uid).get();
-    const used = usageDoc.data()?.[monthKey] || 0;
-    if (used >= 5) {
-      throw new HttpsError("resource-exhausted", "Home Chef plan allows up to 5 translations per month.");
-    }
+  if (normTier === "homeChef" && monthlyUsed >= 5) {
+    throw new HttpsError("resource-exhausted", "Home Chef plan allows up to 5 translations per month.");
   }
 }
 
-/** Increments monthly translation usage counter */
+/** Increments monthly and total translation usage counter */
 async function incrementTranslationUsage(uid: string, tier: string): Promise<void> {
   const normTier = normaliseTier(tier);
-  if (normTier !== "homeChef" || await isTrialActive(uid)) return;
+  if (normTier === "masterChef") return;
+
+  const updates: Record<string, any> = {
+    total: FieldValue.increment(1),
+  };
 
   const monthKey = new Date().toISOString().slice(0, 7);
-  await firestore.collection("translationUsage").doc(uid).set(
-    { [monthKey]: FieldValue.increment(1) },
-    { merge: true }
-  );
+  updates[monthKey] = FieldValue.increment(1);
+
+  await firestore.collection("translationUsage").doc(uid).set(updates, { merge: true });
 }
 
 export {

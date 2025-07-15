@@ -78,7 +78,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                       children: [
                         const SizedBox(height: 12),
                         Text(
-                          'Your 7-day free trial has ended',
+                          'Trial Over – AI Features Locked',
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.deepPurple,
@@ -87,8 +87,18 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Continue enjoying RecipeVault with one of our plans below:',
+                          'You’ve used your 7-day trial (5 recipes & 1 translation).\n\n'
+                          'AI-powered features like scanning, formatting, and translation are now locked.\n'
+                          'You can still view saved recipes in your vault.',
                           style: theme.textTheme.bodyMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Upgrade to continue using RecipeVault AI:',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
@@ -121,9 +131,9 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                               builder: (_) => AlertDialog(
                                 title: const Text('Limited Free Access'),
                                 content: const Text(
-                                  'RecipeVault will still allow limited viewing and access. '
-                                  'However, new recipe processing and translation features will be locked.\n\n'
-                                  'Upgrade to continue enjoying full functionality. 🙂',
+                                  'You can still access your previously saved recipes.\n\n'
+                                  'However, features like recipe scanning and translation are now locked.\n'
+                                  'To continue using RecipeVault AI, please subscribe.',
                                 ),
                                 actions: [
                                   TextButton(
@@ -135,7 +145,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                             );
                           },
                           child: const Text(
-                            'Want to continue with limited access?',
+                            'Continue with limited access',
                             style: TextStyle(
                               decoration: TextDecoration.underline,
                             ),

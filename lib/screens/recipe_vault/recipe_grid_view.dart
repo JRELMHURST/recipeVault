@@ -22,47 +22,53 @@ class RecipeGridView extends StatelessWidget {
   });
 
   void _showCategoryDialog(BuildContext context, RecipeCardModel recipe) {
-    final selected = Set<String>.from(recipe.categories);
     showDialog(
       context: context,
       builder: (_) {
-        return AlertDialog(
-          title: const Text('Assign Categories'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: categories
-                  .where(
-                    (c) => !['Favourites', 'Translated', 'All'].contains(c),
-                  )
-                  .map(
-                    (cat) => CheckboxListTile(
-                      value: selected.contains(cat),
-                      onChanged: (val) {
-                        if (val == true) {
-                          selected.add(cat);
-                        } else {
-                          selected.remove(cat);
-                        }
-                      },
-                      title: Text(cat),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                onAssignCategories(recipe, selected.toList());
-                Navigator.pop(context);
-              },
-              child: const Text("Save"),
-            ),
-          ],
+        final selected = Set<String>.from(recipe.categories);
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Assign Categories'),
+              content: SingleChildScrollView(
+                child: Column(
+                  children: categories
+                      .where(
+                        (c) => !['Favourites', 'Translated', 'All'].contains(c),
+                      )
+                      .map(
+                        (cat) => CheckboxListTile(
+                          value: selected.contains(cat),
+                          onChanged: (val) {
+                            setState(() {
+                              if (val == true) {
+                                selected.add(cat);
+                              } else {
+                                selected.remove(cat);
+                              }
+                            });
+                          },
+                          title: Text(cat),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel"),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    onAssignCategories(recipe, selected.toList());
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Save"),
+                ),
+              ],
+            );
+          },
         );
       },
     );

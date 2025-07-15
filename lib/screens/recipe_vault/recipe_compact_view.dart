@@ -25,44 +25,51 @@ class RecipeCompactView extends StatelessWidget {
     final selected = Set<String>.from(recipe.categories);
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Assign Categories'),
-        content: SingleChildScrollView(
-          child: Column(
-            children: categories
-                .where(
-                  (c) => c != 'Favourites' && c != 'Translated' && c != 'All',
-                )
-                .map(
-                  (cat) => CheckboxListTile(
-                    value: selected.contains(cat),
-                    onChanged: (val) {
-                      if (val == true) {
-                        selected.add(cat);
-                      } else {
-                        selected.remove(cat);
-                      }
-                    },
-                    title: Text(cat),
-                  ),
-                )
-                .toList(),
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: const Text('Assign Categories'),
+            content: SingleChildScrollView(
+              child: Column(
+                children: categories
+                    .where(
+                      (c) =>
+                          c != 'Favourites' && c != 'Translated' && c != 'All',
+                    )
+                    .map(
+                      (cat) => CheckboxListTile(
+                        value: selected.contains(cat),
+                        onChanged: (val) {
+                          setState(() {
+                            if (val == true) {
+                              selected.add(cat);
+                            } else {
+                              selected.remove(cat);
+                            }
+                          });
+                        },
+                        title: Text(cat),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  onAssignCategories(recipe, selected.toList());
+                  Navigator.pop(context);
+                },
+                child: const Text("Save"),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              onAssignCategories(recipe, selected.toList());
-              Navigator.pop(context);
-            },
-            child: const Text("Save"),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

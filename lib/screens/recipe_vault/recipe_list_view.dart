@@ -28,43 +28,49 @@ class RecipeListView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) {
-        return AlertDialog(
-          title: const Text('Assign Categories'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: categories
-                  .where(
-                    (c) => !['Favourites', 'Translated', 'All'].contains(c),
-                  )
-                  .map(
-                    (cat) => CheckboxListTile(
-                      value: selected.contains(cat),
-                      onChanged: (val) {
-                        if (val == true) {
-                          selected.add(cat);
-                        } else {
-                          selected.remove(cat);
-                        }
-                      },
-                      title: Text(cat),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                onAssignCategories(recipe, selected.toList());
-                Navigator.pop(context);
-              },
-              child: const Text("Save"),
-            ),
-          ],
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Assign Categories'),
+              content: SingleChildScrollView(
+                child: Column(
+                  children: categories
+                      .where(
+                        (c) => !['Favourites', 'Translated', 'All'].contains(c),
+                      )
+                      .map(
+                        (cat) => CheckboxListTile(
+                          value: selected.contains(cat),
+                          onChanged: (val) {
+                            setState(() {
+                              if (val == true) {
+                                selected.add(cat);
+                              } else {
+                                selected.remove(cat);
+                              }
+                            });
+                          },
+                          title: Text(cat),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel"),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    onAssignCategories(recipe, selected.toList());
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Save"),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -106,76 +112,87 @@ class RecipeListView extends StatelessWidget {
                 elevation: 3,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  child: Stack(
                     children: [
-                      ClipOval(
-                        child:
-                            recipe.imageUrl != null &&
-                                recipe.imageUrl!.isNotEmpty
-                            ? Image.network(
-                                recipe.imageUrl!,
-                                width: 56,
-                                height: 56,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => _fallbackIcon(),
-                              )
-                            : _fallbackIcon(),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              recipe.title,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.fade,
-                              softWrap: true,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          ClipOval(
+                            child:
+                                recipe.imageUrl != null &&
+                                    recipe.imageUrl!.isNotEmpty
+                                ? Image.network(
+                                    recipe.imageUrl!,
+                                    width: 56,
+                                    height: 56,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        _fallbackIcon(),
+                                  )
+                                : _fallbackIcon(),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  recipe.title,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.fade,
+                                  softWrap: true,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  recipe.hints.isNotEmpty
+                                      ? '💡 ${recipe.hints.first}'
+                                      : 'Tap to view recipe',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: recipe.hints.isNotEmpty
+                                        ? Colors.deepPurple.shade700
+                                        : Colors.grey,
+                                    fontStyle: recipe.hints.isNotEmpty
+                                        ? FontStyle.italic
+                                        : FontStyle.normal,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              recipe.hints.isNotEmpty
-                                  ? '💡 ${recipe.hints.first}'
-                                  : 'Tap to view recipe',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: recipe.hints.isNotEmpty
-                                    ? Colors.deepPurple.shade700
-                                    : Colors.grey,
-                                fontStyle: recipe.hints.isNotEmpty
-                                    ? FontStyle.italic
-                                    : FontStyle.normal,
+                          ),
+                        ],
+                      ),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: PopupMenuButton<String>(
+                          onSelected: (value) {
+                            if (value == 'favourite') {
+                              onToggleFavourite(recipe);
+                            } else if (value == 'assign') {
+                              _showCategoryDialog(context, recipe);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(
+                              value: 'favourite',
+                              child: Text(
+                                recipe.isFavourite
+                                    ? 'Unfavourite'
+                                    : 'Favourite',
                               ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'assign',
+                              child: Text('Assign Category'),
                             ),
                           ],
                         ),
-                      ),
-                      PopupMenuButton<String>(
-                        onSelected: (value) {
-                          if (value == 'favourite') {
-                            onToggleFavourite(recipe);
-                          } else if (value == 'assign') {
-                            _showCategoryDialog(context, recipe);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'favourite',
-                            child: Text(
-                              recipe.isFavourite ? 'Unfavourite' : 'Favourite',
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'assign',
-                            child: Text('Assign Category'),
-                          ),
-                        ],
                       ),
                     ],
                   ),

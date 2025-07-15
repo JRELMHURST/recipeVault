@@ -1,12 +1,12 @@
 // ignore_for_file: deprecated_member_use, unrelated_type_equality_checks
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/model/processed_recipe_result.dart';
 import 'package:recipe_vault/widgets/processing_messages.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class ProcessingOverlay {
   static OverlayEntry? _currentOverlay;
@@ -101,7 +101,9 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       );
       if (_hasCancelled) return;
 
-      debugPrint('🧭 RAW FUNCTION RESPONSE = ${result.toMap()}');
+      debugPrint(
+        "🧭 RAW FUNCTION RESPONSE = ${JsonEncoder.withIndent('  ').convert(result.toMap())}",
+      );
 
       final detected = result.language.toLowerCase();
       final translationShouldBeFalse = detected.startsWith('en');
@@ -192,16 +194,16 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     final accent = theme.colorScheme.primary;
 
     return Material(
-      color: Colors.transparent,
+      color: Colors.black.withOpacity(0.1),
       child: Center(
-        child: ResponsiveWrapper(
-          maxWidth: 380,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 380),
           child: Card(
             elevation: 18,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(28),
             ),
+            margin: const EdgeInsets.symmetric(horizontal: 20), // side padding
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
               child: Column(

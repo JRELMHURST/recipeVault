@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 
 class RecipeGridView extends StatelessWidget {
@@ -70,6 +71,8 @@ class RecipeGridView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 600;
 
     return GridView.builder(
       padding: const EdgeInsets.all(12),
@@ -104,10 +107,10 @@ class RecipeGridView extends StatelessWidget {
                 ),
               ],
             ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Stack(
                   children: [
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(
@@ -115,11 +118,71 @@ class RecipeGridView extends StatelessWidget {
                       ),
                       child:
                           recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
-                          ? Image.network(
-                              recipe.imageUrl!,
-                              height: 120,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
+                          ? FutureBuilder<PaletteGenerator>(
+                              future: PaletteGenerator.fromImageProvider(
+                                NetworkImage(recipe.imageUrl!),
+                                size: const Size(40, 40),
+                              ),
+                              builder: (context, snapshot) {
+                                final palette = snapshot.data;
+                                final isDark =
+                                    (palette?.dominantColor?.color
+                                            .computeLuminance() ??
+                                        1) <
+                                    0.5;
+                                final iconColor = isDark
+                                    ? Colors.white
+                                    : Colors.black87;
+
+                                return Stack(
+                                  children: [
+                                    Image.network(
+                                      recipe.imageUrl!,
+                                      height: 120,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
+                                    Positioned(
+                                      top: 6,
+                                      right: 6,
+                                      child: IconTheme(
+                                        data: IconThemeData(
+                                          color: iconColor,
+                                          size: 20,
+                                        ),
+                                        child: PopupMenuButton<String>(
+                                          icon: const Icon(Icons.more_vert),
+                                          color: theme.cardColor,
+                                          onSelected: (value) {
+                                            if (value == 'favourite') {
+                                              onToggleFavourite(recipe);
+                                            } else if (value == 'assign') {
+                                              _showCategoryDialog(
+                                                context,
+                                                recipe,
+                                              );
+                                            }
+                                          },
+                                          itemBuilder: (context) => [
+                                            PopupMenuItem(
+                                              value: 'favourite',
+                                              child: Text(
+                                                recipe.isFavourite
+                                                    ? 'Unfavourite'
+                                                    : 'Favourite',
+                                              ),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'assign',
+                                              child: Text('Assign Category'),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             )
                           : Container(
                               height: 120,
@@ -132,83 +195,52 @@ class RecipeGridView extends StatelessWidget {
                               ),
                             ),
                     ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              recipe.title,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (recipe.hints.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  '💡 ${recipe.hints.first}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: Colors.deepPurple.shade700,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                              ),
-                            const Spacer(),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    primaryCategory,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.hintColor,
-                                    ),
-                                  ),
-                                ),
-                                PopupMenuButton<String>(
-                                  padding: EdgeInsets.zero,
-                                  onSelected: (value) {
-                                    if (value == 'favourite') {
-                                      onToggleFavourite(recipe);
-                                    } else if (value == 'assign') {
-                                      _showCategoryDialog(context, recipe);
-                                    }
-                                  },
-                                  itemBuilder: (context) => [
-                                    PopupMenuItem(
-                                      value: 'favourite',
-                                      child: Text(
-                                        recipe.isFavourite
-                                            ? 'Unfavourite'
-                                            : 'Favourite',
-                                      ),
-                                    ),
-                                    const PopupMenuItem(
-                                      value: 'assign',
-                                      child: Text('Assign Category'),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                   ],
-                );
-              },
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          recipe.title,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (!isCompact && recipe.hints.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              '💡 ${recipe.hints.first}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.deepPurple.shade700,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        const Spacer(),
+                        Text(
+                          primaryCategory,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.hintColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         );

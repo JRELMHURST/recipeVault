@@ -14,6 +14,8 @@ import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_dialog.dart';
 import 'package:recipe_vault/screens/recipe_vault/category_speed_dial.dart';
+import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/rev_cat/upgrade_banner.dart';
 
 enum ViewMode { list, grid, compact }
 
@@ -223,13 +225,19 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                   setState(() => _selectedCategory = cat),
               onCategoryDeleted: _removeCategory,
             ),
+            ValueListenableBuilder<String?>(
+              valueListenable: ImageProcessingService.upgradeBannerMessage,
+              builder: (context, message, _) {
+                if (message == null) return const SizedBox.shrink();
+                return UpgradeBanner(message: message);
+              },
+            ),
             Expanded(
               child: filteredRecipes.isEmpty
                   ? const Center(child: Text("No recipes found"))
                   : AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300),
                       child: ResponsiveWrapper(
-                        // ✅ Wrap this
                         child: switch (currentView) {
                           ViewMode.list => RecipeListView(
                             recipes: filteredRecipes,

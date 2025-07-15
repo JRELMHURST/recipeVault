@@ -17,6 +17,11 @@ class ImageProcessingService {
   static final ImagePicker _picker = ImagePicker();
   static const bool _debug = false;
 
+  /// ValueNotifier for displaying upgrade banner inline
+  static final ValueNotifier<String?> upgradeBannerMessage = ValueNotifier(
+    null,
+  );
+
   /// Pick multiple images and compress them to JPEG format.
   static Future<List<File>> pickAndCompressImages() async {
     final pickedXFiles = await _picker.pickMultiImage();
@@ -110,7 +115,8 @@ class ImageProcessingService {
 
   /// Calls the backend function to extract, translate, and format a recipe.
   static Future<ProcessedRecipeResult> extractAndFormatRecipe(
-    List<String> imageUrls, {
+    List<String> imageUrls,
+    BuildContext context, {
     Duration timeout = const Duration(seconds: 30),
   }) async {
     try {
@@ -136,7 +142,26 @@ class ImageProcessingService {
 
       if (_debug) debugPrint('✅ Recipe formatted successfully.');
       return ProcessedRecipeResult.fromMap(data);
+    } on FirebaseFunctionsException catch (e) {
+      if (_debug) {
+        debugPrint("🛑 FirebaseFunctionsException: ${e.code} — ${e.message}");
+      }
+
+      if (e.code == 'permission-denied') {
+        upgradeBannerMessage.value =
+            "✨ Unlock Chef Mode with the Home Chef or Master Chef plan!";
+        throw Exception("Translation blocked due to plan limit.");
+      }
+
+      if (e.code == 'resource-exhausted') {
+        upgradeBannerMessage.value =
+            "You've hit your monthly quota. Upgrade for unlimited access 🚀";
+        throw Exception("Usage limit reached.");
+      }
+
+      throw Exception('❌ Failed to process recipe: ${e.message}');
     } catch (e) {
+      if (_debug) debugPrint("❌ General exception: $e");
       throw Exception('❌ Failed to process recipe: $e');
     }
   }

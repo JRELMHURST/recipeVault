@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/rev_cat/pricing_card.dart';
@@ -56,19 +57,44 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   Future<void> _handlePurchase(Package package) async {
     setState(() => _isPurchasing = true);
+
     try {
       await Purchases.purchasePackage(package);
       await _subscriptionService.refresh();
+
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('🎉 Subscription successful!')),
+        const SnackBar(
+          content: Text('🎉 Subscription successful!'),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
+
       Navigator.pushReplacementNamed(context, '/home');
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+
+      final isCancelled =
+          e.code == '1' ||
+          e.message?.toLowerCase().contains('cancelled') == true;
+
+      final message = isCancelled
+          ? 'Purchase was cancelled. No changes were made.'
+          : 'Purchase failed: ${e.message ?? 'Unknown error'}';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('❌ Purchase failed: $e')));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unexpected error: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isPurchasing = false);
     }

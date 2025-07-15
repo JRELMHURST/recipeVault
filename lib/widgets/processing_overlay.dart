@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, unrelated_type_equality_checks
+// ignore_for_file: deprecated_member_use, unrelated_type_equality_checks, use_build_context_synchronously
 
 import 'dart:convert';
 import 'dart:io';
@@ -98,6 +98,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
       var result = await ImageProcessingService.extractAndFormatRecipe(
         imageUrls,
+        context,
       );
       if (_hasCancelled) return;
 
@@ -158,12 +159,19 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       Navigator.pushNamed(context, '/results', arguments: result);
     } catch (e, st) {
       debugPrint('❌ Processing failed: $e\n$st');
-      if (mounted) {
+
+      final message = e.toString();
+      final isUpgradePrompt =
+          message.contains('Translation blocked') ||
+          message.contains('Usage limit reached');
+
+      if (mounted && !isUpgradePrompt) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
-        ProcessingOverlay.hide();
       }
+
+      ProcessingOverlay.hide();
     }
   }
 
@@ -203,7 +211,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(28),
             ),
-            margin: const EdgeInsets.symmetric(horizontal: 20), // side padding
+            margin: const EdgeInsets.symmetric(horizontal: 20),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
               child: Column(

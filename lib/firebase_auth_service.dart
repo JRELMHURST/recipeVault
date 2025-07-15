@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
+import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -107,7 +108,7 @@ class AuthService {
     }
   }
 
-  /// 🔧 Ensures user Firestore doc exists
+  /// 🔧 Ensures user Firestore doc exists and syncs RevenueCat entitlement
   Future<void> _ensureUserDocument(User user) async {
     final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final doc = await docRef.get();
@@ -123,14 +124,26 @@ class AuthService {
     } else {
       debugPrint('📄 Firestore user doc already exists.');
     }
+
+    // ✅ Sync RevenueCat entitlement after auth settles
+    try {
+      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.microtask(() async {
+        final subscriptionService = SubscriptionService();
+        await subscriptionService.syncRevenueCatEntitlement();
+        debugPrint('🔄 Synced entitlement to Firestore.');
+      });
+    } catch (e, stack) {
+      debugPrint('⚠️ Failed to sync RevenueCat entitlement: $e');
+      debugPrint(stack.toString());
+    }
   }
 
-  /// 🛡️ Safely open and clear a Hive box
+  /// 🧼 Safely opens and clears a Hive box
   Future<void> _safeClearBox<T>(String boxName) async {
     final box = Hive.isBoxOpen(boxName)
         ? Hive.box<T>(boxName)
         : await Hive.openBox<T>(boxName);
-
     await box.clear();
   }
 }

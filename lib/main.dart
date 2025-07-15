@@ -17,6 +17,7 @@ import 'model/recipe_card_model.dart';
 import 'model/category_model.dart';
 import 'services/user_preference_service.dart';
 import 'rev_cat/subscription_service.dart';
+import 'services/user_session_service.dart'; // ✅ Newly added
 import 'router.dart'; // This will now provide Navigator 1.0 route definitions
 
 const bool skipAuthForDev = false;
@@ -39,6 +40,9 @@ Future<void> main() async {
     PurchasesConfiguration('appl_oqbgqmtmctjzzERpEkswCejmukh'),
   );
 
+  // ✅ Sync RevenueCat entitlement to Firestore
+  await UserSessionService.syncRevenueCatEntitlement();
+
   await Hive.initFlutter();
   Hive.registerAdapter(RecipeCardModelAdapter());
   Hive.registerAdapter(CategoryModelAdapter());
@@ -48,7 +52,7 @@ Future<void> main() async {
     await Hive.openBox<CategoryModel>('categories');
     await Hive.openBox<String>('customCategories');
   } catch (e, stack) {
-    debugPrint('❌ Failed to open Hive box: $e');
+    debugPrint('❌ Failed to open Hive box: \$e');
     debugPrint(stack.toString());
   }
 
@@ -73,7 +77,7 @@ String _getInitialRouteFromDeepLink() {
   final uri = Uri.base;
   if (uri.pathSegments.isNotEmpty && uri.pathSegments.first == 'shared') {
     final id = uri.pathSegments.length > 1 ? uri.pathSegments[1] : null;
-    if (id != null) return '/shared/$id';
+    if (id != null) return '/shared/\$id';
   }
   return '/'; // fallback
 }

@@ -3,9 +3,25 @@ import { HttpsError } from "firebase-functions/v2/https";
 
 const firestore = getFirestore();
 
-/** Normalise tier string from client */
-function normaliseTier(tier: string): 'taster' | 'homeChef' | 'masterChef' {
-  return tier as 'taster' | 'homeChef' | 'masterChef';
+/** Resolves the tier based on entitlement ID */
+function resolveTierFromEntitlement(entitlementId: string): 'taster' | 'homeChef' | 'masterChef' {
+  switch (entitlementId) {
+    case 'master_chef_monthly':
+    case 'master_chef_yearly':
+      return 'masterChef';
+    case 'home_chef_monthly':
+      return 'homeChef';
+    default:
+      return 'taster';
+  }
+}
+
+/** Retrieves the resolved tier for a user based on entitlement ID */
+async function getResolvedTier(uid: string): Promise<'taster' | 'homeChef' | 'masterChef'> {
+  const userDoc = await firestore.collection("users").doc(uid).get();
+  const entitlementId = userDoc.data()?.entitlementId;
+  if (!entitlementId) return 'taster';
+  return resolveTierFromEntitlement(entitlementId);
 }
 
 /** Checks if the user is within their 7-day Taster trial period. */
@@ -20,15 +36,9 @@ async function isTrialActive(uid: string): Promise<boolean> {
   return days < 7;
 }
 
-/**
- * Enforces GPT recipe generation policy by subscription tier.
- * Trial users get 5 total recipe generations. After that:
- * - Taster: blocked
- * - Home Chef: 20/month
- * - Master Chef: unlimited
- */
-async function enforceGptRecipePolicy(uid: string, tier: string): Promise<void> {
-  const normTier = normaliseTier(tier);
+/** Enforces GPT recipe generation limits based on subscription tier. */
+async function enforceGptRecipePolicy(uid: string): Promise<void> {
+  const tier = await getResolvedTier(uid);
 
   const monthKey = new Date().toISOString().slice(0, 7);
   const usageDoc = await firestore.collection("aiUsage").doc(uid).get();
@@ -42,39 +52,30 @@ async function enforceGptRecipePolicy(uid: string, tier: string): Promise<void> 
     return;
   }
 
-  if (normTier === "taster") {
+  if (tier === "taster") {
     throw new HttpsError("permission-denied", "Your 7-day trial has ended. Please subscribe to continue using RecipeVault.");
   }
 
-  if (normTier === "homeChef" && monthlyUsed >= 20) {
+  if (tier === "homeChef" && monthlyUsed >= 20) {
     throw new HttpsError("resource-exhausted", "Home Chef plan allows up to 20 recipe generations per month.");
   }
 }
 
-/** Increments monthly and total GPT recipe usage counter */
-async function incrementGptRecipeUsage(uid: string, tier: string): Promise<void> {
-  const normTier = normaliseTier(tier);
-  if (normTier === "masterChef") return;
+/** Increments GPT usage count for non-MasterChef users */
+async function incrementGptRecipeUsage(uid: string): Promise<void> {
+  const tier = await getResolvedTier(uid);
+  if (tier === "masterChef") return;
 
-  const updates: Record<string, any> = {
-    total: FieldValue.increment(1),
-  };
-
+  const updates: Record<string, any> = { total: FieldValue.increment(1) };
   const monthKey = new Date().toISOString().slice(0, 7);
   updates[monthKey] = FieldValue.increment(1);
 
   await firestore.collection("aiUsage").doc(uid).set(updates, { merge: true });
 }
 
-/**
- * Enforces translation usage policy by subscription tier.
- * Trial users get 1 total translation. After that:
- * - Taster: blocked
- * - Home Chef: 5/month
- * - Master Chef: unlimited
- */
-async function enforceTranslationPolicy(uid: string, tier: string): Promise<void> {
-  const normTier = normaliseTier(tier);
+/** Enforces translation limits by subscription tier */
+async function enforceTranslationPolicy(uid: string): Promise<void> {
+  const tier = await getResolvedTier(uid);
 
   const monthKey = new Date().toISOString().slice(0, 7);
   const usageDoc = await firestore.collection("translationUsage").doc(uid).get();
@@ -88,24 +89,21 @@ async function enforceTranslationPolicy(uid: string, tier: string): Promise<void
     return;
   }
 
-  if (normTier === "taster") {
+  if (tier === "taster") {
     throw new HttpsError("permission-denied", "Translation is only available during your trial or with a paid plan.");
   }
 
-  if (normTier === "homeChef" && monthlyUsed >= 5) {
+  if (tier === "homeChef" && monthlyUsed >= 5) {
     throw new HttpsError("resource-exhausted", "Home Chef plan allows up to 5 translations per month.");
   }
 }
 
-/** Increments monthly and total translation usage counter */
-async function incrementTranslationUsage(uid: string, tier: string): Promise<void> {
-  const normTier = normaliseTier(tier);
-  if (normTier === "masterChef") return;
+/** Increments translation usage count for non-MasterChef users */
+async function incrementTranslationUsage(uid: string): Promise<void> {
+  const tier = await getResolvedTier(uid);
+  if (tier === "masterChef") return;
 
-  const updates: Record<string, any> = {
-    total: FieldValue.increment(1),
-  };
-
+  const updates: Record<string, any> = { total: FieldValue.increment(1) };
   const monthKey = new Date().toISOString().slice(0, 7);
   updates[monthKey] = FieldValue.increment(1);
 
@@ -117,5 +115,5 @@ export {
   enforceGptRecipePolicy,
   incrementGptRecipeUsage,
   enforceTranslationPolicy,
-  incrementTranslationUsage
+  incrementTranslationUsage,
 };

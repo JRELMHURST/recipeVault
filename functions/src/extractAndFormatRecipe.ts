@@ -2,7 +2,6 @@ import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https
 import { defineSecret } from "firebase-functions/params";
 import { getStorage } from "firebase-admin/storage";
 import { decode } from "html-entities";
-import fetch from "node-fetch";
 
 import { extractTextFromImages } from "./ocr.js";
 import { detectLanguage } from "./detect.js";
@@ -19,38 +18,6 @@ import {
 const REVENUECAT_SECRET_KEY = defineSecret("REVENUECAT_SECRET_KEY");
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
-async function fetchRevenueCatTier(uid: string): Promise<string> {
-  try {
-    const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${uid}`, {
-      headers: {
-        Authorization: `Bearer ${await REVENUECAT_SECRET_KEY.value()}`,
-      },
-    });
-
-    if (!response.ok) {
-      console.warn("⚠️ Failed to fetch RevenueCat subscriber info");
-      return "taster";
-    }
-
-    const json = (await response.json()) as {
-      subscriber?: {
-        entitlements?: {
-          masterChef?: { is_active: boolean };
-          homeChef?: { is_active: boolean };
-        };
-      };
-    };
-
-    const entitlements = json?.subscriber?.entitlements;
-
-    if (entitlements?.masterChef?.is_active) return "masterChef";
-    if (entitlements?.homeChef?.is_active) return "homeChef";
-    return "taster";
-  } catch (err) {
-    console.error("❌ RevenueCat API error:", err);
-    return "taster";
-  }
-}
 
 async function deleteUploadedImage(url: string) {
   try {
@@ -122,8 +89,6 @@ export const extractAndFormatRecipe = onCall(
         console.warn("⚠️ Language detection failed:", err);
       }
 
-      const tier = await fetchRevenueCatTier(uid);
-
       let translatedText = cleanInput;
       let translationUsed = false;
 
@@ -133,7 +98,7 @@ export const extractAndFormatRecipe = onCall(
 
       if (!isLikelyEnglish) {
         try {
-          await enforceTranslationPolicy(uid, tier);
+          await enforceTranslationPolicy(uid);
         } catch (e) {
           throw new HttpsError(
             "permission-denied",
@@ -160,7 +125,7 @@ export const extractAndFormatRecipe = onCall(
       }
 
       if (translationUsed) {
-        await incrementTranslationUsage(uid, tier);
+        await incrementTranslationUsage(uid);
       }
 
       const usedText = translationUsed ? translatedText : cleanInput;
@@ -171,12 +136,12 @@ export const extractAndFormatRecipe = onCall(
 
       previewText("🧠 GPT input preview", finalText);
 
-      await enforceGptRecipePolicy(uid, tier);
+      await enforceGptRecipePolicy(uid);
 
       const formattedRecipe = await generateFormattedRecipe(finalText, detectedLanguage);
       console.log("✅ GPT formatting complete.");
 
-      await incrementGptRecipeUsage(uid, tier);
+      await incrementGptRecipeUsage(uid);
 
       await Promise.all(imageUrls.map(deleteUploadedImage));
       console.log(`🏁 Processing complete in ${Date.now() - start}ms`);

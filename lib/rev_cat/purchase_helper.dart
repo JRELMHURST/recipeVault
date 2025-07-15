@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 class PurchaseHelper {
@@ -23,6 +25,7 @@ class PurchaseHelper {
   static Future<CustomerInfo> purchasePackage(Package package) async {
     try {
       final customerInfo = await Purchases.purchasePackage(package);
+      await syncEntitlementToFirestore(customerInfo);
       return customerInfo;
     } on PurchasesErrorCode {
       rethrow;
@@ -36,7 +39,9 @@ class PurchaseHelper {
 
   /// Restore previous purchases
   static Future<CustomerInfo> restorePurchases() async {
-    return await Purchases.restorePurchases();
+    final customerInfo = await Purchases.restorePurchases();
+    await syncEntitlementToFirestore(customerInfo);
+    return customerInfo;
   }
 
   /// Check if a given entitlement is active
@@ -48,5 +53,26 @@ class PurchaseHelper {
   static String? getActiveEntitlementId(CustomerInfo info) {
     if (info.entitlements.active.isEmpty) return null;
     return info.entitlements.active.values.first.identifier;
+  }
+
+  /// 🔄 Sync entitlementId to Firestore (used for backend policy resolution)
+  static Future<void> syncEntitlementToFirestore(CustomerInfo info) async {
+    final entitlementId = getActiveEntitlementId(info);
+    final userId = info.originalAppUserId;
+
+    if (entitlementId == null || userId.isEmpty) return;
+
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'entitlementId': entitlementId,
+      }, SetOptions(merge: true));
+      if (kDebugMode) {
+        print('✅ Synced entitlementId "$entitlementId" for user $userId');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Failed to sync entitlementId: $e');
+      }
+    }
   }
 }

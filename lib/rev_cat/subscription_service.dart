@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SubscriptionService extends ChangeNotifier {
   static final SubscriptionService _instance = SubscriptionService._internal();
@@ -66,18 +68,27 @@ class SubscriptionService extends ChangeNotifier {
     try {
       _customerInfo = await Purchases.getCustomerInfo();
       final entitlements = _customerInfo!.entitlements.active;
+      debugPrint('🧾 Active entitlements: ${entitlements.keys}');
 
-      if (entitlements.containsKey('master_chef')) {
+      if (entitlements.keys.any((k) => k.startsWith('master_chef'))) {
         _tier = 'master_chef';
-        _activeEntitlement = entitlements['master_chef'];
-      } else if (entitlements.containsKey('home_chef')) {
+        _activeEntitlement = entitlements.entries
+            .firstWhere((e) => e.key.startsWith('master_chef'))
+            .value;
+      } else if (entitlements.keys.any((k) => k.startsWith('home_chef'))) {
         _tier = 'home_chef';
-        _activeEntitlement = entitlements['home_chef'];
-      } else {
+        _activeEntitlement = entitlements.entries
+            .firstWhere((e) => e.key.startsWith('home_chef'))
+            .value;
+      } else if (entitlements.containsKey('taster_trial')) {
         _tier = 'taster';
+        _activeEntitlement = entitlements['taster_trial'];
+      } else {
+        _tier = 'none';
         _activeEntitlement = null;
       }
 
+      debugPrint('🎯 Subscription tier resolved as: $_tier');
       notifyListeners();
     } catch (e) {
       debugPrint('🔴 Error loading subscription status: $e');
@@ -129,5 +140,62 @@ class SubscriptionService extends ChangeNotifier {
     _activeEntitlement = null;
     _isSuperUser = false;
     notifyListeners();
+  }
+
+  Future<void> syncRevenueCatEntitlement() async {
+    try {
+      final customerInfo = await Purchases.getCustomerInfo();
+      final active = customerInfo.entitlements.active;
+
+      _customerInfo = customerInfo;
+      _activeEntitlement = active.values.firstOrNull;
+      _tier = _mapEntitlementToTier(_activeEntitlement?.identifier);
+      _isSuperUser = await _fetchSuperUserFlag();
+
+      notifyListeners();
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({
+              'tier': _tier,
+              'lastSynced': FieldValue.serverTimestamp(),
+            });
+      }
+
+      debugPrint('🔁 RevenueCat entitlement synced: $_tier');
+    } catch (e, stack) {
+      debugPrint('❌ Failed to sync RevenueCat entitlement: $e');
+      debugPrint(stack.toString());
+    }
+  }
+
+  String _mapEntitlementToTier(String? entitlementId) {
+    switch (entitlementId) {
+      case 'home_chef':
+      case 'home_chef_monthly':
+        return 'home_chef';
+      case 'master_chef':
+      case 'master_chef_monthly':
+      case 'master_chef_yearly':
+        return 'master_chef';
+      case 'taster':
+        return 'taster';
+      default:
+        return 'none';
+    }
+  }
+
+  Future<bool> _fetchSuperUserFlag() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+    return doc.data()?['isSuperUser'] == true;
   }
 }

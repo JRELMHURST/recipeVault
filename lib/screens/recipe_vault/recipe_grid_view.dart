@@ -1,5 +1,3 @@
-// lib/screens/recipe_vault/recipe_grid_view.dart
-
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
@@ -10,17 +8,16 @@ class RecipeGridView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
   final void Function(RecipeCardModel) onTap;
   final void Function(RecipeCardModel) onToggleFavourite;
-  final List<String> categories; // ✅ Add this
-  final void Function(RecipeCardModel, List<String>)
-  onAssignCategories; // ✅ Add this
+  final List<String> categories;
+  final void Function(RecipeCardModel, List<String>) onAssignCategories;
 
   const RecipeGridView({
     super.key,
     required this.recipes,
     required this.onTap,
     required this.onToggleFavourite,
-    required this.categories, // ✅ Add this
-    required this.onAssignCategories, // ✅ Add this
+    required this.categories,
+    required this.onAssignCategories,
   });
 
   void _showCategoryDialog(BuildContext context, RecipeCardModel recipe) {
@@ -34,7 +31,7 @@ class RecipeGridView extends StatelessWidget {
             child: Column(
               children: categories
                   .where(
-                    (c) => c != 'Favourites' && c != 'Translated' && c != 'All',
+                    (c) => !['Favourites', 'Translated', 'All'].contains(c),
                   )
                   .map(
                     (cat) => CheckboxListTile(
@@ -76,15 +73,19 @@ class RecipeGridView extends StatelessWidget {
 
     return GridView.builder(
       padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      itemCount: recipes.length,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 320,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
         childAspectRatio: 3 / 4,
       ),
-      itemCount: recipes.length,
       itemBuilder: (context, index) {
         final recipe = recipes[index];
+
+        final primaryCategory = recipe.categories.isNotEmpty
+            ? recipe.categories.first
+            : 'Uncategorised';
 
         return GestureDetector(
           onTap: () => onTap(recipe),
@@ -140,22 +141,36 @@ class RecipeGridView extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (recipe.hints.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    child: Text(
+                      '💡 ${recipe.hints.first}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.deepPurple.shade700,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
                 const Spacer(),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: Text(
-                          recipe.categories.isNotEmpty
-                              ? recipe.categories.first
-                              : 'Uncategorised',
+                          primaryCategory,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.hintColor,
                           ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
                         ),
                       ),
                       PopupMenuButton<String>(

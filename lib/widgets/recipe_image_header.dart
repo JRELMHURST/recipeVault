@@ -1,10 +1,9 @@
-// ignore_for_file: use_build_context_synchronously, deprecated_member_use
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/core/responsive_wrapper.dart'; // ✅ Import it
 
 typedef OnImagePicked = Future<String> Function(String localPath);
 
@@ -19,10 +18,10 @@ class RecipeImageHeader extends StatefulWidget {
   });
 
   @override
-  State<RecipeImageHeader> createState() => RecipeImageHeaderState();
+  State<RecipeImageHeader> createState() => _RecipeImageHeaderState();
 }
 
-class RecipeImageHeaderState extends State<RecipeImageHeader> {
+class _RecipeImageHeaderState extends State<RecipeImageHeader> {
   final ImagePicker _picker = ImagePicker();
   String? _heroImage;
 
@@ -53,41 +52,48 @@ class RecipeImageHeaderState extends State<RecipeImageHeader> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _pickAndUpload,
-      child: AspectRatio(
-        aspectRatio: 16 / 9,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (_heroImage != null)
-              Image(
-                image: _heroImage!.startsWith('http')
-                    ? NetworkImage(_heroImage!)
-                    : FileImage(File(_heroImage!)) as ImageProvider,
-                fit: BoxFit.cover,
-              )
-            else
-              Container(
-                color: Colors.grey[100],
-                alignment: Alignment.center,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      LucideIcons.chefHat,
-                      size: 48,
-                      color: Theme.of(context).disabledColor,
+    return ResponsiveWrapper(
+      maxWidth: 720, // 👈 Wider than default for larger image presentation
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: GestureDetector(
+        onTap: _pickAndUpload,
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (_heroImage != null)
+                  Image(
+                    image: _heroImage!.startsWith('http')
+                        ? NetworkImage(_heroImage!)
+                        : FileImage(File(_heroImage!)) as ImageProvider,
+                    fit: BoxFit.cover,
+                  )
+                else
+                  Container(
+                    color: Colors.grey[100],
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.chefHat,
+                          size: 56,
+                          color: Theme.of(context).disabledColor,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '+ Add photo',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '+ Add photo',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ],
-                ),
-              ),
-          ],
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );

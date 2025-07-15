@@ -149,4 +149,7 @@ class RecipeCardModel extends HiveObject {
 
     return 'Ingredients:\n• $ingredientsStr\n\nInstructions:\n$instructionsStr';
   }
+
+  /// ✅ Computed flag for filtering UI
+  bool get isTranslated => categories.contains('Translated');
 }

@@ -69,8 +69,8 @@ class RecipeCompactView extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.builder(
       padding: const EdgeInsets.all(8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 120, // Adjust to your preferred tile width
         crossAxisSpacing: 6,
         mainAxisSpacing: 6,
         childAspectRatio: 1,
@@ -86,7 +86,12 @@ class RecipeCompactView extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
-                    ? Image.network(recipe.imageUrl!, fit: BoxFit.cover)
+                    ? Image.network(
+                        recipe.imageUrl!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                      )
                     : Container(
                         color: Colors.deepPurple.shade50,
                         alignment: Alignment.center,

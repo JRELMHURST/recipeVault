@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
+import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class SharedRecipeScreen extends StatefulWidget {
   final String recipeId;
@@ -31,7 +33,8 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
           .doc(widget.recipeId)
           .get();
 
-      if (!doc.exists) {
+      final data = doc.data();
+      if (!doc.exists || data == null) {
         setState(() {
           _error = 'This shared recipe could not be found.';
           _loading = false;
@@ -39,9 +42,7 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
         return;
       }
 
-      final data = doc.data()!;
       final recipe = RecipeCardModel.fromMap(data);
-
       setState(() {
         _recipe = recipe;
         _loading = false;
@@ -51,6 +52,21 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
         _error = 'An error occurred while loading the recipe.';
         _loading = false;
       });
+    }
+  }
+
+  void _shareLink() {
+    final url = 'https://recipevault.app/shared/${widget.recipeId}';
+
+    final box = context.findRenderObject();
+    if (box is RenderBox && box.hasSize) {
+      final origin = box.localToGlobal(Offset.zero) & box.size;
+      Share.share(
+        'Check out this recipe on RecipeVault:\n$url',
+        sharePositionOrigin: origin,
+      );
+    } else {
+      Share.share('Check out this recipe on RecipeVault:\n$url');
     }
   }
 
@@ -65,11 +81,24 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
       );
     }
 
+    final recipe = _recipe!;
+
     return Scaffold(
-      appBar: AppBar(title: Text(_recipe!.title)),
+      appBar: AppBar(
+        title: Text(recipe.title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: _shareLink,
+            tooltip: 'Share',
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: RecipeCard(recipeText: _recipe!.formattedText),
+        child: ResponsiveWrapper(
+          child: RecipeCard(recipeText: recipe.formattedText),
+        ),
       ),
     );
   }

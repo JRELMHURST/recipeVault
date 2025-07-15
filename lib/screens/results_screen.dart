@@ -13,6 +13,7 @@ import 'package:recipe_vault/widgets/recipe_image_header.dart';
 import 'package:recipe_vault/core/theme.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/model/processed_recipe_result.dart';
+import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({super.key});
@@ -92,7 +93,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           if (isInIngredients && line.startsWith('-')) {
             ingredients.add(line.substring(1).trim());
           } else if (isInInstructions &&
-              RegExp(r'^\d+[\).]').hasMatch(line.trim())) {
+              RegExp(r'^\d+[).]').hasMatch(line.trim())) {
             instructions.add(line.trim());
           } else if (isInHints &&
               line.trim().isNotEmpty &&
@@ -122,7 +123,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         translationUsed: result.translationUsed,
       );
 
-      debugPrint('📄 Saving recipe "$title" at ${recipe.createdAt}');
+      debugPrint('📄 Saving recipe "$title" at \${recipe.createdAt}');
 
       final serverTimestamp = FieldValue.serverTimestamp();
       await docRef.set({...recipe.toJson(), 'createdAt': serverTimestamp});
@@ -139,7 +140,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('❌ Failed to save recipe: $e')));
+      ).showSnackBar(SnackBar(content: Text('❌ Failed to save recipe: \$e')));
     } finally {
       setState(() => _isSaving = false);
     }
@@ -199,104 +200,105 @@ class _ResultsScreenState extends State<ResultsScreen> {
         padding: const EdgeInsets.all(18),
         child: hasValidContent
             ? SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (result != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.language, size: 18),
-                            const SizedBox(width: 6),
-                            Text(
-                              result.translationUsed
-                                  ? 'Translated from ${_mapLanguageCodeToLabel(result.language)}'
-                                  : 'Language: ${_mapLanguageCodeToLabel(result.language)}',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            const Spacer(),
-                            if (kDebugMode)
-                              TextButton(
-                                onPressed: () => setState(
-                                  () => _showOriginalText = !_showOriginalText,
-                                ),
-                                child: Text(
-                                  _showOriginalText ? 'Hide OCR' : 'Show OCR',
-                                  style: const TextStyle(fontSize: 12),
-                                ),
+                child: ResponsiveWrapper(
+                  // 👈 Add here
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (result != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.language, size: 18),
+                              const SizedBox(width: 6),
+                              Text(
+                                result.translationUsed
+                                    ? 'Translated from ${_mapLanguageCodeToLabel(result.language)}'
+                                    : 'Language: ${_mapLanguageCodeToLabel(result.language)}',
+                                style: Theme.of(context).textTheme.bodySmall,
                               ),
-                          ],
+                              const Spacer(),
+                              if (kDebugMode)
+                                TextButton(
+                                  onPressed: () => setState(
+                                    () =>
+                                        _showOriginalText = !_showOriginalText,
+                                  ),
+                                  child: Text(
+                                    _showOriginalText ? 'Hide OCR' : 'Show OCR',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                    if (_showOriginalText && result?.originalText != null)
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[400]!),
+                      if (_showOriginalText && result?.originalText != null)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey[400]!),
+                          ),
+                          child: Text(
+                            result!.originalText,
+                            style: const TextStyle(fontSize: 13),
+                          ),
                         ),
-                        child: Text(
-                          result!.originalText,
-                          style: const TextStyle(fontSize: 13),
-                        ),
-                      ),
-                    RecipeImageHeader(
-                      initialImages: [],
-                      onImagePicked: (localPath) async {
-                        final user = FirebaseAuth.instance.currentUser;
-                        if (user == null) {
-                          ImageProcessingService.showError(
-                            context,
-                            "❌ Not signed in",
-                          );
-                          return '';
-                        }
-
-                        debugPrint('🔐 Current user UID: ${user.uid}');
-
-                        final originalFile = File(localPath);
-                        final croppedFile =
-                            await ImageProcessingService.cropImage(
-                              originalFile,
+                      RecipeImageHeader(
+                        initialImages: [],
+                        onImagePicked: (localPath) async {
+                          final user = FirebaseAuth.instance.currentUser;
+                          if (user == null) {
+                            ImageProcessingService.showError(
+                              context,
+                              "❌ Not signed in",
                             );
-                        if (croppedFile == null) {
-                          ImageProcessingService.showError(
-                            context,
-                            "❌ Image crop cancelled",
-                          );
-                          return '';
-                        }
+                            return '';
+                          }
 
-                        final recipeId =
-                            result?.formattedRecipe.hashCode.toString() ??
-                            DateTime.now().millisecondsSinceEpoch.toString();
-
-                        try {
-                          final url =
-                              await ImageProcessingService.uploadRecipeImage(
-                                imageFile: croppedFile,
-                                userId: user.uid,
-                                recipeId: recipeId,
+                          final originalFile = File(localPath);
+                          final croppedFile =
+                              await ImageProcessingService.cropImage(
+                                originalFile,
                               );
+                          if (croppedFile == null) {
+                            ImageProcessingService.showError(
+                              context,
+                              "❌ Image crop cancelled",
+                            );
+                            return '';
+                          }
 
-                          debugPrint('✅ Image uploaded URL: $url');
-                          setState(() => _recipeImageUrl = url);
-                          return url;
-                        } catch (e) {
-                          ImageProcessingService.showError(
-                            context,
-                            '❌ Upload failed: $e',
-                          );
-                          return '';
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    RecipeCard(recipeText: formattedRecipe),
-                  ],
+                          final recipeId =
+                              result?.formattedRecipe.hashCode.toString() ??
+                              DateTime.now().millisecondsSinceEpoch.toString();
+
+                          try {
+                            final url =
+                                await ImageProcessingService.uploadRecipeImage(
+                                  imageFile: croppedFile,
+                                  userId: user.uid,
+                                  recipeId: recipeId,
+                                );
+
+                            setState(() => _recipeImageUrl = url);
+                            return url;
+                          } catch (e) {
+                            ImageProcessingService.showError(
+                              context,
+                              '❌ Upload failed: $e',
+                            );
+                            return '';
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      RecipeCard(recipeText: formattedRecipe),
+                    ],
+                  ),
                 ),
               )
             : Center(

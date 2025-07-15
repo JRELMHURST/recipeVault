@@ -1,6 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
@@ -20,56 +21,59 @@ class AccountSettingsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Account Settings')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Center(
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 48,
-                  backgroundImage: photoUrl != null
-                      ? NetworkImage(photoUrl)
-                      : null,
-                  child: photoUrl == null
-                      ? const Icon(Icons.person, size: 48)
-                      : null,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  displayName,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+      body: ResponsiveWrapper(
+        maxWidth: 600,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: ListView(
+          children: [
+            Center(
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 48,
+                    backgroundImage: photoUrl != null
+                        ? NetworkImage(photoUrl)
+                        : null,
+                    child: photoUrl == null
+                        ? const Icon(Icons.person, size: 48)
+                        : null,
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(email, style: theme.textTheme.bodyMedium),
-              ],
+                  const SizedBox(height: 12),
+                  Text(
+                    displayName,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(email, style: theme.textTheme.bodyMedium),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 32),
-          _buildSectionHeader('Security'),
-          ListTile(
-            leading: const Icon(Icons.lock_outline),
-            title: const Text('Change Password'),
-            onTap: () => Navigator.pushNamed(
-              context,
-              '/settings/account/change-password',
+            const SizedBox(height: 32),
+            _buildSectionHeader('Security'),
+            ListTile(
+              leading: const Icon(Icons.lock_outline),
+              title: const Text('Change Password'),
+              onTap: () => Navigator.pushNamed(
+                context,
+                '/settings/account/change-password',
+              ),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Sign Out'),
-            onTap: () => _confirmSignOut(context),
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete_forever),
-            title: const Text('Delete Account'),
-            textColor: theme.colorScheme.error,
-            iconColor: theme.colorScheme.error,
-            onTap: () => _confirmDeleteAccount(context),
-          ),
-        ],
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Sign Out'),
+              onTap: () => _confirmSignOut(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_forever),
+              title: const Text('Delete Account'),
+              textColor: theme.colorScheme.error,
+              iconColor: theme.colorScheme.error,
+              onTap: () => _confirmDeleteAccount(context),
+            ),
+          ],
+        ),
       ),
     );
   }

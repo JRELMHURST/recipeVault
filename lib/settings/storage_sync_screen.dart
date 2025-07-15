@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/model/category_model.dart';
 import 'package:recipe_vault/services/category_service.dart';
+import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class StorageSyncScreen extends StatefulWidget {
   const StorageSyncScreen({super.key});
@@ -27,7 +28,7 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
 
   Future<Box<T>> getSafeBox<T>(String name) async {
     if (Hive.isBoxOpen(name)) {
-      return Hive.box<T>(name); // ✅ Correctly typed
+      return Hive.box<T>(name);
     }
     return await Hive.openBox<T>(name);
   }
@@ -111,57 +112,60 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Storage & Sync')),
-      body: ListView(
+      body: ResponsiveWrapper(
+        maxWidth: 520,
         padding: const EdgeInsets.all(16),
-        children: [
-          Text(
-            'Sync Status',
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: Colors.grey,
-              fontWeight: FontWeight.bold,
+        child: ListView(
+          children: [
+            Text(
+              'Sync Status',
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: Colors.grey,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          ListTile(
-            leading: const Icon(Icons.cloud_done_outlined),
-            title: const Text('Last Sync'),
-            subtitle: Text(lastSyncTime),
-          ),
-          ListTile(
-            leading: const Icon(Icons.receipt_long_outlined),
-            title: const Text('Cached Recipes'),
-            subtitle: Text('$localRecipeCount locally stored'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.category_outlined),
-            title: const Text('Cached Categories'),
-            subtitle: Text('$localCategoryCount locally stored'),
-          ),
-          const Divider(height: 32),
-          Text(
-            'Actions',
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: Colors.grey,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.cloud_done_outlined),
+              title: const Text('Last Sync'),
+              subtitle: Text(lastSyncTime),
             ),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _syncNow,
-            icon: const Icon(Icons.sync),
-            label: const Text('Sync Now'),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _clearCache,
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('Clear Local Cache'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.errorContainer,
-              foregroundColor: theme.colorScheme.onErrorContainer,
+            ListTile(
+              leading: const Icon(Icons.receipt_long_outlined),
+              title: const Text('Cached Recipes'),
+              subtitle: Text('$localRecipeCount locally stored'),
             ),
-          ),
-        ],
+            ListTile(
+              leading: const Icon(Icons.category_outlined),
+              title: const Text('Cached Categories'),
+              subtitle: Text('$localCategoryCount locally stored'),
+            ),
+            const Divider(height: 32),
+            Text(
+              'Actions',
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: Colors.grey,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: _syncNow,
+              icon: const Icon(Icons.sync),
+              label: const Text('Sync Now'),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: _clearCache,
+              icon: const Icon(Icons.delete_outline),
+              label: const Text('Clear Local Cache'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.errorContainer,
+                foregroundColor: theme.colorScheme.onErrorContainer,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

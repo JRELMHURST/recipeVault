@@ -16,8 +16,8 @@ import 'package:recipe_vault/screens/home_screen.dart';
 import 'package:recipe_vault/screens/results_screen.dart';
 import 'package:recipe_vault/screens/recipe_vault/shared_recipe_screen.dart'; // ✅ This is correct
 import 'package:recipe_vault/settings/settings_screen.dart';
-import 'package:recipe_vault/settings/acount_settings/account_settings_screen.dart';
-import 'package:recipe_vault/settings/acount_settings/change_password.dart';
+import 'package:recipe_vault/settings/account_settings_screen.dart';
+import 'package:recipe_vault/login/change_password.dart';
 import 'package:recipe_vault/settings/appearance_settings_screen.dart';
 import 'package:recipe_vault/settings/notifications_settings_screen.dart';
 import 'package:recipe_vault/settings/subscription_settings_screen.dart';

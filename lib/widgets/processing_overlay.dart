@@ -6,6 +6,7 @@ import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/model/processed_recipe_result.dart';
 import 'package:recipe_vault/widgets/processing_messages.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class ProcessingOverlay {
   static OverlayEntry? _currentOverlay;
@@ -87,11 +88,9 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
   Future<void> _runFullFlow() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('User not signed in.');
-      }
+      if (user == null) throw Exception('User not signed in.');
 
-      await _setStep(0); // Uploading Images
+      await _setStep(0);
       final imageUrls = await ImageProcessingService.uploadFiles(
         widget.imageFiles,
       );
@@ -119,8 +118,6 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       }
 
       final needsTranslation = result.translationUsed;
-      debugPrint('🧭 translationUsed = $needsTranslation');
-      debugPrint('🧭 detectedLanguage = ${result.language}');
 
       if (mounted) {
         if (needsTranslation) {
@@ -136,33 +133,22 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
             ProcessingMessages.pickRandom(ProcessingMessages.formatting),
             ProcessingMessages.pickRandom(ProcessingMessages.completed),
           ];
-        } else {
-          _currentSteps = [
-            'Uploading Images',
-            'Extracting & Formatting',
-            'Finishing Up',
-          ];
-          _currentFunMessages = [
-            ProcessingMessages.pickRandom(ProcessingMessages.uploading),
-            ProcessingMessages.pickRandom(ProcessingMessages.formatting),
-            ProcessingMessages.pickRandom(ProcessingMessages.completed),
-          ];
         }
         setState(() {});
       }
 
       if (needsTranslation) {
-        await _setStep(1); // Translating
+        await _setStep(1);
         await Future.delayed(const Duration(milliseconds: 600));
-        await _setStep(2); // Extracting & Formatting
+        await _setStep(2);
       } else {
-        await _setStep(1); // Extracting & Formatting
+        await _setStep(1);
       }
 
       if (_hasCancelled) return;
       await Future.delayed(const Duration(milliseconds: 600));
 
-      await _setStep(_currentSteps.length - 1); // Finishing Up
+      await _setStep(_currentSteps.length - 1);
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (!mounted) return;
@@ -208,11 +194,11 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     return Material(
       color: Colors.transparent,
       child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 380),
+        child: ResponsiveWrapper(
+          maxWidth: 380,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Card(
             elevation: 18,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(28),
             ),

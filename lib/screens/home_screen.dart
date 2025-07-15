@@ -22,14 +22,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _checkWelcomeFlagAndInit();
+    _initialisePreferences();
   }
 
-  Future<void> _checkWelcomeFlagAndInit() async {
-    await _loadUserViewMode();
-  }
-
-  Future<void> _loadUserViewMode() async {
+  Future<void> _initialisePreferences() async {
     final storedMode = UserPreferencesService.getViewMode();
     if (mounted) {
       setState(() {
@@ -45,55 +41,43 @@ class _HomeScreenState extends State<HomeScreen> {
     UserPreferencesService.setViewMode(_viewMode);
   }
 
-  Widget get _currentPage {
-    switch (_selectedIndex) {
-      case 0:
-        return const SizedBox.shrink();
-      case 1:
-        return RecipeVaultScreen(viewMode: _viewMode);
-      case 2:
-        return const SettingsScreen();
-      default:
-        return const SizedBox.shrink();
-    }
-  }
-
-  String get _appBarTitle {
-    switch (_selectedIndex) {
-      case 0:
-        return 'Create';
-      case 1:
-        return 'Recipe Vault';
-      case 2:
-        return 'Settings';
-      default:
-        return 'RecipeVault';
-    }
-  }
-
-  IconData get _viewModeIcon {
-    switch (_viewMode) {
-      case 0:
-        return Icons.grid_view_rounded;
-      case 1:
-        return Icons.view_module_rounded;
-      case 2:
-        return Icons.view_agenda_rounded;
-      default:
-        return Icons.grid_view_rounded;
-    }
-  }
-
-  Future<void> _onNavTap(int idx) async {
-    if (idx == 0) {
+  Future<void> _onNavTap(int index) async {
+    if (index == 0) {
       final files = await ImageProcessingService.pickAndCompressImages();
       if (files.isNotEmpty && mounted) {
         ProcessingOverlay.show(context, files);
       }
       setState(() => _selectedIndex = 1);
-      return;
+    } else {
+      setState(() => _selectedIndex = index);
     }
-    setState(() => _selectedIndex = idx);
+  }
+
+  Widget get _currentPage {
+    return switch (_selectedIndex) {
+      0 => const SizedBox.shrink(),
+      1 => RecipeVaultScreen(viewMode: _viewMode),
+      2 => const SettingsScreen(),
+      _ => const SizedBox.shrink(),
+    };
+  }
+
+  String get _appBarTitle {
+    return switch (_selectedIndex) {
+      0 => 'Create',
+      1 => 'Recipe Vault',
+      2 => 'Settings',
+      _ => 'RecipeVault',
+    };
+  }
+
+  IconData get _viewModeIcon {
+    return switch (_viewMode) {
+      0 => Icons.grid_view_rounded,
+      1 => Icons.view_module_rounded,
+      2 => Icons.view_agenda_rounded,
+      _ => Icons.grid_view_rounded,
+    };
   }
 
   @override

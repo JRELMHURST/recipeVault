@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
@@ -227,30 +228,33 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                   ? const Center(child: Text("No recipes found"))
                   : AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300),
-                      child: switch (currentView) {
-                        ViewMode.list => RecipeListView(
-                          recipes: filteredRecipes,
-                          onDelete: _deleteRecipe,
-                          onTap: (r) => showRecipeDialog(context, r),
-                          onToggleFavourite: _toggleFavourite,
-                          categories: _allCategories,
-                          onAssignCategories: _assignCategories,
-                        ),
-                        ViewMode.grid => RecipeGridView(
-                          recipes: filteredRecipes,
-                          onTap: (r) => showRecipeDialog(context, r),
-                          onToggleFavourite: _toggleFavourite,
-                          categories: _allCategories,
-                          onAssignCategories: _assignCategories,
-                        ),
-                        ViewMode.compact => RecipeCompactView(
-                          recipes: filteredRecipes,
-                          onTap: (r) => showRecipeDialog(context, r),
-                          onToggleFavourite: _toggleFavourite,
-                          onAssignCategories: _assignCategories,
-                          categories: _allCategories,
-                        ),
-                      },
+                      child: ResponsiveWrapper(
+                        // ✅ Wrap this
+                        child: switch (currentView) {
+                          ViewMode.list => RecipeListView(
+                            recipes: filteredRecipes,
+                            onDelete: _deleteRecipe,
+                            onTap: (r) => showRecipeDialog(context, r),
+                            onToggleFavourite: _toggleFavourite,
+                            categories: _allCategories,
+                            onAssignCategories: _assignCategories,
+                          ),
+                          ViewMode.grid => RecipeGridView(
+                            recipes: filteredRecipes,
+                            onTap: (r) => showRecipeDialog(context, r),
+                            onToggleFavourite: _toggleFavourite,
+                            categories: _allCategories,
+                            onAssignCategories: _assignCategories,
+                          ),
+                          ViewMode.compact => RecipeCompactView(
+                            recipes: filteredRecipes,
+                            onTap: (r) => showRecipeDialog(context, r),
+                            onToggleFavourite: _toggleFavourite,
+                            onAssignCategories: _assignCategories,
+                            categories: _allCategories,
+                          ),
+                        },
+                      ),
                     ),
             ),
           ],

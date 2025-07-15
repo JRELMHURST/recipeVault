@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/rev_cat/pricing_card.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
@@ -85,38 +86,47 @@ class _PaywallScreenState extends State<PaywallScreen> {
           ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              Text(
-                'Enjoy unlimited access to powerful AI recipe tools, image uploads, category sorting, and more!',
-                style: theme.textTheme.bodyLarge?.copyWith(fontSize: 16),
-              ),
-              const SizedBox(height: 24),
+              ResponsiveWrapper(
+                // ✅ Add wrapper here
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Enjoy unlimited access to powerful AI recipe tools, image uploads, category sorting, and more!',
+                      style: theme.textTheme.bodyLarge?.copyWith(fontSize: 16),
+                    ),
+                    const SizedBox(height: 24),
 
-              ..._availablePackages.map((pkg) {
-                final isAnnual = pkg.storeProduct.subscriptionPeriod == 'P1Y';
-                final badge = isAnnual ? 'Best Value' : null;
+                    ..._availablePackages.map((pkg) {
+                      final isAnnual =
+                          pkg.storeProduct.subscriptionPeriod == 'P1Y';
+                      final badge = isAnnual ? 'Best Value' : null;
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: PricingCard(
-                    package: pkg,
-                    onTap: () {
-                      if (!_isPurchasing) _handlePurchase(pkg);
-                    },
-                    isDisabled: false,
-                    badge: badge,
-                  ),
-                );
-              }),
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: PricingCard(
+                          package: pkg,
+                          onTap: () {
+                            if (!_isPurchasing) _handlePurchase(pkg);
+                          },
+                          isDisabled: false,
+                          badge: badge,
+                        ),
+                      );
+                    }),
 
-              if (_availablePackages.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(top: 24),
-                  child: Text(
-                    'No subscription plans are currently available. Please try again later.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
-                  ),
+                    if (_availablePackages.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 24),
+                        child: Text(
+                          'No subscription plans are currently available. Please try again later.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                  ],
                 ),
+              ),
             ],
           ),
 

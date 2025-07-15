@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';
+import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class AppearanceSettingsScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -87,26 +88,29 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Appearance')),
-      body: ListView(
+      body: ResponsiveWrapper(
+        maxWidth: 520,
         padding: const EdgeInsets.all(16),
-        children: [
-          _buildSectionHeader('APP THEME'),
-          _buildThemeOption(
-            AppThemeMode.light,
-            'Light Mode',
-            Icons.light_mode_outlined,
-          ),
-          _buildThemeOption(
-            AppThemeMode.dark,
-            'Dark Mode',
-            Icons.dark_mode_outlined,
-          ),
-          const SizedBox(height: 24),
-          _buildSectionHeader('TEXT SIZE'),
-          _buildTextScaleOption('Small', 0.85),
-          _buildTextScaleOption('Medium', 1.0),
-          _buildTextScaleOption('Large', 1.25),
-        ],
+        child: ListView(
+          children: [
+            _buildSectionHeader('APP THEME'),
+            _buildThemeOption(
+              AppThemeMode.light,
+              'Light Mode',
+              Icons.light_mode_outlined,
+            ),
+            _buildThemeOption(
+              AppThemeMode.dark,
+              'Dark Mode',
+              Icons.dark_mode_outlined,
+            ),
+            const SizedBox(height: 24),
+            _buildSectionHeader('TEXT SIZE'),
+            _buildTextScaleOption('Small', 0.85),
+            _buildTextScaleOption('Medium', 1.0),
+            _buildTextScaleOption('Large', 1.25),
+          ],
+        ),
       ),
     );
   }

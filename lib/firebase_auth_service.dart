@@ -59,7 +59,6 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
-
       await _ensureUserDocument(userCredential.user!);
       return userCredential;
     } catch (e, stack) {
@@ -72,12 +71,19 @@ class AuthService {
   /// 🧹 Full logout + clear local storage
   Future<void> fullLogout() async {
     await signOut();
-    await Hive.box<RecipeCardModel>('recipes').clear();
-    await Hive.box<CategoryModel>('categories').clear();
-    await Hive.box<String>('customCategories').clear();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    debugPrint('✅ Signed out + cleared Hive + SharedPreferences');
+
+    try {
+      await _safeClearBox<RecipeCardModel>('recipes');
+      await _safeClearBox<CategoryModel>('categories');
+      await _safeClearBox<String>('customCategories');
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      debugPrint('✅ Signed out + cleared Hive + SharedPreferences');
+    } catch (e) {
+      debugPrint('⚠️ Error clearing Hive boxes: $e');
+    }
   }
 
   /// 🚪 Sign out
@@ -117,5 +123,14 @@ class AuthService {
     } else {
       debugPrint('📄 Firestore user doc already exists.');
     }
+  }
+
+  /// 🛡️ Safely open and clear a Hive box
+  Future<void> _safeClearBox<T>(String boxName) async {
+    final box = Hive.isBoxOpen(boxName)
+        ? Hive.box<T>(boxName)
+        : await Hive.openBox<T>(boxName);
+
+    await box.clear();
   }
 }

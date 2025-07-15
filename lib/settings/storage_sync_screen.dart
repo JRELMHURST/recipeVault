@@ -25,9 +25,16 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
     _loadStats();
   }
 
+  Future<Box<T>> getSafeBox<T>(String name) async {
+    if (Hive.isBoxOpen(name)) {
+      return Hive.box<T>(name); // ✅ Correctly typed
+    }
+    return await Hive.openBox<T>(name);
+  }
+
   Future<void> _loadStats() async {
-    final recipeBox = await Hive.openBox<RecipeCardModel>('recipes');
-    final categoryBox = await Hive.openBox<CategoryModel>('categories');
+    final recipeBox = await getSafeBox<RecipeCardModel>('recipes');
+    final categoryBox = await getSafeBox<CategoryModel>('categories');
 
     final prefs = await SharedPreferences.getInstance();
     final lastSync = prefs.getString('lastSync') ?? 'Never';
@@ -61,8 +68,11 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
     );
 
     if (confirm == true) {
-      await Hive.box<RecipeCardModel>('recipes').clear();
-      await Hive.box<CategoryModel>('categories').clear();
+      final recipeBox = await getSafeBox<RecipeCardModel>('recipes');
+      final categoryBox = await getSafeBox<CategoryModel>('categories');
+
+      await recipeBox.clear();
+      await categoryBox.clear();
 
       setState(() {
         localRecipeCount = 0;

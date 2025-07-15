@@ -6,7 +6,6 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
@@ -44,17 +43,14 @@ Future<void> main() async {
   Hive.registerAdapter(RecipeCardModelAdapter());
   Hive.registerAdapter(CategoryModelAdapter());
 
-  if (skipAuthForDev) {
-    await FirebaseAuth.instance.signOut();
-    await Hive.deleteBoxFromDisk('recipes');
-    await Hive.deleteBoxFromDisk('categories');
-    await Hive.deleteBoxFromDisk('customCategories');
-    debugPrint('✅ Dev mode: Signed out + Cleared Hive');
+  try {
+    await Hive.openBox<RecipeCardModel>('recipes');
+    await Hive.openBox<CategoryModel>('categories');
+    await Hive.openBox<String>('customCategories');
+  } catch (e, stack) {
+    debugPrint('❌ Failed to open Hive box: $e');
+    debugPrint(stack.toString());
   }
-
-  await Hive.openBox<RecipeCardModel>('recipes');
-  await Hive.openBox<CategoryModelAdapter>('categories');
-  await Hive.openBox<String>('customCategories');
 
   await UserPreferencesService.init();
 

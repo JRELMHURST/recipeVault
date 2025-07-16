@@ -174,4 +174,13 @@ async function incrementTranslationUsage(uid: string): Promise<void> {
 
   await firestore.doc(`users/${uid}/translationUsage/usage`).set(updates, { merge: true });
   console.log(`📈 Translation usage incremented for UID ${uid}`);
+}
+
+export {
+  isTrialActive,
+  enforceGptRecipePolicy,
+  incrementGptRecipeUsage,
+  enforceTranslationPolicy,
+  incrementTranslationUsage,
+  getResolvedTier,
 };

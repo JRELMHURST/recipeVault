@@ -5,13 +5,13 @@ import { getUserEntitlementFromRevenueCat } from "./get_user_entitlement.js";
 const firestore = getFirestore();
 
 /** Maps RevenueCat product IDs to internal tier labels */
-function resolveTierFromEntitlement(entitlementId: string): 'masterChef' | 'homeChef' | 'taster' {
+function resolveTierFromEntitlement(entitlementId: string): 'master_chef' | 'home_chef' | 'taster' {
   switch (entitlementId) {
     case 'master_chef_yearly':
     case 'master_chef_monthly':
-      return 'masterChef';
+      return 'master_chef';
     case 'home_chef_monthly':
-      return 'homeChef';
+      return 'home_chef';
     case 'taster_trial':
     default:
       return 'taster';
@@ -19,7 +19,7 @@ function resolveTierFromEntitlement(entitlementId: string): 'masterChef' | 'home
 }
 
 /** Retrieves the resolved tier for a user via RevenueCat */
-async function getResolvedTier(uid: string): Promise<'taster' | 'homeChef' | 'masterChef'> {
+async function getResolvedTier(uid: string): Promise<'taster' | 'home_chef' | 'master_chef'> {
   const entitlementId = await getUserEntitlementFromRevenueCat(uid);
   const tier = resolveTierFromEntitlement(entitlementId ?? 'taster');
 
@@ -45,7 +45,7 @@ async function enforceGptRecipePolicy(uid: string): Promise<void> {
   const tier = await getResolvedTier(uid);
 
   const monthKey = new Date().toISOString().slice(0, 7);
-  const usageDoc = await firestore.collection("aiUsage").doc(uid).get();
+  const usageDoc = await firestore.doc(`users/${uid}/aiUsage/usage`).get();
   const monthlyUsed = usageDoc.data()?.[monthKey] || 0;
   const totalUsed = usageDoc.data()?.total || 0;
 
@@ -60,7 +60,7 @@ async function enforceGptRecipePolicy(uid: string): Promise<void> {
     throw new HttpsError("permission-denied", "Taster plan includes 5 AI recipes during the trial only. Upgrade to continue.");
   }
 
-  if (tier === "homeChef" && monthlyUsed >= 20) {
+  if (tier === "home_chef" && monthlyUsed >= 20) {
     throw new HttpsError("resource-exhausted", "Home Chef plan allows up to 20 AI recipes per month.");
   }
 }
@@ -68,20 +68,20 @@ async function enforceGptRecipePolicy(uid: string): Promise<void> {
 /** Increments GPT usage count for non-MasterChef users */
 async function incrementGptRecipeUsage(uid: string): Promise<void> {
   const tier = await getResolvedTier(uid);
-  if (tier === "masterChef") return;
+  if (tier === "master_chef") return;
 
   const updates: Record<string, any> = { total: FieldValue.increment(1) };
   const monthKey = new Date().toISOString().slice(0, 7);
   updates[monthKey] = FieldValue.increment(1);
 
-  await firestore.collection("aiUsage").doc(uid).set(updates, { merge: true });
+  await firestore.doc(`users/${uid}/aiUsage/usage`).set(updates, { merge: true });
 }
 
 /** Enforces translation limits by subscription tier */
 async function enforceTranslationPolicy(uid: string): Promise<void> {
   const tier = await getResolvedTier(uid);
 
-  if (tier === "masterChef") {
+  if (tier === "master_chef") {
     console.log("🟢 Master Chef tier detected — skipping translation limit check.");
     return;
   } else {
@@ -89,7 +89,7 @@ async function enforceTranslationPolicy(uid: string): Promise<void> {
   }
 
   const monthKey = new Date().toISOString().slice(0, 7);
-  const usageDoc = await firestore.collection("translationUsage").doc(uid).get();
+  const usageDoc = await firestore.doc(`users/${uid}/translationUsage/usage`).get();
   const monthlyUsed = usageDoc.data()?.[monthKey] || 0;
   const totalUsed = usageDoc.data()?.total || 0;
 
@@ -104,7 +104,7 @@ async function enforceTranslationPolicy(uid: string): Promise<void> {
     throw new HttpsError("permission-denied", "Translation is only available during your trial or with a paid plan.");
   }
 
-  if (tier === "homeChef" && monthlyUsed >= 5) {
+  if (tier === "home_chef" && monthlyUsed >= 5) {
     throw new HttpsError("resource-exhausted", "Home Chef plan allows up to 5 translations per month.");
   }
 }
@@ -112,13 +112,13 @@ async function enforceTranslationPolicy(uid: string): Promise<void> {
 /** Increments translation usage count for non-MasterChef users */
 async function incrementTranslationUsage(uid: string): Promise<void> {
   const tier = await getResolvedTier(uid);
-  if (tier === "masterChef") return;
+  if (tier === "master_chef") return;
 
   const updates: Record<string, any> = { total: FieldValue.increment(1) };
   const monthKey = new Date().toISOString().slice(0, 7);
   updates[monthKey] = FieldValue.increment(1);
 
-  await firestore.collection("translationUsage").doc(uid).set(updates, { merge: true });
+  await firestore.doc(`users/${uid}/translationUsage/usage`).set(updates, { merge: true });
 }
 
 export {
@@ -127,5 +127,5 @@ export {
   incrementGptRecipeUsage,
   enforceTranslationPolicy,
   incrementTranslationUsage,
-  getResolvedTier, // ✅ Add this line
+  getResolvedTier,
 };

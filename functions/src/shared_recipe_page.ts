@@ -1,13 +1,16 @@
 import { onRequest } from 'firebase-functions/v2/https';
-import { firestore } from './firebase.js'; // shared Firebase instance
+import { firestore } from './firebase.js'; // Shared Firebase instance
 
 export const sharedRecipePage = onRequest(
-  {
-    region: 'europe-west2',
-  },
+  { region: 'europe-west2' },
   async (req, res) => {
     const pathParts = req.path.split('/');
     const recipeId = pathParts[pathParts.length - 1];
+
+    if (!recipeId || recipeId.trim() === '') {
+      res.status(400).send('<h1>Bad Request: Missing recipe ID</h1>');
+      return;
+    }
 
     try {
       const doc = await firestore.collection('shared_recipes').doc(recipeId).get();
@@ -20,8 +23,9 @@ export const sharedRecipePage = onRequest(
       const recipe = doc.data();
       const title = escapeHtml(recipe?.title || 'A Recipe on RecipeVault');
       const description = 'View and save this recipe with RecipeVault.';
-      const imageUrl =
-        recipe?.imageUrl || 'https://recipevault.app/assets/icon/round_vaultLogo.png';
+      const imageUrl = recipe?.imageUrl?.startsWith('http')
+        ? recipe.imageUrl
+        : 'https://recipevault.app/assets/icon/round_vaultLogo.png';
       const pageUrl = `https://recipevault.app/shared/${recipeId}`;
 
       const html = `<!DOCTYPE html>
@@ -60,10 +64,10 @@ export const sharedRecipePage = onRequest(
   </body>
 </html>`;
 
-      res.set('Cache-Control', 'public, max-age=300');
+      res.set('Cache-Control', 'public, max-age=300'); // 5 min cache
       res.status(200).send(html);
     } catch (error) {
-      console.error('Error generating shared recipe page:', error);
+      console.error('❌ Error generating shared recipe page:', error);
       res.status(500).send('Internal Server Error');
     }
   }

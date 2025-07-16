@@ -25,8 +25,14 @@ class AuthService {
   bool get isLoggedIn => _auth.currentUser != null;
 
   /// 🔐 Email sign-in
-  Future<UserCredential> signInWithEmail(String email, String password) {
-    return _auth.signInWithEmailAndPassword(email: email, password: password);
+  Future<UserCredential> signInWithEmail(String email, String password) async {
+    final credential = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    await Purchases.logIn(credential.user!.uid);
+    await _ensureUserDocument(credential.user!);
+    return credential;
   }
 
   /// 🆕 Email registration
@@ -38,7 +44,7 @@ class AuthService {
       email: email,
       password: password,
     );
-
+    await Purchases.logIn(credential.user!.uid);
     await _ensureUserDocument(credential.user!);
     return credential;
   }
@@ -48,7 +54,7 @@ class AuthService {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        debugPrint('⚠️ Google Sign-In cancelled by user');
+        debugPrint('🔐 AuthService: Google Sign-In cancelled by user');
         return null;
       }
 
@@ -61,10 +67,11 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
+      await Purchases.logIn(userCredential.user!.uid);
       await _ensureUserDocument(userCredential.user!);
       return userCredential;
     } catch (e, stack) {
-      debugPrint('❌ Google Sign-In failed: $e');
+      debugPrint('🔐 AuthService: Google Sign-In failed: $e');
       debugPrint(stack.toString());
       return null;
     }
@@ -74,7 +81,7 @@ class AuthService {
   Future<void> signOut() async {
     await _googleSignIn.signOut();
     await _auth.signOut();
-    await Purchases.logOut(); // ✅ Also log out from RevenueCat
+    await Purchases.logOut();
   }
 
   /// 🧹 Full logout + clear local storage
@@ -89,9 +96,11 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
 
-      debugPrint('✅ Signed out + cleared Hive + SharedPreferences');
+      debugPrint(
+        '🔐 AuthService: Signed out + cleared Hive + SharedPreferences',
+      );
     } catch (e) {
-      debugPrint('⚠️ Error clearing Hive boxes: $e');
+      debugPrint('🔐 AuthService: Error clearing Hive boxes: $e');
     }
   }
 
@@ -104,21 +113,24 @@ class AuthService {
       await docRef.set({
         'email': user.email,
         'tier': 'taster',
-        'trialStartDate': DateTime.now().toIso8601String(),
+        'trialStartDate': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
       });
-      debugPrint('🆕 Created Firestore user doc with trialStartDate.');
+      debugPrint(
+        '🔐 AuthService: Created Firestore user doc with trialStartDate.',
+      );
     } else {
-      debugPrint('📄 Firestore user doc already exists.');
+      debugPrint('🔐 AuthService: Firestore user doc already exists.');
     }
 
-    // ✅ Sync RevenueCat entitlement after auth settles
     try {
       await Future.delayed(const Duration(milliseconds: 500));
       await UserSessionService.syncRevenueCatEntitlement();
-      debugPrint('🔄 Synced entitlement to Firestore via UserSessionService.');
+      debugPrint(
+        '🔐 AuthService: Synced entitlement to Firestore via UserSessionService.',
+      );
     } catch (e, stack) {
-      debugPrint('⚠️ Failed to sync RevenueCat entitlement: $e');
+      debugPrint('🔐 AuthService: Failed to sync RevenueCat entitlement: $e');
       debugPrint(stack.toString());
     }
   }
@@ -135,13 +147,15 @@ class AuthService {
   void logCurrentUser() {
     final user = _auth.currentUser;
     if (user == null) {
-      debugPrint('❌ No user currently signed in.');
+      debugPrint('🔐 AuthService: No user currently signed in.');
     } else {
-      debugPrint('✅ Logged in: ${user.displayName ?? user.email ?? user.uid}');
-      debugPrint('📧 Email: ${user.email}');
-      debugPrint('🆔 UID: ${user.uid}');
       debugPrint(
-        '🔗 Providers: ${user.providerData.map((p) => p.providerId).join(', ')}',
+        '🔐 AuthService: Logged in: ${user.displayName ?? user.email ?? user.uid}',
+      );
+      debugPrint('🔐 AuthService: Email: ${user.email}');
+      debugPrint('🔐 AuthService: UID: ${user.uid}');
+      debugPrint(
+        '🔐 AuthService: Providers: ${user.providerData.map((p) => p.providerId).join(', ')}',
       );
     }
   }

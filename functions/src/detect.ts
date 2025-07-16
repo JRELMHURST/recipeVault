@@ -4,17 +4,17 @@ import { TranslationServiceClient } from "@google-cloud/translate";
 const client = new TranslationServiceClient();
 
 /**
- * Soft cleans OCR text to preserve food-related structure.
+ * ✅ Soft cleans OCR text to preserve food-related structure
  */
 function cleanText(input: string): string {
   return input
-    .replace(/[^\w\s.,:;()&%/-]/g, '') // Allow more useful characters
-    .replace(/\s{2,}/g, ' ') // Collapse multiple spaces
+    .replace(/[^\w\s.,:;()&%/-]/g, '')   // Allow common punctuation and food units
+    .replace(/\s{2,}/g, ' ')             // Collapse extra spaces
     .trim();
 }
 
 /**
- * Detects the language of the provided text using Google Translate API.
+ * 🌐 Detects the language of provided text using Google Translate API
  */
 export async function detectLanguage(
   text: string,
@@ -28,9 +28,8 @@ export async function detectLanguage(
   }
 
   const cleanedText = cleanText(text);
-
-  console.log(`🔍 Detecting language for text (${text.length} chars, cleaned: ${cleanedText.length})`);
-  console.log(`🧪 Cleaned preview:\n${cleanedText.slice(0, 300)}\n`);
+  console.log(`🔍 Detecting language for ${text.length} original chars, ${cleanedText.length} cleaned chars`);
+  console.log(`🧪 Sample preview:\n${cleanedText.slice(0, 300)}\n`);
 
   try {
     const [response] = await client.detectLanguage({
@@ -40,15 +39,14 @@ export async function detectLanguage(
     });
 
     const language = response.languages?.[0];
-
     const languageCode = language?.languageCode || "unknown";
     const confidence = language?.confidence ?? 0;
 
-    console.log(`🌐 Detected language: ${languageCode}`);
-    console.log(`📊 Confidence: ${confidence}`);
+    console.log(`🌍 Language detected: ${languageCode}`);
+    console.log(`📈 Confidence score: ${confidence}`);
 
     if (confidence < 0.5) {
-      console.warn("⚠️ Low confidence in language detection. Consider fallback or retry.");
+      console.warn("⚠️ Low confidence in language detection. Consider fallback handling.");
     }
 
     return { languageCode, confidence };

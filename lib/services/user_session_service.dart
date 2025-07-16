@@ -7,21 +7,30 @@ class UserSessionService {
   /// Manually syncs active RevenueCat entitlement + tier/trial flags to Firestore
   static Future<void> syncRevenueCatEntitlement() async {
     try {
+      final firebaseUser = FirebaseAuth.instance.currentUser;
+      final userId = firebaseUser?.uid;
+
+      if (userId == null || userId.isEmpty) {
+        if (kDebugMode) print('⚠️ No Firebase user logged in');
+        return;
+      }
+
+      // ✅ Ensure RevenueCat uses Firebase UID
+      await Purchases.logIn(userId);
+
       final info = await Purchases.getCustomerInfo();
       final entitlementId =
           info.entitlements.active.values.firstOrNull?.identifier;
-      final firebaseUser = FirebaseAuth.instance.currentUser;
-      final userId = firebaseUser?.uid;
 
       if (kDebugMode) {
         print('👤 Firebase UID: $userId');
         print('🧾 RevenueCat originalAppUserId: ${info.originalAppUserId}');
       }
 
-      if (entitlementId != null && userId != null && userId.isNotEmpty) {
+      if (entitlementId != null) {
         final tier = _resolveTier(entitlementId);
 
-        // Fetch Firestore user doc to evaluate trial status
+        // 🔍 Fetch Firestore user doc to check for trial start
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(userId)
@@ -29,6 +38,7 @@ class UserSessionService {
         final startStr = userDoc.data()?['trialStartDate'];
         final trialActive = _isTrialActive(startStr);
 
+        // 💾 Save to Firestore
         await FirebaseFirestore.instance.collection('users').doc(userId).set({
           'entitlementId': entitlementId,
           'tier': tier,
@@ -40,7 +50,7 @@ class UserSessionService {
         }
       } else {
         if (kDebugMode) {
-          print('ℹ️ No active entitlement or user found to sync');
+          print('ℹ️ No active entitlement to sync');
         }
       }
     } catch (e) {

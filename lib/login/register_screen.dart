@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
-import 'package:recipe_vault/core/responsive_wrapper.dart'; // 👈 Import the wrapper
+import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -43,6 +43,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         });
       }
 
+      await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
@@ -81,6 +82,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
       }
 
+      await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
@@ -111,119 +113,137 @@ class _RegisterScreenState extends State<RegisterScreen> {
             body: SafeArea(
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: MediaQuery.of(context).size.width > 600
+                        ? 48
+                        : 24,
                     vertical: 32,
                   ),
                   child: ResponsiveWrapper(
-                    // 👈 Wrap here
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: [
-                              Image.asset(
-                                'assets/icon/round_vaultLogo.png',
-                                height: 64,
-                                width: 64,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Create your\nRecipeVault account',
-                                textAlign: TextAlign.center,
-                                style: theme.textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.deepPurple,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'Free 7-day trial. No card needed. Full access.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              TextField(
-                                controller: emailController,
-                                keyboardType: TextInputType.emailAddress,
-                                textInputAction: TextInputAction.next,
-                                decoration: const InputDecoration(
-                                  labelText: 'Email',
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              TextField(
-                                controller: passwordController,
-                                obscureText: true,
-                                textInputAction: TextInputAction.next,
-                                decoration: const InputDecoration(
-                                  labelText: 'Password',
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              TextField(
-                                controller: confirmPasswordController,
-                                obscureText: true,
-                                textInputAction: TextInputAction.done,
-                                decoration: const InputDecoration(
-                                  labelText: 'Confirm Password',
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: _registerWithEmail,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.deepPurple,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 400),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
                                   ),
-                                  child: const Text(
-                                    'Register with Email',
+                                ],
+                              ),
+                              child: Column(
+                                children: [
+                                  Image.asset(
+                                    'assets/icon/round_vaultLogo.png',
+                                    height: 64,
+                                    width: 64,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Create your\nRecipeVault account',
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.headlineSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.deepPurple,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Enjoy a 7-day free trial – no card required.',
+                                    textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black54,
                                     ),
                                   ),
-                                ),
+                                  const SizedBox(height: 24),
+                                  TextField(
+                                    controller: emailController,
+                                    keyboardType: TextInputType.emailAddress,
+                                    textCapitalization: TextCapitalization.none,
+                                    textInputAction: TextInputAction.next,
+                                    autofillHints: const [AutofillHints.email],
+                                    decoration: const InputDecoration(
+                                      labelText: 'Email',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  TextField(
+                                    controller: passwordController,
+                                    obscureText: true,
+                                    textInputAction: TextInputAction.next,
+                                    autofillHints: const [
+                                      AutofillHints.newPassword,
+                                    ],
+                                    decoration: const InputDecoration(
+                                      labelText: 'Password',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  TextField(
+                                    controller: confirmPasswordController,
+                                    obscureText: true,
+                                    textInputAction: TextInputAction.done,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Confirm Password',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: _isLoading
+                                          ? null
+                                          : _registerWithEmail,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.deepPurple,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 14,
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'Create Account',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  OutlinedButton.icon(
+                                    icon: const Icon(Icons.login),
+                                    label: const Text('Continue with Google'),
+                                    onPressed: _isLoading
+                                        ? null
+                                        : _signUpWithGoogle,
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 12),
-                              OutlinedButton.icon(
-                                icon: const Icon(Icons.login),
-                                label: const Text('Sign up with Google'),
-                                onPressed: _signUpWithGoogle,
+                            ),
+                            const SizedBox(height: 20),
+                            TextButton(
+                              onPressed: _goToLogin,
+                              child: const Text(
+                                'Already have an account? Log in',
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 20),
-                        TextButton(
-                          onPressed: _goToLogin,
-                          child: const Text('Already have an account? Log in'),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),

@@ -2,9 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
-
-// Optional: Ensure Firebase is initialised (only needed if not already initialised elsewhere)
-import "./firebase.js";
+import "./firebase.js"; // ✅ Ensures Firebase is initialised
 
 const firestore = getFirestore();
 const auth = getAuth();
@@ -16,7 +14,6 @@ export const deleteAccount = onCall({ region: "europe-west2" }, async (request) 
     throw new HttpsError("unauthenticated", "User must be authenticated.");
   }
 
-  // 🔒 Optional: ensure this is running on the correct project
   const expectedProjectId = "recipevault-bg-ai";
   const projectId = process.env.GCLOUD_PROJECT || process.env.FUNCTIONS_PROJECT_ID || "";
   if (projectId !== expectedProjectId) {
@@ -34,15 +31,16 @@ export const deleteAccount = onCall({ region: "europe-west2" }, async (request) 
   console.log(`🔥 Starting full account deletion for UID: ${uid}`);
 
   try {
-    // 🧹 Delete all subcollections
+    // 🔄 Delete user subcollections: recipes, categories, aiUsage, translationUsage
     try {
-      const subcollections = await userDocRef.listCollections();
-      for (const col of subcollections) {
-        const snap = await col.get();
+      const subcollections = ["recipes", "categories", "aiUsage", "translationUsage"];
+      for (const colId of subcollections) {
+        const colRef = userDocRef.collection(colId);
+        const snap = await colRef.get();
         const batch = firestore.batch();
         snap.docs.forEach((doc) => batch.delete(doc.ref));
         await batch.commit();
-        console.log(`🧹 Deleted ${snap.size} docs from ${col.id}`);
+        console.log(`🧹 Deleted ${snap.size} docs from users/${uid}/${colId}`);
       }
       result.subcollectionsDeleted = true;
     } catch (err) {
@@ -50,7 +48,7 @@ export const deleteAccount = onCall({ region: "europe-west2" }, async (request) 
       throw new HttpsError("internal", "Failed to delete subcollections.");
     }
 
-    // 🗑️ Delete main user document
+    // 🧾 Delete main user doc
     try {
       await userDocRef.delete();
       console.log("✅ User document deleted.");
@@ -60,18 +58,18 @@ export const deleteAccount = onCall({ region: "europe-west2" }, async (request) 
       throw new HttpsError("internal", "Failed to delete user document.");
     }
 
-    // 📁 Delete user storage files
+    // 🗃️ Delete user storage
     try {
-      const bucketName = "recipevault-bg-ai.appspot.com";
-      await storage.bucket(bucketName).deleteFiles({ prefix: `users/${uid}/` });
-      console.log(`🗑️ Deleted storage files for user ${uid}`);
+      const bucket = storage.bucket("recipevault-bg-ai.appspot.com");
+      await bucket.deleteFiles({ prefix: `users/${uid}/` });
+      console.log(`🗑️ Deleted all storage for users/${uid}/`);
       result.storageDeleted = true;
     } catch (err) {
       console.error("❌ Failed deleting storage files:", err);
-      throw new HttpsError("internal", "Failed to delete storage files.");
+      throw new HttpsError("internal", "Failed to delete user storage.");
     }
 
-    // 👤 Delete Firebase Auth user
+    // 🔐 Delete Firebase Auth user
     try {
       await auth.deleteUser(uid);
       console.log("👤 Firebase Auth user deleted.");

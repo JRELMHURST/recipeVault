@@ -13,6 +13,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+migrate_usage_data.js  # Temporary migration script
 
 # ─────────────────────────────────────────────────────────────
 # 🧠 IDE / Tooling
@@ -43,7 +44,7 @@ build/
 **/ios/Flutter/.last_build_id
 coverage/
 
-# Generated localization files
+# Generated localisation files
 lib/l10n/*.dart
 
 # Firebase generated file (safe to regenerate)
@@ -77,6 +78,7 @@ lib/firebase_options.dart
 # ─────────────────────────────────────────────────────────────
 functions/.env
 functions/serviceAccountKey.json
+serviceAccountKey.json
 .secret.env
 *.p8
 *.key
@@ -91,10 +93,15 @@ functions/lib/
 functions/node_modules/
 functions/.firebase/
 functions/.output/
-functions/package-lock.json
 functions/.runtimeconfig.json
 functions/tsconfig.tsbuildinfo
 functions/.tsbuildinfo
+
+# Optional: if you’re using tsc to emit to root (not recommended)
+*.js
+
+# Root-level Node (created during migration script)
+node_modules/
 
 # ─────────────────────────────────────────────────────────────
 # 📦 RevenueCat / Store Configs
@@ -108,5 +115,4 @@ functions/.tsbuildinfo
 # ─────────────────────────────────────────────────────────────
 *.test.*
 *.spec.*
-*.log
 logs/

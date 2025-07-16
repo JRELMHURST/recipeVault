@@ -4,17 +4,18 @@ import "./firebase.js";
 const client = new TranslationServiceClient();
 
 /**
- * Soft cleans OCR text while preserving formatting and culinary context.
+ * Lightly cleans OCR text while preserving structure and culinary terms.
  */
 function cleanText(input: string): string {
   return input
-    .replace(/[^\w\s.,:;()&%/-]/g, '') // Preserve useful characters
-    .replace(/\s{2,}/g, ' ') // Collapse multiple spaces
+    .replace(/[^\w\s.,:;()&%/-]/g, '') // Allow common punctuation and symbols
+    .replace(/\s{2,}/g, ' ') // Collapse extra spaces
     .trim();
 }
 
 /**
- * Translates text from the detected source language to British English.
+ * Translates provided text from a detected language to British English (en-GB).
+ * Falls back gracefully if translation fails.
  */
 export async function translateToEnglish(
   text: string,
@@ -27,9 +28,9 @@ export async function translateToEnglish(
 
   const cleanedText = cleanText(text);
 
-  console.log(`🔤 Translating from ${sourceLanguage} → en-GB`);
-  console.log(`📏 Original text length: ${text.length}, Cleaned: ${cleanedText.length}`);
-  console.log(`🧪 Cleaned preview:\n${cleanedText.slice(0, 300)}\n`);
+  console.log(`🔤 Translating from "${sourceLanguage}" → "en-GB"`);
+  console.log(`📏 Original length: ${text.length}, Cleaned: ${cleanedText.length}`);
+  console.log(`🧪 Preview:\n${cleanedText.slice(0, 300)}\n`);
 
   try {
     const [response] = await client.translateText({
@@ -43,10 +44,10 @@ export async function translateToEnglish(
     const translated = response.translations?.[0]?.translatedText || cleanedText;
 
     console.log(`✅ Translation complete.`);
-    console.log(`🧾 Translated preview:\n${translated.slice(0, 300)}\n`);
+    console.log(`🧾 Result preview:\n${translated.slice(0, 300)}\n`);
 
     if (translated.trim() === cleanedText.trim()) {
-      console.warn("⚠️ Translated text is identical to input. Translation may have been skipped.");
+      console.warn("⚠️ Translation output is identical to input. Translation may have been skipped.");
     }
 
     return translated;

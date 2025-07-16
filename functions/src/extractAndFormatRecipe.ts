@@ -13,7 +13,7 @@ import {
   incrementTranslationUsage,
   enforceGptRecipePolicy,
   incrementGptRecipeUsage,
-  getResolvedTier, // ✅ Import for tier logging
+  getResolvedTier,
 } from "./policy.js";
 
 const REVENUECAT_SECRET_KEY = defineSecret("REVENUECAT_SECRET_KEY");
@@ -66,7 +66,6 @@ export const extractAndFormatRecipe = onCall(
       throw new HttpsError("unauthenticated", "User must be authenticated.");
     }
 
-    // ✅ Subscription tier logging
     const tier = await getResolvedTier(uid);
     console.log(`🎟️ Resolved subscription tier: ${tier}`);
 
@@ -104,10 +103,7 @@ export const extractAndFormatRecipe = onCall(
         try {
           await enforceTranslationPolicy(uid);
         } catch (e) {
-          throw new HttpsError(
-            "permission-denied",
-            "Translation blocked due to plan limit."
-          );
+          throw new HttpsError("permission-denied", "Translation blocked due to plan limit.");
         }
 
         try {

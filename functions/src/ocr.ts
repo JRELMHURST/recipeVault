@@ -3,9 +3,13 @@ import "./firebase.js";
 
 const visionClient = new vision.ImageAnnotatorClient();
 
+/**
+ * Runs OCR (Optical Character Recognition) on an array of image URLs
+ * using Google Cloud Vision API and merges the results into one string.
+ */
 export async function extractTextFromImages(imageUrls: string[]): Promise<string> {
   if (!Array.isArray(imageUrls) || imageUrls.length === 0) {
-    throw new Error("No image URLs provided for OCR.");
+    throw new Error("❌ No image URLs provided for OCR.");
   }
 
   console.log(`🔍 Running OCR on ${imageUrls.length} image(s)...`);

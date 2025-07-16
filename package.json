@@ -1,5 +1,8 @@
 {
   "devDependencies": {
     "@types/node-fetch": "^2.6.12"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.4.0"
   }
 }

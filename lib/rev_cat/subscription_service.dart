@@ -13,8 +13,10 @@ class SubscriptionService extends ChangeNotifier {
   bool _isSuperUser = false;
   EntitlementInfo? _activeEntitlement;
   CustomerInfo? _customerInfo;
+  String _entitlementId = 'none';
 
   String get tier => _tier;
+  String get entitlementId => _entitlementId;
   bool get isSuperUser => _isSuperUser;
 
   bool get isTaster => _tier == 'taster';
@@ -28,6 +30,7 @@ class SubscriptionService extends ChangeNotifier {
 
   Package? homeChefPackage;
   Package? masterChefMonthlyPackage;
+  Package? masterChefYearlyPackage;
 
   bool get isTasterTrialActive {
     final entitlement = _customerInfo?.entitlements.active.values.firstOrNull;
@@ -133,12 +136,15 @@ class SubscriptionService extends ChangeNotifier {
           _activeEntitlement = null;
       }
 
+      _entitlementId = _activeEntitlement?.productIdentifier ?? 'none';
+
       debugPrint('🎯 Subscription tier resolved as: $_tier');
       _isSuperUser = await _fetchSuperUserFlag();
     } catch (e) {
       debugPrint('🔴 Error loading subscription status: $e');
       _tier = 'none';
       _activeEntitlement = null;
+      _entitlementId = 'none';
     }
   }
 
@@ -177,6 +183,10 @@ class SubscriptionService extends ChangeNotifier {
         );
         masterChefMonthlyPackage = current.availablePackages.firstWhere(
           (pkg) => pkg.identifier == 'master_chef_monthly',
+          orElse: () => current.availablePackages.first,
+        );
+        masterChefYearlyPackage = current.availablePackages.firstWhere(
+          (pkg) => pkg.identifier == 'master_chef_yearly',
           orElse: () => current.availablePackages.first,
         );
       }

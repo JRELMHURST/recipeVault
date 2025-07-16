@@ -25,19 +25,27 @@ class _SubscriptionSettingsScreenState
   Widget build(BuildContext context) {
     final subscriptionService = context.watch<SubscriptionService>();
 
+    final entitlementId = subscriptionService.entitlementId;
+
+    final masterChefSuffix = switch (entitlementId) {
+      'master_chef_yearly' => ' (Yearly)',
+      'master_chef_monthly' => ' (Monthly)',
+      _ => '',
+    };
+
     final tierLabel = switch (subscriptionService.tier) {
-      'master_chef' => '👨‍🍳 Master Chef Plan',
-      'home_chef' => '👩‍🍳 Home Chef Plan',
-      'taster' => '🍽️ Taster Trial',
-      _ => '🧽 Pot Wash Plan',
+      'master_chef' => '👨‍🍳 Master Chef Plan$masterChefSuffix',
+      'home_chef' => '🍳 Home Chef Plan',
+      'taster' => '🍽️ Taster Plan',
+      _ => '🔓 Free Plan',
     };
 
     final description = switch (subscriptionService.tier) {
       'master_chef' => 'Unlimited access to everything RecipeVault offers.',
       'home_chef' => 'All core features unlocked, with light limits.',
-      'taster' => 'A limited-time trial to test everything out.',
+      'taster' => 'A free trial plan to explore core RecipeVault features.',
       _ =>
-        'You’re currently on the Pot Wash Plan — upgrade to unlock the full kitchen!',
+        'You’re currently on the Free Plan — upgrade to unlock more features!',
     };
 
     final isSubscribed =
@@ -58,6 +66,8 @@ class _SubscriptionSettingsScreenState
               description: description,
               trialEnd: subscriptionService.trialEndDateFormatted,
               isTrial: subscriptionService.isTaster,
+              entitlementId:
+                  subscriptionService.entitlementId, // ✅ Add this line
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -78,6 +88,7 @@ class _PlanCard extends StatelessWidget {
   final String description;
   final String trialEnd;
   final bool isTrial;
+  final String entitlementId; // 🔥 new
 
   const _PlanCard({
     required this.tier,
@@ -85,6 +96,7 @@ class _PlanCard extends StatelessWidget {
     required this.description,
     required this.trialEnd,
     required this.isTrial,
+    required this.entitlementId,
   });
 
   @override
@@ -93,23 +105,25 @@ class _PlanCard extends StatelessWidget {
 
     final List<String> benefits = switch (tier) {
       'master_chef' => [
-        '🧠 Unlimited recipe scans and AI formatting',
-        '🌐 Translate recipes from any language',
-        '📷 Upload images and attach them to cards',
-        '📤 Share recipes',
-        '📁 Unlimited category organisation',
-        '⭐ Favourite recipes and quick filtering',
-        '🔒 Priority access to new AI features',
+        '🧠 Unlimited AI recipe cards',
+        '🌐 Unlimited translations',
+        '📷 Unlimited image uploads',
+        '📤 Save and share recipes to your vault',
+        '📁 Unlimited category creation',
       ],
       'home_chef' => [
-        '🔍 10 recipe scans per month',
-        '🌐 Translate up to 5 recipes/month',
-        '⭐ Favourite recipes',
+        '🧠 20 AI recipe cards per month',
+        '🌐 5 translations per month',
+        '📷 20 image uploads per month',
+        '📤 Vault saving and cloud storage',
+        '📁 Up to 3 custom categories',
       ],
       'taster' => [
-        '🍽️ 5 recipe scans',
-        '🧠 Try AI formatting',
-        '⚠️ Translation not included',
+        '🧠 5 AI recipe cards (trial only)',
+        '🌐 1 translation included',
+        '📷 5 image uploads',
+        '📤 Vault saving (local only)',
+        '📁 No category creation',
       ],
       _ => [],
     };

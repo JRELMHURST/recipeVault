@@ -140,7 +140,14 @@ class ImageProcessingService {
         throw Exception('Formatted recipe is missing or empty.');
       }
 
-      if (_debug) debugPrint('✅ Recipe formatted successfully.');
+      if (_debug) {
+        debugPrint('✅ Recipe formatted successfully.');
+        debugPrint('📥 Raw OCR: ${data['originalText']}');
+        debugPrint('🌐 Detected Language: ${data['detectedLanguage']}');
+        debugPrint('🔁 Translation Used: ${data['translationUsed']}');
+        debugPrint('📤 Translated From: ${data['translatedFromLanguage']}');
+      }
+
       return ProcessedRecipeResult.fromMap(data);
     } on FirebaseFunctionsException catch (e) {
       if (_debug) {

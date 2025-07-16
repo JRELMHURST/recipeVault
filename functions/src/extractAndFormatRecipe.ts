@@ -145,6 +145,7 @@ export const extractAndFormatRecipe = onCall(
         finalText,
         translationUsed ? detectedLanguage : "en"
       );
+
       console.log("✅ GPT formatting complete.");
 
       await incrementGptRecipeUsage(uid);
@@ -172,7 +173,8 @@ export const extractAndFormatRecipe = onCall(
         throw err;
       }
 
-      throw new HttpsError("internal", "An unexpected error occurred while processing your recipe.");
+      console.error("🔥 Recipe processing failed", err);
+      throw new HttpsError("internal", `❌ Failed to process recipe: ${err?.message || "Unknown error"}`);
     }
   }
 );

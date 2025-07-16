@@ -1,39 +1,26 @@
-// functions/src/gpt_logic.ts
-
 import OpenAI from "openai";
-import { defineSecret } from "firebase-functions/params";
-
-export const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
 /**
- * 🧠 Uses GPT to format a recipe into a consistent, user-friendly structure.
- * Ensures:
- * - UK English
- * - Thermomix → standard cooking terminology
- * - Structured formatting + fallback for missing sections
+ * Uses GPT to format a translated recipe text into a consistent structure.
+ * Ensures consistent Hints & Tips inclusion, robust JSON handling, and UK English conventions.
  */
 export async function generateFormattedRecipe(
   text: string,
   sourceLang: string
 ): Promise<string> {
-  const apiKey = await OPENAI_API_KEY.value();
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("❌ OPENAI_API_KEY is not set in Secret Manager.");
+    throw new Error("❌ Missing OPENAI_API_KEY in environment variables");
   }
 
   const openai = new OpenAI({ apiKey });
-
-  // 🔍 Heuristics to detect Thermomix-style phrasing
-  const isThermomix = /Varoma|koszyczek|obr\.\s*\d|motylka|przystawka|Thermomix/i.test(text);
 
   const systemPrompt = `
 You are a UK-based recipe assistant. The original recipe was written in ${sourceLang.toUpperCase()}, but the text below has already been translated into UK English.
 
 Your job is to:
-1. Use British English spelling and units (e.g. grammes, aubergine, courgette).
-2. Remove device-specific terms (e.g. Thermomix language like "Varoma", "insert butterfly whisk").
-   - Convert these to everyday cooking equivalents (e.g. steam, simmer, boil).
-3. Format clearly using the layout below, even if sections are empty:
+1. Ensure all spelling and measurements follow British English conventions (e.g. grammes, litres, aubergine, courgette).
+2. Format the recipe using the layout below, even if some sections are empty:
 
 ---
 Title: <title>
@@ -47,73 +34,54 @@ Instructions:
 2. Step two
 
 Hints & Tips:
-- If missing, say "No additional tips provided."
+- Add any helpful advice, substitutions or serving suggestions.
+- If not available, return a placeholder like "No additional tips provided."
 ---
 
-Output a single JSON object in this format:
+Return only a single JSON object **inside a JSON code block** like this:
 
 \`\`\`json
 {
-  "formattedRecipe": "<full formatted recipe>",
-  "notes": "<hints or 'No additional tips provided.'>"
+  "formattedRecipe": "<formatted recipe text here>",
+  "notes": "<extracted hints and tips or 'No additional tips provided.'>"
 }
 \`\`\`
-  `.trim();
-
-  const userPrompt = `
-Here is the recipe text:
-"""
-${text}
-"""
-${isThermomix ? "\nNote: This appears to be a Thermomix-style recipe. Adapt for standard home cooking tools." : ""}
 `.trim();
 
-  console.log("🧠 Sending prompt to OpenAI...");
+  const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""`;
 
-  let rawContent = "";
+  const completion = await openai.chat.completions.create({
+    model: "gpt-3.5-turbo",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    temperature: 0.3,
+    max_tokens: 1500,
+  });
 
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.3,
-      max_tokens: 1200,
-    });
+  const rawContent = completion.choices[0]?.message?.content?.trim() || "";
 
-    rawContent = completion.choices[0]?.message?.content?.trim() || "";
-
-    console.log("✅ GPT response received.");
-  } catch (err) {
-    console.error("❌ OpenAI API call failed:", err);
-    throw new Error("OpenAI API call failed.");
-  }
-
-  if (!rawContent.includes("formattedRecipe")) {
-    console.error("❌ GPT output missing 'formattedRecipe':\n" + rawContent);
-    throw new Error("GPT did not return a valid formatted recipe.");
-  }
-
+  // ✅ Strip markdown code block wrapper if present
   const jsonText = rawContent
-    .replace(/^```json\s*/i, "")
-    .replace(/```$/, "")
+    .replace(/^```json/i, '')
+    .replace(/```$/, '')
     .trim();
 
   try {
     const parsed = JSON.parse(jsonText);
 
-    if (!parsed || typeof parsed.formattedRecipe !== "string") {
-      throw new Error("Missing or invalid 'formattedRecipe' in GPT response.");
+    if (typeof parsed.formattedRecipe !== "string") {
+      throw new Error("Missing 'formattedRecipe' key in GPT response");
     }
 
     const formatted = parsed.formattedRecipe.trim();
-    const notes = (parsed.notes?.trim() || "No additional tips provided.").replace(/^[-•]\s*/, "");
+    const notes = parsed.notes?.trim() || "No additional tips provided.";
 
+    // ✅ Ensure Hints & Tips is always included at the end
     return `${formatted}\n\nHints & Tips:\n${notes}`;
   } catch (err) {
-    console.error("❌ Failed to parse GPT response:\n" + rawContent);
-    throw new Error("Invalid GPT response format – could not parse recipe JSON.");
+    console.error("❌ Failed to parse GPT response:", rawContent);
+    throw new Error("Invalid GPT response format");
   }
 }

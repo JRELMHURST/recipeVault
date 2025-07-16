@@ -1,27 +1,31 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { HttpsError } from "firebase-functions/v2/https";
+import { getUserEntitlementFromRevenueCat } from "./get_user_entitlement.js";
 
 const firestore = getFirestore();
 
-/** Resolves the tier based on entitlement ID */
-function resolveTierFromEntitlement(entitlementId: string): 'taster' | 'homeChef' | 'masterChef' {
+/** Maps RevenueCat product IDs to internal tier labels */
+function resolveTierFromEntitlement(entitlementId: string): 'masterChef' | 'homeChef' | 'taster' {
   switch (entitlementId) {
-    case 'master_chef_monthly':
     case 'master_chef_yearly':
+    case 'master_chef_monthly':
       return 'masterChef';
     case 'home_chef_monthly':
       return 'homeChef';
+    case 'taster_trial':
     default:
       return 'taster';
   }
 }
 
-/** Retrieves the resolved tier for a user based on entitlement ID */
+/** Retrieves the resolved tier for a user via RevenueCat */
 async function getResolvedTier(uid: string): Promise<'taster' | 'homeChef' | 'masterChef'> {
-  const userDoc = await firestore.collection("users").doc(uid).get();
-  const entitlementId = userDoc.data()?.entitlementId;
-  if (!entitlementId) return 'taster';
-  return resolveTierFromEntitlement(entitlementId);
+  const entitlementId = await getUserEntitlementFromRevenueCat(uid);
+  const tier = resolveTierFromEntitlement(entitlementId ?? 'taster');
+
+  // Optional: update Firestore cache
+  await firestore.collection("users").doc(uid).set({ entitlementId }, { merge: true });
+  return tier;
 }
 
 /** Checks if the user is within their 7-day Taster trial period. */
@@ -53,11 +57,11 @@ async function enforceGptRecipePolicy(uid: string): Promise<void> {
   }
 
   if (tier === "taster") {
-    throw new HttpsError("permission-denied", "Your 7-day trial has ended. Please subscribe to continue using RecipeVault.");
+    throw new HttpsError("permission-denied", "Taster plan includes 5 AI recipes during the trial only. Upgrade to continue.");
   }
 
   if (tier === "homeChef" && monthlyUsed >= 20) {
-    throw new HttpsError("resource-exhausted", "Home Chef plan allows up to 20 recipe generations per month.");
+    throw new HttpsError("resource-exhausted", "Home Chef plan allows up to 20 AI recipes per month.");
   }
 }
 
@@ -77,10 +81,11 @@ async function incrementGptRecipeUsage(uid: string): Promise<void> {
 async function enforceTranslationPolicy(uid: string): Promise<void> {
   const tier = await getResolvedTier(uid);
 
-  // ✅ Master Chef: unlimited translations
   if (tier === "masterChef") {
     console.log("🟢 Master Chef tier detected — skipping translation limit check.");
     return;
+  } else {
+    console.log(`🔐 Tier enforcement active — current tier: ${tier}`);
   }
 
   const monthKey = new Date().toISOString().slice(0, 7);
@@ -122,4 +127,5 @@ export {
   incrementGptRecipeUsage,
   enforceTranslationPolicy,
   incrementTranslationUsage,
+  getResolvedTier, // ✅ Add this line
 };

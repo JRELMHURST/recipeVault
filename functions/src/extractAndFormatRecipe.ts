@@ -13,6 +13,7 @@ import {
   incrementTranslationUsage,
   enforceGptRecipePolicy,
   incrementGptRecipeUsage,
+  getResolvedTier, // ✅ Import for tier logging
 } from "./policy.js";
 
 const REVENUECAT_SECRET_KEY = defineSecret("REVENUECAT_SECRET_KEY");
@@ -64,6 +65,10 @@ export const extractAndFormatRecipe = onCall(
     if (!uid) {
       throw new HttpsError("unauthenticated", "User must be authenticated.");
     }
+
+    // ✅ Subscription tier logging
+    const tier = await getResolvedTier(uid);
+    console.log(`🎟️ Resolved subscription tier: ${tier}`);
 
     try {
       console.log(`📸 Starting processing of ${imageUrls.length} image(s)...`);
@@ -144,7 +149,10 @@ export const extractAndFormatRecipe = onCall(
 
       await enforceGptRecipePolicy(uid);
 
-      const formattedRecipe = await generateFormattedRecipe(finalText, translationUsed ? detectedLanguage : "en");
+      const formattedRecipe = await generateFormattedRecipe(
+        finalText,
+        translationUsed ? detectedLanguage : "en"
+      );
       console.log("✅ GPT formatting complete.");
 
       await incrementGptRecipeUsage(uid);

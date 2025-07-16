@@ -14,10 +14,12 @@ class SubscriptionService extends ChangeNotifier {
   EntitlementInfo? _activeEntitlement;
   CustomerInfo? _customerInfo;
   String _entitlementId = 'none';
+  bool? _firestoreTrialActive;
 
   String get tier => _tier;
   String get entitlementId => _entitlementId;
   bool get isSuperUser => _isSuperUser;
+  bool get isLoaded => _tier != 'none';
 
   bool get isTaster => _tier == 'taster';
   bool get isHomeChef => _tier == 'home_chef';
@@ -33,22 +35,9 @@ class SubscriptionService extends ChangeNotifier {
   Package? masterChefMonthlyPackage;
   Package? masterChefYearlyPackage;
 
-  bool get isTasterTrialActive {
-    final entitlement = _customerInfo?.entitlements.active.values.firstOrNull;
-    return entitlement?.periodType == PeriodType.intro &&
-        entitlement?.productIdentifier == 'master_chef_monthly';
-  }
-
-  bool get isTasterTrialExpired {
-    final entitlement = _customerInfo?.entitlements.active.values.firstOrNull;
-    final isTrial =
-        entitlement?.periodType == PeriodType.intro ||
-        entitlement?.periodType == PeriodType.trial;
-    final trialEnded = isTrial && entitlement?.willRenew == false;
-    return trialEnded && isTaster;
-  }
-
-  bool get isTrialExpired => !isTasterTrialActive && isTaster;
+  bool get isTasterTrialActive => isTaster && (_firestoreTrialActive == true);
+  bool get isTasterTrialExpired => isTaster && (_firestoreTrialActive == false);
+  bool get isTrialExpired => isTasterTrialExpired;
 
   void updateSuperUser(bool value) {
     _isSuperUser = value;
@@ -60,6 +49,7 @@ class SubscriptionService extends ChangeNotifier {
     _activeEntitlement = null;
     _isSuperUser = false;
     _entitlementId = 'none';
+    _firestoreTrialActive = null;
     notifyListeners();
   }
 
@@ -112,11 +102,15 @@ class SubscriptionService extends ChangeNotifier {
 
   Future<void> loadSubscriptionStatus() async {
     try {
+      final firebaseUser = FirebaseAuth.instance.currentUser;
+      if (firebaseUser == null) return;
+
       _customerInfo = await Purchases.getCustomerInfo();
       final entitlements = _customerInfo!.entitlements.active;
       debugPrint('🧾 Active entitlements: ${entitlements.keys}');
 
       _tier = _resolveTierFromEntitlements(entitlements);
+      debugPrint('📦 RevenueCat tier resolved as: $_tier');
 
       switch (_tier) {
         case 'master_chef':
@@ -144,7 +138,23 @@ class SubscriptionService extends ChangeNotifier {
 
       _entitlementId = _activeEntitlement?.productIdentifier ?? 'none';
 
-      debugPrint('🎯 Subscription tier resolved as: $_tier');
+      // 🔍 Firestore fallback for tier and trialActive
+      if (_tier == 'none' || _tier == 'taster') {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(firebaseUser.uid)
+            .get();
+
+        final data = doc.data();
+        if (data != null) {
+          _tier = data['tier'] ?? _tier;
+          _firestoreTrialActive = data['trialActive'] == true;
+          debugPrint(
+            '📄 Firestore tier: $_tier, trialActive: $_firestoreTrialActive',
+          );
+        }
+      }
+
       _isSuperUser = await _fetchSuperUserFlag();
     } catch (e) {
       debugPrint('🔴 Error loading subscription status: $e');

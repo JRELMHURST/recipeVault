@@ -110,7 +110,7 @@ class PricingCard extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
                             child: Text(
-                              isDisabled ? 'Unavailable' : 'Subscribe',
+                              isDisabled ? 'Current Plan' : 'Subscribe',
                             ),
                           ),
                         ),
@@ -178,7 +178,8 @@ class PricingCard extends StatelessWidget {
           : 'Master Chef Monthly';
     }
 
-    return 'RecipeVault Plan';
+    // Fallback
+    return package.storeProduct.title;
   }
 
   String _getDescription(Package package) {
@@ -186,12 +187,12 @@ class PricingCard extends StatelessWidget {
     final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
 
     if (offering == 'home_chef_plan') {
-      return 'Sweet spot. 20 recipes, 5 translations, upload allowed for';
+      return 'Perfect balance – 20 recipes/month, 5 translations, image uploads.';
     }
 
     if (offering == 'master_chef_plan') {
       return period.contains('y')
-          ? 'Unlimited everything, save 40% – 3+ months free'
+          ? 'Unlimited everything, save 40% – 3+ months free.'
           : 'Unlimited everything – AI, images, translations, categories.';
     }
 
@@ -204,7 +205,7 @@ class PricingCard extends StatelessWidget {
     if (offering == 'home_chef_plan') {
       return [
         '20 AI recipe cards',
-        'Recipe Image uploads (up to 20)',
+        'Recipe image uploads (up to 20)',
         '5 translations per month',
         'Save recipes to your vault',
         'Category sorting',

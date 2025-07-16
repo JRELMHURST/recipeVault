@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
+import 'package:recipe_vault/rev_cat/tier_utils.dart'; // ✅ Shared tier logic
+
 class PurchaseHelper {
   /// Initialise RevenueCat with the public API key
   static Future<void> initRevenueCat(String apiKey, {String? appUserId}) async {
@@ -60,18 +62,35 @@ class PurchaseHelper {
     final entitlementId = getActiveEntitlementId(info);
     final userId = info.originalAppUserId;
 
-    if (entitlementId == null || userId.isEmpty) return;
+    if (userId.isEmpty) return;
+
+    final tier = resolveTier(entitlementId); // ✅ Shared tier function
+    final isTaster = tier == 'taster';
+
+    final updateData = {
+      'entitlementId': entitlementId ?? 'none',
+      'tier': tier,
+      'trialActive': isTaster,
+    };
+
+    if (isTaster) {
+      updateData['trialStartDate'] = FieldValue.serverTimestamp();
+    }
 
     try {
-      await FirebaseFirestore.instance.collection('users').doc(userId).set({
-        'entitlementId': entitlementId,
-      }, SetOptions(merge: true));
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .set(updateData, SetOptions(merge: true));
+
       if (kDebugMode) {
-        print('✅ Synced entitlementId "$entitlementId" for user $userId');
+        print(
+          '✅ Synced entitlementId "$entitlementId" with tier "$tier" and trialActive: $isTaster',
+        );
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Failed to sync entitlementId: $e');
+        print('❌ Failed to sync entitlement data: $e');
       }
     }
   }

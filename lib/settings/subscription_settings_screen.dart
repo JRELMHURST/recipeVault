@@ -25,6 +25,11 @@ class _SubscriptionSettingsScreenState
   Widget build(BuildContext context) {
     final subscriptionService = context.watch<SubscriptionService>();
 
+    // 🔄 Wait for tier to resolve
+    if (!subscriptionService.isLoaded) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     final entitlementId = subscriptionService.entitlementId;
 
     final masterChefSuffix = switch (entitlementId) {
@@ -37,7 +42,7 @@ class _SubscriptionSettingsScreenState
       'master_chef' => '👨‍🍳 Master Chef Plan$masterChefSuffix',
       'home_chef' => '🍳 Home Chef Plan',
       'taster' => '🍽️ Taster Plan',
-      _ => '🔓 Free Plan',
+      _ => '🔓 Taster Plan',
     };
 
     final description = switch (subscriptionService.tier) {
@@ -45,7 +50,7 @@ class _SubscriptionSettingsScreenState
       'home_chef' => 'All core features unlocked, with light limits.',
       'taster' => 'A free trial plan to explore core RecipeVault features.',
       _ =>
-        'You’re currently on the Free Plan — upgrade to unlock more features!',
+        'You’re currently on the Taster Plan — upgrade to unlock more features!',
     };
 
     final isSubscribed =
@@ -66,8 +71,7 @@ class _SubscriptionSettingsScreenState
               description: description,
               trialEnd: subscriptionService.trialEndDateFormatted,
               isTrial: subscriptionService.isTaster,
-              entitlementId:
-                  subscriptionService.entitlementId, // ✅ Add this line
+              entitlementId: subscriptionService.entitlementId,
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -88,7 +92,7 @@ class _PlanCard extends StatelessWidget {
   final String description;
   final String trialEnd;
   final bool isTrial;
-  final String entitlementId; // 🔥 new
+  final String entitlementId;
 
   const _PlanCard({
     required this.tier,

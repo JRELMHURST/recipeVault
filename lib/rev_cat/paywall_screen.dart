@@ -6,6 +6,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/rev_cat/pricing_card.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
+import 'package:recipe_vault/services/user_session_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 
 class PaywallScreen extends StatefulWidget {
@@ -32,7 +33,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
     try {
       final offerings = await Purchases.getOfferings();
-
       final homeChef = offerings.getOffering('home_chef_plan');
       final masterChef = offerings.getOffering('master_chef_plan');
 
@@ -41,7 +41,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ...?masterChef?.availablePackages,
       ];
 
-      // Move annual Master Chef to the top
       _availablePackages.sort((a, b) {
         final isBAnnual = b.storeProduct.subscriptionPeriod == 'P1Y';
         return isBAnnual ? 1 : -1;
@@ -50,9 +49,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       debugPrint('❌ Failed to load offerings: $e');
     }
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
+    if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _handlePurchase(Package package) async {
@@ -60,6 +57,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
     try {
       await Purchases.purchasePackage(package);
+
+      // 🧠 Sync new entitlement to Firestore
+      await UserSessionService.syncRevenueCatEntitlement();
+
+      // 🔁 Refresh in-memory SubscriptionService state
       await _subscriptionService.refresh();
 
       if (!mounted) return;
@@ -108,6 +110,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    final currentEntitlement = _subscriptionService.entitlementId;
+    final isTaster = _subscriptionService.isTaster;
+    final trialExpired = _subscriptionService.isTasterTrialExpired;
+    final trialActive = _subscriptionService.isTasterTrialActive;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9F6FF),
       appBar: AppBar(
@@ -124,6 +131,33 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (isTaster && trialActive)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          border: Border.all(color: Colors.green.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          '🎁 You’re currently on a free 7-day trial. Upgrade to keep full access after it ends.',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    if (isTaster && trialExpired)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          border: Border.all(color: Colors.orange.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          '⚠️ Your free trial has ended. Some features are now limited. Upgrade to unlock full access.',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    const SizedBox(height: 24),
                     Text(
                       'Enjoy unlimited access to powerful AI recipe tools, image uploads, category sorting, and more!',
                       style: theme.textTheme.bodyLarge?.copyWith(fontSize: 16),
@@ -133,6 +167,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     ..._availablePackages.map((pkg) {
                       final isAnnual =
                           pkg.storeProduct.subscriptionPeriod == 'P1Y';
+                      final isCurrent = currentEntitlement == pkg.identifier;
                       final badge = isAnnual ? 'Best Value' : null;
 
                       return Padding(
@@ -140,10 +175,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         child: PricingCard(
                           package: pkg,
                           onTap: () {
-                            if (!_isPurchasing) _handlePurchase(pkg);
+                            if (!_isPurchasing && !isCurrent) {
+                              _handlePurchase(pkg);
+                            }
                           },
-                          isDisabled: false,
-                          badge: badge,
+                          isDisabled: isCurrent,
+                          badge: isCurrent ? 'Current Plan' : badge,
                         ),
                       );
                     }),

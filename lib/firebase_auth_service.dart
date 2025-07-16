@@ -9,6 +9,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/model/category_model.dart';
 import 'package:recipe_vault/services/user_session_service.dart';
+import 'package:recipe_vault/rev_cat/tier_utils.dart'; // ✅ Import shared tier logic
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -112,21 +113,38 @@ class AuthService {
     final entitlementInfo = await Purchases.getCustomerInfo();
     final entitlementId =
         entitlementInfo.entitlements.active.values.firstOrNull?.identifier;
-    final tier = _resolveTier(entitlementId);
+    String tier = resolveTier(entitlementId); // ✅ Now uses shared function
 
     if (!doc.exists) {
       await docRef.set({
         'email': user.email,
-        'entitlementId': entitlementId,
+        'entitlementId': entitlementId ?? 'taster',
         'tier': tier,
-        'trialStartDate': FieldValue.serverTimestamp(),
+        'trialActive': tier == 'taster',
+        'trialStartDate': tier == 'taster'
+            ? FieldValue.serverTimestamp()
+            : null,
         'createdAt': FieldValue.serverTimestamp(),
       });
+
       debugPrint(
         '🔐 AuthService: Created Firestore user doc with resolved tier: $tier',
       );
     } else {
       debugPrint('🔐 AuthService: Firestore user doc already exists.');
+
+      final isTaster = tier == 'taster';
+      final updateData = {
+        'entitlementId': entitlementId ?? 'taster',
+        'tier': tier,
+        'trialActive': isTaster,
+      };
+
+      if (isTaster) {
+        updateData['trialStartDate'] = FieldValue.serverTimestamp();
+      }
+
+      await docRef.set(updateData, SetOptions(merge: true));
     }
 
     try {
@@ -138,18 +156,6 @@ class AuthService {
     } catch (e, stack) {
       debugPrint('🔐 AuthService: Failed to sync RevenueCat entitlement: $e');
       debugPrint(stack.toString());
-    }
-  }
-
-  String _resolveTier(String? entitlementId) {
-    switch (entitlementId) {
-      case 'master_chef_yearly':
-      case 'master_chef_monthly':
-        return 'master_chef';
-      case 'home_chef_monthly':
-        return 'home_chef';
-      default:
-        return 'taster';
     }
   }
 

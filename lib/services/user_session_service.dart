@@ -3,10 +3,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
-import '../rev_cat/subscription_service.dart'; // Ensure this path is correct
+import '../rev_cat/subscription_service.dart';
+import '../rev_cat/tier_utils.dart';
 
 class UserSessionService {
-  /// 🏁 Call this once on app startup to initialise user session and sync subscription status
+  /// 🏁 Call once on startup to initialise user session and sync subscription state
   static Future<void> init() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -16,21 +17,32 @@ class UserSessionService {
 
     try {
       await Purchases.logIn(user.uid);
-
-      // 1️⃣ Restore purchases
       await Purchases.restorePurchases();
 
-      // 2️⃣ Wait for active entitlements to be loaded
       final info = await Purchases.getCustomerInfo();
       if (info.entitlements.active.isEmpty) {
-        if (kDebugMode) print('⏳ No entitlements loaded yet – skipping sync');
-        return;
+        if (kDebugMode) {
+          print('⏳ No entitlements loaded yet – retrying sync in 2s...');
+        }
+
+        // ⏱ Retry after delay (best effort)
+        Future.delayed(const Duration(seconds: 2), () async {
+          final retryInfo = await Purchases.getCustomerInfo();
+          if (retryInfo.entitlements.active.isNotEmpty) {
+            await syncRevenueCatEntitlement();
+            await SubscriptionService().refresh();
+          } else {
+            debugPrint(
+              '❌ Entitlements still empty after retry – skipping sync',
+            );
+          }
+        });
+
+        return; // Exit for now; retry will happen in background
       }
 
-      // 3️⃣ Now safe to sync
+      // ✅ Immediate sync if entitlements are already ready
       await syncRevenueCatEntitlement();
-
-      // 4️⃣ Refresh tier info in memory
       await SubscriptionService().refresh();
 
       if (kDebugMode) {
@@ -43,52 +55,44 @@ class UserSessionService {
     }
   }
 
-  /// Manually syncs active RevenueCat entitlement + tier/trial flags to Firestore
+  /// 🔄 Syncs active RevenueCat entitlement + tier/trial info to Firestore
   static Future<void> syncRevenueCatEntitlement() async {
     try {
       final firebaseUser = FirebaseAuth.instance.currentUser;
       final userId = firebaseUser?.uid;
-
       if (userId == null || userId.isEmpty) {
         if (kDebugMode) print('⚠️ No Firebase user logged in');
         return;
       }
 
-      // ✅ Ensure RevenueCat uses Firebase UID
       await Purchases.logIn(userId);
-
       final info = await Purchases.getCustomerInfo();
-      final entitlements = info.entitlements.active;
-      if (entitlements.isEmpty) {
-        if (kDebugMode) {
-          print('ℹ️ No active entitlements found — skipping sync');
-        }
-        return;
-      }
-
-      final entitlementId = entitlements.values.first.productIdentifier;
+      final entitlementId =
+          info.entitlements.active.values.firstOrNull?.productIdentifier;
+      final resolvedTier = resolveTier(entitlementId);
 
       if (kDebugMode) {
         print('👤 Firebase UID: $userId');
         print('🧾 RevenueCat originalAppUserId: ${info.originalAppUserId}');
+        print('🧾 Active entitlements: ${info.entitlements.active.keys}');
+        print('🎯 Subscription tier resolved as: $resolvedTier');
       }
 
-      final tier = _resolveTier(entitlementId);
+      final docRef = FirebaseFirestore.instance.collection('users').doc(userId);
+      final doc = await docRef.get();
+      final trialStart = doc.data()?['trialStartDate'];
 
-      // 🔍 Fetch Firestore user doc to check for trial start
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .get();
-      final startStr = userDoc.data()?['trialStartDate'];
-      final trialActive = _isTrialActive(startStr);
+      final trialActive =
+          resolvedTier == 'taster' && _isTrialActive(trialStart);
 
-      // 💾 Save to Firestore
-      await FirebaseFirestore.instance.collection('users').doc(userId).set({
-        'entitlementId': entitlementId,
-        'tier': tier,
+      final updateData = <String, dynamic>{
+        'entitlementId': entitlementId ?? '',
         'trialActive': trialActive,
-      }, SetOptions(merge: true));
+      };
+
+      updateData['tier'] = resolvedTier;
+
+      await docRef.set(updateData, SetOptions(merge: true));
 
       if (kDebugMode) {
         print('✅ Synced entitlementId, tier, and trialActive to Firestore');
@@ -100,7 +104,7 @@ class UserSessionService {
     }
   }
 
-  /// Restores purchases and syncs entitlement and tier info to Firestore
+  /// ♻️ Restore purchases and re-sync subscription data
   static Future<void> restoreAndSyncEntitlement() async {
     try {
       await Purchases.restorePurchases();
@@ -112,30 +116,14 @@ class UserSessionService {
     }
   }
 
-  /// 🔍 Resolves tier from RevenueCat entitlementId
-  static String _resolveTier(String entitlementId) {
-    switch (entitlementId) {
-      case 'master_chef_monthly':
-      case 'master_chef_yearly':
-        return 'master_chef';
-      case 'home_chef_monthly':
-        return 'home_chef';
-      case 'taster_trial':
-        return 'taster';
-      default:
-        return 'taster';
-    }
-  }
-
-  /// 🧪 Checks if trial is active based on trialStartDate
-  static bool _isTrialActive(String? startStr) {
-    if (startStr == null) return false;
-
+  /// 🧪 Determine if trial is still active based on Firestore `trialStartDate`
+  static bool _isTrialActive(dynamic trialStart) {
     try {
-      final start = DateTime.parse(startStr);
-      final now = DateTime.now();
-      final diff = now.difference(start).inDays;
-      return diff < 7;
+      final start = trialStart is Timestamp
+          ? trialStart.toDate()
+          : DateTime.parse(trialStart.toString());
+
+      return DateTime.now().difference(start).inDays < 7;
     } catch (_) {
       return false;
     }

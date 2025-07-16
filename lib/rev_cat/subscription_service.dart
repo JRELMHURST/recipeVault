@@ -24,9 +24,10 @@ class SubscriptionService extends ChangeNotifier {
   bool get isMasterChef => _tier == 'master_chef';
 
   bool get hasActiveSubscription => isHomeChef || isMasterChef;
-  bool get allowTranslation => isHomeChef || isMasterChef;
-  bool get allowImageUpload => isHomeChef || isMasterChef;
-  bool get allowSaveToVault => isTaster || isHomeChef || isMasterChef;
+  bool get allowTranslation => _isSuperUser || isMasterChef;
+  bool get allowImageUpload => _isSuperUser || isMasterChef;
+  bool get allowSaveToVault =>
+      isTaster || isHomeChef || isMasterChef || _isSuperUser;
 
   Package? homeChefPackage;
   Package? masterChefMonthlyPackage;
@@ -58,6 +59,7 @@ class SubscriptionService extends ChangeNotifier {
     _tier = 'none';
     _activeEntitlement = null;
     _isSuperUser = false;
+    _entitlementId = 'none';
     notifyListeners();
   }
 
@@ -89,23 +91,21 @@ class SubscriptionService extends ChangeNotifier {
     await Purchases.invalidateCustomerInfoCache();
     await loadSubscriptionStatus();
 
-    // 🕒 Handle sandbox expiry (e.g. entitlement expired after 5 mins)
     final now = DateTime.now();
     final expiryString = _activeEntitlement?.expirationDate;
-
     if (expiryString != null) {
       final expiryDate = DateTime.tryParse(expiryString);
       if (expiryDate != null && now.isAfter(expiryDate)) {
         debugPrint('⚠️ Sandbox entitlement expired – resetting tier to none.');
         _tier = 'none';
         _activeEntitlement = null;
+        _entitlementId = 'none';
       }
     }
 
     notifyListeners();
   }
 
-  /// ✅ Restore this method to resolve UI call from SubscriptionSettingsScreen
   Future<void> restoreAndSync() async {
     await refresh();
   }
@@ -121,12 +121,18 @@ class SubscriptionService extends ChangeNotifier {
       switch (_tier) {
         case 'master_chef':
           _activeEntitlement = entitlements.entries
-              .firstWhereOrNull((e) => e.key.contains('master_chef'))
+              .firstWhereOrNull(
+                (e) =>
+                    e.value.productIdentifier == 'master_chef_monthly' ||
+                    e.value.productIdentifier == 'master_chef_yearly',
+              )
               ?.value;
           break;
         case 'home_chef':
           _activeEntitlement = entitlements.entries
-              .firstWhereOrNull((e) => e.key.contains('home_chef'))
+              .firstWhereOrNull(
+                (e) => e.value.productIdentifier == 'home_chef_monthly',
+              )
               ?.value;
           break;
         case 'taster':
@@ -151,13 +157,17 @@ class SubscriptionService extends ChangeNotifier {
   String _resolveTierFromEntitlements(
     Map<String, EntitlementInfo> entitlements,
   ) {
-    if (entitlements.keys.any((k) => k.contains('master_chef'))) {
-      return 'master_chef';
+    for (final entry in entitlements.entries) {
+      final id = entry.value.productIdentifier;
+
+      if (id == 'master_chef_monthly' || id == 'master_chef_yearly') {
+        return 'master_chef';
+      } else if (id == 'home_chef_monthly') {
+        return 'home_chef';
+      } else if (entry.key == 'taster_trial') {
+        return 'taster';
+      }
     }
-    if (entitlements.keys.any((k) => k.contains('home_chef'))) {
-      return 'home_chef';
-    }
-    if (entitlements.containsKey('taster_trial')) return 'taster';
     return 'none';
   }
 

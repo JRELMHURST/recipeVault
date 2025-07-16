@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_messages.dart';
@@ -95,6 +96,13 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       );
       if (_hasCancelled) return;
 
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      debugPrint(
+        '📄 User tier before extractAndFormatRecipe: ${userDoc.data()?['tier']}',
+      );
       final result = await ImageProcessingService.extractAndFormatRecipe(
         imageUrls,
         context,

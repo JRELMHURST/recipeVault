@@ -1,10 +1,10 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
-import 'package:recipe_vault/core/responsive_wrapper.dart'; // 👈 Import the wrapper
+import 'package:recipe_vault/core/responsive_wrapper.dart';
+import 'package:recipe_vault/services/user_session_service.dart'; // ✅ Added for RevenueCat sync
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,6 +24,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final email = emailController.text.trim();
       final password = passwordController.text.trim();
       await AuthService().signInWithEmail(email, password);
+
+      // ✅ Sync RevenueCat entitlement info after login
+      await UserSessionService.syncRevenueCatEntitlement();
 
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
@@ -47,20 +50,6 @@ class _LoginScreenState extends State<LoginScreen> {
           const SnackBar(content: Text('Google sign-in was cancelled.')),
         );
         return;
-      }
-
-      final user = credential.user;
-      if (user != null) {
-        final docRef = FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid);
-        final doc = await docRef.get();
-        if (!doc.exists) {
-          await docRef.set({
-            'tier': 'taster',
-            'trialStartDate': DateTime.now().toUtc().toIso8601String(),
-          });
-        }
       }
 
       if (!mounted) return;
@@ -98,7 +87,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     vertical: 32,
                   ),
                   child: ResponsiveWrapper(
-                    // 👈 Added wrapper here
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [

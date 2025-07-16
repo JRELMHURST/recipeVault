@@ -6,79 +6,80 @@ import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:recipe_vault/firebase_storage.dart';
 import 'package:recipe_vault/model/processed_recipe_result.dart';
 
 class ImageProcessingService {
   static const int _jpegQualityAndroid = 80;
   static const int _jpegQualityIOS = 85;
-  static final ImagePicker _picker = ImagePicker();
   static const bool _debug = false;
+  static final ImagePicker _picker = ImagePicker();
 
-  /// ValueNotifier for displaying upgrade banner inline
+  /// Notifies UI to display upgrade banner (e.g. on usage limit)
   static final ValueNotifier<String?> upgradeBannerMessage = ValueNotifier(
     null,
   );
 
-  /// Pick multiple images and compress them to JPEG format.
+  /// Picks multiple images and compresses them for upload
   static Future<List<File>> pickAndCompressImages() async {
-    final pickedXFiles = await _picker.pickMultiImage();
-    if (pickedXFiles.isEmpty) return [];
+    final picked = await _picker.pickMultiImage();
+    if (picked.isEmpty) return [];
 
-    final imageFiles = pickedXFiles.map((x) => File(x.path)).toList();
-    return _compressFiles(imageFiles);
+    final files = picked.map((x) => File(x.path)).toList();
+    return _compressFiles(files);
   }
 
-  /// Compresses files to JPEG and stores them temporarily.
+  /// Compresses a list of images and stores them temporarily
   static Future<List<File>> _compressFiles(List<File> files) async {
     final tempDir = await getTemporaryDirectory();
-    final results = <File>[];
+    final result = <File>[];
 
     for (final file in files) {
       try {
         final targetPath =
             '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-        final compressedFile = await FlutterImageCompress.compressAndGetFile(
+        final compressed = await FlutterImageCompress.compressAndGetFile(
           file.path,
           targetPath,
           quality: Platform.isIOS ? _jpegQualityIOS : _jpegQualityAndroid,
           format: CompressFormat.jpeg,
         );
 
-        if (compressedFile != null) {
-          results.add(compressedFile);
-          if (_debug) debugPrint('✅ Compressed: ${compressedFile.path}');
+        if (compressed != null) {
+          result.add(compressed);
+          if (_debug) debugPrint('✅ Compressed: ${compressed.path}');
         }
       } catch (e) {
         debugPrint('⚠️ Compression failed for ${file.path}: $e');
       }
     }
 
-    return results;
+    return result;
   }
 
-  /// Uploads a list of image files and returns download URLs.
+  /// Uploads image files to Firebase and returns their download URLs
   static Future<List<String>> uploadFiles(List<File> files) async {
     if (_debug) {
       debugPrint('⏫ Uploading ${files.length} files to Firebase Storage...');
     }
+
     return FirebaseStorageService.uploadImages(files);
   }
 
-  /// Uploads a single cropped recipe image to the user's storage path.
+  /// Uploads a single cropped recipe image to the user's folder
   static Future<String> uploadRecipeImage({
     required File imageFile,
     required String userId,
     required String recipeId,
   }) async {
     try {
-      final storageRef = FirebaseStorage.instance.ref().child(
+      final ref = FirebaseStorage.instance.ref().child(
         'users/$userId/recipe_images/$recipeId.jpg',
       );
-      final uploadTask = await storageRef.putFile(imageFile);
+
+      final uploadTask = await ref.putFile(imageFile);
       final url = await uploadTask.ref.getDownloadURL();
 
       if (_debug) debugPrint('✅ Recipe image uploaded: $url');
@@ -88,9 +89,9 @@ class ImageProcessingService {
     }
   }
 
-  /// Optionally crops the given image using platform-specific UI.
+  /// Optional crop flow using ImageCropper
   static Future<File?> cropImage(File originalImage) async {
-    final croppedFile = await ImageCropper().cropImage(
+    final cropped = await ImageCropper().cropImage(
       sourcePath: originalImage.path,
       aspectRatioPresets: [
         CropAspectRatioPreset.original,
@@ -102,18 +103,16 @@ class ImageProcessingService {
           toolbarTitle: 'Crop Image',
           toolbarColor: Colors.deepOrange,
           toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.original,
           lockAspectRatio: false,
         ),
         IOSUiSettings(title: 'Crop Image'),
       ],
     );
 
-    if (croppedFile == null) return null;
-    return File(croppedFile.path);
+    return cropped == null ? null : File(cropped.path);
   }
 
-  /// Calls the backend function to extract, translate, and format a recipe.
+  /// Calls Firebase Function to run OCR → Translate → GPT Format
   static Future<ProcessedRecipeResult> extractAndFormatRecipe(
     List<String> imageUrls,
     BuildContext context, {
@@ -132,11 +131,9 @@ class ImageProcessingService {
       final result = await callable
           .call({'imageUrls': imageUrls})
           .timeout(timeout);
-
       final data = result.data as Map<String, dynamic>;
-      final formatted = data['formattedRecipe'] as String?;
 
-      if (formatted == null || formatted.isEmpty) {
+      if ((data['formattedRecipe'] as String?)?.isEmpty ?? true) {
         throw Exception('Formatted recipe is missing or empty.');
       }
 
@@ -162,7 +159,7 @@ class ImageProcessingService {
 
       if (e.code == 'resource-exhausted') {
         upgradeBannerMessage.value =
-            "You've hit your monthly quota. Upgrade for unlimited access 🚀";
+            "🚧 You’ve hit your monthly quota. Upgrade for unlimited access!";
         throw Exception("Usage limit reached.");
       }
 
@@ -173,7 +170,7 @@ class ImageProcessingService {
     }
   }
 
-  /// Displays an error message using a snackbar.
+  /// Show a snackbar error in context
   static void showError(BuildContext context, String message) {
     ScaffoldMessenger.of(
       context,

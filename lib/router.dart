@@ -60,10 +60,16 @@ Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
 
     // Paywall
     '/paywall': (context) => const PaywallScreen(),
+
+    // Shared route fallback (e.g. someone opens /shared without ID)
+    '/shared': (context) => const Scaffold(
+      body: Center(child: Text('Please use a valid shared recipe link.')),
+    ),
   };
 }
 
 Route<dynamic> generateRoute(RouteSettings settings) {
+  // ✅ Handle deep links like /shared/:id
   if (settings.name != null && settings.name!.startsWith('/shared/')) {
     final recipeId = settings.name!.split('/').last;
     return MaterialPageRoute(
@@ -72,6 +78,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     );
   }
 
+  // ✅ Fall back to known route map or show a 404 screen
   return MaterialPageRoute(
     builder: (context) {
       final routes = buildRoutes(context);
@@ -79,8 +86,11 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       if (builder != null) {
         return builder(context);
       } else {
-        debugPrint("❌ Route not found: ${settings.name}");
-        return const Scaffold(body: Center(child: Text('Page not found')));
+        return const Scaffold(
+          body: Center(
+            child: Text('404 – Page not found', style: TextStyle(fontSize: 18)),
+          ),
+        );
       }
     },
     settings: settings,

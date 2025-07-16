@@ -109,15 +109,21 @@ class AuthService {
     final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final doc = await docRef.get();
 
+    final entitlementInfo = await Purchases.getCustomerInfo();
+    final entitlementId =
+        entitlementInfo.entitlements.active.values.firstOrNull?.identifier;
+    final tier = _resolveTier(entitlementId);
+
     if (!doc.exists) {
       await docRef.set({
         'email': user.email,
-        'tier': 'taster',
+        'entitlementId': entitlementId,
+        'tier': tier,
         'trialStartDate': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
       });
       debugPrint(
-        '🔐 AuthService: Created Firestore user doc with trialStartDate.',
+        '🔐 AuthService: Created Firestore user doc with resolved tier: $tier',
       );
     } else {
       debugPrint('🔐 AuthService: Firestore user doc already exists.');
@@ -132,6 +138,18 @@ class AuthService {
     } catch (e, stack) {
       debugPrint('🔐 AuthService: Failed to sync RevenueCat entitlement: $e');
       debugPrint(stack.toString());
+    }
+  }
+
+  String _resolveTier(String? entitlementId) {
+    switch (entitlementId) {
+      case 'master_chef_yearly':
+      case 'master_chef_monthly':
+        return 'master_chef';
+      case 'home_chef_monthly':
+        return 'home_chef';
+      default:
+        return 'taster';
     }
   }
 

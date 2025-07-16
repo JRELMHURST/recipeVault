@@ -20,12 +20,26 @@ function resolveTierFromEntitlement(entitlementId: string): 'master_chef' | 'hom
 
 /** Retrieves the resolved tier for a user via RevenueCat */
 async function getResolvedTier(uid: string): Promise<'taster' | 'home_chef' | 'master_chef'> {
-  const entitlementId = await getUserEntitlementFromRevenueCat(uid);
-  const tier = resolveTierFromEntitlement(entitlementId ?? 'taster');
+  const doc = await firestore.collection("users").doc(uid).get();
+  const firestoreTier = doc.data()?.tier;
 
-  // Optional: update Firestore cache
-  await firestore.collection("users").doc(uid).set({ entitlementId }, { merge: true });
-  return tier;
+  if (firestoreTier === 'master_chef' || firestoreTier === 'home_chef' || firestoreTier === 'taster') {
+    console.log(`🎯 Firestore tier for UID ${uid}: ${firestoreTier}`);
+    return firestoreTier;
+  }
+
+  console.warn(`⚠️ No Firestore tier set — falling back to RevenueCat`);
+
+  const entitlementId = await getUserEntitlementFromRevenueCat(uid);
+
+  if (entitlementId) {
+    const tier = resolveTierFromEntitlement(entitlementId);
+    await firestore.collection("users").doc(uid).set({ tier, entitlementId }, { merge: true });
+    return tier;
+  }
+
+  console.warn(`⚠️ No entitlements for UID ${uid}. Skipping tier overwrite.`);
+  return firestoreTier ?? 'taster';
 }
 
 /** Checks if the user is within their 7-day Taster trial period. */

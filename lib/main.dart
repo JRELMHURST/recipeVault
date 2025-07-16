@@ -10,14 +10,13 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'firebase_options.dart';
-import 'core/theme.dart';
 import 'core/theme_notifier.dart';
 import 'core/text_scale_notifier.dart';
 import 'model/recipe_card_model.dart';
 import 'model/category_model.dart';
 import 'services/user_preference_service.dart';
-import 'rev_cat/subscription_service.dart';
 import 'services/user_session_service.dart';
+import 'rev_cat/subscription_service.dart';
 import 'router.dart';
 
 const bool skipAuthForDev = false;
@@ -58,8 +57,6 @@ Future<void> main() async {
 
   await UserPreferencesService.init();
 
-  final initialRoute = _getInitialRouteFromDeepLink();
-
   runApp(
     MultiProvider(
       providers: [
@@ -67,43 +64,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => TextScaleNotifier()..loadScale()),
         ChangeNotifierProvider(create: (_) => SubscriptionService()..init()),
       ],
-      child: RecipeVaultApp(initialRoute: initialRoute),
+      child: buildAppWithRouter(), // ✅ All providers now available globally
     ),
   );
-}
-
-String _getInitialRouteFromDeepLink() {
-  final uri = Uri.base;
-  if (uri.pathSegments.isNotEmpty && uri.pathSegments.first == 'shared') {
-    final id = uri.pathSegments.length > 1 ? uri.pathSegments[1] : null;
-    if (id != null) return '/shared/$id';
-  }
-  return '/';
-}
-
-class RecipeVaultApp extends StatelessWidget {
-  final String initialRoute;
-
-  const RecipeVaultApp({super.key, required this.initialRoute});
-
-  @override
-  Widget build(BuildContext context) {
-    final themeNotifier = Provider.of<ThemeNotifier>(context);
-    final textScaleNotifier = Provider.of<TextScaleNotifier>(context);
-
-    return MediaQuery(
-      data: MediaQuery.of(
-        context,
-      ).copyWith(textScaler: TextScaler.linear(textScaleNotifier.scaleFactor)),
-      child: MaterialApp(
-        title: 'RecipeVault',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: themeNotifier.themeMode,
-        initialRoute: initialRoute,
-        onGenerateRoute: generateRoute,
-      ),
-    );
-  }
 }

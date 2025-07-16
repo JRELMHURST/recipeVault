@@ -2,6 +2,7 @@ import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https
 import { defineSecret } from "firebase-functions/params";
 import { getStorage } from "firebase-admin/storage";
 import { decode } from "html-entities";
+import { getFirestore } from "firebase-admin/firestore";
 
 import { extractTextFromImages } from "./ocr.js";
 import { detectLanguage } from "./detect.js";
@@ -9,11 +10,9 @@ import { translateToEnglish } from "./translate.js";
 import { generateFormattedRecipe } from "./gpt_logic.js";
 import { cleanText, previewText } from "./text_utils.js";
 import {
-  enforceTranslationPolicy,
   incrementTranslationUsage,
   enforceGptRecipePolicy,
   incrementGptRecipeUsage,
-  getResolvedTier,
 } from "./policy.js";
 
 const REVENUECAT_SECRET_KEY = defineSecret("REVENUECAT_SECRET_KEY");
@@ -66,8 +65,9 @@ export const extractAndFormatRecipe = onCall(
       throw new HttpsError("unauthenticated", "User must be authenticated.");
     }
 
-    const tier = await getResolvedTier(uid);
-    console.log(`🎟️ Resolved subscription tier: ${tier}`);
+    const userDoc = await getFirestore().collection("users").doc(uid).get();
+    const tier = userDoc.data()?.tier || "none";
+    console.log(`🎟️ Firestore tier for UID ${uid}: ${tier}`);
 
     try {
       console.log(`📸 Starting processing of ${imageUrls.length} image(s)...`);
@@ -100,9 +100,7 @@ export const extractAndFormatRecipe = onCall(
         detectedLanguage.toLowerCase().startsWith("en-");
 
       if (!isLikelyEnglish) {
-        try {
-          await enforceTranslationPolicy(uid);
-        } catch (e) {
+        if (tier !== "master_chef") {
           throw new HttpsError("permission-denied", "Translation blocked due to plan limit.");
         }
 

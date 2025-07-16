@@ -16,38 +16,38 @@ service cloud.firestore {
       // - OR the caller is an admin
       allow update: if request.auth != null && request.auth.uid == userId &&
         (
-          // Only updating safe keys
           request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['entitlementId', 'lastLogin', 'trialActive', 'tier']) ||
 
-          // Or not touching tier
           !request.resource.data.diff(resource.data).affectedKeys()
             .hasAny(['tier']) ||
 
-          // Or caller is admin
           request.auth.token.admin == true
         );
 
-      // ✅ Subcollections
+      // ✅ Subcollections under user
+
+      // Recipes
       match /recipes/{recipeId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
 
+      // Categories
       match /categories/{categoryId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
-    }
 
-    // 📊 Translation usage tracking
-    match /translationUsage/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if false; // Write via backend only
-    }
+      // 📊 Translation usage tracking (subcollection)
+      match /translationUsage/{docId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false; // Write via backend only
+      }
 
-    // 🤖 GPT AI usage tracking
-    match /aiUsage/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if false; // Write via backend only
+      // 🤖 GPT AI usage tracking (subcollection)
+      match /aiUsage/{docId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false; // Write via backend only
+      }
     }
   }
 }

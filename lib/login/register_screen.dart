@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
@@ -34,15 +33,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final credential = await AuthService().registerWithEmail(email, password);
-      final user = credential.user;
-      if (user != null) {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'tier': 'taster',
-          'trialStartDate': DateTime.now().toUtc().toIso8601String(),
-        });
-      }
-
+      await AuthService().registerWithEmail(email, password);
       await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
@@ -66,20 +57,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SnackBar(content: Text('Google sign-up was cancelled.')),
         );
         return;
-      }
-
-      final user = credential.user;
-      if (user != null) {
-        final docRef = FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid);
-        final doc = await docRef.get();
-        if (!doc.exists) {
-          await docRef.set({
-            'tier': 'taster',
-            'trialStartDate': DateTime.now().toUtc().toIso8601String(),
-          });
-        }
       }
 
       await Future.delayed(const Duration(milliseconds: 100));

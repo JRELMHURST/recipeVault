@@ -1,13 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
-import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/model/category_model.dart';
+import 'package:recipe_vault/services/user_session_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -69,6 +70,13 @@ class AuthService {
     }
   }
 
+  /// 🚪 Sign out
+  Future<void> signOut() async {
+    await _googleSignIn.signOut();
+    await _auth.signOut();
+    await Purchases.logOut(); // ✅ Also log out from RevenueCat
+  }
+
   /// 🧹 Full logout + clear local storage
   Future<void> fullLogout() async {
     await signOut();
@@ -84,27 +92,6 @@ class AuthService {
       debugPrint('✅ Signed out + cleared Hive + SharedPreferences');
     } catch (e) {
       debugPrint('⚠️ Error clearing Hive boxes: $e');
-    }
-  }
-
-  /// 🚪 Sign out
-  Future<void> signOut() async {
-    await _googleSignIn.signOut();
-    await _auth.signOut();
-  }
-
-  /// 🔍 Debug log
-  void logCurrentUser() {
-    final user = _auth.currentUser;
-    if (user == null) {
-      debugPrint('❌ No user currently signed in.');
-    } else {
-      debugPrint('✅ Logged in: ${user.displayName ?? user.email ?? user.uid}');
-      debugPrint('📧 Email: ${user.email}');
-      debugPrint('🆔 UID: ${user.uid}');
-      debugPrint(
-        '🔗 Providers: ${user.providerData.map((p) => p.providerId).join(', ')}',
-      );
     }
   }
 
@@ -128,11 +115,8 @@ class AuthService {
     // ✅ Sync RevenueCat entitlement after auth settles
     try {
       await Future.delayed(const Duration(milliseconds: 500));
-      await Future.microtask(() async {
-        final subscriptionService = SubscriptionService();
-        await subscriptionService.syncRevenueCatEntitlement();
-        debugPrint('🔄 Synced entitlement to Firestore.');
-      });
+      await UserSessionService.syncRevenueCatEntitlement();
+      debugPrint('🔄 Synced entitlement to Firestore via UserSessionService.');
     } catch (e, stack) {
       debugPrint('⚠️ Failed to sync RevenueCat entitlement: $e');
       debugPrint(stack.toString());
@@ -145,5 +129,20 @@ class AuthService {
         ? Hive.box<T>(boxName)
         : await Hive.openBox<T>(boxName);
     await box.clear();
+  }
+
+  /// 🐞 Debug
+  void logCurrentUser() {
+    final user = _auth.currentUser;
+    if (user == null) {
+      debugPrint('❌ No user currently signed in.');
+    } else {
+      debugPrint('✅ Logged in: ${user.displayName ?? user.email ?? user.uid}');
+      debugPrint('📧 Email: ${user.email}');
+      debugPrint('🆔 UID: ${user.uid}');
+      debugPrint(
+        '🔗 Providers: ${user.providerData.map((p) => p.providerId).join(', ')}',
+      );
+    }
   }
 }

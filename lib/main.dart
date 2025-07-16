@@ -17,8 +17,8 @@ import 'model/recipe_card_model.dart';
 import 'model/category_model.dart';
 import 'services/user_preference_service.dart';
 import 'rev_cat/subscription_service.dart';
-import 'services/user_session_service.dart'; // ✅ Newly added
-import 'router.dart'; // This will now provide Navigator 1.0 route definitions
+import 'services/user_session_service.dart';
+import 'router.dart';
 
 const bool skipAuthForDev = false;
 
@@ -40,8 +40,8 @@ Future<void> main() async {
     PurchasesConfiguration('appl_oqbgqmtmctjzzERpEkswCejmukh'),
   );
 
-  // ✅ Sync RevenueCat entitlement to Firestore
-  await UserSessionService.syncRevenueCatEntitlement();
+  // ✅ Restore purchases and sync entitlement to Firestore
+  await UserSessionService.restoreAndSyncEntitlement();
 
   await Hive.initFlutter();
   Hive.registerAdapter(RecipeCardModelAdapter());
@@ -52,7 +52,7 @@ Future<void> main() async {
     await Hive.openBox<CategoryModel>('categories');
     await Hive.openBox<String>('customCategories');
   } catch (e, stack) {
-    debugPrint('❌ Failed to open Hive box: \$e');
+    debugPrint('❌ Failed to open Hive box: $e');
     debugPrint(stack.toString());
   }
 
@@ -65,21 +65,20 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeNotifier()..loadTheme()),
         ChangeNotifierProvider(create: (_) => TextScaleNotifier()..loadScale()),
-        ChangeNotifierProvider(create: (_) => SubscriptionService()..refresh()),
+        ChangeNotifierProvider(create: (_) => SubscriptionService()..init()),
       ],
       child: RecipeVaultApp(initialRoute: initialRoute),
     ),
   );
 }
 
-/// Detects launch route from universal link like https://recipevault.app/shared/abc123
 String _getInitialRouteFromDeepLink() {
   final uri = Uri.base;
   if (uri.pathSegments.isNotEmpty && uri.pathSegments.first == 'shared') {
     final id = uri.pathSegments.length > 1 ? uri.pathSegments[1] : null;
-    if (id != null) return '/shared/\$id';
+    if (id != null) return '/shared/$id';
   }
-  return '/'; // fallback
+  return '/';
 }
 
 class RecipeVaultApp extends StatelessWidget {
@@ -102,7 +101,7 @@ class RecipeVaultApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeNotifier.themeMode,
-        initialRoute: initialRoute, // ✅ Now defined properly
+        initialRoute: initialRoute,
         onGenerateRoute: generateRoute,
       ),
     );

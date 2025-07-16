@@ -77,6 +77,12 @@ async function incrementGptRecipeUsage(uid: string): Promise<void> {
 async function enforceTranslationPolicy(uid: string): Promise<void> {
   const tier = await getResolvedTier(uid);
 
+  // ✅ Master Chef: unlimited translations
+  if (tier === "masterChef") {
+    console.log("🟢 Master Chef tier detected — skipping translation limit check.");
+    return;
+  }
+
   const monthKey = new Date().toISOString().slice(0, 7);
   const usageDoc = await firestore.collection("translationUsage").doc(uid).get();
   const monthlyUsed = usageDoc.data()?.[monthKey] || 0;

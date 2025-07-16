@@ -60,6 +60,7 @@ dependencies:
 
   # ───── RevenueCat In-App Purchases ─────
   purchases_flutter: ^8.10.5
+  collection: ^1.19.1
 
 dev_dependencies:
   flutter_test:

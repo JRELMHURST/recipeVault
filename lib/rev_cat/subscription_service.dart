@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:collection/collection.dart';
 
 class SubscriptionService extends ChangeNotifier {
   static final SubscriptionService _instance = SubscriptionService._internal();
@@ -21,10 +22,12 @@ class SubscriptionService extends ChangeNotifier {
   bool get isMasterChef => _tier == 'master_chef';
 
   bool get hasActiveSubscription => isHomeChef || isMasterChef;
+  bool get allowTranslation => isHomeChef || isMasterChef;
+  bool get allowImageUpload => isHomeChef || isMasterChef;
+  bool get allowSaveToVault => isTaster || isHomeChef || isMasterChef;
 
-  bool get allowTranslation => isMasterChef || isHomeChef;
-  bool get allowImageUpload => isMasterChef || isHomeChef;
-  bool get allowSaveToVault => isMasterChef || isHomeChef || isTaster;
+  Package? homeChefPackage;
+  Package? masterChefMonthlyPackage;
 
   bool get isTasterTrialActive {
     final entitlement = _customerInfo?.entitlements.active.values.firstOrNull;
@@ -43,78 +46,16 @@ class SubscriptionService extends ChangeNotifier {
 
   bool get isTrialExpired => !isTasterTrialActive && isTaster;
 
-  // Package references for the paywall
-  Package? homeChefPackage;
-  Package? masterChefMonthlyPackage;
-
   void updateSuperUser(bool value) {
     _isSuperUser = value;
     notifyListeners();
   }
 
-  Future<void> init() async {
-    await Purchases.invalidateCustomerInfoCache();
-    await loadSubscriptionStatus();
-    await _loadAvailablePackages();
-  }
-
-  Future<void> refresh() async {
-    await Purchases.invalidateCustomerInfoCache();
-    await loadSubscriptionStatus();
+  void reset() {
+    _tier = 'none';
+    _activeEntitlement = null;
+    _isSuperUser = false;
     notifyListeners();
-  }
-
-  Future<void> loadSubscriptionStatus() async {
-    try {
-      _customerInfo = await Purchases.getCustomerInfo();
-      final entitlements = _customerInfo!.entitlements.active;
-      debugPrint('🧾 Active entitlements: ${entitlements.keys}');
-
-      if (entitlements.keys.any((k) => k.startsWith('master_chef'))) {
-        _tier = 'master_chef';
-        _activeEntitlement = entitlements.entries
-            .firstWhere((e) => e.key.startsWith('master_chef'))
-            .value;
-      } else if (entitlements.keys.any((k) => k.startsWith('home_chef'))) {
-        _tier = 'home_chef';
-        _activeEntitlement = entitlements.entries
-            .firstWhere((e) => e.key.startsWith('home_chef'))
-            .value;
-      } else if (entitlements.containsKey('taster_trial')) {
-        _tier = 'taster';
-        _activeEntitlement = entitlements['taster_trial'];
-      } else {
-        _tier = 'none';
-        _activeEntitlement = null;
-      }
-
-      debugPrint('🎯 Subscription tier resolved as: $_tier');
-      notifyListeners();
-    } catch (e) {
-      debugPrint('🔴 Error loading subscription status: $e');
-      _tier = 'none';
-      _activeEntitlement = null;
-      notifyListeners();
-    }
-  }
-
-  Future<void> _loadAvailablePackages() async {
-    try {
-      final offerings = await Purchases.getOfferings();
-      final current = offerings.current;
-      if (current != null) {
-        homeChefPackage = current.availablePackages.firstWhere(
-          (pkg) => pkg.identifier == 'home_chef_monthly',
-          orElse: () => current.availablePackages.first,
-        );
-        masterChefMonthlyPackage = current.availablePackages.firstWhere(
-          (pkg) => pkg.identifier == 'master_chef_monthly',
-          orElse: () => current.availablePackages.first,
-        );
-      }
-    } catch (e) {
-      debugPrint('🔴 Error loading available packages: $e');
-    }
   }
 
   String get currentEntitlement => _tier;
@@ -135,57 +76,83 @@ class SubscriptionService extends ChangeNotifier {
     return null;
   }
 
-  void reset() {
-    _tier = 'none';
-    _activeEntitlement = null;
-    _isSuperUser = false;
+  Future<void> init() async {
+    await Purchases.invalidateCustomerInfoCache();
+    await loadSubscriptionStatus();
+    await _loadAvailablePackages();
+  }
+
+  Future<void> refresh() async {
+    await Purchases.invalidateCustomerInfoCache();
+    await loadSubscriptionStatus();
+
+    // 🕒 Handle sandbox expiry (e.g. entitlement expired after 5 mins)
+    final now = DateTime.now();
+    final expiryString = _activeEntitlement?.expirationDate;
+
+    if (expiryString != null) {
+      final expiryDate = DateTime.tryParse(expiryString);
+      if (expiryDate != null && now.isAfter(expiryDate)) {
+        debugPrint('⚠️ Sandbox entitlement expired – resetting tier to none.');
+        _tier = 'none';
+        _activeEntitlement = null;
+      }
+    }
+
     notifyListeners();
   }
 
-  Future<void> syncRevenueCatEntitlement() async {
+  /// ✅ Restore this method to resolve UI call from SubscriptionSettingsScreen
+  Future<void> restoreAndSync() async {
+    await refresh();
+  }
+
+  Future<void> loadSubscriptionStatus() async {
     try {
-      final customerInfo = await Purchases.getCustomerInfo();
-      final active = customerInfo.entitlements.active;
+      _customerInfo = await Purchases.getCustomerInfo();
+      final entitlements = _customerInfo!.entitlements.active;
+      debugPrint('🧾 Active entitlements: ${entitlements.keys}');
 
-      _customerInfo = customerInfo;
-      _activeEntitlement = active.values.firstOrNull;
-      _tier = _mapEntitlementToTier(_activeEntitlement?.identifier);
-      _isSuperUser = await _fetchSuperUserFlag();
+      _tier = _resolveTierFromEntitlements(entitlements);
 
-      notifyListeners();
-
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .update({
-              'tier': _tier,
-              'lastSynced': FieldValue.serverTimestamp(),
-            });
+      switch (_tier) {
+        case 'master_chef':
+          _activeEntitlement = entitlements.entries
+              .firstWhereOrNull((e) => e.key.contains('master_chef'))
+              ?.value;
+          break;
+        case 'home_chef':
+          _activeEntitlement = entitlements.entries
+              .firstWhereOrNull((e) => e.key.contains('home_chef'))
+              ?.value;
+          break;
+        case 'taster':
+          _activeEntitlement = entitlements['taster_trial'];
+          break;
+        default:
+          _activeEntitlement = null;
       }
 
-      debugPrint('🔁 RevenueCat entitlement synced: $_tier');
-    } catch (e, stack) {
-      debugPrint('❌ Failed to sync RevenueCat entitlement: $e');
-      debugPrint(stack.toString());
+      debugPrint('🎯 Subscription tier resolved as: $_tier');
+      _isSuperUser = await _fetchSuperUserFlag();
+    } catch (e) {
+      debugPrint('🔴 Error loading subscription status: $e');
+      _tier = 'none';
+      _activeEntitlement = null;
     }
   }
 
-  String _mapEntitlementToTier(String? entitlementId) {
-    switch (entitlementId) {
-      case 'home_chef':
-      case 'home_chef_monthly':
-        return 'home_chef';
-      case 'master_chef':
-      case 'master_chef_monthly':
-      case 'master_chef_yearly':
-        return 'master_chef';
-      case 'taster':
-        return 'taster';
-      default:
-        return 'none';
+  String _resolveTierFromEntitlements(
+    Map<String, EntitlementInfo> entitlements,
+  ) {
+    if (entitlements.keys.any((k) => k.contains('master_chef'))) {
+      return 'master_chef';
     }
+    if (entitlements.keys.any((k) => k.contains('home_chef'))) {
+      return 'home_chef';
+    }
+    if (entitlements.containsKey('taster_trial')) return 'taster';
+    return 'none';
   }
 
   Future<bool> _fetchSuperUserFlag() async {
@@ -197,5 +164,24 @@ class SubscriptionService extends ChangeNotifier {
         .doc(user.uid)
         .get();
     return doc.data()?['isSuperUser'] == true;
+  }
+
+  Future<void> _loadAvailablePackages() async {
+    try {
+      final offerings = await Purchases.getOfferings();
+      final current = offerings.current;
+      if (current != null) {
+        homeChefPackage = current.availablePackages.firstWhere(
+          (pkg) => pkg.identifier == 'home_chef_monthly',
+          orElse: () => current.availablePackages.first,
+        );
+        masterChefMonthlyPackage = current.availablePackages.firstWhere(
+          (pkg) => pkg.identifier == 'master_chef_monthly',
+          orElse: () => current.availablePackages.first,
+        );
+      }
+    } catch (e) {
+      debugPrint('🔴 Error loading available packages: $e');
+    }
   }
 }

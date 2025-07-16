@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
-import 'package:recipe_vault/model/processed_recipe_result.dart';
 import 'package:recipe_vault/widgets/processing_messages.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -96,7 +95,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       );
       if (_hasCancelled) return;
 
-      var result = await ImageProcessingService.extractAndFormatRecipe(
+      final result = await ImageProcessingService.extractAndFormatRecipe(
         imageUrls,
         context,
       );
@@ -106,37 +105,22 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
         "🧭 RAW FUNCTION RESPONSE = ${JsonEncoder.withIndent('  ').convert(result.toMap())}",
       );
 
-      final detected = result.language.toLowerCase();
-      final translationShouldBeFalse = detected.startsWith('en');
-
-      if (result.translationUsed && translationShouldBeFalse) {
-        debugPrint('🧭 Overriding translationUsed → false (already English)');
-        result = ProcessedRecipeResult(
-          formattedRecipe: result.formattedRecipe,
-          originalText: result.originalText,
-          translationUsed: false,
-          language: result.language,
-          imageUrls: result.imageUrls,
-        );
-      }
-
       final needsTranslation = result.translationUsed;
 
-      if (mounted) {
-        if (needsTranslation) {
-          _currentSteps = [
-            'Uploading Images',
-            'Translating',
-            'Extracting & Formatting',
-            'Finishing Up',
-          ];
-          _currentFunMessages = [
-            ProcessingMessages.pickRandom(ProcessingMessages.uploading),
-            ProcessingMessages.pickRandom(ProcessingMessages.translating),
-            ProcessingMessages.pickRandom(ProcessingMessages.formatting),
-            ProcessingMessages.pickRandom(ProcessingMessages.completed),
-          ];
-        }
+      // 🧩 If translation was used, expand overlay steps
+      if (mounted && needsTranslation) {
+        _currentSteps = [
+          'Uploading Images',
+          'Translating',
+          'Extracting & Formatting',
+          'Finishing Up',
+        ];
+        _currentFunMessages = [
+          ProcessingMessages.pickRandom(ProcessingMessages.uploading),
+          ProcessingMessages.pickRandom(ProcessingMessages.translating),
+          ProcessingMessages.pickRandom(ProcessingMessages.formatting),
+          ProcessingMessages.pickRandom(ProcessingMessages.completed),
+        ];
         setState(() {});
       }
 

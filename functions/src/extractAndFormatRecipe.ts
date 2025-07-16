@@ -18,7 +18,6 @@ import {
 const REVENUECAT_SECRET_KEY = defineSecret("REVENUECAT_SECRET_KEY");
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
-
 async function deleteUploadedImage(url: string) {
   try {
     const match = url.match(/\/o\/([^?]+)\?/);
@@ -110,12 +109,19 @@ export const extractAndFormatRecipe = onCall(
           console.log(`🚧 Translating from "${detectedLanguage}" → en-GB...`);
           const result = await translateToEnglish(cleanInput, detectedLanguage, projectId);
 
-          if (result?.trim() && result.trim() !== cleanInput.trim()) {
-            translatedText = result.trim();
-            translationUsed = true;
-            previewText("📝 Translated preview", translatedText);
+          if (result?.trim()) {
+            const cleanedOriginal = cleanText(cleanInput);
+            const cleanedTranslated = cleanText(result.trim());
+
+            if (cleanedOriginal !== cleanedTranslated) {
+              translatedText = result.trim();
+              translationUsed = true;
+              previewText("📝 Translated preview", translatedText);
+            } else {
+              console.log("⚠️ Translated text is too similar to original — skipping translation usage.");
+            }
           } else {
-            console.warn("⚠️ Translation returned empty or identical result. Skipping.");
+            console.warn("⚠️ Translation returned empty or null. Skipping.");
           }
         } catch (err) {
           console.error("❌ Translation failed:", err);
@@ -138,7 +144,7 @@ export const extractAndFormatRecipe = onCall(
 
       await enforceGptRecipePolicy(uid);
 
-      const formattedRecipe = await generateFormattedRecipe(finalText, detectedLanguage);
+      const formattedRecipe = await generateFormattedRecipe(finalText, translationUsed ? detectedLanguage : "en");
       console.log("✅ GPT formatting complete.");
 
       await incrementGptRecipeUsage(uid);

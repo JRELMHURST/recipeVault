@@ -9,6 +9,7 @@ import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_vault_screen.dart';
 import 'package:recipe_vault/settings/settings_screen.dart';
 import 'package:recipe_vault/widgets/tier_badge.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -122,30 +123,30 @@ class _HomeScreenState extends State<HomeScreen> {
         destinations: [
           NavigationDestination(
             icon: Icon(
-              Icons.add,
+              LucideIcons.scanLine,
               color: _selectedIndex == 0
                   ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurface.withOpacity(0.6),
+                  : theme.iconTheme.color?.withOpacity(0.5) ?? Colors.grey,
             ),
             label: "Create",
           ),
           NavigationDestination(
             icon: Icon(
-              Icons.menu_book_rounded,
+              LucideIcons.bookOpen,
               color: _selectedIndex == 1
                   ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurface.withOpacity(0.6),
+                  : theme.iconTheme.color?.withOpacity(0.5) ?? Colors.grey,
             ),
-            label: "Recipe Vault",
+            label: "Vault",
           ),
           NavigationDestination(
             icon: Icon(
-              Icons.settings_rounded,
+              LucideIcons.userCog,
               color: _selectedIndex == 2
                   ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurface.withOpacity(0.6),
+                  : theme.iconTheme.color?.withOpacity(0.5) ?? Colors.grey,
             ),
-            label: "Settings",
+            label: "Profile",
           ),
         ],
       ),

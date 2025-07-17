@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_card_menu.dart';
 
 class RecipeListView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
@@ -12,6 +13,7 @@ class RecipeListView extends StatelessWidget {
   final void Function(RecipeCardModel) onToggleFavourite;
   final List<String> categories;
   final void Function(RecipeCardModel, List<String>) onAssignCategories;
+  final void Function(RecipeCardModel)? onHide;
 
   const RecipeListView({
     super.key,
@@ -21,6 +23,7 @@ class RecipeListView extends StatelessWidget {
     required this.onToggleFavourite,
     required this.categories,
     required this.onAssignCategories,
+    this.onHide,
   });
 
   void _showCategoryDialog(BuildContext context, RecipeCardModel recipe) {
@@ -148,18 +151,9 @@ class RecipeListView extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  recipe.hints.isNotEmpty
-                                      ? '💡 ${recipe.hints.first}'
-                                      : 'Tap to view recipe',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  'Tap to view recipe',
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: recipe.hints.isNotEmpty
-                                        ? Colors.deepPurple.shade700
-                                        : Colors.grey,
-                                    fontStyle: recipe.hints.isNotEmpty
-                                        ? FontStyle.italic
-                                        : FontStyle.normal,
+                                    color: Colors.grey,
                                   ),
                                 ),
                               ],
@@ -170,28 +164,11 @@ class RecipeListView extends StatelessWidget {
                       Positioned(
                         top: 0,
                         right: 0,
-                        child: PopupMenuButton<String>(
-                          onSelected: (value) {
-                            if (value == 'favourite') {
-                              onToggleFavourite(recipe);
-                            } else if (value == 'assign') {
-                              _showCategoryDialog(context, recipe);
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'favourite',
-                              child: Text(
-                                recipe.isFavourite
-                                    ? 'Unfavourite'
-                                    : 'Favourite',
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'assign',
-                              child: Text('Assign Category'),
-                            ),
-                          ],
+                        child: RecipeCardMenu(
+                          isFavourite: recipe.isFavourite,
+                          onToggleFavourite: () => onToggleFavourite(recipe),
+                          onAssignCategories: () =>
+                              _showCategoryDialog(context, recipe),
                         ),
                       ),
                     ],

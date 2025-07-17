@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_card_menu.dart';
 
 class RecipeGridView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
@@ -130,16 +131,6 @@ class RecipeGridView extends StatelessWidget {
                                 size: const Size(40, 40),
                               ),
                               builder: (context, snapshot) {
-                                final palette = snapshot.data;
-                                final isDark =
-                                    (palette?.dominantColor?.color
-                                            .computeLuminance() ??
-                                        1) <
-                                    0.5;
-                                final iconColor = isDark
-                                    ? Colors.white
-                                    : Colors.black87;
-
                                 return Stack(
                                   children: [
                                     Image.network(
@@ -151,39 +142,15 @@ class RecipeGridView extends StatelessWidget {
                                     Positioned(
                                       top: 6,
                                       right: 6,
-                                      child: IconTheme(
-                                        data: IconThemeData(
-                                          color: iconColor,
-                                          size: 20,
-                                        ),
-                                        child: PopupMenuButton<String>(
-                                          icon: const Icon(Icons.more_vert),
-                                          color: theme.cardColor,
-                                          onSelected: (value) {
-                                            if (value == 'favourite') {
-                                              onToggleFavourite(recipe);
-                                            } else if (value == 'assign') {
-                                              _showCategoryDialog(
-                                                context,
-                                                recipe,
-                                              );
-                                            }
-                                          },
-                                          itemBuilder: (context) => [
-                                            PopupMenuItem(
-                                              value: 'favourite',
-                                              child: Text(
-                                                recipe.isFavourite
-                                                    ? 'Unfavourite'
-                                                    : 'Favourite',
-                                              ),
+                                      child: RecipeCardMenu(
+                                        isFavourite: recipe.isFavourite,
+                                        onToggleFavourite: () =>
+                                            onToggleFavourite(recipe),
+                                        onAssignCategories: () =>
+                                            _showCategoryDialog(
+                                              context,
+                                              recipe,
                                             ),
-                                            const PopupMenuItem(
-                                              value: 'assign',
-                                              child: Text('Assign Category'),
-                                            ),
-                                          ],
-                                        ),
                                       ),
                                     ),
                                   ],

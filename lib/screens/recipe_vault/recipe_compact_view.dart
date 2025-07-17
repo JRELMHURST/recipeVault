@@ -4,13 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_card_menu.dart';
 
 class RecipeCompactView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
   final void Function(RecipeCardModel) onTap;
   final void Function(RecipeCardModel) onToggleFavourite;
-  final void Function(RecipeCardModel, List<String>) onAssignCategories;
   final List<String> categories;
+  final void Function(RecipeCardModel, List<String>) onAssignCategories;
 
   const RecipeCompactView({
     super.key,
@@ -102,11 +103,6 @@ class RecipeCompactView extends StatelessWidget {
                 ? _getDominantColor(recipe.imageUrl!)
                 : Future.value(Colors.white),
             builder: (context, snapshot) {
-              final iconColour =
-                  (snapshot.data ?? Colors.black).computeLuminance() < 0.5
-                  ? Colors.white
-                  : Colors.black;
-
               return Stack(
                 children: [
                   ClipRRect(
@@ -132,27 +128,11 @@ class RecipeCompactView extends StatelessWidget {
                   Positioned(
                     top: 4,
                     right: 4,
-                    child: PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == 'favourite') {
-                          onToggleFavourite(recipe);
-                        } else if (value == 'assign') {
-                          _showCategoryDialog(context, recipe);
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 'favourite',
-                          child: Text(
-                            recipe.isFavourite ? 'Unfavourite' : 'Favourite',
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'assign',
-                          child: Text('Assign Category'),
-                        ),
-                      ],
-                      icon: Icon(Icons.more_vert, size: 18, color: iconColour),
+                    child: RecipeCardMenu(
+                      isFavourite: recipe.isFavourite,
+                      onToggleFavourite: () => onToggleFavourite(recipe),
+                      onAssignCategories: () =>
+                          _showCategoryDialog(context, recipe),
                     ),
                   ),
                 ],

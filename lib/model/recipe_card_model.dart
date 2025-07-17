@@ -42,6 +42,9 @@ class RecipeCardModel extends HiveObject {
   @HiveField(11)
   final bool translationUsed;
 
+  @HiveField(12)
+  final bool isGlobal;
+
   RecipeCardModel({
     required this.id,
     required this.userId,
@@ -54,10 +57,10 @@ class RecipeCardModel extends HiveObject {
     this.originalImageUrls = const [],
     this.hints = const [],
     this.translationUsed = false,
+    this.isGlobal = false,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
-  /// 🔁 Convert to Firestore/JSON-safe map
   Map<String, dynamic> toJson() => {
     'id': id,
     'userId': userId,
@@ -71,9 +74,9 @@ class RecipeCardModel extends HiveObject {
     'originalImageUrls': originalImageUrls,
     'hints': hints,
     'translationUsed': translationUsed,
+    'isGlobal': isGlobal,
   };
 
-  /// 🔁 Create from Firestore snapshot or JSON
   factory RecipeCardModel.fromJson(Map<String, dynamic> json) {
     final rawCreatedAt = json['createdAt'];
     DateTime parsedCreatedAt;
@@ -99,28 +102,33 @@ class RecipeCardModel extends HiveObject {
       originalImageUrls: List<String>.from(json['originalImageUrls'] ?? []),
       hints: List<String>.from(json['hints'] ?? []),
       translationUsed: json['translationUsed'] as bool? ?? false,
+      isGlobal: json['isGlobal'] as bool? ?? false,
     );
   }
 
-  /// 🔁 Needed for Firestore reads (e.g. from `doc.data()`)
-  factory RecipeCardModel.fromMap(Map<String, dynamic> map) {
-    return RecipeCardModel.fromJson(map);
+  factory RecipeCardModel.fromMap(Map<String, dynamic> map) =>
+      RecipeCardModel.fromJson(map);
+
+  static RecipeCardModel fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+    SnapshotOptions? options,
+  ) {
+    final data = doc.data()!;
+    return RecipeCardModel.fromJson(data);
   }
 
-  /// 📦 Serialise to a raw JSON string
   String toRawJson() => jsonEncode(toJson());
 
-  /// 📥 Deserialize from raw JSON string
   factory RecipeCardModel.fromRawJson(String str) =>
       RecipeCardModel.fromJson(jsonDecode(str));
 
-  /// 🛠️ Clone with updates
   RecipeCardModel copyWith({
     bool? isFavourite,
     List<String>? originalImageUrls,
     List<String>? hints,
     bool? translationUsed,
     required List<String> categories,
+    bool? isGlobal,
   }) {
     return RecipeCardModel(
       id: id,
@@ -135,10 +143,10 @@ class RecipeCardModel extends HiveObject {
       originalImageUrls: originalImageUrls ?? this.originalImageUrls,
       hints: hints ?? this.hints,
       translationUsed: translationUsed ?? this.translationUsed,
+      isGlobal: isGlobal ?? this.isGlobal,
     );
   }
 
-  /// 📝 For rendering in shared screens etc
   String get formattedText {
     final ingredientsStr = ingredients.join('\n• ');
     final instructionsStr = instructions
@@ -150,6 +158,5 @@ class RecipeCardModel extends HiveObject {
     return 'Ingredients:\n• $ingredientsStr\n\nInstructions:\n$instructionsStr';
   }
 
-  /// ✅ Computed flag for filtering UI
   bool get isTranslated => categories.contains('Translated');
 }

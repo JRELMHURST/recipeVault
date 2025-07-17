@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:recipe_vault/core/responsive_wrapper.dart'; // 👈 Add this import
+import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -22,6 +22,7 @@ class SettingsScreen extends StatelessWidget {
       body: SafeArea(
         child: ResponsiveWrapper(
           child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             children: [
               /// Profile Section
               Center(
@@ -54,6 +55,7 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.manage_accounts_outlined),
                 title: const Text('Account Settings'),
+                trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.pushNamed(context, '/settings/account'),
               ),
 
@@ -62,12 +64,14 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.brightness_6_outlined),
                 title: const Text('Appearance'),
+                trailing: const Icon(Icons.chevron_right),
                 onTap: () =>
                     Navigator.pushNamed(context, '/settings/appearance'),
               ),
               ListTile(
                 leading: const Icon(Icons.notifications_outlined),
                 title: const Text('Notifications'),
+                trailing: const Icon(Icons.chevron_right),
                 onTap: () =>
                     Navigator.pushNamed(context, '/settings/notifications'),
               ),
@@ -77,6 +81,7 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.cloud_done_outlined),
                 title: const Text('Storage & Sync'),
+                trailing: const Icon(Icons.chevron_right),
                 onTap: () =>
                     Navigator.pushNamed(context, '/settings/storage-sync'),
               ),
@@ -86,6 +91,7 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.card_membership_outlined),
                 title: const Text('Manage Subscription'),
+                trailing: const Icon(Icons.chevron_right),
                 onTap: () =>
                     Navigator.pushNamed(context, '/settings/subscription'),
               ),
@@ -95,8 +101,11 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.info_outline),
                 title: const Text('About & Legal'),
+                trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.pushNamed(context, '/settings/about'),
               ),
+
+              const SizedBox(height: 32),
             ],
           ),
         ),

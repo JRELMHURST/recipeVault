@@ -27,23 +27,19 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
   }
 
   Future<Box<T>> getSafeBox<T>(String name) async {
-    if (Hive.isBoxOpen(name)) {
-      return Hive.box<T>(name);
-    }
+    if (Hive.isBoxOpen(name)) return Hive.box<T>(name);
     return await Hive.openBox<T>(name);
   }
 
   Future<void> _loadStats() async {
     final recipeBox = await getSafeBox<RecipeCardModel>('recipes');
     final categoryBox = await getSafeBox<CategoryModel>('categories');
-
     final prefs = await SharedPreferences.getInstance();
-    final lastSync = prefs.getString('lastSync') ?? 'Never';
 
     setState(() {
       localRecipeCount = recipeBox.length;
       localCategoryCount = categoryBox.length;
-      lastSyncTime = lastSync;
+      lastSyncTime = prefs.getString('lastSync') ?? 'Never';
     });
   }
 
@@ -89,11 +85,8 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
   Future<void> _syncNow() async {
     try {
       await CategoryService.syncFromFirestore();
-
       final prefs = await SharedPreferences.getInstance();
-      final timestamp = DateTime.now().toIso8601String();
-      await prefs.setString('lastSync', timestamp);
-
+      await prefs.setString('lastSync', DateTime.now().toIso8601String());
       await _loadStats();
 
       ScaffoldMessenger.of(
@@ -106,6 +99,21 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
     }
   }
 
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -114,17 +122,10 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
       appBar: AppBar(title: const Text('Storage & Sync')),
       body: ResponsiveWrapper(
         maxWidth: 520,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: ListView(
           children: [
-            Text(
-              'Sync Status',
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: Colors.grey,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
+            _buildSectionHeader('Sync Status'),
             ListTile(
               leading: const Icon(Icons.cloud_done_outlined),
               title: const Text('Last Sync'),
@@ -140,15 +141,8 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
               title: const Text('Cached Categories'),
               subtitle: Text('$localCategoryCount locally stored'),
             ),
-            const Divider(height: 32),
-            Text(
-              'Actions',
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: Colors.grey,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 32),
+            _buildSectionHeader('Actions'),
             ElevatedButton.icon(
               onPressed: _syncNow,
               icon: const Icon(Icons.sync),

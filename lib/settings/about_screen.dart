@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class AboutSettingsScreen extends StatefulWidget {
   const AboutSettingsScreen({super.key});
@@ -32,43 +33,62 @@ class _AboutSettingsScreenState extends State<AboutSettingsScreen> {
     }
   }
 
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(title: const Text('About & Legal')),
-      body: ListView(
+      body: ResponsiveWrapper(
+        maxWidth: 520,
         padding: const EdgeInsets.all(16),
-        children: [
-          ListTile(
-            title: const Text('App Version'),
-            subtitle: Text(_appVersion),
-            leading: const Icon(Icons.info_outline),
-          ),
-          const Divider(),
-          ListTile(
-            title: const Text('Privacy Policy'),
-            leading: const Icon(Icons.privacy_tip_outlined),
-            onTap: () => _openURL('https://badger-creations.co.uk/privacy'),
-          ),
-          ListTile(
-            title: const Text('Terms of Service'),
-            leading: const Icon(Icons.description_outlined),
-            onTap: () => _openURL('https://badger-creations.co.uk/terms'),
-          ),
-          const Divider(),
-          ListTile(
-            title: const Text('Website'),
-            leading: const Icon(Icons.link),
-            onTap: () => _openURL('https://badger-creations.co.uk/'),
-          ),
-          ListTile(
-            title: const Text('Contact Support'),
-            leading: const Icon(Icons.mail_outline),
-            onTap: () => _openURL('https://badger-creations.co.uk/support'),
-          ),
-        ],
+        child: ListView(
+          children: [
+            _buildSectionHeader('APP INFO'),
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text('Version'),
+              subtitle: Text(_appVersion),
+            ),
+            const SizedBox(height: 24),
+            _buildSectionHeader('LEGAL'),
+            ListTile(
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: const Text('Privacy Policy'),
+              onTap: () => _openURL('https://badger-creations.co.uk/privacy'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.description_outlined),
+              title: const Text('Terms of Service'),
+              onTap: () => _openURL('https://badger-creations.co.uk/terms'),
+            ),
+            const SizedBox(height: 24),
+            _buildSectionHeader('SUPPORT'),
+            ListTile(
+              leading: const Icon(Icons.link),
+              title: const Text('Visit Website'),
+              onTap: () => _openURL('https://badger-creations.co.uk/'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.mail_outline),
+              title: const Text('Contact Support'),
+              onTap: () => _openURL('https://badger-creations.co.uk/support'),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -86,14 +86,16 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Appearance')),
       body: ResponsiveWrapper(
         maxWidth: 520,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: ListView(
           children: [
-            _buildSectionHeader('APP THEME'),
+            _buildSectionHeader('App Theme'),
             _buildThemeOption(
               AppThemeMode.light,
               'Light Mode',
@@ -104,8 +106,8 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
               'Dark Mode',
               Icons.dark_mode_outlined,
             ),
-            const SizedBox(height: 24),
-            _buildSectionHeader('TEXT SIZE'),
+            const SizedBox(height: 32),
+            _buildSectionHeader('Text Size'),
             _buildTextScaleOption('Small', 0.85),
             _buildTextScaleOption('Medium', 1.0),
             _buildTextScaleOption('Large', 1.25),

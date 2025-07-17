@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
-import 'package:recipe_vault/services/user_session_service.dart';
+import 'package:recipe_vault/services/user_session_service.dart'; // ✅ Re-added
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -25,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final password = passwordController.text.trim();
       await AuthService().signInWithEmail(email, password);
 
-      // 🔄 Sync subscription data after login
+      // ✅ Ensure subscription tier, entitlement, and Firestore sync
       await UserSessionService.init();
 
       if (!mounted) return;
@@ -52,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // 🔄 Sync subscription data after login
+      // ✅ Ensure subscription tier, entitlement, and Firestore sync
       await UserSessionService.init();
 
       if (!mounted) return;

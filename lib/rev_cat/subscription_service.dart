@@ -29,7 +29,7 @@ class SubscriptionService extends ChangeNotifier {
   bool get allowTranslation => _isSuperUser || isMasterChef;
   bool get allowImageUpload => _isSuperUser || isMasterChef;
   bool get allowSaveToVault =>
-      isTaster || isHomeChef || isMasterChef || _isSuperUser;
+      isTaster || hasActiveSubscription || _isSuperUser;
 
   Package? homeChefPackage;
   Package? masterChefMonthlyPackage;
@@ -47,6 +47,7 @@ class SubscriptionService extends ChangeNotifier {
   void reset() {
     _tier = 'none';
     _activeEntitlement = null;
+    _customerInfo = null;
     _isSuperUser = false;
     _entitlementId = 'none';
     _firestoreTrialActive = null;
@@ -57,10 +58,7 @@ class SubscriptionService extends ChangeNotifier {
 
   String get trialEndDateFormatted {
     final date = trialEndDate;
-    if (date != null) {
-      return '${date.day}/${date.month}/${date.year}';
-    }
-    return 'N/A';
+    return date != null ? '${date.day}/${date.month}/${date.year}' : 'N/A';
   }
 
   DateTime? get trialEndDate {
@@ -107,38 +105,21 @@ class SubscriptionService extends ChangeNotifier {
 
       _customerInfo = await Purchases.getCustomerInfo();
       final entitlements = _customerInfo!.entitlements.active;
-      debugPrint('🧾 Active entitlements: ${entitlements.keys}');
 
-      _tier = _resolveTierFromEntitlements(entitlements);
-      debugPrint('📦 RevenueCat tier resolved as: $_tier');
-
-      switch (_tier) {
-        case 'master_chef':
-          _activeEntitlement = entitlements.entries
-              .firstWhereOrNull(
-                (e) =>
-                    e.value.productIdentifier == 'master_chef_monthly' ||
-                    e.value.productIdentifier == 'master_chef_yearly',
-              )
-              ?.value;
-          break;
-        case 'home_chef':
-          _activeEntitlement = entitlements.entries
-              .firstWhereOrNull(
-                (e) => e.value.productIdentifier == 'home_chef_monthly',
-              )
-              ?.value;
-          break;
-        case 'taster':
-          _activeEntitlement = entitlements['taster_trial'];
-          break;
-        default:
-          _activeEntitlement = null;
+      if (kDebugMode) {
+        debugPrint('🧾 Active entitlements: ${entitlements.keys}');
       }
 
+      _tier = _resolveTierFromEntitlements(entitlements);
+
+      if (kDebugMode) {
+        debugPrint('📦 RevenueCat tier resolved as: $_tier');
+      }
+
+      _activeEntitlement = _getActiveEntitlement(entitlements, _tier);
       _entitlementId = _activeEntitlement?.productIdentifier ?? 'none';
 
-      // 🔍 Firestore fallback for tier and trialActive
+      // Firestore fallback if still unsure
       if (_tier == 'none' || _tier == 'taster') {
         final doc = await FirebaseFirestore.instance
             .collection('users')
@@ -149,9 +130,12 @@ class SubscriptionService extends ChangeNotifier {
         if (data != null) {
           _tier = data['tier'] ?? _tier;
           _firestoreTrialActive = data['trialActive'] == true;
-          debugPrint(
-            '📄 Firestore tier: $_tier, trialActive: $_firestoreTrialActive',
-          );
+
+          if (kDebugMode) {
+            debugPrint(
+              '📄 Firestore fallback tier: $_tier, trialActive: $_firestoreTrialActive',
+            );
+          }
         }
       }
 
@@ -169,7 +153,6 @@ class SubscriptionService extends ChangeNotifier {
   ) {
     for (final entry in entitlements.entries) {
       final id = entry.value.productIdentifier;
-
       if (id == 'master_chef_monthly' || id == 'master_chef_yearly') {
         return 'master_chef';
       } else if (id == 'home_chef_monthly') {
@@ -181,6 +164,32 @@ class SubscriptionService extends ChangeNotifier {
     return 'none';
   }
 
+  EntitlementInfo? _getActiveEntitlement(
+    Map<String, EntitlementInfo> entitlements,
+    String tier,
+  ) {
+    switch (tier) {
+      case 'master_chef':
+        return entitlements.entries
+            .firstWhereOrNull(
+              (e) =>
+                  e.value.productIdentifier == 'master_chef_monthly' ||
+                  e.value.productIdentifier == 'master_chef_yearly',
+            )
+            ?.value;
+      case 'home_chef':
+        return entitlements.entries
+            .firstWhereOrNull(
+              (e) => e.value.productIdentifier == 'home_chef_monthly',
+            )
+            ?.value;
+      case 'taster':
+        return entitlements['taster_trial'];
+      default:
+        return null;
+    }
+  }
+
   Future<bool> _fetchSuperUserFlag() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return false;
@@ -189,6 +198,7 @@ class SubscriptionService extends ChangeNotifier {
         .collection('users')
         .doc(user.uid)
         .get();
+
     return doc.data()?['isSuperUser'] == true;
   }
 
@@ -196,15 +206,18 @@ class SubscriptionService extends ChangeNotifier {
     try {
       final offerings = await Purchases.getOfferings();
       final current = offerings.current;
+
       if (current != null) {
         homeChefPackage = current.availablePackages.firstWhere(
           (pkg) => pkg.identifier == 'home_chef_monthly',
           orElse: () => current.availablePackages.first,
         );
+
         masterChefMonthlyPackage = current.availablePackages.firstWhere(
           (pkg) => pkg.identifier == 'master_chef_monthly',
           orElse: () => current.availablePackages.first,
         );
+
         masterChefYearlyPackage = current.availablePackages.firstWhere(
           (pkg) => pkg.identifier == 'master_chef_yearly',
           orElse: () => current.availablePackages.first,

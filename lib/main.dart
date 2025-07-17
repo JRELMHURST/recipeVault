@@ -53,7 +53,7 @@ Future<void> main() async {
   );
 
   // 🔄 Sync entitlement info from RevenueCat to Firestore
-  await UserSessionService.restoreAndSyncEntitlement();
+  await UserSessionService.init();
 
   // 🐝 Hive local storage
   await Hive.initFlutter();

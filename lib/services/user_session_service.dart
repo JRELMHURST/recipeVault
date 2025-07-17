@@ -30,6 +30,7 @@ class UserSessionService {
           final retryInfo = await Purchases.getCustomerInfo();
           if (retryInfo.entitlements.active.isNotEmpty) {
             await syncRevenueCatEntitlement();
+            await SubscriptionService().loadSubscriptionStatus();
             await SubscriptionService().refresh();
           } else {
             debugPrint(

@@ -8,6 +8,7 @@ import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_vault_screen.dart';
 import 'package:recipe_vault/settings/settings_screen.dart';
+import 'package:recipe_vault/widgets/tier_badger.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -67,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String get _appBarTitle {
     return switch (_selectedIndex) {
       0 => 'Create',
-      1 => 'Recipe Vault',
+      1 => 'RecipeVault',
       2 => 'Settings',
       _ => 'RecipeVault',
     };
@@ -93,16 +94,12 @@ class _HomeScreenState extends State<HomeScreen> {
         title: _selectedIndex == 1
             ? Consumer<SubscriptionService>(
                 builder: (_, sub, __) {
-                  final tierIcon = switch (sub.tier) {
-                    'master_chef' => '🥇',
-                    'home_chef' => '👨‍🍳',
-                    'taster' => '🍽️',
-                    _ => '',
-                  };
-
-                  return Text(
-                    'Recipe Vault $tierIcon',
-                    style: theme.appBarTheme.titleTextStyle,
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('RecipeVault'),
+                      TierBadge(tier: sub.tier),
+                    ],
                   );
                 },
               )

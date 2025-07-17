@@ -8,7 +8,7 @@ import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_vault_screen.dart';
 import 'package:recipe_vault/settings/settings_screen.dart';
-import 'package:recipe_vault/widgets/tier_badger.dart';
+import 'package:recipe_vault/widgets/tier_badge.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -94,13 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
         title: _selectedIndex == 1
             ? Consumer<SubscriptionService>(
                 builder: (_, sub, __) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('RecipeVault'),
-                      TierBadge(tier: sub.tier),
-                    ],
-                  );
+                  return TierBadge(tier: sub.tier, showAsTitle: true);
                 },
               )
             : Text(_appBarTitle, style: theme.appBarTheme.titleTextStyle),

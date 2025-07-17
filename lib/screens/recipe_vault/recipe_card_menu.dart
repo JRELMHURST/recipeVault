@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class RecipeCardMenu extends StatelessWidget {
   final bool isFavourite;
@@ -15,7 +16,7 @@ class RecipeCardMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<_RecipeCardMenuAction>(
-      icon: const Icon(Icons.more_vert),
+      icon: const Icon(LucideIcons.moreHorizontal),
       onSelected: (action) {
         switch (action) {
           case _RecipeCardMenuAction.favourite:

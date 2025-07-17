@@ -49,8 +49,7 @@ class RecipeCard extends StatelessWidget {
                             color: colour.primary,
                             fontWeight: FontWeight.bold,
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                          softWrap: true,
                         ),
                         const SizedBox(height: 12),
                         if (parsed.ingredients.isNotEmpty) ...[
@@ -120,7 +119,7 @@ class RecipeCard extends StatelessWidget {
   _ParsedRecipe _parseRecipe(String text) {
     final lines = text.trim().split('\n');
     String title = 'Untitled';
-    List<String> ingredients = [];
+    final Set<String> ingredients = {};
     List<String> instructions = [];
     List<String> hints = [];
 
@@ -171,7 +170,7 @@ class RecipeCard extends StatelessWidget {
       }
     }
 
-    return _ParsedRecipe(title, ingredients, instructions, hints);
+    return _ParsedRecipe(title, ingredients.toList(), instructions, hints);
   }
 }
 

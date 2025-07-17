@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 
 class UpgradeBanner extends StatefulWidget {
@@ -22,7 +24,13 @@ class _UpgradeBannerState extends State<UpgradeBanner> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_visible) return const SizedBox.shrink();
+    final tier = context.watch<SubscriptionService>().tier;
+    final isSuperUser = context.watch<SubscriptionService>().isSuperUser;
+
+    // 🔒 Hide banner for paying users or super users
+    if (!_visible || tier != 'taster' && tier != 'none' || isSuperUser) {
+      return const SizedBox.shrink();
+    }
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;

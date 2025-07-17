@@ -15,15 +15,23 @@ class NotificationService {
     tz.initializeTimeZones();
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: androidInit);
+    const iosInit = DarwinInitializationSettings();
+    const initSettings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
+    );
 
     await _plugin.initialize(initSettings);
 
-    // Firebase Messaging Permissions
+    // 🔐 Firebase Messaging Permissions
     await _messaging.requestPermission();
-    await _messaging.getToken().then((token) {
-      if (kDebugMode) print('🔔 FCM Token: \$token');
-    });
+
+    // 🍏 Wait for APNs token on iOS
+    await _waitForAPNSToken();
+
+    // 🪪 Print FCM token for debug
+    final token = await _messaging.getToken();
+    if (kDebugMode) print('🔔 FCM Token: $token');
   }
 
   static Future<void> scheduleWeeklyReminder() async {
@@ -52,13 +60,34 @@ class NotificationService {
   }
 
   static Future<void> enableFeatureAnnouncements() async {
+    await _waitForAPNSToken();
     await _messaging.subscribeToTopic('feature_announcements');
     debugPrint('✅ Subscribed to feature_announcements');
   }
 
   static Future<void> disableFeatureAnnouncements() async {
+    await _waitForAPNSToken();
     await _messaging.unsubscribeFromTopic('feature_announcements');
     debugPrint('🚫 Unsubscribed from feature_announcements');
+  }
+
+  static Future<void> _waitForAPNSToken() async {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      String? apnsToken;
+      int retries = 0;
+
+      do {
+        await Future.delayed(const Duration(milliseconds: 500));
+        apnsToken = await _messaging.getAPNSToken();
+        retries++;
+      } while (apnsToken == null && retries < 10);
+
+      if (apnsToken == null) {
+        debugPrint('⚠️ Failed to retrieve APNs token after retries');
+      } else {
+        debugPrint('🍏 APNs token acquired: $apnsToken');
+      }
+    }
   }
 
   static tz.TZDateTime _nextInstanceOfSundayAtTime(int hour, int minute) {

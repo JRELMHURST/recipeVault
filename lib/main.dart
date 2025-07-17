@@ -9,7 +9,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:provider/provider.dart';
 
-import 'services/notification_service.dart'; // ✅ NEW
+import 'services/notification_service.dart';
 import 'firebase_options.dart';
 import 'core/theme_notifier.dart';
 import 'core/text_scale_notifier.dart';
@@ -30,16 +30,16 @@ final FirebaseFirestore firestore = FirebaseFirestore.instance;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🛎 Initialise local + FCM notifications
+  // 🧩 Firebase core setup (must come first)
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // 🛎 Local + FCM notifications (after Firebase init)
   try {
     await NotificationService.init();
   } catch (e, stack) {
     debugPrint('⚠️ NotificationService init failed: $e');
     debugPrint(stack.toString());
   }
-
-  // 🧩 Firebase core setup
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // 🔐 App Check (dev mode for now)
   await FirebaseAppCheck.instance.activate(

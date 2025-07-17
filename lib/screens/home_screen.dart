@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
@@ -88,7 +90,23 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: theme.appBarTheme.backgroundColor,
-        title: Text(_appBarTitle, style: theme.appBarTheme.titleTextStyle),
+        title: _selectedIndex == 1
+            ? Consumer<SubscriptionService>(
+                builder: (_, sub, __) {
+                  final tierIcon = switch (sub.tier) {
+                    'master_chef' => '🥇',
+                    'home_chef' => '👨‍🍳',
+                    'taster' => '🍽️',
+                    _ => '',
+                  };
+
+                  return Text(
+                    'Recipe Vault $tierIcon',
+                    style: theme.appBarTheme.titleTextStyle,
+                  );
+                },
+              )
+            : Text(_appBarTitle, style: theme.appBarTheme.titleTextStyle),
         centerTitle: true,
         leading: _selectedIndex == 1
             ? IconButton(

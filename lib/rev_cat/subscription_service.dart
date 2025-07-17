@@ -214,4 +214,18 @@ class SubscriptionService extends ChangeNotifier {
       debugPrint('🔴 Error loading available packages: $e');
     }
   }
+
+  /// 🧩 Emoji icon for tier-based visual branding
+  String get tierIcon {
+    switch (_tier) {
+      case 'master_chef':
+        return '👑';
+      case 'home_chef':
+        return '👨‍🍳';
+      case 'taster':
+        return '🥄';
+      default:
+        return '❓';
+    }
+  }
 }

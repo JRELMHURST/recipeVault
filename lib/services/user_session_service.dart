@@ -144,18 +144,19 @@ class UserSessionService {
   }
 
   /// 🧾 Debug entitlement summary
-  static void _logEntitlementSummary(CustomerInfo info, String tier) {
-    if (kDebugMode) {
-      print('👤 Firebase UID: ${FirebaseAuth.instance.currentUser?.uid}');
-    }
-    if (kDebugMode) {
-      print('🧾 RevenueCat originalAppUserId: ${info.originalAppUserId}');
-    }
-    if (kDebugMode) {
-      print('🧾 Active entitlements: ${info.entitlements.active.keys}');
-    }
-    if (kDebugMode) {
-      print('🎯 Resolved subscription tier: $tier');
-    }
+  static void _logEntitlementSummary(
+    CustomerInfo info,
+    String tier, {
+    String context = 'UserSession',
+  }) {
+    if (!kDebugMode) return;
+
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+    final entitlements = info.entitlements.active.keys.join(', ');
+
+    debugPrint('👤 [$context] Firebase UID: $uid');
+    debugPrint('🧾 [$context] RC AppUserID: ${info.originalAppUserId}');
+    debugPrint('🧾 [$context] Entitlements: ($entitlements)');
+    debugPrint('🎯 [$context] Resolved Tier: $tier');
   }
 }

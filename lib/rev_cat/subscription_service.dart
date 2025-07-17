@@ -106,20 +106,17 @@ class SubscriptionService extends ChangeNotifier {
       _customerInfo = await Purchases.getCustomerInfo();
       final entitlements = _customerInfo!.entitlements.active;
 
-      if (kDebugMode) {
-        debugPrint('🧾 Active entitlements: ${entitlements.keys}');
-      }
-
       _tier = _resolveTierFromEntitlements(entitlements);
-
-      if (kDebugMode) {
-        debugPrint('📦 RevenueCat tier resolved as: $_tier');
-      }
-
       _activeEntitlement = _getActiveEntitlement(entitlements, _tier);
       _entitlementId = _activeEntitlement?.productIdentifier ?? 'none';
 
-      // Firestore fallback if still unsure
+      if (kDebugMode) {
+        debugPrint(
+          '🧾 [SubscriptionService] Entitlements: ${entitlements.keys} → Tier: $_tier',
+        );
+      }
+
+      // Firestore fallback
       if (_tier == 'none' || _tier == 'taster') {
         final doc = await FirebaseFirestore.instance
             .collection('users')
@@ -133,7 +130,7 @@ class SubscriptionService extends ChangeNotifier {
 
           if (kDebugMode) {
             debugPrint(
-              '📄 Firestore fallback tier: $_tier, trialActive: $_firestoreTrialActive',
+              '📄 Firestore fallback → Tier: $_tier, TrialActive: $_firestoreTrialActive',
             );
           }
         }

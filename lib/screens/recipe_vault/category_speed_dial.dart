@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:recipe_vault/services/category_service.dart';
+import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/widgets/processing_overlay.dart';
 
 class CategorySpeedDial extends StatelessWidget {
   final VoidCallback onCategoryChanged;
@@ -30,7 +32,7 @@ class CategorySpeedDial extends StatelessWidget {
             onPressed: () async {
               final newCategory = controller.text.trim();
               if (newCategory.isNotEmpty) {
-                CategoryService.saveCategory(newCategory);
+                await CategoryService.saveCategory(newCategory);
                 onCategoryChanged(); // Trigger UI update
               }
               Navigator.pop(context);
@@ -40,6 +42,13 @@ class CategorySpeedDial extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _startCreateFlow(BuildContext context) async {
+    final files = await ImageProcessingService.pickAndCompressImages();
+    if (files.isNotEmpty) {
+      ProcessingOverlay.show(context, files);
+    }
   }
 
   @override
@@ -52,6 +61,11 @@ class CategorySpeedDial extends StatelessWidget {
       backgroundColor: theme.colorScheme.primary,
       foregroundColor: Colors.white,
       children: [
+        SpeedDialChild(
+          child: const Icon(Icons.receipt_long_rounded),
+          label: 'Create Recipe',
+          onTap: () => _startCreateFlow(context),
+        ),
         SpeedDialChild(
           child: const Icon(Icons.category),
           label: 'New Category',

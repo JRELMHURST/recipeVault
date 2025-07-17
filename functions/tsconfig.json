@@ -11,7 +11,16 @@
     "noUnusedLocals": true,
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "moduleDetection": "force",
+    "types": ["node"]
+  },
+  "ts-node": {
+    "moduleTypes": {
+      "**/*.ts": "module"
+    },
+    "transpileOnly": true,
+    "esm": true
   },
   "compileOnSave": true,
   "include": ["src"]

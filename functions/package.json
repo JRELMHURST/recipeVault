@@ -1,5 +1,12 @@
 {
   "name": "functions",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "lib/index.js",
+  "engines": {
+    "node": "20"
+  },
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
     "build": "tsc",
@@ -8,13 +15,9 @@
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "seed": "ts-node src/seed_default_recipes.ts"
   },
-  "main": "lib/index.js",
-  "engines": {
-    "node": "20"
-  },
-  "type": "module",
   "dependencies": {
     "@google-cloud/translate": "^9.1.0",
     "@google-cloud/vision": "^5.2.0",
@@ -25,14 +28,14 @@
     "openai": "^5.8.2"
   },
   "devDependencies": {
-    "@types/node": "^24.0.8",
+    "@types/node": "^20.8.10",
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.12.0",
     "eslint": "^8.9.0",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-import": "^2.25.4",
     "firebase-functions-test": "^3.1.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
-  },
-  "private": true
+  }
 }

@@ -32,9 +32,10 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;
+      final message = _friendlyAuthError(e);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Login failed: $e')));
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -59,12 +60,31 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;
+      final message = _friendlyAuthError(e);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Google sign-in failed: $e')));
+      ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String _friendlyAuthError(Object e) {
+    final message = e.toString().toLowerCase();
+
+    if (message.contains('invalid-credential')) {
+      return 'The email or password is incorrect. Please try again.';
+    } else if (message.contains('user-not-found')) {
+      return 'No account found with this email address.';
+    } else if (message.contains('wrong-password')) {
+      return 'Incorrect password. Please try again.';
+    } else if (message.contains('too-many-requests')) {
+      return 'Too many attempts. Please wait and try again later.';
+    } else if (message.contains('network-request-failed')) {
+      return 'Network error. Please check your connection.';
+    }
+
+    return 'Login failed. Please check your details and try again.';
   }
 
   void _goToRegister() {

@@ -2,13 +2,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:provider/provider.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:provider/provider.dart';
 
+import 'services/notification_service.dart'; // ✅ NEW
 import 'firebase_options.dart';
 import 'core/theme_notifier.dart';
 import 'core/text_scale_notifier.dart';
@@ -29,19 +30,32 @@ final FirebaseFirestore firestore = FirebaseFirestore.instance;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 🛎 Initialise local + FCM notifications
+  try {
+    await NotificationService.init();
+  } catch (e, stack) {
+    debugPrint('⚠️ NotificationService init failed: $e');
+    debugPrint(stack.toString());
+  }
+
+  // 🧩 Firebase core setup
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // 🔐 App Check (dev mode for now)
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.debug,
     appleProvider: AppleProvider.debug,
   );
 
+  // 🛒 RevenueCat
   await Purchases.configure(
     PurchasesConfiguration('appl_oqbgqmtmctjzzERpEkswCejmukh'),
   );
 
-  // ✅ Restore purchases and sync entitlement to Firestore
+  // 🔄 Sync entitlement info from RevenueCat to Firestore
   await UserSessionService.restoreAndSyncEntitlement();
 
+  // 🐝 Hive local storage
   await Hive.initFlutter();
   Hive.registerAdapter(RecipeCardModelAdapter());
   Hive.registerAdapter(CategoryModelAdapter());
@@ -55,8 +69,10 @@ Future<void> main() async {
     debugPrint(stack.toString());
   }
 
+  // ⚙️ Load local preferences
   await UserPreferencesService.init();
 
+  // 🏁 Start the app
   runApp(
     MultiProvider(
       providers: [
@@ -64,7 +80,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => TextScaleNotifier()..loadScale()),
         ChangeNotifierProvider(create: (_) => SubscriptionService()..init()),
       ],
-      child: buildAppWithRouter(), // ✅ All providers now available globally
+      child: buildAppWithRouter(),
     ),
   );
 }

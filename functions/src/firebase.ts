@@ -1,7 +1,8 @@
 // functions/src/firebase.ts
 
-import admin from "firebase-admin";
 import { initializeApp } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+import * as admin from "firebase-admin";
 
 // 🏁 Initialise Firebase Admin SDK (idempotent)
 try {
@@ -17,7 +18,7 @@ try {
 }
 
 // 🔥 Firestore instance for re-use
-export const firestore = admin.firestore();
+export const firestore = getFirestore();
 
 // 🧱 Export full admin instance if needed elsewhere
 export default admin;

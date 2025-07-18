@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 
@@ -35,7 +34,10 @@ class TrialPromptHelper {
       if (showDialogInstead) {
         _showUpgradeDialog(context, isFree: isFree);
       } else {
-        context.push(isFree ? '/trial' : '/trial-ended');
+        Navigator.of(context).pop();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.pushNamed(context, isFree ? '/trial' : '/paywall');
+        });
       }
     }
   }
@@ -58,7 +60,7 @@ class TrialPromptHelper {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              context.push(isFree ? '/trial' : '/paywall');
+              Navigator.pushNamed(context, isFree ? '/trial' : '/paywall');
             },
             child: Text(isFree ? 'Start Free Trial' : 'View Plans'),
           ),

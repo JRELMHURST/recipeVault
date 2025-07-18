@@ -1,14 +1,13 @@
-/// Converts a RevenueCat entitlement ID to your internal tier string.
 String resolveTier(String? entitlementId) {
   switch (entitlementId) {
-    case 'master_chef_yearly':
-    case 'master_chef_monthly':
-      return 'master_chef';
-    case 'home_chef_monthly':
-      return 'home_chef';
     case 'taster_trial':
       return 'taster';
+    case 'home_chef_monthly':
+      return 'home_chef';
+    case 'master_chef_monthly':
+    case 'master_chef_yearly':
+      return 'master_chef';
     default:
-      return 'taster'; // Fallback for no entitlement
+      return 'free'; // New safe fallback
   }
 }

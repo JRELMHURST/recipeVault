@@ -167,13 +167,14 @@ class AccountSettingsScreen extends StatelessWidget {
         }
 
         debugPrint('➡️ Calling deleteAccount Callable Function...');
-        FirebaseFunctions.instanceFor(
+        final result = await FirebaseFunctions.instanceFor(
           region: 'europe-west2',
-        ).httpsCallable('deleteAccount');
+        ).httpsCallable('deleteAccount').call();
 
-        debugPrint('✅ deleteAccount result: \${result.data}');
+        debugPrint("✅ deleteAccount result: ${result.data}");
 
         await FirebaseAuth.instance.signOut();
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Account deleted successfully.')),
@@ -184,11 +185,11 @@ class AccountSettingsScreen extends StatelessWidget {
             (route) => false,
           );
         }
-      } catch (e) {
-        debugPrint('❌ Cloud Function error: \$e');
+      } catch (e, stack) {
+        debugPrint("❌ Cloud Function error: $e\n$stack");
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete account: \$e')),
+            SnackBar(content: Text('Failed to delete account: $e')),
           );
         }
       }

@@ -35,6 +35,9 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _viewMode = storedMode;
       });
+
+      // 🧪 Show trial prompt for new/free users
+      await TrialPromptHelper.showIfTryingRestrictedFeature(context);
     }
   }
 

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // ⬅️ Required for UID
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -43,14 +44,6 @@ Future<void> main() async {
     debugPrint(stack.toString());
   }
 
-  // 🔄 Entitlement sync
-  try {
-    await UserSessionService.syncRevenueCatEntitlement();
-  } catch (e, stack) {
-    debugPrint('❌ Failed to sync RevenueCat entitlement: $e');
-    debugPrint(stack.toString());
-  }
-
   // 🛎 Local + FCM notifications
   try {
     await NotificationService.init();
@@ -67,6 +60,28 @@ Future<void> main() async {
 
   // 🧠 Session init
   await UserSessionService.init();
+
+  // 🛒 RevenueCat login (REQUIRED before entitlement sync)
+  final uid = FirebaseAuth.instance.currentUser?.uid;
+  if (uid != null) {
+    try {
+      await Purchases.logIn(uid);
+      debugPrint('🛒 RevenueCat logged in as $uid');
+    } catch (e, stack) {
+      debugPrint('❌ RevenueCat login failed: $e');
+      debugPrint(stack.toString());
+    }
+  } else {
+    debugPrint('⚠️ Firebase user not logged in, skipping RevenueCat login.');
+  }
+
+  // 🔄 Entitlement sync
+  try {
+    await UserSessionService.syncRevenueCatEntitlement();
+  } catch (e, stack) {
+    debugPrint('❌ Failed to sync RevenueCat entitlement: $e');
+    debugPrint(stack.toString());
+  }
 
   // 🐝 Hive local storage
   await Hive.initFlutter();

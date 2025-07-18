@@ -96,7 +96,7 @@ class AuthService {
     final customerInfo = await Purchases.getCustomerInfo();
     final entitlementId =
         customerInfo.entitlements.active.values.firstOrNull?.productIdentifier;
-    final resolvedTier = resolveTier(entitlementId);
+    final resolvedTier = resolveTier(entitlementId ?? 'free');
 
     final updateData = {
       'email': user.email,

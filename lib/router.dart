@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -20,13 +22,14 @@ import 'package:recipe_vault/settings/settings_screen.dart';
 import 'package:recipe_vault/settings/account_settings_screen.dart';
 import 'package:recipe_vault/settings/appearance_settings_screen.dart';
 import 'package:recipe_vault/settings/notifications_settings_screen.dart';
-import 'package:recipe_vault/settings/subscription_settings_screen.dart';
+import 'package:recipe_vault/settings/subscription_screen/subscription_settings_screen.dart';
 import 'package:recipe_vault/settings/about_screen.dart';
 import 'package:recipe_vault/settings/storage_sync_screen.dart';
 
 // Paywall
 import 'package:recipe_vault/rev_cat/paywall_screen.dart';
 import 'package:recipe_vault/rev_cat/trial_ended_screen.dart';
+// 🔥 Removed: import 'package:recipe_vault/rev_cat/trial_activation_screen.dart';
 
 Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
   final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
@@ -62,6 +65,8 @@ Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
     // Paywall & Trial End
     '/paywall': (context) => const PaywallScreen(),
     '/trial-ended': (context) => const TrialEndedScreen(),
+
+    // 🔥 Removed: '/trial': (context) => const TrialActivationScreen(),
 
     // Shared fallback
     '/shared': (context) => const Scaffold(

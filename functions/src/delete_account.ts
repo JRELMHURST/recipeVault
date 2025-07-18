@@ -78,7 +78,7 @@ export const deleteAccount = onCall(
 
       // 🗃️ Delete user storage
       try {
-        const bucket = storage.bucket(); 
+        const bucket = storage.bucket('recipevault-bg-ai.firebasestorage.app');
         console.log(`🧺 Deleting files with prefix: users/${uid}/`);
         await bucket.deleteFiles({ prefix: `users/${uid}/` });
         console.log(`🗑️ Deleted all storage for users/${uid}/`);

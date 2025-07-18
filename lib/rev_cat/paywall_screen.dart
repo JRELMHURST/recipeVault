@@ -110,7 +110,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    final tier = _subscriptionService.tier;
     final currentEntitlement = _subscriptionService.entitlementId;
+    final isFree = tier == 'free';
     final isTaster = _subscriptionService.isTaster;
     final trialExpired = _subscriptionService.isTasterTrialExpired;
     final trialActive = _subscriptionService.isTasterTrialActive;
@@ -131,7 +133,39 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (isTaster && trialActive)
+                    if (isFree)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          border: Border.all(color: Colors.red.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '🔒 You’re currently on the Free plan.',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Some features are restricted. Start a free trial or upgrade to unlock AI tools, image uploads and more.',
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/trial');
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.deepPurple,
+                              ),
+                              child: const Text('Start Free Taster Trial'),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (isTaster && trialActive)
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -143,8 +177,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           '🎁 You’re currently on a free 7-day trial. Upgrade to keep full access after it ends.',
                           style: TextStyle(fontWeight: FontWeight.w500),
                         ),
-                      ),
-                    if (isTaster && trialExpired)
+                      )
+                    else if (isTaster && trialExpired)
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -157,6 +191,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           style: TextStyle(fontWeight: FontWeight.w500),
                         ),
                       ),
+
                     const SizedBox(height: 24),
                     Text(
                       'Enjoy unlimited access to powerful AI recipe tools, image uploads, category sorting, and more!',

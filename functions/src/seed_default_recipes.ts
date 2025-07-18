@@ -1,4 +1,4 @@
-import { onCall } from 'firebase-functions/v2/https';
+import { onRequest } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger, setGlobalOptions } from 'firebase-functions';
 
@@ -7,7 +7,7 @@ setGlobalOptions({ region: 'europe-west2' });
 
 const db = getFirestore();
 
-export const seedDefaultRecipes = onCall(async (_request) => {
+export const seedDefaultRecipes = onRequest(async (_req, res) => {
   const now = new Date();
 
   const globalRecipes = [
@@ -21,7 +21,7 @@ export const seedDefaultRecipes = onCall(async (_request) => {
         'Blend until smooth.',
         'Serve chilled.',
       ],
-      imageUrl: 'https://example.com/smoothie.jpg',
+      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/recipevault-bg-ai.appspot.com/o/global_recipes%2Fbreakfast-smoothie.jpg?alt=media',
       categories: ['Breakfast'],
       isFavourite: false,
       originalImageUrls: [],
@@ -41,7 +41,7 @@ export const seedDefaultRecipes = onCall(async (_request) => {
         'Create a gentle whirlpool in the water and carefully pour in the egg.',
         'Cook for 2–3 minutes, then remove with a slotted spoon.',
       ],
-      imageUrl: 'https://example.com/egg.jpg',
+      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/recipevault-bg-ai.appspot.com/o/global_recipes%2Fpoached_egg_final.jpg?alt=media',
       categories: ['Brunch'],
       isFavourite: false,
       originalImageUrls: [],
@@ -61,7 +61,7 @@ export const seedDefaultRecipes = onCall(async (_request) => {
         'Add cheese and toppings.',
         'Bake for 15–20 minutes until golden and crisp.',
       ],
-      imageUrl: 'https://example.com/pizza.jpg',
+      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/recipevault-bg-ai.appspot.com/o/global_recipes%2Fpuff_pastry_pizza_final.jpg?alt=media',
       categories: ['Dinner'],
       isFavourite: false,
       originalImageUrls: [],
@@ -72,16 +72,20 @@ export const seedDefaultRecipes = onCall(async (_request) => {
     },
   ];
 
-  const batch = db.batch();
-  const collection = db.collection('global_recipes');
+  try {
+    const batch = db.batch();
+    const collection = db.collection('global_recipes');
 
-  for (const recipe of globalRecipes) {
-    const docRef = collection.doc(recipe.id);
-    batch.set(docRef, recipe, { merge: true }); // merge: true ensures re-runs don't break
+    for (const recipe of globalRecipes) {
+      const docRef = collection.doc(recipe.id);
+      batch.set(docRef, recipe, { merge: true }); // Prevents overwriting if re-run
+    }
+
+    await batch.commit();
+    logger.info(`✅ Seeded ${globalRecipes.length} global recipes`);
+    res.status(200).json({ success: true, count: globalRecipes.length });
+  } catch (error) {
+    logger.error('❌ Failed to seed global recipes', error);
+    res.status(500).json({ success: false, error: (error as Error).message });
   }
-
-  await batch.commit();
-  logger.info(`✅ Seeded ${globalRecipes.length} global recipes`);
-
-  return { success: true, count: globalRecipes.length };
 });

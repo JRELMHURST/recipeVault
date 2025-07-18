@@ -17,6 +17,15 @@ class UpgradeBanner extends StatefulWidget {
 class _UpgradeBannerState extends State<UpgradeBanner> {
   bool _visible = true;
 
+  @override
+  void initState() {
+    super.initState();
+    // Optional auto-dismiss after 10 seconds
+    Future.delayed(const Duration(seconds: 10), () {
+      if (mounted && _visible) _dismiss();
+    });
+  }
+
   void _dismiss() {
     setState(() => _visible = false);
     ImageProcessingService.upgradeBannerMessage.value = null;
@@ -24,13 +33,16 @@ class _UpgradeBannerState extends State<UpgradeBanner> {
 
   @override
   Widget build(BuildContext context) {
-    final tier = context.watch<SubscriptionService>().tier;
-    final isSuperUser = context.watch<SubscriptionService>().isSuperUser;
+    final subscription = context.watch<SubscriptionService>();
+    final tier = subscription.tier;
+    final isSuperUser = subscription.isSuperUser;
 
-    // 🔒 Hide banner for paying users or super users
-    if (!_visible || tier != 'taster' && tier != 'none' || isSuperUser) {
-      return const SizedBox.shrink();
-    }
+    final shouldHideBanner =
+        !_visible ||
+        isSuperUser ||
+        (tier != 'taster' && tier != 'free' && tier != 'none');
+
+    if (shouldHideBanner) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;

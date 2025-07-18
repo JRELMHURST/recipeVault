@@ -6,9 +6,10 @@ const firestore = getFirestore();
 
 /** Centralised plan limits for reference */
 export const tierLimits = {
-  taster:     { translation: 1, recipes: 5, images: 5 },
-  home_chef:  { translation: 5, recipes: 20, images: 20 },
-  master_chef:{ translation: Infinity, recipes: Infinity, images: Infinity },
+  free:        { translation: 0, recipes: 0, images: 0 },
+  taster:      { translation: 1, recipes: 5, images: 5 },
+  home_chef:   { translation: 5, recipes: 20, images: 20 },
+  master_chef: { translation: Infinity, recipes: Infinity, images: Infinity },
 };
 
 /** Maps RevenueCat product IDs to internal tier labels */
@@ -26,7 +27,7 @@ function resolveTierFromEntitlement(entitlementId: string): 'master_chef' | 'hom
 }
 
 /** Retrieves the resolved tier for a user via Firestore or RevenueCat fallback */
-async function getResolvedTier(uid: string): Promise<'taster' | 'home_chef' | 'master_chef'> {
+async function getResolvedTier(uid: string): Promise<'free' | 'taster' | 'home_chef' | 'master_chef'> {
   const userRef = firestore.collection("users").doc(uid);
   const doc = await userRef.get();
   const userData = doc.data();
@@ -69,8 +70,8 @@ async function getResolvedTier(uid: string): Promise<'taster' | 'home_chef' | 'm
     return resolvedTier;
   }
 
-  console.warn(`❌ No entitlement found in RevenueCat — defaulting to "taster" for UID ${uid}`);
-  return firestoreTier ?? 'taster';
+  console.warn(`❌ No entitlement found in RevenueCat — defaulting to "free" for UID ${uid}`);
+  return firestoreTier ?? 'free';
 }
 
 /** Checks if the user is within their 7-day Taster trial period. */

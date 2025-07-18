@@ -9,27 +9,44 @@ class SubscriptionService extends ChangeNotifier {
   factory SubscriptionService() => _instance;
   SubscriptionService._internal();
 
-  String _tier = 'none';
+  final ValueNotifier<String> tierNotifier = ValueNotifier('free');
+
+  String _tier = 'free';
   bool _isSuperUser = false;
   EntitlementInfo? _activeEntitlement;
   CustomerInfo? _customerInfo;
   String _entitlementId = 'none';
   bool? _firestoreTrialActive;
 
+  bool _isLoadingTier = false;
+  String? _lastLoggedTier;
+
   String get tier => _tier;
   String get entitlementId => _entitlementId;
   bool get isSuperUser => _isSuperUser;
   bool get isLoaded => _tier != 'none';
 
+  bool get isFree => _tier == 'free';
   bool get isTaster => _tier == 'taster';
   bool get isHomeChef => _tier == 'home_chef';
   bool get isMasterChef => _tier == 'master_chef';
 
   bool get hasActiveSubscription => isHomeChef || isMasterChef;
-  bool get allowTranslation => _isSuperUser || isMasterChef;
-  bool get allowImageUpload => _isSuperUser || isMasterChef;
-  bool get allowSaveToVault =>
-      isTaster || hasActiveSubscription || _isSuperUser;
+  bool get allowTranslation =>
+      _isSuperUser || isTaster || isHomeChef || isMasterChef;
+  bool get allowImageUpload =>
+      _isSuperUser || isTaster || isHomeChef || isMasterChef;
+  bool get allowSaveToVault => !isFree || _isSuperUser;
+
+  bool get allowCategoryCreation {
+    if (_isSuperUser) return true;
+
+    return switch (_tier) {
+      'master_chef' => true,
+      'home_chef' => true, // limited to 3 (enforced client-side)
+      _ => false,
+    };
+  }
 
   Package? homeChefPackage;
   Package? masterChefMonthlyPackage;
@@ -45,7 +62,8 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   void reset() {
-    _tier = 'none';
+    _tier = 'free';
+    tierNotifier.value = _tier;
     _activeEntitlement = null;
     _customerInfo = null;
     _isSuperUser = false;
@@ -84,8 +102,9 @@ class SubscriptionService extends ChangeNotifier {
     if (expiryString != null) {
       final expiryDate = DateTime.tryParse(expiryString);
       if (expiryDate != null && now.isAfter(expiryDate)) {
-        debugPrint('⚠️ Sandbox entitlement expired – resetting tier to none.');
-        _tier = 'none';
+        debugPrint('⚠️ Sandbox entitlement expired – resetting tier to free.');
+        _tier = 'free';
+        tierNotifier.value = _tier;
         _activeEntitlement = null;
         _entitlementId = 'none';
       }
@@ -99,6 +118,9 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   Future<void> loadSubscriptionStatus() async {
+    if (_isLoadingTier) return;
+    _isLoadingTier = true;
+
     try {
       final firebaseUser = FirebaseAuth.instance.currentUser;
       if (firebaseUser == null) return;
@@ -107,8 +129,11 @@ class SubscriptionService extends ChangeNotifier {
       final entitlements = _customerInfo!.entitlements.active;
 
       _tier = _resolveTierFromEntitlements(entitlements);
+      tierNotifier.value = _tier;
       _activeEntitlement = _getActiveEntitlement(entitlements, _tier);
       _entitlementId = _activeEntitlement?.productIdentifier ?? 'none';
+
+      _logTierOnce();
 
       if (kDebugMode) {
         debugPrint(
@@ -116,16 +141,16 @@ class SubscriptionService extends ChangeNotifier {
         );
       }
 
-      // Firestore fallback
-      if (_tier == 'none' || _tier == 'taster') {
+      // Firestore fallback (to support 'free' and 'taster' with trial info)
+      if (_tier == 'free' || _tier == 'taster') {
         final doc = await FirebaseFirestore.instance
             .collection('users')
             .doc(firebaseUser.uid)
             .get();
-
         final data = doc.data();
         if (data != null) {
           _tier = data['tier'] ?? _tier;
+          tierNotifier.value = _tier;
           _firestoreTrialActive = data['trialActive'] == true;
 
           if (kDebugMode) {
@@ -137,11 +162,22 @@ class SubscriptionService extends ChangeNotifier {
       }
 
       _isSuperUser = await _fetchSuperUserFlag();
+      notifyListeners();
     } catch (e) {
       debugPrint('🔴 Error loading subscription status: $e');
-      _tier = 'none';
+      _tier = 'free';
+      tierNotifier.value = _tier;
       _activeEntitlement = null;
       _entitlementId = 'none';
+    } finally {
+      _isLoadingTier = false;
+    }
+  }
+
+  void _logTierOnce() {
+    if (_lastLoggedTier != _tier) {
+      debugPrint('📦 Tier changed → $_tier');
+      _lastLoggedTier = _tier;
     }
   }
 
@@ -158,7 +194,7 @@ class SubscriptionService extends ChangeNotifier {
         return 'taster';
       }
     }
-    return 'none';
+    return 'free';
   }
 
   EntitlementInfo? _getActiveEntitlement(
@@ -195,7 +231,6 @@ class SubscriptionService extends ChangeNotifier {
         .collection('users')
         .doc(user.uid)
         .get();
-
     return doc.data()?['isSuperUser'] == true;
   }
 
@@ -234,6 +269,8 @@ class SubscriptionService extends ChangeNotifier {
         return '👨‍🍳';
       case 'taster':
         return '🥄';
+      case 'free':
+        return '🆓';
       default:
         return '❓';
     }

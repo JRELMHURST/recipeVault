@@ -33,7 +33,25 @@ Future<void> main() async {
   // 🧩 Firebase core setup (must come first)
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // 🛎 Local + FCM notifications (after Firebase init)
+  // 🛒 RevenueCat
+  try {
+    await Purchases.configure(
+      PurchasesConfiguration('appl_oqbgqmtmctjzzERpEkswCejmukh'),
+    );
+  } catch (e, stack) {
+    debugPrint('❌ RevenueCat config failed: $e');
+    debugPrint(stack.toString());
+  }
+
+  // 🔄 Entitlement sync
+  try {
+    await UserSessionService.syncRevenueCatEntitlement();
+  } catch (e, stack) {
+    debugPrint('❌ Failed to sync RevenueCat entitlement: $e');
+    debugPrint(stack.toString());
+  }
+
+  // 🛎 Local + FCM notifications
   try {
     await NotificationService.init();
   } catch (e, stack) {
@@ -47,12 +65,7 @@ Future<void> main() async {
     appleProvider: AppleProvider.debug,
   );
 
-  // 🛒 RevenueCat
-  await Purchases.configure(
-    PurchasesConfiguration('appl_oqbgqmtmctjzzERpEkswCejmukh'),
-  );
-
-  // 🔄 Sync entitlement info from RevenueCat to Firestore
+  // 🧠 Session init
   await UserSessionService.init();
 
   // 🐝 Hive local storage

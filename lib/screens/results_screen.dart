@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:recipe_vault/rev_cat/subscription_service.dart';
+import 'package:recipe_vault/rev_cat/trial_prompt_helper.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
@@ -250,6 +253,18 @@ class _ResultsScreenState extends State<ResultsScreen> {
                       RecipeImageHeader(
                         initialImages: [],
                         onImagePicked: (localPath) async {
+                          final subscriptionService =
+                              Provider.of<SubscriptionService>(
+                                context,
+                                listen: false,
+                              );
+
+                          if (!subscriptionService.allowImageUpload) {
+                            await TrialPromptHelper.showIfTryingRestrictedFeature(
+                              context,
+                            );
+                            return '';
+                          }
                           final user = FirebaseAuth.instance.currentUser;
                           if (user == null) {
                             ImageProcessingService.showError(

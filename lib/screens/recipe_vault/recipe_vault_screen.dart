@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
+import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
@@ -268,8 +269,22 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           ],
         ),
       ),
-      floatingActionButton: CategorySpeedDial(
-        onCategoryChanged: _loadCustomCategories,
+      floatingActionButton: Builder(
+        builder: (context) {
+          final subService = Provider.of<SubscriptionService>(context);
+          final currentCategoryCount = _allCategories
+              .where((c) => !_defaultCategories.contains(c) && c != 'All')
+              .length;
+
+          final canCreateCategory =
+              subService.allowCategoryCreation ||
+              (subService.isHomeChef && currentCategoryCount < 3);
+
+          return CategorySpeedDial(
+            onCategoryChanged: _loadCustomCategories,
+            allowCreation: canCreateCategory,
+          );
+        },
       ),
     );
   }

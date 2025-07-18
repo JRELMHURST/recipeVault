@@ -8,8 +8,13 @@ import 'package:recipe_vault/widgets/processing_overlay.dart';
 
 class CategorySpeedDial extends StatelessWidget {
   final VoidCallback onCategoryChanged;
+  final bool allowCreation;
 
-  const CategorySpeedDial({super.key, required this.onCategoryChanged});
+  const CategorySpeedDial({
+    super.key,
+    required this.onCategoryChanged,
+    this.allowCreation = true,
+  });
 
   void _showAddCategoryDialog(BuildContext context) {
     final controller = TextEditingController();
@@ -68,8 +73,18 @@ class CategorySpeedDial extends StatelessWidget {
         ),
         SpeedDialChild(
           child: const Icon(Icons.category),
-          label: 'New Category',
-          onTap: () => _showAddCategoryDialog(context),
+          label: allowCreation ? 'New Category' : 'Upgrade to Add Category',
+          onTap: allowCreation
+              ? () => _showAddCategoryDialog(context)
+              : () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        '🔒 Category creation is limited to Home Chef and Master Chef plans.',
+                      ),
+                    ),
+                  );
+                },
         ),
       ],
     );

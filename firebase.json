@@ -1,9 +1,12 @@
 {
-  "functions": {
-    "source": "functions",
-    "runtime": "nodejs20",
-    "main": "lib/index.js"
-  },
+  "functions": [
+    {
+      "source": "functions",
+      "runtime": "nodejs20",
+      "main": "lib/index.js",
+      "codebase": "default"
+    }
+  ],
   "hosting": {
     "public": "public",
     "ignore": [

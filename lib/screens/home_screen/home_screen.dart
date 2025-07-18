@@ -1,14 +1,14 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
+import 'package:recipe_vault/rev_cat/trial_prompt_helper.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_vault_screen.dart';
 import 'package:recipe_vault/settings/settings_screen.dart';
-import 'package:recipe_vault/widgets/tier_badge.dart';
+import 'package:recipe_vault/screens/home_screen/home_app_bar.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -47,11 +47,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _onNavTap(int index) async {
     if (index == 0) {
+      final canCreate = SubscriptionService().allowImageUpload;
+      if (!canCreate) {
+        await TrialPromptHelper.showIfTryingRestrictedFeature(context);
+        return;
+      }
+
       final files = await ImageProcessingService.pickAndCompressImages();
       if (files.isNotEmpty && mounted) {
         ProcessingOverlay.show(context, files);
       }
-      setState(() => _selectedIndex = 1);
+
+      setState(() => _selectedIndex = 1); // fallback to vault
     } else {
       setState(() => _selectedIndex = index);
     }
@@ -63,15 +70,6 @@ class _HomeScreenState extends State<HomeScreen> {
       1 => RecipeVaultScreen(viewMode: _viewMode),
       2 => const SettingsScreen(),
       _ => const SizedBox.shrink(),
-    };
-  }
-
-  String get _appBarTitle {
-    return switch (_selectedIndex) {
-      0 => 'Create',
-      1 => 'RecipeVault',
-      2 => 'Settings',
-      _ => 'RecipeVault',
     };
   }
 
@@ -89,26 +87,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        title: _selectedIndex == 1
-            ? Consumer<SubscriptionService>(
-                builder: (_, sub, __) {
-                  return TierBadge(tier: sub.tier, showAsTitle: true);
-                },
-              )
-            : Text(_appBarTitle, style: theme.appBarTheme.titleTextStyle),
-        centerTitle: true,
-        leading: _selectedIndex == 1
-            ? IconButton(
-                icon: Icon(
-                  _viewModeIcon,
-                  color: theme.appBarTheme.iconTheme?.color,
-                ),
-                onPressed: _toggleViewMode,
-              )
-            : null,
+      appBar: HomeAppBar(
+        selectedIndex: _selectedIndex,
+        viewModeIcon: _viewModeIcon,
+        onToggleViewMode: _toggleViewMode,
       ),
       backgroundColor: theme.colorScheme.surface,
       body: SafeArea(

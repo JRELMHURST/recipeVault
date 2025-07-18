@@ -47,10 +47,7 @@ class AuthService {
   Future<UserCredential?> signInWithGoogle() async {
     try {
       final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        debugPrint('🔐 Google sign-in cancelled.');
-        return null;
-      }
+      if (googleUser == null) return null;
 
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
@@ -79,56 +76,48 @@ class AuthService {
   /// 🧹 Full logout + local storage reset
   Future<void> fullLogout() async {
     await signOut();
-
     try {
       await _safeClearBox<RecipeCardModel>('recipes');
       await _safeClearBox<CategoryModel>('categories');
       await _safeClearBox<String>('customCategories');
-
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
-
       debugPrint('✅ Signed out and cleared local storage.');
     } catch (e) {
       debugPrint('⚠️ Error clearing Hive or preferences: $e');
     }
   }
 
-  /// 🔧 Ensure Firestore user document exists, or update tier info if changed
+  /// 🔧 Ensure Firestore user doc exists and sync tier/entitlement
   Future<void> _ensureUserDocument(User user) async {
     final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final doc = await docRef.get();
 
     final customerInfo = await Purchases.getCustomerInfo();
     final entitlementId =
-        customerInfo.entitlements.active.values.firstOrNull?.identifier;
+        customerInfo.entitlements.active.values.firstOrNull?.productIdentifier;
     final resolvedTier = resolveTier(entitlementId);
 
-    final isTaster = resolvedTier == 'taster';
     final updateData = {
       'email': user.email,
-      'entitlementId': entitlementId ?? 'taster',
+      'entitlementId': entitlementId ?? 'none',
       'tier': resolvedTier,
-      'trialActive': isTaster,
-      if (isTaster) 'trialStartDate': FieldValue.serverTimestamp(),
+      'trialActive': false, // Manual opt-in only
       if (!doc.exists) 'createdAt': FieldValue.serverTimestamp(),
     };
 
     if (!doc.exists) {
       await docRef.set(updateData);
-      debugPrint('📝 Created Firestore user doc with tier: $resolvedTier');
+      debugPrint('📝 Created Firestore user doc → Tier: $resolvedTier');
     } else {
-      final data = doc.data() ?? {};
+      final existing = doc.data() ?? {};
       final needsUpdate =
-          data['tier'] != resolvedTier ||
-          data['entitlementId'] != entitlementId ||
-          data['trialActive'] != isTaster;
+          existing['tier'] != resolvedTier ||
+          existing['entitlementId'] != entitlementId;
 
       if (needsUpdate) {
         await docRef.set(updateData, SetOptions(merge: true));
-        debugPrint(
-          '♻️ Updated Firestore user doc with new tier: $resolvedTier',
-        );
+        debugPrint('♻️ Updated Firestore user doc → Tier: $resolvedTier');
       } else {
         debugPrint('ℹ️ Firestore user doc already up to date.');
       }

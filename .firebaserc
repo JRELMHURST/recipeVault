@@ -6,7 +6,9 @@
   "targets": {
     "recipevault-bg-ai": {
       "hosting": {
-        "recipevault-bg-ai": ["default"]
+        "recipevault-bg-ai": [
+          "default"
+        ]
       }
     }
   },

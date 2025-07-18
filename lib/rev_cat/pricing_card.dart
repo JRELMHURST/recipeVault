@@ -169,13 +169,13 @@ class PricingCard extends StatelessWidget {
     final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
 
     if (offering == 'home_chef_plan') {
-      return 'Home Chef Plan';
+      return '👨‍🍳 Home Chef Plan';
     }
 
     if (offering == 'master_chef_plan') {
       return period.contains('y')
-          ? 'Master Chef Annual'
-          : 'Master Chef Monthly';
+          ? '👑 Master Chef - Annual'
+          : '👑 Master Chef - Monthly';
     }
 
     // Fallback

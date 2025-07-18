@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:hive/hive.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-part 'recipe_card_model.g.dart'; // Generates the adapter
+part 'recipe_card_model.g.dart';
 
 @HiveType(typeId: 0)
 class RecipeCardModel extends HiveObject {
@@ -127,7 +127,7 @@ class RecipeCardModel extends HiveObject {
     List<String>? originalImageUrls,
     List<String>? hints,
     bool? translationUsed,
-    required List<String> categories,
+    List<String>? categories,
     bool? isGlobal,
   }) {
     return RecipeCardModel(
@@ -138,7 +138,7 @@ class RecipeCardModel extends HiveObject {
       instructions: instructions,
       createdAt: createdAt,
       imageUrl: imageUrl,
-      categories: categories,
+      categories: categories ?? this.categories,
       isFavourite: isFavourite ?? this.isFavourite,
       originalImageUrls: originalImageUrls ?? this.originalImageUrls,
       hints: hints ?? this.hints,

@@ -87,18 +87,44 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   Future<void> _loadRecipes() async {
     try {
+      // User-authenticated Firestore access
       final snapshot = await recipeCollection
           .orderBy('createdAt', descending: true)
           .get();
-      final recipes = snapshot.docs
+
+      final userRecipes = snapshot.docs
           .map((doc) => RecipeCardModel.fromJson(doc.data()))
           .toList();
-      for (final recipe in recipes) {
+
+      // Global public recipes
+      final globalSnapshot = await FirebaseFirestore.instance
+          .collection('global_recipes')
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      final globalRecipes = globalSnapshot.docs
+          .map((doc) => RecipeCardModel.fromJson(doc.data()))
+          .toList();
+
+      // Merge with priority to user recipes
+      final Map<String, RecipeCardModel> recipeMap = {};
+
+      for (final recipe in globalRecipes) {
+        recipeMap[recipe.id] = recipe;
+      }
+
+      for (final recipe in userRecipes) {
+        recipeMap[recipe.id] = recipe; // override if also in global
+      }
+
+      // Cache in Hive and update state
+      for (final recipe in recipeMap.values) {
         await HiveRecipeService.save(recipe);
       }
+
       if (!mounted) return;
       setState(() {
-        _allRecipes = recipes;
+        _allRecipes = recipeMap.values.toList();
       });
     } catch (e) {
       debugPrint("⚠️ Firestore fetch failed, loading from Hive: $e");

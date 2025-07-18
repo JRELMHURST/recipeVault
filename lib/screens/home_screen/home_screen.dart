@@ -35,9 +35,21 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _viewMode = storedMode;
       });
+    }
 
-      // 🧪 Show trial prompt for new/free users
+    // ⏳ Wait for tier to resolve before showing trial prompt
+    final subService = SubscriptionService();
+    if (subService.tier != 'none') {
       await TrialPromptHelper.showIfTryingRestrictedFeature(context);
+    } else {
+      void tierListener() async {
+        if (subService.tier != 'none') {
+          await TrialPromptHelper.showIfTryingRestrictedFeature(context);
+          subService.tierNotifier.removeListener(tierListener);
+        }
+      }
+
+      subService.tierNotifier.addListener(tierListener);
     }
   }
 

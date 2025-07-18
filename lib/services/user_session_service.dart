@@ -11,7 +11,7 @@ class UserSessionService {
   static Future<void> init() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      if (kDebugMode) print('⚠️ No Firebase user found during init');
+      _logDebug('⚠️ No Firebase user found during init');
       return;
     }
 
@@ -20,8 +20,9 @@ class UserSessionService {
       await Purchases.restorePurchases();
 
       final info = await Purchases.getCustomerInfo();
+
       if (info.entitlements.active.isEmpty) {
-        if (kDebugMode) print('⏳ No entitlements yet — retrying in 2s...');
+        _logDebug('⏳ No entitlements yet — retrying in 2s...');
         _retryEntitlementSync(user.uid);
         return;
       }
@@ -29,9 +30,7 @@ class UserSessionService {
       await syncRevenueCatEntitlement();
       await SubscriptionService().refresh();
 
-      if (kDebugMode) {
-        print('✅ UserSessionService initialised for ${user.uid}');
-      }
+      _logDebug('✅ UserSessionService initialised for ${user.uid}');
     } catch (e) {
       debugPrint('❌ UserSessionService init failed: $e');
     }
@@ -41,7 +40,7 @@ class UserSessionService {
   static Future<void> syncRevenueCatEntitlement() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      if (kDebugMode) print('⚠️ No Firebase user logged in');
+      _logDebug('⚠️ No Firebase user logged in');
       return;
     }
 
@@ -56,6 +55,7 @@ class UserSessionService {
           .doc(user.uid);
       final doc = await docRef.get();
       final data = doc.data() ?? {};
+
       final trialStart = data['trialStartDate'];
       final trialActive =
           resolvedTier == 'taster' && _isTrialActive(trialStart);
@@ -72,13 +72,9 @@ class UserSessionService {
           'trialActive': trialActive,
         }, SetOptions(merge: true));
 
-        if (kDebugMode) {
-          print('✅ Synced tier → Firestore: $resolvedTier');
-        }
+        _logDebug('✅ Synced tier → Firestore: $resolvedTier');
       } else {
-        if (kDebugMode) {
-          print('ℹ️ Firestore already up to date with tier: $resolvedTier');
-        }
+        _logDebug('ℹ️ Firestore already up to date with tier: $resolvedTier');
       }
 
       _logEntitlementSummary(info, resolvedTier);
@@ -102,14 +98,15 @@ class UserSessionService {
     Future.delayed(const Duration(seconds: 2), () async {
       try {
         final retryInfo = await Purchases.getCustomerInfo();
+
         if (retryInfo.entitlements.active.isNotEmpty) {
           await syncRevenueCatEntitlement();
           await SubscriptionService().loadSubscriptionStatus();
           await SubscriptionService().refresh();
 
-          debugPrint('✅ Retried entitlement sync succeeded for $userId');
+          _logDebug('✅ Retried entitlement sync succeeded for $userId');
         } else {
-          debugPrint('❌ Entitlements still empty after retry');
+          _logDebug('❌ Entitlements still empty after retry');
         }
       } catch (e) {
         debugPrint('❌ Retry failed: $e');
@@ -143,5 +140,9 @@ class UserSessionService {
     debugPrint('🧾 [$context] RC AppUserID: ${info.originalAppUserId}');
     debugPrint('🧾 [$context] Entitlements: $entitlements');
     debugPrint('🎯 [$context] Resolved Tier: $tier');
+  }
+
+  static void _logDebug(String message) {
+    if (kDebugMode) debugPrint(message);
   }
 }

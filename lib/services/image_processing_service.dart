@@ -15,6 +15,7 @@ class ImageProcessingService {
   static const int _jpegQualityAndroid = 80;
   static const int _jpegQualityIOS = 85;
   static const bool _debug = false;
+
   static final ImagePicker _picker = ImagePicker();
 
   /// Notifies UI to display upgrade banner (e.g. on usage limit)
@@ -49,7 +50,7 @@ class ImageProcessingService {
 
         if (compressed != null) {
           result.add(compressed);
-          if (_debug) debugPrint('✅ Compressed: ${compressed.path}');
+          _logDebug('✅ Compressed: ${compressed.path}');
         }
       } catch (e) {
         debugPrint('⚠️ Compression failed for ${file.path}: $e');
@@ -61,10 +62,7 @@ class ImageProcessingService {
 
   /// Uploads image files to Firebase and returns their download URLs
   static Future<List<String>> uploadFiles(List<File> files) async {
-    if (_debug) {
-      debugPrint('⏫ Uploading ${files.length} files to Firebase Storage...');
-    }
-
+    _logDebug('⏫ Uploading ${files.length} files to Firebase Storage...');
     return FirebaseStorageService.uploadImages(files);
   }
 
@@ -82,7 +80,7 @@ class ImageProcessingService {
       final uploadTask = await ref.putFile(imageFile);
       final url = await uploadTask.ref.getDownloadURL();
 
-      if (_debug) debugPrint('✅ Recipe image uploaded: $url');
+      _logDebug('✅ Recipe image uploaded: $url');
       return url;
     } catch (e) {
       throw Exception('❌ Failed to upload recipe image: $e');
@@ -122,11 +120,9 @@ class ImageProcessingService {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
       final callable = functions.httpsCallable('extractAndFormatRecipe');
 
-      if (_debug) {
-        debugPrint(
-          '🤖 Calling Cloud Function with ${imageUrls.length} image(s)...',
-        );
-      }
+      _logDebug(
+        '🤖 Calling Cloud Function with ${imageUrls.length} image(s)...',
+      );
 
       final result = await callable
           .call({'imageUrls': imageUrls})
@@ -137,43 +133,43 @@ class ImageProcessingService {
         throw Exception('Formatted recipe is missing or empty.');
       }
 
-      if (_debug) {
-        debugPrint('✅ Recipe formatted successfully.');
-        debugPrint('📥 Raw OCR: ${data['originalText']}');
-        debugPrint('🌐 Detected Language: ${data['detectedLanguage']}');
-        debugPrint('🔁 Translation Used: ${data['translationUsed']}');
-        debugPrint('📤 Translated From: ${data['translatedFromLanguage']}');
-      }
+      _logDebug('✅ Recipe formatted successfully.');
+      _logDebug('📥 Raw OCR: ${data['originalText']}');
+      _logDebug('🌐 Detected Language: ${data['detectedLanguage']}');
+      _logDebug('🔁 Translation Used: ${data['translationUsed']}');
+      _logDebug('📤 Translated From: ${data['translatedFromLanguage']}');
 
       return ProcessedRecipeResult.fromMap(data);
     } on FirebaseFunctionsException catch (e) {
-      if (_debug) {
-        debugPrint("🛑 FirebaseFunctionsException: ${e.code} — ${e.message}");
-      }
+      _logDebug("🛑 FirebaseFunctionsException: ${e.code} — ${e.message}");
 
-      if (e.code == 'permission-denied') {
-        upgradeBannerMessage.value =
-            "✨ Unlock Chef Mode with the Home Chef or Master Chef plan!";
-        throw Exception("Translation blocked due to plan limit.");
+      switch (e.code) {
+        case 'permission-denied':
+          upgradeBannerMessage.value =
+              "✨ Unlock Chef Mode with the Home Chef or Master Chef plan!";
+          throw Exception("Translation blocked due to plan limit.");
+        case 'resource-exhausted':
+          upgradeBannerMessage.value =
+              "🚧 You’ve hit your monthly quota. Upgrade for unlimited access!";
+          throw Exception("Usage limit reached.");
+        default:
+          throw Exception('❌ Failed to process recipe: ${e.message}');
       }
-
-      if (e.code == 'resource-exhausted') {
-        upgradeBannerMessage.value =
-            "🚧 You’ve hit your monthly quota. Upgrade for unlimited access!";
-        throw Exception("Usage limit reached.");
-      }
-
-      throw Exception('❌ Failed to process recipe: ${e.message}');
     } catch (e) {
-      if (_debug) debugPrint("❌ General exception: $e");
+      _logDebug("❌ General exception: $e");
       throw Exception('❌ Failed to process recipe: $e');
     }
   }
 
-  /// Show a snackbar error in context
+  /// Shows a snackbar error in context
   static void showError(BuildContext context, String message) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// Conditional debug logger
+  static void _logDebug(String message) {
+    if (_debug) debugPrint(message);
   }
 }

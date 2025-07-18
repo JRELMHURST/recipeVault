@@ -126,7 +126,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
         translationUsed: result.translationUsed,
       );
 
-      debugPrint('📄 Saving recipe "$title" at \${recipe.createdAt}');
+      debugPrint('📄 Saving recipe "\$title" at \${recipe.createdAt}');
+      debugPrint('📸 Final image URL saved: \$_recipeImageUrl');
 
       final serverTimestamp = FieldValue.serverTimestamp();
       await docRef.set({...recipe.toJson(), 'createdAt': serverTimestamp});
@@ -204,7 +205,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
         child: hasValidContent
             ? SingleChildScrollView(
                 child: ResponsiveWrapper(
-                  // 👈 Add here
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -251,7 +251,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           ),
                         ),
                       RecipeImageHeader(
-                        initialImages: [],
+                        initialImages: _recipeImageUrl != null
+                            ? [_recipeImageUrl!]
+                            : [],
                         onImagePicked: (localPath) async {
                           final subscriptionService =
                               Provider.of<SubscriptionService>(
@@ -299,12 +301,13 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                   recipeId: recipeId,
                                 );
 
+                            debugPrint('✅ Uploaded to: \$url');
                             setState(() => _recipeImageUrl = url);
                             return url;
                           } catch (e) {
                             ImageProcessingService.showError(
                               context,
-                              '❌ Upload failed: $e',
+                              '❌ Upload failed: \$e',
                             );
                             return '';
                           }

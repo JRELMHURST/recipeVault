@@ -58,14 +58,14 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
         NetworkImage(imageUrl),
         size: const Size(100, 100),
       );
-
-      final brightness = palette.dominantColor?.color.computeLuminance();
-      if (brightness != null) {
+      final dominant = palette.dominantColor?.color;
+      if (dominant != null) {
+        final brightness = dominant.computeLuminance();
         setState(() {
           iconColor = brightness > 0.5 ? Colors.black : Colors.white;
         });
       }
-    } catch (e) {
+    } catch (_) {
       setState(() {
         iconColor = Colors.black;
       });
@@ -75,18 +75,19 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
   Future<void> _shareLink(BuildContext context) async {
     final recipeLink =
         'https://recipevault.app/shared/${Uri.encodeComponent(widget.recipeId)}';
-
     final box = context.findRenderObject();
     if (box is RenderBox && box.hasSize) {
       final origin = box.localToGlobal(Offset.zero) & box.size;
-
       await Share.share(
         recipeLink,
-        subject: 'Check out this recipe!',
+        subject: 'Check out this recipe on RecipeVault!',
         sharePositionOrigin: origin,
       );
     } else {
-      await Share.share(recipeLink, subject: 'Check out this recipe!');
+      await Share.share(
+        recipeLink,
+        subject: 'Check out this recipe on RecipeVault!',
+      );
     }
   }
 
@@ -108,6 +109,15 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
                     height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: 200,
+                        color: Colors.deepPurple.shade50,
+                        alignment: Alignment.center,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      );
+                    },
                     errorBuilder: (_, __, ___) => Container(
                       height: 200,
                       color: Colors.deepPurple.shade50,
@@ -131,10 +141,12 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
             children: [
               IconButton(
                 icon: Icon(Icons.share, color: iconColor),
+                tooltip: 'Share recipe',
                 onPressed: () => _shareLink(context),
               ),
               IconButton(
                 icon: Icon(Icons.close, color: iconColor),
+                tooltip: 'Close',
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],

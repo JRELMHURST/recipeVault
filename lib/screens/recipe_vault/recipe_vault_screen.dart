@@ -87,7 +87,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   Future<void> _loadRecipes() async {
     try {
-      // Firestore personal recipes
       final snapshot = await recipeCollection
           .orderBy('createdAt', descending: true)
           .get();
@@ -95,7 +94,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           .map((doc) => RecipeCardModel.fromJson(doc.data()))
           .toList();
 
-      // Hidden global recipes
       final hiddenSnapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
@@ -103,7 +101,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           .get();
       final hiddenGlobalIds = hiddenSnapshot.docs.map((doc) => doc.id).toSet();
 
-      // Global public recipes (excluding hidden ones)
       final globalSnapshot = await FirebaseFirestore.instance
           .collection('global_recipes')
           .orderBy('createdAt', descending: true)
@@ -113,19 +110,15 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           .map((doc) => RecipeCardModel.fromJson(doc.data()))
           .toList();
 
-      // Merge (user recipes override global ones by ID)
       final Map<String, RecipeCardModel> recipeMap = {};
       for (final recipe in globalRecipes) {
         recipeMap[recipe.id] = recipe;
       }
       for (final recipe in userRecipes) {
-        // Skip old duplicated global recipes in the user collection
         if (recipe.isGlobal == true) continue;
-
         recipeMap[recipe.id] = recipe;
       }
 
-      // Cache to Hive
       for (final recipe in recipeMap.values) {
         await HiveRecipeService.save(recipe);
       }
@@ -150,7 +143,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           !(await recipeCollection.doc(recipe.id).get()).exists;
 
       if (isGlobalRecipe) {
-        // Soft delete → mark global recipe as hidden
         await FirebaseFirestore.instance
             .collection('users')
             .doc(userId)
@@ -162,7 +154,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           "🙈 Soft-deleted global recipe ${recipe.id} for user $userId",
         );
       } else {
-        // Fully delete personal recipe
         await recipeCollection.doc(recipe.id).delete();
         if (recipe.imageUrl?.isNotEmpty ?? false) {
           try {

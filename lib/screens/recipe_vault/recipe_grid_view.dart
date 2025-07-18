@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:palette_generator/palette_generator.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_card_menu.dart';
 
@@ -23,53 +22,52 @@ class RecipeGridView extends StatelessWidget {
   });
 
   void _showCategoryDialog(BuildContext context, RecipeCardModel recipe) {
+    final selected = Set<String>.from(recipe.categories);
     showDialog(
       context: context,
       builder: (_) {
-        final selected = Set<String>.from(recipe.categories);
         return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Assign Categories'),
-              content: SingleChildScrollView(
-                child: Column(
-                  children: categories
-                      .where(
-                        (c) => !['Favourites', 'Translated', 'All'].contains(c),
-                      )
-                      .map(
-                        (cat) => CheckboxListTile(
-                          value: selected.contains(cat),
-                          onChanged: (val) {
-                            setState(() {
-                              if (val == true) {
-                                selected.add(cat);
-                              } else {
-                                selected.remove(cat);
-                              }
-                            });
-                          },
-                          title: Text(cat),
-                        ),
-                      )
-                      .toList(),
-                ),
+          builder: (context, setState) => AlertDialog(
+            title: const Text('Assign Categories'),
+            content: SingleChildScrollView(
+              child: Column(
+                children: categories
+                    .where(
+                      (c) =>
+                          c != 'Favourites' && c != 'Translated' && c != 'All',
+                    )
+                    .map(
+                      (cat) => CheckboxListTile(
+                        value: selected.contains(cat),
+                        onChanged: (val) {
+                          setState(() {
+                            if (val == true) {
+                              selected.add(cat);
+                            } else {
+                              selected.remove(cat);
+                            }
+                          });
+                        },
+                        title: Text(cat),
+                      ),
+                    )
+                    .toList(),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel"),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    onAssignCategories(recipe, selected.toList());
-                    Navigator.pop(context);
-                  },
-                  child: const Text("Save"),
-                ),
-              ],
-            );
-          },
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  onAssignCategories(recipe, selected.toList());
+                  Navigator.pop(context);
+                },
+                child: const Text("Save"),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -125,35 +123,32 @@ class RecipeGridView extends StatelessWidget {
                       ),
                       child:
                           recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
-                          ? FutureBuilder<PaletteGenerator>(
-                              future: PaletteGenerator.fromImageProvider(
-                                NetworkImage(recipe.imageUrl!),
-                                size: const Size(40, 40),
-                              ),
-                              builder: (context, snapshot) {
-                                return Stack(
-                                  children: [
-                                    Image.network(
-                                      recipe.imageUrl!,
-                                      height: 120,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
-                                    Positioned(
-                                      top: 6,
-                                      right: 6,
-                                      child: RecipeCardMenu(
-                                        isFavourite: recipe.isFavourite,
-                                        onToggleFavourite: () =>
-                                            onToggleFavourite(recipe),
-                                        onAssignCategories: () =>
-                                            _showCategoryDialog(
-                                              context,
-                                              recipe,
-                                            ),
-                                      ),
-                                    ),
-                                  ],
+                          ? Image.network(
+                              recipe.imageUrl!,
+                              height: 120,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return Container(
+                                  height: 120,
+                                  color: Colors.deepPurple.shade50,
+                                  alignment: Alignment.center,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 120,
+                                  color: Colors.deepPurple.shade50,
+                                  alignment: Alignment.center,
+                                  child: Icon(
+                                    LucideIcons.chefHat,
+                                    size: 36,
+                                    color: Colors.deepPurple.shade200,
+                                  ),
                                 );
                               },
                             )
@@ -167,6 +162,16 @@ class RecipeGridView extends StatelessWidget {
                                 color: Colors.deepPurple.shade200,
                               ),
                             ),
+                    ),
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: RecipeCardMenu(
+                        isFavourite: recipe.isFavourite,
+                        onToggleFavourite: () => onToggleFavourite(recipe),
+                        onAssignCategories: () =>
+                            _showCategoryDialog(context, recipe),
+                      ),
                     ),
                   ],
                 ),

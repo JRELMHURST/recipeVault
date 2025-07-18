@@ -39,7 +39,10 @@ class RecipeListView extends StatelessWidget {
                 child: Column(
                   children: categories
                       .where(
-                        (c) => !['Favourites', 'Translated', 'All'].contains(c),
+                        (c) =>
+                            c != 'Favourites' &&
+                            c != 'Translated' &&
+                            c != 'All',
                       )
                       .map(
                         (cat) => CheckboxListTile(
@@ -129,6 +132,13 @@ class RecipeListView extends StatelessWidget {
                                     width: 56,
                                     height: 56,
                                     fit: BoxFit.cover,
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                          if (loadingProgress == null) {
+                                            return child;
+                                          }
+                                          return _fallbackLoading();
+                                        },
                                     errorBuilder: (_, __, ___) =>
                                         _fallbackIcon(),
                                   )
@@ -192,6 +202,19 @@ class RecipeListView extends StatelessWidget {
         LucideIcons.utensilsCrossed,
         size: 20,
         color: Colors.deepPurple,
+      ),
+    );
+  }
+
+  Widget _fallbackLoading() {
+    return Container(
+      width: 56,
+      height: 56,
+      alignment: Alignment.center,
+      child: const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(strokeWidth: 2),
       ),
     );
   }

@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:palette_generator/palette_generator.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_card_menu.dart';
 
@@ -74,14 +73,6 @@ class RecipeCompactView extends StatelessWidget {
     );
   }
 
-  Future<Color> _getDominantColor(String imageUrl) async {
-    final palette = await PaletteGenerator.fromImageProvider(
-      NetworkImage(imageUrl),
-      size: const Size(40, 40),
-    );
-    return palette.dominantColor?.color ?? Colors.black;
-  }
-
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
@@ -98,46 +89,57 @@ class RecipeCompactView extends StatelessWidget {
 
         return GestureDetector(
           onTap: () => onTap(recipe),
-          child: FutureBuilder<Color>(
-            future: recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
-                ? _getDominantColor(recipe.imageUrl!)
-                : Future.value(Colors.white),
-            builder: (context, snapshot) {
-              return Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child:
-                        recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
-                        ? Image.network(
-                            recipe.imageUrl!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                          )
-                        : Container(
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
+                    ? Image.network(
+                        recipe.imageUrl!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.deepPurple.shade50,
+                          alignment: Alignment.center,
+                          child: Icon(
+                            LucideIcons.chefHat,
+                            size: 28,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
                             color: Colors.deepPurple.shade50,
                             alignment: Alignment.center,
-                            child: Icon(
-                              LucideIcons.chefHat,
-                              size: 28,
-                              color: Colors.deepPurple,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
                             ),
-                          ),
-                  ),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: RecipeCardMenu(
-                      isFavourite: recipe.isFavourite,
-                      onToggleFavourite: () => onToggleFavourite(recipe),
-                      onAssignCategories: () =>
-                          _showCategoryDialog(context, recipe),
-                    ),
-                  ),
-                ],
-              );
-            },
+                          );
+                        },
+                      )
+                    : Container(
+                        color: Colors.deepPurple.shade50,
+                        alignment: Alignment.center,
+                        child: Icon(
+                          LucideIcons.chefHat,
+                          size: 28,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+              ),
+              Positioned(
+                top: 4,
+                right: 4,
+                child: RecipeCardMenu(
+                  isFavourite: recipe.isFavourite,
+                  onToggleFavourite: () => onToggleFavourite(recipe),
+                  onAssignCategories: () =>
+                      _showCategoryDialog(context, recipe),
+                ),
+              ),
+            ],
           ),
         );
       },

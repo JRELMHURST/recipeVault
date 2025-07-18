@@ -7,7 +7,7 @@ import 'package:recipe_vault/rev_cat/subscription_service.dart';
 class TrialPromptHelper {
   static bool _hasPromptedThisSession = false;
 
-  /// Call this to check and optionally prompt the user to upgrade or start a trial.
+  /// Call this to check and optionally prompt the user to upgrade.
   /// If [showDialogInstead] is true, shows a dialog. Otherwise, pushes to full-screen paywall.
   static Future<void> showIfTryingRestrictedFeature(
     BuildContext context, {
@@ -21,37 +21,42 @@ class TrialPromptHelper {
     );
     await subscriptionService.refresh();
 
-    final isFree = subscriptionService.tier == 'free';
-    final trialExpired = subscriptionService.isTasterTrialExpired;
-    final hasNoActiveSub = !subscriptionService.hasActiveSubscription;
+    final tier = subscriptionService.tier;
     final isDev = subscriptionService.isSuperUser;
+    final trialExpired = subscriptionService.isTasterTrialExpired;
 
-    final shouldPrompt = (isFree || trialExpired) && hasNoActiveSub && !isDev;
+    // 👇 Prompt if free or expired taster trial and not a super user
+    final shouldPrompt =
+        !isDev && (tier == 'free' || (tier == 'taster' && trialExpired));
 
     if (shouldPrompt) {
       _hasPromptedThisSession = true;
 
       if (showDialogInstead) {
-        _showUpgradeDialog(context, isFree: isFree);
+        _showUpgradeDialog(context, trialExpired: trialExpired);
       } else {
         Navigator.of(context).pop();
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.pushNamed(context, isFree ? '/trial' : '/paywall');
+          Navigator.pushNamed(context, '/paywall');
         });
       }
     }
   }
 
-  static void _showUpgradeDialog(BuildContext context, {required bool isFree}) {
+  static void _showUpgradeDialog(
+    BuildContext context, {
+    required bool trialExpired,
+  }) {
+    final title = trialExpired ? 'Trial Ended' : 'Free Plan';
+    final message = trialExpired
+        ? 'Your 7-day Taster Trial has ended.\n\nTo continue using RecipeVault’s AI tools, please upgrade to a paid plan.'
+        : 'You’re currently on the free plan. AI-powered tools are locked.\n\nTo access scanning, translation, and more, please upgrade.';
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(isFree ? 'Free Plan' : 'Trial Ended'),
-        content: Text(
-          isFree
-              ? 'You’re currently on the free plan. AI-powered tools are locked.\n\nStart your 7-day Taster Trial to unlock scanning, translation, and more.'
-              : 'Your 7-day Taster Trial has ended.\n\nTo continue using RecipeVault’s AI tools, please upgrade to a paid plan.',
-        ),
+        title: Text(title),
+        content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -60,9 +65,9 @@ class TrialPromptHelper {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              Navigator.pushNamed(context, isFree ? '/trial' : '/paywall');
+              Navigator.pushNamed(context, '/paywall');
             },
-            child: Text(isFree ? 'Start Free Trial' : 'View Plans'),
+            child: const Text('View Plans'),
           ),
         ],
       ),

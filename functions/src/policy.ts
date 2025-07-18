@@ -7,27 +7,25 @@ const firestore = getFirestore();
 /** Centralised plan limits for reference */
 export const tierLimits = {
   free:        { translation: 0, recipes: 0, images: 0 },
-  taster:      { translation: 1, recipes: 5, images: 5 },
   home_chef:   { translation: 5, recipes: 20, images: 20 },
   master_chef: { translation: Infinity, recipes: Infinity, images: Infinity },
 };
 
 /** Maps RevenueCat product IDs to internal tier labels */
-function resolveTierFromEntitlement(entitlementId: string): 'master_chef' | 'home_chef' | 'taster' {
+function resolveTierFromEntitlement(entitlementId: string): 'master_chef' | 'home_chef' | 'free' {
   switch (entitlementId) {
     case 'master_chef_yearly':
     case 'master_chef_monthly':
       return 'master_chef';
     case 'home_chef_monthly':
       return 'home_chef';
-    case 'taster_trial':
     default:
-      return 'taster';
+      return 'free';
   }
 }
 
 /** Retrieves the resolved tier for a user via Firestore or RevenueCat fallback */
-async function getResolvedTier(uid: string): Promise<'free' | 'taster' | 'home_chef' | 'master_chef'> {
+async function getResolvedTier(uid: string): Promise<'free' | 'home_chef' | 'master_chef'> {
   const userRef = firestore.collection("users").doc(uid);
   const doc = await userRef.get();
   const userData = doc.data();
@@ -56,37 +54,17 @@ async function getResolvedTier(uid: string): Promise<'free' | 'taster' | 'home_c
       entitlementId: entitlementFromRevenueCat,
     };
 
-    if (resolvedTier !== 'taster') {
-      update.trialStartDate = FieldValue.delete();
-      update.trialActive = FieldValue.delete();
-      console.log(`🧹 Removed trial fields for UID ${uid} due to upgrade.`);
-    }
-
     await userRef.set(update, { merge: true });
     console.log(`✅ Updated Firestore tier for UID ${uid}:`, {
       tier: resolvedTier,
       entitlementId: entitlementFromRevenueCat,
     });
+
     return resolvedTier;
   }
 
   console.warn(`❌ No entitlement found in RevenueCat — defaulting to "free" for UID ${uid}`);
-  return firestoreTier ?? 'free';
-}
-
-/** Checks if the user is within their 7-day Taster trial period. */
-async function isTrialActive(uid: string): Promise<boolean> {
-  const doc = await firestore.collection("users").doc(uid).get();
-  const startStr = doc.data()?.trialStartDate;
-  if (!startStr) return false;
-
-  const start = new Date(startStr);
-  const now = new Date();
-  const days = (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-  const active = days < 7;
-
-  console.log(`⏱️ Trial check for UID ${uid}: ${active ? 'ACTIVE' : 'EXPIRED'} (${days.toFixed(1)} days elapsed)`);
-  return active;
+  return 'free';
 }
 
 /** Enforces GPT recipe generation limits based on subscription tier. */
@@ -97,15 +75,6 @@ async function enforceGptRecipePolicy(uid: string): Promise<void> {
   const monthKey = new Date().toISOString().slice(0, 7);
   const usageDoc = await firestore.doc(`users/${uid}/aiUsage/usage`).get();
   const monthlyUsed = usageDoc.data()?.[monthKey] || 0;
-  const totalUsed = usageDoc.data()?.total || 0;
-
-  if (await isTrialActive(uid)) {
-    console.log(`🧪 Trial user (${uid}) — GPT usage: total=${totalUsed}, month=${monthlyUsed}`);
-    if (totalUsed >= limits.recipes) {
-      throw new HttpsError("permission-denied", `Taster trial includes up to ${limits.recipes} AI recipes. Upgrade to continue.`);
-    }
-    return;
-  }
 
   if (limits.recipes !== Infinity && monthlyUsed >= limits.recipes) {
     throw new HttpsError("resource-exhausted", `${tier.replace("_", " ")} plan allows up to ${limits.recipes} AI recipes per month.`);
@@ -145,15 +114,6 @@ async function enforceTranslationPolicy(uid: string): Promise<void> {
   const monthKey = new Date().toISOString().slice(0, 7);
   const usageDoc = await firestore.doc(`users/${uid}/translationUsage/usage`).get();
   const monthlyUsed = usageDoc.data()?.[monthKey] || 0;
-  const totalUsed = usageDoc.data()?.total || 0;
-
-  if (await isTrialActive(uid)) {
-    console.log(`🧪 Trial translation usage — UID: ${uid}, total: ${totalUsed}`);
-    if (totalUsed >= limits.translation) {
-      throw new HttpsError("permission-denied", `Taster trial includes ${limits.translation} translation. Upgrade to continue.`);
-    }
-    return;
-  }
 
   if (limits.translation !== Infinity && monthlyUsed >= limits.translation) {
     throw new HttpsError("resource-exhausted", `${tier.replace("_", " ")} plan allows up to ${limits.translation} translations per month.`);
@@ -178,7 +138,6 @@ async function incrementTranslationUsage(uid: string): Promise<void> {
 }
 
 export {
-  isTrialActive,
   enforceGptRecipePolicy,
   incrementGptRecipeUsage,
   enforceTranslationPolicy,

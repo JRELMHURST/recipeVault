@@ -135,32 +135,25 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   children: [
                     if (isFree)
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          border: Border.all(color: Colors.red.shade300),
-                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.orange.shade50,
+                          border: Border.all(color: Colors.orange.shade300),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '🔒 You’re currently on the Free plan.',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Some features are restricted. Start a free trial or upgrade to unlock AI tools, image uploads and more.',
-                            ),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, '/trial');
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.deepPurple,
+                          children: const [
+                            Text(
+                              '🔓 Free Plan Access',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
                               ),
-                              child: const Text('Start Free Taster Trial'),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'You currently have access to a selection of sample global recipes.\n\nTo scan your own, upload images, use AI tools, or save favourites — you’ll need to upgrade.',
                             ),
                           ],
                         ),

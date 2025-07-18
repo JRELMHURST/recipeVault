@@ -87,37 +87,45 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   Future<void> _loadRecipes() async {
     try {
-      // User-authenticated Firestore access
+      // Firestore personal recipes
       final snapshot = await recipeCollection
           .orderBy('createdAt', descending: true)
           .get();
-
       final userRecipes = snapshot.docs
           .map((doc) => RecipeCardModel.fromJson(doc.data()))
           .toList();
 
-      // Global public recipes
+      // Hidden global recipes
+      final hiddenSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('hiddenGlobalRecipes')
+          .get();
+      final hiddenGlobalIds = hiddenSnapshot.docs.map((doc) => doc.id).toSet();
+
+      // Global public recipes (excluding hidden ones)
       final globalSnapshot = await FirebaseFirestore.instance
           .collection('global_recipes')
           .orderBy('createdAt', descending: true)
           .get();
-
       final globalRecipes = globalSnapshot.docs
+          .where((doc) => !hiddenGlobalIds.contains(doc.id))
           .map((doc) => RecipeCardModel.fromJson(doc.data()))
           .toList();
 
-      // Merge with priority to user recipes
+      // Merge (user recipes override global ones by ID)
       final Map<String, RecipeCardModel> recipeMap = {};
-
       for (final recipe in globalRecipes) {
         recipeMap[recipe.id] = recipe;
       }
-
       for (final recipe in userRecipes) {
-        recipeMap[recipe.id] = recipe; // override if also in global
+        // Skip old duplicated global recipes in the user collection
+        if (recipe.isGlobal == true) continue;
+
+        recipeMap[recipe.id] = recipe;
       }
 
-      // Cache in Hive and update state
+      // Cache to Hive
       for (final recipe in recipeMap.values) {
         await HiveRecipeService.save(recipe);
       }
@@ -138,26 +146,44 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   Future<void> _deleteRecipe(RecipeCardModel recipe) async {
     try {
-      await recipeCollection.doc(recipe.id).delete();
+      final isGlobalRecipe =
+          !(await recipeCollection.doc(recipe.id).get()).exists;
+
+      if (isGlobalRecipe) {
+        // Soft delete → mark global recipe as hidden
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('hiddenGlobalRecipes')
+            .doc(recipe.id)
+            .set({'hiddenAt': FieldValue.serverTimestamp()});
+
+        debugPrint(
+          "🙈 Soft-deleted global recipe ${recipe.id} for user $userId",
+        );
+      } else {
+        // Fully delete personal recipe
+        await recipeCollection.doc(recipe.id).delete();
+        if (recipe.imageUrl?.isNotEmpty ?? false) {
+          try {
+            final ref = FirebaseStorage.instance.refFromURL(recipe.imageUrl!);
+            await ref.delete();
+          } catch (e) {
+            debugPrint('❌ Failed to delete attached image: $e');
+          }
+        }
+
+        for (final url in recipe.originalImageUrls) {
+          try {
+            final ref = FirebaseStorage.instance.refFromURL(url);
+            await ref.delete();
+          } catch (e) {
+            debugPrint('❌ Failed to delete original image: $e');
+          }
+        }
+      }
+
       await HiveRecipeService.delete(recipe.id);
-
-      if (recipe.imageUrl?.isNotEmpty ?? false) {
-        try {
-          final ref = FirebaseStorage.instance.refFromURL(recipe.imageUrl!);
-          await ref.delete();
-        } catch (e) {
-          debugPrint('❌ Failed to delete attached image: $e');
-        }
-      }
-
-      for (final url in recipe.originalImageUrls) {
-        try {
-          final ref = FirebaseStorage.instance.refFromURL(url);
-          await ref.delete();
-        } catch (e) {
-          debugPrint('❌ Failed to delete original image: $e');
-        }
-      }
 
       setState(() {
         _allRecipes.removeWhere((r) => r.id == recipe.id);

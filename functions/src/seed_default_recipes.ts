@@ -78,7 +78,7 @@ export const seedDefaultRecipes = onRequest(async (_req, res) => {
 
     for (const recipe of globalRecipes) {
       const docRef = collection.doc(recipe.id);
-      batch.set(docRef, recipe, { merge: true }); // Prevents overwriting if re-run
+      batch.set(docRef, recipe, { merge: false }); // Prevents overwriting if re-run
     }
 
     await batch.commit();

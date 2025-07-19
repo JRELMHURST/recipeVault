@@ -1,8 +1,6 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { logger, setGlobalOptions } from 'firebase-functions';
-
-setGlobalOptions({ region: 'europe-west2' });
+import { logger } from 'firebase-functions';
 
 const db = getFirestore();
 

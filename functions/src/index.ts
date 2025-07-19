@@ -5,3 +5,4 @@ export { deleteAccount } from './delete_account.js';
 export { sharedRecipePage } from './shared_recipe_page.js';
 export { seedDefaultRecipes } from './seed_default_recipes.js';
 export { copyGlobalRecipesToUser } from './copy_global_recipes.js'; // ✅ New addition
+export { refreshGlobalRecipesForUser } from './refresh_global_recipes.js'; // ✅ Manual refresh function

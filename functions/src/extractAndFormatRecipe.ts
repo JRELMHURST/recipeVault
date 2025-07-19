@@ -2,6 +2,7 @@ import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https
 import { defineSecret } from "firebase-functions/params";
 import { getStorage } from "firebase-admin/storage";
 import { decode } from "html-entities";
+import admin from "./firebase.js"; // ✅ Ensures Firebase is initialised
 
 import { extractTextFromImages } from "./ocr.js";
 import { detectLanguage } from "./detect.js";
@@ -45,7 +46,6 @@ async function deleteUploadedImage(url: string) {
 
 export const extractAndFormatRecipe = onCall(
   {
-    region: "europe-west2",
     secrets: [REVENUECAT_SECRET_KEY, OPENAI_API_KEY],
   },
   async (request: CallableRequest<{ imageUrls: string[] }>) => {
@@ -151,6 +151,39 @@ export const extractAndFormatRecipe = onCall(
       await incrementGptRecipeUsage(uid);
 
       await Promise.all(imageUrls.map(deleteUploadedImage));
+
+      // 🔄 Auto-refresh global recipes for the user
+      try {
+        const globalSnapshot = await admin.firestore().collection('global_recipes').get();
+        if (!globalSnapshot.empty) {
+          const userRecipesRef = admin.firestore().collection(`users/${uid}/recipes`);
+          const batch = admin.firestore().batch();
+
+          for (const doc of globalSnapshot.docs) {
+            const globalRecipe = doc.data();
+            const recipeId = doc.id;
+
+            const docRef = userRecipesRef.doc(recipeId);
+            batch.set(docRef, {
+              ...globalRecipe,
+              userId: uid,
+              isGlobal: true,
+              createdAt: globalRecipe.createdAt ?? admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
+
+          const userDocRef = admin.firestore().doc(`users/${uid}`);
+          batch.update(userDocRef, {
+            lastGlobalSync: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+          await batch.commit();
+          console.log(`🔄 Global recipes refreshed for ${uid} (${globalSnapshot.size})`);
+        }
+      } catch (e) {
+        console.warn(`⚠️ Failed to auto-refresh global recipes:`, e);
+      }
+
       console.log(`🏁 Processing complete in ${Date.now() - start}ms`);
 
       return {

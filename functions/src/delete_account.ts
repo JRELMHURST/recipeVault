@@ -10,7 +10,6 @@ const storage = getStorage();
 
 export const deleteAccount = onCall(
   {
-    region: "europe-west2",
     enforceAppCheck: false, // ✅ Currently disabled, adjust if needed later
   },
   async (request) => {

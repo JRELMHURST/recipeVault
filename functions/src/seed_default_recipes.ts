@@ -1,11 +1,11 @@
 import { onRequest } from 'firebase-functions/v2/https';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 
 const db = getFirestore();
 
 export const seedDefaultRecipes = onRequest(async (_req, res) => {
-  const now = new Date();
+  const now = Timestamp.now();
 
   const globalRecipes = [
     {
@@ -27,7 +27,8 @@ export const seedDefaultRecipes = onRequest(async (_req, res) => {
         'Blend on high for 30–45 seconds until smooth and creamy.',
         'Pour into a glass and serve immediately.',
       ],
-      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/recipevault-bg-ai.firebasestorage.app/o/global_recipes%2Fbreakfast-smoothie.jpg?alt=media&token=271e30bd-aee9-4dc9-a2ef-440ad516e126',
+      imageUrl:
+        'https://firebasestorage.googleapis.com/v0/b/recipevault-bg-ai.firebasestorage.app/o/global_recipes%2Fbreakfast-smoothie.jpg?alt=media&token=271e30bd-aee9-4dc9-a2ef-440ad516e126',
       categories: ['Breakfast'],
       isFavourite: false,
       originalImageUrls: [],
@@ -57,7 +58,8 @@ export const seedDefaultRecipes = onRequest(async (_req, res) => {
         'Lift out with a slotted spoon and drain on kitchen paper.',
         'Serve on buttered toast with salt and pepper.',
       ],
-      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/recipevault-bg-ai.firebasestorage.app/o/global_recipes%2Fpoached_egg_final.jpg?alt=media&token=c3a1ff30-7f53-4cf9-b7d1-669a72204c63',
+      imageUrl:
+        'https://firebasestorage.googleapis.com/v0/b/recipevault-bg-ai.firebasestorage.app/o/global_recipes%2Fpoached_egg_final.jpg?alt=media&token=c3a1ff30-7f53-4cf9-b7d1-669a72204c63',
       categories: ['Brunch'],
       isFavourite: false,
       originalImageUrls: [],
@@ -89,7 +91,8 @@ export const seedDefaultRecipes = onRequest(async (_req, res) => {
         'Bake for 15–20 minutes until the pastry is golden and puffed.',
         'Top with fresh basil and a drizzle of olive oil before serving.',
       ],
-      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/recipevault-bg-ai.firebasestorage.app/o/global_recipes%2Fpuff_pastry_pizza_final.jpg?alt=media&token=613d4ee1-15f3-4d29-9582-492bb39b0930',
+      imageUrl:
+        'https://firebasestorage.googleapis.com/v0/b/recipevault-bg-ai.firebasestorage.app/o/global_recipes%2Fpuff_pastry_pizza_final.jpg?alt=media&token=613d4ee1-15f3-4d29-9582-492bb39b0930',
       categories: ['Dinner'],
       isFavourite: false,
       originalImageUrls: [],
@@ -101,12 +104,20 @@ export const seedDefaultRecipes = onRequest(async (_req, res) => {
   ];
 
   try {
-    const batch = db.batch();
     const collection = db.collection('global_recipes');
 
+    // 🔥 Delete all existing global recipes individually (outside batch)
+    const existingDocs = await collection.listDocuments();
+    for (const doc of existingDocs) {
+      logger.info(`🗑️ Deleting old doc: ${doc.id}`);
+      await doc.delete();
+    }
+
+    // 🆕 Add updated recipes
+    const batch = db.batch();
     for (const recipe of globalRecipes) {
       const docRef = collection.doc(recipe.id);
-      batch.set(docRef, recipe, { merge: true });
+      batch.set(docRef, recipe); // full overwrite
     }
 
     await batch.commit();

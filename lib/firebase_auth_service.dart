@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'package:recipe_vault/model/recipe_card_model.dart';
@@ -121,6 +122,18 @@ class AuthService {
       } else {
         debugPrint('ℹ️ Firestore user doc already up to date.');
       }
+    }
+
+    // 🔁 Refresh global recipes
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'refreshGlobalRecipesForUser',
+      );
+      final result = await callable();
+      debugPrint('🍽 Global recipes refreshed: ${result.data['copiedCount']}');
+    } catch (e, stack) {
+      debugPrint('⚠️ Failed to refresh global recipes: $e');
+      debugPrint(stack.toString());
     }
   }
 

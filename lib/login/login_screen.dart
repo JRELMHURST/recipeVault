@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
-import 'package:recipe_vault/services/user_session_service.dart'; // ✅ Re-added
+import 'package:recipe_vault/services/user_session_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,7 +16,26 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  late FocusNode _emailFocus;
+
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailFocus = FocusNode();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _emailFocus.requestFocus(); // ⌨️ Ensure keyboard shows on iPad
+    });
+  }
+
+  @override
+  void dispose() {
+    _emailFocus.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _signInWithEmail() async {
     setState(() => _isLoading = true);
@@ -24,10 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final email = emailController.text.trim();
       final password = passwordController.text.trim();
       await AuthService().signInWithEmail(email, password);
-
-      // ✅ Ensure subscription tier, entitlement, and Firestore sync
       await UserSessionService.init();
-
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
@@ -53,9 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // ✅ Ensure subscription tier, entitlement, and Firestore sync
       await UserSessionService.init();
-
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
@@ -71,7 +85,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   String _friendlyAuthError(Object e) {
     final message = e.toString().toLowerCase();
-
     if (message.contains('invalid-credential')) {
       return 'The email or password is incorrect. Please try again.';
     } else if (message.contains('user-not-found')) {
@@ -83,7 +96,6 @@ class _LoginScreenState extends State<LoginScreen> {
     } else if (message.contains('network-request-failed')) {
       return 'Network error. Please check your connection.';
     }
-
     return 'Login failed. Please check your details and try again.';
   }
 
@@ -155,6 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               const SizedBox(height: 24),
                               TextField(
                                 controller: emailController,
+                                focusNode: _emailFocus,
                                 keyboardType: TextInputType.emailAddress,
                                 textInputAction: TextInputAction.next,
                                 decoration: const InputDecoration(

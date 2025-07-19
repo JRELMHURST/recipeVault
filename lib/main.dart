@@ -85,9 +85,12 @@ Future<void> main() async {
 
   // 🐝 Hive local storage
   await Hive.initFlutter();
+
+  // ✅ Register first
   Hive.registerAdapter(RecipeCardModelAdapter());
   Hive.registerAdapter(CategoryModelAdapter());
 
+  // ✅ Then open boxes
   try {
     await Hive.openBox<RecipeCardModel>('recipes');
     await Hive.openBox<CategoryModel>('categories');

@@ -124,17 +124,23 @@ class AuthService {
       }
     }
 
-    // 🔁 Refresh global recipes
+    // 🔄 Refresh global recipes
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable(
-        'refreshGlobalRecipesForUser',
-      );
+      final callable = FirebaseFunctions.instanceFor(
+        region: 'europe-west2',
+      ).httpsCallable('refreshGlobalRecipesForUser');
       final result = await callable();
-      debugPrint('🍽 Global recipes refreshed: ${result.data['copiedCount']}');
+      final count = result.data['copiedCount'];
+      debugPrint('🍽 Global recipes refreshed: $count item(s) copied');
     } catch (e, stack) {
       debugPrint('⚠️ Failed to refresh global recipes: $e');
       debugPrint(stack.toString());
     }
+  }
+
+  /// 📣 Static method for other services to call (e.g. UserSessionService)
+  static Future<void> ensureUserDocumentIfMissing(User user) async {
+    await AuthService()._ensureUserDocument(user);
   }
 
   /// 🔄 Safely clears a Hive box

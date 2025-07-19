@@ -5,6 +5,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../rev_cat/subscription_service.dart';
 import '../rev_cat/tier_utils.dart';
+import '../firebase_auth_service.dart'; // For ensureUserDocumentIfMissing
 
 class UserSessionService {
   /// 🏁 Initialise RevenueCat + Firestore sync
@@ -29,6 +30,9 @@ class UserSessionService {
 
       await syncRevenueCatEntitlement();
       await SubscriptionService().refresh();
+
+      // 🔁 Ensure Firestore user doc + refresh global recipes
+      await AuthService.ensureUserDocumentIfMissing(user);
 
       _logDebug('✅ UserSessionService initialised for ${user.uid}');
     } catch (e) {
@@ -103,6 +107,11 @@ class UserSessionService {
           await syncRevenueCatEntitlement();
           await SubscriptionService().loadSubscriptionStatus();
           await SubscriptionService().refresh();
+
+          final user = FirebaseAuth.instance.currentUser;
+          if (user != null) {
+            await AuthService.ensureUserDocumentIfMissing(user);
+          }
 
           _logDebug('✅ Retried entitlement sync succeeded for $userId');
         } else {

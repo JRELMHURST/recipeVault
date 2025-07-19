@@ -93,7 +93,9 @@
 
 	<!-- ✅ Communication entitlement compliance -->
 	<key>NSUserActivityTypes</key>
-	<array/>
+	<array>
+		<string>INSendMessageIntent</string>
+	</array>
 
 	<!-- ✅ UK Localisation Fix -->
 	<key>CFBundleLocalizations</key>

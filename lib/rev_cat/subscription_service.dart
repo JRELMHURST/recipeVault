@@ -63,6 +63,9 @@ class SubscriptionService extends ChangeNotifier {
     };
   }
 
+  /// ✅ Can start taster trial
+  bool get canStartTrial => tier == 'free' && !isTasterTrialActive;
+
   /// 🧩 Emoji icon for tier-based branding
   String get tierIcon {
     return switch (_tier) {

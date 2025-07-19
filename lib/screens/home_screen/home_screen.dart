@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/rev_cat/trial_prompt_helper.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
@@ -37,7 +38,6 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
 
-    // ⏳ Wait for tier to resolve before showing trial prompt
     final subService = SubscriptionService();
     if (subService.tier != 'none') {
       await TrialPromptHelper.showIfTryingRestrictedFeature(context);
@@ -64,7 +64,42 @@ class _HomeScreenState extends State<HomeScreen> {
     if (index == 0) {
       final canCreate = SubscriptionService().allowImageUpload;
       if (!canCreate) {
-        await TrialPromptHelper.showIfTryingRestrictedFeature(context);
+        HapticFeedback.mediumImpact();
+
+        final showTrial = SubscriptionService().canStartTrial;
+
+        await showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Upgrade to Unlock'),
+            content: const Text(
+              'Creating recipes by uploading images is only available on paid plans.\n\n'
+              'Start a free trial or upgrade to unlock this feature.',
+            ),
+            actions: [
+              if (showTrial)
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/trial');
+                  },
+                  child: const Text('Start Free Trial'),
+                ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/paywall');
+                },
+                child: const Text('View Plans'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+        );
+
         return;
       }
 

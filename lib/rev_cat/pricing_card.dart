@@ -28,6 +28,13 @@ class PricingCard extends StatelessWidget {
     final description = _getDescription(package);
     final features = _getFeatures(package);
 
+    final isAnnual = _isAnnual(package);
+    final isMonthly =
+        !isAnnual &&
+        package.storeProduct.subscriptionPeriod?.toLowerCase().contains('m') ==
+            true;
+    final hasFreeTrial = isMonthly; // UI-level assumption only
+
     return Opacity(
       opacity: isDisabled ? 0.6 : 1.0,
       child: LayoutBuilder(
@@ -79,7 +86,7 @@ class PricingCard extends StatelessWidget {
                             color: Colors.deepPurple,
                           ),
                         ),
-                        if (_isAnnual(package))
+                        if (isAnnual)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
@@ -135,7 +142,7 @@ class PricingCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (badge != null)
+                if (badge != null || hasFreeTrial)
                   Positioned(
                     top: -12,
                     left: 0,
@@ -147,7 +154,9 @@ class PricingCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.amber.shade700,
+                          color: badge != null
+                              ? Colors.amber.shade700
+                              : Colors.green.shade700,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
@@ -158,7 +167,7 @@ class PricingCard extends StatelessWidget {
                           ],
                         ),
                         child: Text(
-                          badge!,
+                          badge ?? '7-Day Free Trial',
                           style: theme.textTheme.labelSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,

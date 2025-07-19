@@ -57,11 +57,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
     try {
       await Purchases.purchasePackage(package);
-
-      // 🧠 Sync new entitlement to Firestore
       await UserSessionService.syncRevenueCatEntitlement();
-
-      // 🔁 Refresh in-memory SubscriptionService state
       await _subscriptionService.refresh();
 
       if (!mounted) return;
@@ -196,7 +192,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       final isAnnual =
                           pkg.storeProduct.subscriptionPeriod == 'P1Y';
                       final isCurrent = currentEntitlement == pkg.identifier;
-                      final badge = isAnnual ? 'Best Value' : null;
+                      final badge = isCurrent
+                          ? 'Current Plan'
+                          : isAnnual
+                          ? 'Best Value'
+                          : '7-Day Free Trial';
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
@@ -208,7 +208,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             }
                           },
                           isDisabled: isCurrent,
-                          badge: isCurrent ? 'Current Plan' : badge,
+                          badge: badge,
                         ),
                       );
                     }),

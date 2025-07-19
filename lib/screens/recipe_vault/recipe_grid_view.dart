@@ -92,6 +92,8 @@ class RecipeGridView extends StatelessWidget {
         final recipe = recipes[index];
         final primaryCategory = recipe.categories.isNotEmpty
             ? recipe.categories.first
+            : recipe.isFavourite
+            ? 'Favourites'
             : 'Uncategorised';
 
         return GestureDetector(

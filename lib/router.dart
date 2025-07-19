@@ -115,6 +115,10 @@ Widget buildAppWithRouter() {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeNotifier.themeMode,
+        supportedLocales: const [
+          Locale('en', 'GB'), // 🇬🇧 British English (default)
+        ],
+        locale: const Locale('en', 'GB'),
         onGenerateRoute: generateRoute,
         builder: (context, child) {
           return MediaQuery(

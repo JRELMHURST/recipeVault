@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
@@ -45,6 +45,11 @@ class _LoginScreenState extends State<LoginScreen> {
       await AuthService().signInWithEmail(email, password);
       await UserSessionService.init();
       if (!mounted) return;
+
+      // ⌨️ Dismiss keyboard before navigating
+      FocusManager.instance.primaryFocus?.unfocus();
+      await Future.delayed(Duration(milliseconds: 100));
+
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;
@@ -71,6 +76,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
       await UserSessionService.init();
       if (!mounted) return;
+
+      // ⌨️ Dismiss keyboard before navigating
+      FocusManager.instance.primaryFocus?.unfocus();
+      await Future.delayed(Duration(milliseconds: 100));
+
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;

@@ -24,6 +24,7 @@ class PricingCard extends StatelessWidget {
     final price = product.priceString;
 
     final title = _getTitle(package);
+    final subtitle = _getSubtitle(package);
     final description = _getDescription(package);
     final features = _getFeatures(package);
 
@@ -46,11 +47,27 @@ class PricingCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (subtitle != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  subtitle,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.textTheme.bodySmall?.color
+                                        ?.withOpacity(0.6),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Text(description, style: theme.textTheme.bodyMedium),
@@ -166,20 +183,24 @@ class PricingCard extends StatelessWidget {
 
   String _getTitle(Package package) {
     final offering = package.offeringIdentifier;
-    final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
 
     if (offering == 'home_chef_plan') {
       return '👨‍🍳 Home Chef Plan';
     }
 
     if (offering == 'master_chef_plan') {
-      return period.contains('y')
-          ? '👑 Master Chef - Annual'
-          : '👑 Master Chef - Monthly';
+      return '👑 Master Chef';
     }
 
-    // Fallback
     return package.storeProduct.title;
+  }
+
+  String? _getSubtitle(Package package) {
+    final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
+    if (package.offeringIdentifier == 'master_chef_plan') {
+      return period.contains('y') ? 'Annual Plan' : 'Monthly Plan';
+    }
+    return null;
   }
 
   String _getDescription(Package package) {

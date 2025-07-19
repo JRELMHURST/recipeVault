@@ -99,37 +99,37 @@ export const extractAndFormatRecipe = onCall(
         detectedLanguage.toLowerCase() === "en" ||
         detectedLanguage.toLowerCase().startsWith("en-");
 
-      if (!isLikelyEnglish) {
-        try {
-          console.log(`🚧 Translating from "${detectedLanguage}" → en-GB...`);
-          const result = await translateToEnglish(cleanInput, detectedLanguage, projectId);
+if (!isLikelyEnglish) {
+  try {
+    console.log(`🚧 Translating from "${detectedLanguage}" → en-GB...`);
+    const result = await translateToEnglish(cleanInput, detectedLanguage, projectId);
 
-          if (result?.trim()) {
-            const cleanedOriginal = cleanText(cleanInput);
-            const cleanedTranslated = cleanText(result.trim());
+    if (result?.trim()) {
+      const cleanedTranslated = cleanText(result.trim());
 
-            if (cleanedOriginal !== cleanedTranslated) {
-              await enforceTranslationPolicy(uid);
+      // Use the translated result regardless of similarity
+      translatedText = result.trim();
+      translationUsed = true;
+      previewText("📝 Translated preview", translatedText);
 
-              translatedText = result.trim();
-              translationUsed = true;
-              previewText("📝 Translated preview", translatedText);
-            } else {
-              console.log("⚠️ Translated text is too similar to original — skipping translation usage.");
-            }
-          } else {
-            console.warn("⚠️ Translation returned empty or null. Skipping.");
-          }
-        } catch (err) {
-          console.error("❌ Translation failed:", err);
-        }
-      } else {
-        console.log("🟢 Skipping translation – already English");
-      }
-
-      if (translationUsed) {
+      // Only count towards usage if translation was meaningful
+      const cleanedOriginal = cleanText(cleanInput);
+      if (cleanedOriginal !== cleanedTranslated) {
+        await enforceTranslationPolicy(uid);
         await incrementTranslationUsage(uid);
+      } else {
+        console.log("⚠️ Translation was minimal — skipping usage enforcement.");
       }
+
+    } else {
+      console.warn("⚠️ Translation returned empty or null. Skipping.");
+    }
+  } catch (err) {
+    console.error("❌ Translation failed:", err);
+  }
+} else {
+  console.log("🟢 Skipping translation – already English");
+}
 
       const usedText = translationUsed ? translatedText : cleanInput;
 

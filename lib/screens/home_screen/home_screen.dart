@@ -81,17 +81,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, '/trial');
+                    Navigator.pushNamed(context, '/paywall');
                   },
-                  child: const Text('Start Free Trial'),
+                  child: const Text('View Plans'),
                 ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/paywall');
-                },
-                child: const Text('View Plans'),
-              ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Cancel'),

@@ -111,12 +111,21 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           .toList();
 
       final Map<String, RecipeCardModel> recipeMap = {};
+
       for (final recipe in globalRecipes) {
-        recipeMap[recipe.id] = recipe;
+        final key = recipe.title.trim().toLowerCase();
+        recipeMap[key] = recipe;
       }
+
       for (final recipe in userRecipes) {
-        if (recipe.isGlobal == true) continue;
-        recipeMap[recipe.id] = recipe;
+        final key = recipe.title.trim().toLowerCase();
+        final existing = recipeMap[key];
+
+        if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
+          recipeMap[key] = recipe;
+        } else if (existing == null) {
+          recipeMap[key] = recipe;
+        }
       }
 
       for (final recipe in recipeMap.values) {

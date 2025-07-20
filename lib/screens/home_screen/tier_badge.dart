@@ -21,15 +21,10 @@ class TierBadge extends StatelessWidget {
     return ValueListenableBuilder<String>(
       valueListenable: subscriptionService.tierNotifier,
       builder: (context, tier, _) {
-        debugPrint('🧪 TierBadge: current tier is "$tier"');
+        // Fallback for unrecognised tiers
+        final isFreeTier = tier.isEmpty || tier == 'none' || tier == 'free';
 
-        // Treat 'none', empty or 'free' as Free tier
-        final isFree = tier.isEmpty || tier == 'none' || tier == 'free';
-
-        if (isFree) {
-          debugPrint(
-            '🕒 TierBadge fallback: showing default RecipeVault title',
-          );
+        if (isFreeTier) {
           return showAsTitle
               ? Text(
                   'RecipeVault',
@@ -42,41 +37,42 @@ class TierBadge extends StatelessWidget {
               : const SizedBox.shrink();
         }
 
-        // Define label and colour for known tiers
-        final tierMap = {
-          'taster': ('Taster', Colors.deepPurple),
-          'home_chef': ('Home Chef', Colors.teal),
-          'master_chef': ('Master Chef', Colors.amber),
+        // Known tiers with labels and default colours
+        final tierStyles = {
+          'taster': ('🥄 Taster', Colors.deepPurple),
+          'home_chef': ('👨‍🍳 Home Chef', Colors.teal),
+          'master_chef': ('👑 Master Chef', Colors.amber),
         };
 
-        final labelColourPair = tierMap[tier];
-        final label = labelColourPair?.$1 ?? '❓ Unknown';
-        final defaultColour = labelColourPair?.$2 ?? Colors.grey;
-        final colour = overrideColor ?? defaultColour;
-
-        debugPrint('✅ TierBadge rendering: "$label"');
+        final style = tierStyles[tier];
+        final label = style?.$1 ?? '❓ Unknown';
+        final baseColour = overrideColor ?? style?.$2 ?? Colors.grey;
 
         if (showAsTitle) {
+          final parts = label.split(' ');
+          final emoji = parts.first;
+          final text = parts.sublist(1).join(' ');
+
           return Center(
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  label.split(' ').first, // Emoji
+                  emoji,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontSize: 24,
                     height: 1,
-                    color: colour,
+                    color: baseColour,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  label.split(' ').sublist(1).join(' '), // Label
+                  text,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                     fontSize: 20,
                     height: 1.2,
-                    color: colour,
+                    color: baseColour,
                     letterSpacing: 0.2,
                   ),
                 ),
@@ -89,15 +85,15 @@ class TierBadge extends StatelessWidget {
           key: ValueKey(tier),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: colour.withOpacity(0.1),
+            color: baseColour.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: colour.withOpacity(0.6)),
+            border: Border.all(color: baseColour.withOpacity(0.6)),
           ),
           child: Text(
             label,
             style: theme.textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: colour,
+              color: baseColour,
             ),
           ),
         );

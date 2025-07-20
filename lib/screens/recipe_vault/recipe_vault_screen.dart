@@ -306,6 +306,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                             onToggleFavourite: _toggleFavourite,
                             categories: _allCategories,
                             onAssignCategories: _assignCategories,
+                            onDelete: _deleteRecipe,
                           ),
                           ViewMode.compact => RecipeCompactView(
                             recipes: filteredRecipes,

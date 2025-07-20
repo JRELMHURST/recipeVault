@@ -9,6 +9,7 @@ class RecipeGridView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
   final void Function(RecipeCardModel) onTap;
   final void Function(RecipeCardModel) onToggleFavourite;
+  final void Function(RecipeCardModel) onDelete;
   final List<String> categories;
   final void Function(RecipeCardModel, List<String>) onAssignCategories;
 
@@ -17,6 +18,7 @@ class RecipeGridView extends StatelessWidget {
     required this.recipes,
     required this.onTap,
     required this.onToggleFavourite,
+    required this.onDelete,
     required this.categories,
     required this.onAssignCategories,
   });
@@ -28,6 +30,32 @@ class RecipeGridView extends StatelessWidget {
         categories: categories,
         current: recipe.categories,
         onConfirm: (selected) => onAssignCategories(recipe, selected),
+      ),
+    );
+  }
+
+  void _showDeleteMenu(BuildContext context, RecipeCardModel recipe) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.redAccent),
+              title: const Text('Delete Recipe'),
+              textColor: Colors.redAccent,
+              iconColor: Colors.redAccent,
+              onTap: () {
+                Navigator.pop(context);
+                onDelete(recipe);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -50,6 +78,7 @@ class RecipeGridView extends StatelessWidget {
 
         return GestureDetector(
           onTap: () => onTap(recipe),
+          onLongPress: () => _showDeleteMenu(context, recipe),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
@@ -65,7 +94,6 @@ class RecipeGridView extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               child: Stack(
                 children: [
-                  // Recipe image
                   recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
                       ? Image.network(
                           recipe.imageUrl!,
@@ -104,7 +132,6 @@ class RecipeGridView extends StatelessWidget {
                           ),
                         ),
 
-                  // Gradient overlay with title
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -134,7 +161,6 @@ class RecipeGridView extends StatelessWidget {
                     ),
                   ),
 
-                  // Favourite icon (top-right)
                   Positioned(
                     top: 10,
                     right: 10,
@@ -159,7 +185,6 @@ class RecipeGridView extends StatelessWidget {
                     ),
                   ),
 
-                  // Category badge (top-left)
                   Positioned(
                     top: 10,
                     left: 10,

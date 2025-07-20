@@ -20,10 +20,54 @@ class RecipeGridView extends StatelessWidget {
     required this.onAssignCategories,
   });
 
+  void _showCategoryDialog(BuildContext context, RecipeCardModel recipe) async {
+    final selected = await showDialog<List<String>>(
+      context: context,
+      builder: (context) {
+        final selectedCategories = Set<String>.from(recipe.categories);
+        return AlertDialog(
+          title: const Text('Assign Categories'),
+          content: SingleChildScrollView(
+            child: Wrap(
+              spacing: 8,
+              children: categories.map((category) {
+                final isSelected = selectedCategories.contains(category);
+                return FilterChip(
+                  label: Text(category),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) {
+                      selectedCategories.add(category);
+                    } else {
+                      selectedCategories.remove(category);
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.pop(context, selectedCategories.toList()),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (selected != null) {
+      onAssignCategories(recipe, selected);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
-
     return GridView.builder(
       padding: const EdgeInsets.all(12),
       itemCount: recipes.length,
@@ -35,11 +79,8 @@ class RecipeGridView extends StatelessWidget {
       ),
       itemBuilder: (context, index) {
         final recipe = recipes[index];
-        final primaryCategory = recipe.categories.isNotEmpty
-            ? recipe.categories.first
-            : recipe.isFavourite
-            ? 'Favourites'
-            : 'Uncategorised';
+        final hasCategory = recipe.categories.isNotEmpty;
+        final primaryCategory = hasCategory ? recipe.categories.first : null;
 
         return GestureDetector(
           onTap: () => onTap(recipe),
@@ -97,7 +138,7 @@ class RecipeGridView extends StatelessWidget {
                           ),
                         ),
 
-                  // Gradient title overlay
+                  // Gradient overlay with title
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -153,10 +194,11 @@ class RecipeGridView extends StatelessWidget {
                   ),
 
                   // Category badge (top-left)
-                  if (primaryCategory != 'Uncategorised')
-                    Positioned(
-                      top: 10,
-                      left: 10,
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: GestureDetector(
+                      onTap: () => _showCategoryDialog(context, recipe),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -166,16 +208,28 @@ class RecipeGridView extends StatelessWidget {
                           color: Colors.white.withOpacity(0.85),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text(
-                          '❤️ $primaryCategory',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black87,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            hasCategory
+                                ? Text(
+                                    primaryCategory!,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black87,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.add,
+                                    size: 14,
+                                    color: Colors.black87,
+                                  ),
+                          ],
                         ),
                       ),
                     ),
+                  ),
                 ],
               ),
             ),

@@ -61,7 +61,34 @@ class RecipeListView extends StatelessWidget {
               child: const Icon(Icons.delete, color: Colors.white),
             ),
             direction: DismissDirection.endToStart,
-            onDismissed: (_) => onDelete(recipe),
+            onDismissed: (_) async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text("Delete Recipe?"),
+                  content: const Text(
+                    "Are you sure you want to delete this recipe? This cannot be undone.",
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text("Cancel"),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text("Delete"),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirmed == true) {
+                onDelete(recipe);
+              }
+            },
             child: GestureDetector(
               onTap: () => onTap(recipe),
               onLongPress: () => onDelete(recipe),

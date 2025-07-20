@@ -80,7 +80,7 @@ class RecipeCompactView extends StatelessWidget {
                   icon: Icon(
                     recipe.isFavourite ? Icons.favorite : Icons.favorite_border,
                     color: recipe.isFavourite ? Colors.redAccent : Colors.white,
-                    size: 36,
+                    size: 26,
                   ),
                   onPressed: () => onToggleFavourite(recipe),
                   padding: EdgeInsets.zero,

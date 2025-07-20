@@ -26,8 +26,8 @@ class RecipeCompactView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AssignCategoriesDialog(
-        allCategories: categories,
-        initialSelection: recipe.categories,
+        categories: categories,
+        current: recipe.categories,
         onConfirm: (selected) => onAssignCategories(recipe, selected),
       ),
     );

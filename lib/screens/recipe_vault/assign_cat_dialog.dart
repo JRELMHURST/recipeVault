@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 
-typedef AssignCategoriesCallback = void Function(List<String> selected);
-
 class AssignCategoriesDialog extends StatefulWidget {
-  final List<String> allCategories;
-  final List<String> initialSelection;
-  final AssignCategoriesCallback onConfirm;
+  final List<String> categories;
+  final List<String> current;
+  final void Function(List<String>) onConfirm;
 
   const AssignCategoriesDialog({
     super.key,
-    required this.allCategories,
-    required this.initialSelection,
+    required this.categories,
+    required this.current,
     required this.onConfirm,
   });
 
@@ -19,40 +17,30 @@ class AssignCategoriesDialog extends StatefulWidget {
 }
 
 class _AssignCategoriesDialogState extends State<AssignCategoriesDialog> {
-  late Set<String> _selected;
+  String? selected;
 
   @override
   void initState() {
     super.initState();
-    _selected = Set.from(widget.initialSelection);
+    selected = widget.current.isNotEmpty ? widget.current.first : null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredCategories = widget.allCategories
-        .where((c) => c != 'Favourites' && c != 'Translated' && c != 'All')
-        .toList();
+    final filtered = widget.categories.where(
+      (c) => c != 'Favourites' && c != 'Translated' && c != 'All',
+    );
 
     return AlertDialog(
-      title: const Text('Assign Categories'),
+      title: const Text('Assign Category'),
       content: SingleChildScrollView(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: filteredCategories.map((cat) {
-            return CheckboxListTile(
-              value: _selected.contains(cat),
-              onChanged: (val) {
-                setState(() {
-                  if (val == true) {
-                    _selected.add(cat);
-                  } else {
-                    _selected.remove(cat);
-                  }
-                });
-              },
+          children: filtered.map((cat) {
+            return RadioListTile<String>(
               title: Text(cat),
-              controlAffinity: ListTileControlAffinity.leading,
-              dense: true,
+              value: cat,
+              groupValue: selected,
+              onChanged: (value) => setState(() => selected = value),
             );
           }).toList(),
         ),
@@ -60,14 +48,14 @@ class _AssignCategoriesDialogState extends State<AssignCategoriesDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
+          child: const Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: () {
-            widget.onConfirm(_selected.toList());
+            widget.onConfirm(selected != null ? [selected!] : []);
             Navigator.pop(context);
           },
-          child: const Text("Save"),
+          child: const Text('Save'),
         ),
       ],
     );

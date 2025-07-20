@@ -164,12 +164,17 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         );
       } else {
         await recipeCollection.doc(recipe.id).delete();
+
         if (recipe.imageUrl?.isNotEmpty ?? false) {
           try {
             final ref = FirebaseStorage.instance.refFromURL(recipe.imageUrl!);
             await ref.delete();
           } catch (e) {
-            debugPrint('❌ Failed to delete attached image: $e');
+            if (e.toString().contains('object-not-found')) {
+              debugPrint('ℹ️ Image already deleted: ${recipe.imageUrl}');
+            } else {
+              debugPrint('❌ Failed to delete attached image: $e');
+            }
           }
         }
 
@@ -178,7 +183,11 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
             final ref = FirebaseStorage.instance.refFromURL(url);
             await ref.delete();
           } catch (e) {
-            debugPrint('❌ Failed to delete original image: $e');
+            if (e.toString().contains('object-not-found')) {
+              debugPrint('ℹ️ Image already deleted: $url');
+            } else {
+              debugPrint('❌ Failed to delete original image: $e');
+            }
           }
         }
       }

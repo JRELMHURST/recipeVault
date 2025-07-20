@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_card_menu.dart';
 import 'package:recipe_vault/screens/recipe_vault/assign_cat_dialog.dart';
+import 'package:recipe_vault/widgets/network_recipe_image.dart';
 
 class RecipeListView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
@@ -49,6 +49,8 @@ class RecipeListView extends StatelessWidget {
         itemCount: recipes.length,
         itemBuilder: (context, index) {
           final recipe = recipes[index];
+          final hasCategory = recipe.categories.isNotEmpty;
+          final primaryCategory = hasCategory ? recipe.categories.first : null;
 
           return Dismissible(
             key: Key(recipe.id),
@@ -62,6 +64,7 @@ class RecipeListView extends StatelessWidget {
             onDismissed: (_) => onDelete(recipe),
             child: GestureDetector(
               onTap: () => onTap(recipe),
+              onLongPress: () => onDelete(recipe),
               child: Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(
@@ -74,68 +77,79 @@ class RecipeListView extends StatelessWidget {
                 elevation: 3,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Stack(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                      recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
+                          ? NetworkRecipeImage(
+                              imageUrl: recipe.imageUrl!,
+                              width: 56,
+                              height: 56,
+                            )
+                          : _fallbackIcon(),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              recipe.title,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Tap to view recipe',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          ClipOval(
-                            child:
-                                recipe.imageUrl != null &&
-                                    recipe.imageUrl!.isNotEmpty
-                                ? Image.network(
-                                    recipe.imageUrl!,
-                                    width: 56,
-                                    height: 56,
-                                    fit: BoxFit.cover,
-                                    loadingBuilder:
-                                        (context, child, loadingProgress) {
-                                          if (loadingProgress == null) {
-                                            return child;
-                                          }
-                                          return _fallbackLoading();
-                                        },
-                                    errorBuilder: (_, __, ___) =>
-                                        _fallbackIcon(),
-                                  )
-                                : _fallbackIcon(),
+                          IconButton(
+                            icon: Icon(
+                              recipe.isFavourite
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              color: recipe.isFavourite
+                                  ? Colors.redAccent
+                                  : Colors.grey,
+                              size: 20,
+                            ),
+                            onPressed: () => onToggleFavourite(recipe),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  recipe.title,
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.fade,
-                                  softWrap: true,
+                          GestureDetector(
+                            onTap: () => _showCategoryDialog(context, recipe),
+                            child: Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                primaryCategory ?? 'Add',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Tap to view recipe',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
                         ],
-                      ),
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: RecipeCardMenu(
-                          isFavourite: recipe.isFavourite,
-                          onToggleFavourite: () => onToggleFavourite(recipe),
-                          onAssignCategories: () =>
-                              _showCategoryDialog(context, recipe),
-                        ),
                       ),
                     ],
                   ),
@@ -158,19 +172,6 @@ class RecipeListView extends StatelessWidget {
         LucideIcons.utensilsCrossed,
         size: 20,
         color: Colors.deepPurple,
-      ),
-    );
-  }
-
-  Widget _fallbackLoading() {
-    return Container(
-      width: 56,
-      height: 56,
-      alignment: Alignment.center,
-      child: const SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(strokeWidth: 2),
       ),
     );
   }

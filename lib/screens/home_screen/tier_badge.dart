@@ -44,9 +44,9 @@ class TierBadge extends StatelessWidget {
 
         // Define label and colour for known tiers
         final tierMap = {
-          'taster': ('🥄 Taster', Colors.deepPurple),
-          'home_chef': ('👨‍🍳 Home Chef', Colors.teal),
-          'master_chef': ('👑 Master Chef', Colors.amber),
+          'taster': ('Taster', Colors.deepPurple),
+          'home_chef': ('Home Chef', Colors.teal),
+          'master_chef': ('Master Chef', Colors.amber),
         };
 
         final labelColourPair = tierMap[tier];

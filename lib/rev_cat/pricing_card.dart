@@ -198,7 +198,7 @@ class PricingCard extends StatelessWidget {
     }
 
     if (offering == 'master_chef_plan') {
-      return '👑 Master Chef';
+      return 'Master Chef';
     }
 
     return package.storeProduct.title;

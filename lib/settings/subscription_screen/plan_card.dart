@@ -19,9 +19,9 @@ class PlanCard extends StatelessWidget {
     };
 
     final label = switch (tier) {
-      'master_chef' => '👑 Master Chef Plan$suffix',
-      'home_chef' => '👨‍🍳 Home Chef Plan',
-      'taster' => '🥄 Taster Plan',
+      'master_chef' => 'Master Chef Plan$suffix',
+      'home_chef' => 'Home Chef Plan',
+      'taster' => 'Taster Plan',
       'free' => '🔓 Free Plan',
       _ => '🔓 Free Plan',
     };

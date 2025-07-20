@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
-import 'package:recipe_vault/screens/recipe_vault/assign_cat_dropdown.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_long_press_menu.dart';
 
 class RecipeGridView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
@@ -23,32 +23,6 @@ class RecipeGridView extends StatelessWidget {
     required this.onAssignCategories,
   });
 
-  void _showDeleteMenu(BuildContext context, RecipeCardModel recipe) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.redAccent),
-              title: const Text('Delete Recipe'),
-              textColor: Colors.redAccent,
-              iconColor: Colors.redAccent,
-              onTap: () {
-                Navigator.pop(context);
-                onDelete(recipe);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
@@ -65,7 +39,14 @@ class RecipeGridView extends StatelessWidget {
 
         return GestureDetector(
           onTap: () => onTap(recipe),
-          onLongPress: () => _showDeleteMenu(context, recipe),
+          onLongPress: () => RecipeLongPressMenu.show(
+            context: context,
+            recipe: recipe,
+            onDelete: () => onDelete(recipe),
+            onAssignCategory: (selected) =>
+                onAssignCategories(recipe, selected),
+            categories: categories,
+          ),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
@@ -98,26 +79,10 @@ class RecipeGridView extends StatelessWidget {
                             );
                           },
                           errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.deepPurple.shade50,
-                              alignment: Alignment.center,
-                              child: Icon(
-                                LucideIcons.chefHat,
-                                size: 36,
-                                color: Colors.deepPurple.shade200,
-                              ),
-                            );
+                            return _fallbackIcon();
                           },
                         )
-                      : Container(
-                          color: Colors.deepPurple.shade50,
-                          alignment: Alignment.center,
-                          child: Icon(
-                            LucideIcons.chefHat,
-                            size: 36,
-                            color: Colors.deepPurple.shade200,
-                          ),
-                        ),
+                      : _fallbackIcon(),
 
                   // 🌙 Title overlay
                   Positioned(
@@ -173,24 +138,24 @@ class RecipeGridView extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  // 📂 Category dropdown
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: AssignCategoryDropdown(
-                      categories: categories,
-                      current: recipe.categories,
-                      onChanged: (selected) =>
-                          onAssignCategories(recipe, selected),
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _fallbackIcon() {
+    return Container(
+      color: Colors.deepPurple.shade50,
+      alignment: Alignment.center,
+      child: Icon(
+        LucideIcons.chefHat,
+        size: 36,
+        color: Colors.deepPurple.shade200,
+      ),
     );
   }
 }

@@ -1,24 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
-import 'package:recipe_vault/screens/recipe_vault/assign_cat_dropdown.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_card_menu.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_long_press_menu.dart';
 
 class RecipeCompactView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
   final void Function(RecipeCardModel) onTap;
+  final void Function(RecipeCardModel) onDelete;
   final void Function(RecipeCardModel) onToggleFavourite;
-  final List<String> categories;
   final void Function(RecipeCardModel, List<String>) onAssignCategories;
+  final List<String> categories;
 
   const RecipeCompactView({
     super.key,
     required this.recipes,
     required this.onTap,
+    required this.onDelete,
     required this.onToggleFavourite,
     required this.onAssignCategories,
     required this.categories,
   });
+
+  void _showActionMenu(BuildContext context, RecipeCardModel recipe) {
+    RecipeLongPressMenu.show(
+      context: context,
+      recipe: recipe,
+      onDelete: () => onDelete(recipe),
+      categories: categories,
+      onAssignCategory: (selected) => onAssignCategories(recipe, selected),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +47,7 @@ class RecipeCompactView extends StatelessWidget {
 
         return GestureDetector(
           onTap: () => onTap(recipe),
+          onLongPress: () => _showActionMenu(context, recipe),
           child: Stack(
             children: [
               ClipRRect(
@@ -61,26 +73,19 @@ class RecipeCompactView extends StatelessWidget {
                       )
                     : _fallbackIcon(),
               ),
-
-              // Favourite and options menu
               Positioned(
                 top: 4,
                 right: 4,
-                child: RecipeCardMenu(
-                  isFavourite: recipe.isFavourite,
-                  onToggleFavourite: () => onToggleFavourite(recipe),
-                ),
-              ),
-
-              // Category dropdown
-              Positioned(
-                bottom: 4,
-                left: 4,
-                right: 4,
-                child: AssignCategoryDropdown(
-                  categories: categories,
-                  current: recipe.categories,
-                  onChanged: (selected) => onAssignCategories(recipe, selected),
+                child: IconButton(
+                  icon: Icon(
+                    recipe.isFavourite ? Icons.favorite : Icons.favorite_border,
+                    color: recipe.isFavourite ? Colors.redAccent : Colors.white,
+                    size: 36,
+                  ),
+                  onPressed: () => onToggleFavourite(recipe),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  splashRadius: 20,
                 ),
               ),
             ],

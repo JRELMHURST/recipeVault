@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
-import 'package:recipe_vault/screens/recipe_vault/assign_cat_dropdown.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_long_press_menu.dart';
 import 'package:recipe_vault/widgets/network_recipe_image.dart';
 
 class RecipeListView extends StatelessWidget {
@@ -78,6 +78,14 @@ class RecipeListView extends StatelessWidget {
             },
             child: GestureDetector(
               onTap: () => onTap(recipe),
+              onLongPress: () => RecipeLongPressMenu.show(
+                context: context,
+                recipe: recipe,
+                onDelete: () => onDelete(recipe),
+                onAssignCategory: (selected) =>
+                    onAssignCategories(recipe, selected),
+                categories: categories,
+              ),
               child: Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(
@@ -141,12 +149,6 @@ class RecipeListView extends StatelessWidget {
                             onPressed: () => onToggleFavourite(recipe),
                           ),
                           const SizedBox(height: 4),
-                          AssignCategoryDropdown(
-                            categories: categories,
-                            current: recipe.categories,
-                            onChanged: (selected) =>
-                                onAssignCategories(recipe, selected),
-                          ),
                         ],
                       ),
                     ],

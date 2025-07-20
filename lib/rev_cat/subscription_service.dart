@@ -58,7 +58,7 @@ class SubscriptionService extends ChangeNotifier {
     if (_isSuperUser) return true;
     return switch (_tier) {
       'master_chef' => true,
-      'home_chef' => true, // limit enforced client-side
+      'home_chef' => true,
       _ => false,
     };
   }
@@ -277,4 +277,7 @@ class SubscriptionService extends ChangeNotifier {
       _lastLoggedTier = _tier;
     }
   }
+
+  /// ✅ Basic access check (alias for allowSaveToVault)
+  bool get hasAccess => allowSaveToVault;
 }

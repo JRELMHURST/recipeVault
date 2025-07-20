@@ -17,7 +17,7 @@ import 'package:recipe_vault/login/change_password.dart';
 // Screens
 import 'package:recipe_vault/screens/home_screen/home_screen.dart';
 import 'package:recipe_vault/screens/results_screen.dart';
-import 'package:recipe_vault/screens/recipe_vault/shared_recipe_screen.dart';
+import 'package:recipe_vault/screens/shared/shared_recipe_screen.dart';
 import 'package:recipe_vault/settings/settings_screen.dart';
 import 'package:recipe_vault/settings/account_settings_screen.dart';
 import 'package:recipe_vault/settings/appearance_settings_screen.dart';

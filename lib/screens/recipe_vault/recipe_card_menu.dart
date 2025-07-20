@@ -4,13 +4,13 @@ import 'package:lucide_icons/lucide_icons.dart';
 class RecipeCardMenu extends StatelessWidget {
   final bool isFavourite;
   final VoidCallback onToggleFavourite;
-  final VoidCallback onAssignCategories;
+  final VoidCallback? onAssignCategories; // Made optional
 
   const RecipeCardMenu({
     super.key,
     required this.isFavourite,
     required this.onToggleFavourite,
-    required this.onAssignCategories,
+    this.onAssignCategories, // Optional in constructor
   });
 
   @override
@@ -23,20 +23,31 @@ class RecipeCardMenu extends StatelessWidget {
             onToggleFavourite();
             break;
           case _RecipeCardMenuAction.assignCategories:
-            onAssignCategories();
+            if (onAssignCategories != null) {
+              onAssignCategories!();
+            }
             break;
         }
       },
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: _RecipeCardMenuAction.favourite,
-          child: Text(isFavourite ? 'Unfavourite' : 'Favourite'),
-        ),
-        const PopupMenuItem(
-          value: _RecipeCardMenuAction.assignCategories,
-          child: Text('Assign categories'),
-        ),
-      ],
+      itemBuilder: (context) {
+        final items = <PopupMenuEntry<_RecipeCardMenuAction>>[
+          PopupMenuItem(
+            value: _RecipeCardMenuAction.favourite,
+            child: Text(isFavourite ? 'Unfavourite' : 'Favourite'),
+          ),
+        ];
+
+        if (onAssignCategories != null) {
+          items.add(
+            const PopupMenuItem(
+              value: _RecipeCardMenuAction.assignCategories,
+              child: Text('Assign categories'),
+            ),
+          );
+        }
+
+        return items;
+      },
     );
   }
 }

@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF673AB7); // Deep Purple
-  static const Color loginBackground = Color(0xFFF3EEFF); // soft lavender
+  static const Color primaryColor = Color(0xFF77528D); // Unified theme purple
+  static const Color loginBackground = Color(0xFFF3EEFF); // Soft lavender
   static const Color backgroundLight = loginBackground;
   static const Color backgroundDark = Color(0xFF17141E);
 
@@ -95,7 +95,7 @@ class AppTheme {
       surface: Color(0xFF1E1B26),
       surfaceContainerHighest: Color(0xFF272333),
     ),
-    appBarTheme: buildAppBarTheme(Color(0xFF1E1B26)),
+    appBarTheme: buildAppBarTheme(primaryColor),
     cardTheme: CardThemeData(
       color: const Color(0xFF23202A),
       elevation: 6,
@@ -128,7 +128,7 @@ class AppTheme {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryColor,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         textStyle: const TextStyle(

@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -5,18 +7,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
-import 'package:recipe_vault/rev_cat/subscription_service.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
-import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
-import 'package:recipe_vault/services/category_service.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_category_filter_bar.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_dialog.dart';
-import 'package:recipe_vault/screens/recipe_vault/category_speed_dial.dart';
-import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/rev_cat/subscription_service.dart';
+import 'package:recipe_vault/rev_cat/trial_prompt_helper.dart';
 import 'package:recipe_vault/rev_cat/upgrade_banner.dart';
+import 'package:recipe_vault/screens/recipe_vault/category_speed_dial.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_category_filter_bar.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_dialog.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
+import 'package:recipe_vault/services/category_service.dart';
+import 'package:recipe_vault/services/hive_recipe_service.dart';
+import 'package:recipe_vault/services/image_processing_service.dart';
 
 enum ViewMode { list, grid, compact }
 
@@ -48,8 +51,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-
       final user = FirebaseAuth.instance.currentUser;
       userId = user?.uid;
 
@@ -75,7 +76,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   Future<void> _loadCustomCategories() async {
     final saved = await CategoryService.getAllCategories();
-    if (!mounted) return;
     setState(() {
       _allCategories = [
         'All',
@@ -110,36 +110,32 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           .map((doc) => RecipeCardModel.fromJson(doc.data()))
           .toList();
 
-      final Map<String, RecipeCardModel> recipeMap = {};
+      final Map<String, RecipeCardModel> mergedMap = {};
 
       for (final recipe in globalRecipes) {
-        final key = recipe.title.trim().toLowerCase();
-        recipeMap[key] = recipe;
+        mergedMap[recipe.id] = recipe;
       }
-
       for (final recipe in userRecipes) {
-        final key = recipe.title.trim().toLowerCase();
-        final existing = recipeMap[key];
-
-        if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
-          recipeMap[key] = recipe;
-        } else if (existing == null) {
-          recipeMap[key] = recipe;
-        }
+        mergedMap[recipe.id] = recipe;
       }
 
-      for (final recipe in recipeMap.values) {
-        await HiveRecipeService.save(recipe);
+      final List<RecipeCardModel> merged = [];
+      for (final recipe in mergedMap.values) {
+        final local = HiveRecipeService.getById(recipe.id);
+        final mergedRecipe = recipe.copyWith(
+          isFavourite: local?.isFavourite ?? recipe.isFavourite,
+          categories: local?.categories ?? recipe.categories,
+        );
+        await HiveRecipeService.save(mergedRecipe);
+        merged.add(mergedRecipe);
       }
 
-      if (!mounted) return;
       setState(() {
-        _allRecipes = recipeMap.values.toList();
+        _allRecipes = merged;
       });
     } catch (e) {
       debugPrint("⚠️ Firestore fetch failed, loading from Hive: $e");
       final fallback = HiveRecipeService.getAll();
-      if (!mounted) return;
       setState(() {
         _allRecipes = fallback;
       });
@@ -158,34 +154,27 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
             .collection('hiddenGlobalRecipes')
             .doc(recipe.id)
             .set({'hiddenAt': FieldValue.serverTimestamp()});
-
         debugPrint(
           "🙈 Soft-deleted global recipe ${recipe.id} for user $userId",
         );
       } else {
         await recipeCollection.doc(recipe.id).delete();
-
         if (recipe.imageUrl?.isNotEmpty ?? false) {
           try {
             final ref = FirebaseStorage.instance.refFromURL(recipe.imageUrl!);
             await ref.delete();
           } catch (e) {
-            if (e.toString().contains('object-not-found')) {
-              debugPrint('ℹ️ Image already deleted: ${recipe.imageUrl}');
-            } else {
+            if (!e.toString().contains('object-not-found')) {
               debugPrint('❌ Failed to delete attached image: $e');
             }
           }
         }
-
         for (final url in recipe.originalImageUrls) {
           try {
             final ref = FirebaseStorage.instance.refFromURL(url);
             await ref.delete();
           } catch (e) {
-            if (e.toString().contains('object-not-found')) {
-              debugPrint('ℹ️ Image already deleted: $url');
-            } else {
+            if (!e.toString().contains('object-not-found')) {
               debugPrint('❌ Failed to delete original image: $e');
             }
           }
@@ -193,56 +182,50 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       }
 
       await HiveRecipeService.delete(recipe.id);
-
-      setState(() {
-        _allRecipes.removeWhere((r) => r.id == recipe.id);
-      });
+      setState(() => _allRecipes.removeWhere((r) => r.id == recipe.id));
     } catch (e) {
       debugPrint("❌ Error during recipe deletion: $e");
     }
   }
 
-  void _toggleFavourite(RecipeCardModel recipe) async {
-    final newFavourite = !recipe.isFavourite;
-    final updated = recipe.copyWith(
-      isFavourite: newFavourite,
-      categories: recipe.categories,
-    );
-
-    try {
-      await recipeCollection.doc(recipe.id).update({
-        'isFavourite': newFavourite,
-      });
-      await HiveRecipeService.save(updated);
-
-      setState(() {
-        final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
-        if (index != -1) {
-          _allRecipes[index] = updated;
-        }
-      });
-    } catch (e) {
-      debugPrint('Error toggling favourite: $e');
-    }
-  }
-
-  void _assignCategories(
-    RecipeCardModel recipe,
-    List<String> selectedCategories,
-  ) async {
-    final updated = recipe.copyWith(
-      categories: selectedCategories.toSet().toList(),
-    );
-    await recipeCollection.doc(recipe.id).update({
-      'categories': selectedCategories,
-    });
+  Future<void> _toggleFavourite(RecipeCardModel recipe) async {
+    final updated = recipe.copyWith(isFavourite: !recipe.isFavourite);
     await HiveRecipeService.save(updated);
+
+    final subService = Provider.of<SubscriptionService>(context, listen: false);
+    if (subService.hasAccess) {
+      await recipeCollection
+          .doc(updated.id)
+          .set(updated.toJson(), SetOptions(merge: true));
+    } else {
+      await TrialPromptHelper.showIfTryingRestrictedFeature(context);
+    }
 
     setState(() {
       final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
-      if (index != -1) {
-        _allRecipes[index] = updated;
-      }
+      if (index != -1) _allRecipes[index] = updated;
+    });
+  }
+
+  Future<void> _assignCategories(
+    RecipeCardModel recipe,
+    List<String> selected,
+  ) async {
+    final updated = recipe.copyWith(categories: selected.toSet().toList());
+    await HiveRecipeService.save(updated);
+
+    final subService = Provider.of<SubscriptionService>(context, listen: false);
+    if (subService.hasAccess) {
+      await recipeCollection
+          .doc(updated.id)
+          .set(updated.toJson(), SetOptions(merge: true));
+    } else {
+      await TrialPromptHelper.showIfTryingRestrictedFeature(context);
+    }
+
+    setState(() {
+      final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
+      if (index != -1) _allRecipes[index] = updated;
     });
   }
 
@@ -252,15 +235,13 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     await CategoryService.deleteCategory(category);
     await _loadCustomCategories();
     if (_selectedCategory == category) {
-      setState(() {
-        _selectedCategory = 'All';
-      });
+      setState(() => _selectedCategory = 'All');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredRecipes = switch (_selectedCategory) {
+    final filtered = switch (_selectedCategory) {
       'All' => _allRecipes,
       'Favourites' => _allRecipes.where((r) => r.isFavourite).toList(),
       'Translated' => _allRecipes.where((r) => r.translationUsed).toList(),
@@ -270,14 +251,14 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
             .toList(),
     };
 
-    final ViewMode currentView = ViewMode.values[widget.viewMode];
-    final textScaleFactor = Provider.of<TextScaleNotifier>(context).scaleFactor;
+    final view = ViewMode.values[widget.viewMode];
+    final scale = Provider.of<TextScaleNotifier>(context).scaleFactor;
 
     return Scaffold(
       body: MediaQuery(
         data: MediaQuery.of(
           context,
-        ).copyWith(textScaler: TextScaler.linear(textScaleFactor)),
+        ).copyWith(textScaler: TextScaler.linear(scale)),
         child: Column(
           children: [
             RecipeCategoryFilterBar(
@@ -289,20 +270,19 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
             ),
             ValueListenableBuilder<String?>(
               valueListenable: ImageProcessingService.upgradeBannerMessage,
-              builder: (context, message, _) {
-                if (message == null) return const SizedBox.shrink();
-                return UpgradeBanner(message: message);
-              },
+              builder: (_, message, __) => message == null
+                  ? const SizedBox.shrink()
+                  : UpgradeBanner(message: message),
             ),
             Expanded(
-              child: filteredRecipes.isEmpty
+              child: filtered.isEmpty
                   ? const Center(child: Text("No recipes found"))
                   : AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300),
                       child: ResponsiveWrapper(
-                        child: switch (currentView) {
+                        child: switch (view) {
                           ViewMode.list => RecipeListView(
-                            recipes: filteredRecipes,
+                            recipes: filtered,
                             onDelete: _deleteRecipe,
                             onTap: (r) => showRecipeDialog(context, r),
                             onToggleFavourite: _toggleFavourite,
@@ -310,15 +290,15 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                             onAssignCategories: _assignCategories,
                           ),
                           ViewMode.grid => RecipeGridView(
-                            recipes: filteredRecipes,
+                            recipes: filtered,
                             onTap: (r) => showRecipeDialog(context, r),
                             onToggleFavourite: _toggleFavourite,
-                            categories: _allCategories,
                             onAssignCategories: _assignCategories,
+                            categories: _allCategories,
                             onDelete: _deleteRecipe,
                           ),
                           ViewMode.compact => RecipeCompactView(
-                            recipes: filteredRecipes,
+                            recipes: filtered,
                             onTap: (r) => showRecipeDialog(context, r),
                             onToggleFavourite: _toggleFavourite,
                             onAssignCategories: _assignCategories,
@@ -334,17 +314,16 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       floatingActionButton: Builder(
         builder: (context) {
           final subService = Provider.of<SubscriptionService>(context);
-          final currentCategoryCount = _allCategories
+          final count = _allCategories
               .where((c) => !_defaultCategories.contains(c) && c != 'All')
               .length;
-
-          final canCreateCategory =
+          final allow =
               subService.allowCategoryCreation ||
-              (subService.isHomeChef && currentCategoryCount < 3);
+              (subService.isHomeChef && count < 3);
 
           return CategorySpeedDial(
             onCategoryChanged: _loadCustomCategories,
-            allowCreation: canCreateCategory,
+            allowCreation: allow,
           );
         },
       ),

@@ -126,13 +126,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
         translationUsed: result.translationUsed,
       );
 
-      debugPrint('📄 Saving recipe "\$title" at \${recipe.createdAt}');
-      debugPrint('📸 Final image URL saved: \$_recipeImageUrl');
+      debugPrint('📄 Saving recipe "$title" at ${recipe.createdAt}');
+      debugPrint('📸 Final image URL saved: $_recipeImageUrl');
 
       final serverTimestamp = FieldValue.serverTimestamp();
       await docRef.set({...recipe.toJson(), 'createdAt': serverTimestamp});
       await HiveRecipeService.save(recipe);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('✅ Recipe saved! Taking you to your Vault...'),
@@ -140,13 +141,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
       );
 
       await Future.delayed(const Duration(milliseconds: 1500));
-      Navigator.pushReplacementNamed(context, '/home');
+      if (mounted) Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('❌ Failed to save recipe: \$e')));
+      ).showSnackBar(SnackBar(content: Text('❌ Failed to save recipe: $e')));
     } finally {
-      setState(() => _isSaving = false);
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -154,10 +156,17 @@ class _ResultsScreenState extends State<ResultsScreen> {
   Widget build(BuildContext context) {
     final result =
         ModalRoute.of(context)?.settings.arguments as ProcessedRecipeResult?;
-    final formattedRecipe = result?.formattedRecipe ?? '';
-    final hasValidContent =
-        formattedRecipe.trim().isNotEmpty &&
-        !formattedRecipe.toLowerCase().contains('error');
+    // final result = GoRouterState.of(context).extra as ProcessedRecipeResult?; // use if routing via GoRouter
+
+    if (result == null || result.formattedRecipe.trim().isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Your Recipe')),
+        body: const Center(child: Text('No recipe data found.')),
+      );
+    }
+
+    final formattedRecipe = result.formattedRecipe;
+    final hasValidContent = !formattedRecipe.toLowerCase().contains('error');
 
     return Scaffold(
       appBar: AppBar(
@@ -192,7 +201,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           ? FloatingActionButton.extended(
               onPressed: _isSaving
                   ? null
-                  : () => _saveRecipe(formattedRecipe, result!),
+                  : () => _saveRecipe(formattedRecipe, result),
               icon: const Icon(Icons.save_alt_rounded),
               label: _isSaving
                   ? const Text("Saving...")
@@ -208,35 +217,33 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (result != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.language, size: 18),
-                              const SizedBox(width: 6),
-                              Text(
-                                result.translationUsed
-                                    ? 'Translated from ${_mapLanguageCodeToLabel(result.language)}'
-                                    : 'Language: ${_mapLanguageCodeToLabel(result.language)}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              const Spacer(),
-                              if (kDebugMode)
-                                TextButton(
-                                  onPressed: () => setState(
-                                    () =>
-                                        _showOriginalText = !_showOriginalText,
-                                  ),
-                                  child: Text(
-                                    _showOriginalText ? 'Hide OCR' : 'Show OCR',
-                                    style: const TextStyle(fontSize: 12),
-                                  ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.language, size: 18),
+                            const SizedBox(width: 6),
+                            Text(
+                              result.translationUsed
+                                  ? 'Translated from ${_mapLanguageCodeToLabel(result.language)}'
+                                  : 'Language: ${_mapLanguageCodeToLabel(result.language)}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const Spacer(),
+                            if (kDebugMode)
+                              TextButton(
+                                onPressed: () => setState(
+                                  () => _showOriginalText = !_showOriginalText,
                                 ),
-                            ],
-                          ),
+                                child: Text(
+                                  _showOriginalText ? 'Hide OCR' : 'Show OCR',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ),
+                          ],
                         ),
-                      if (_showOriginalText && result?.originalText != null)
+                      ),
+                      if (_showOriginalText && result.originalText.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.all(12),
                           margin: const EdgeInsets.only(bottom: 12),
@@ -246,7 +253,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                             border: Border.all(color: Colors.grey[400]!),
                           ),
                           child: Text(
-                            result!.originalText,
+                            result.originalText,
                             style: const TextStyle(fontSize: 13),
                           ),
                         ),
@@ -267,6 +274,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                             );
                             return '';
                           }
+
                           final user = FirebaseAuth.instance.currentUser;
                           if (user == null) {
                             ImageProcessingService.showError(
@@ -289,9 +297,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
                             return '';
                           }
 
-                          final recipeId =
-                              result?.formattedRecipe.hashCode.toString() ??
-                              DateTime.now().millisecondsSinceEpoch.toString();
+                          final recipeId = result.formattedRecipe.hashCode
+                              .toString();
 
                           try {
                             final url =
@@ -301,13 +308,13 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                   recipeId: recipeId,
                                 );
 
-                            debugPrint('✅ Uploaded to: \$url');
-                            setState(() => _recipeImageUrl = url);
+                            debugPrint('✅ Uploaded to: $url');
+                            if (mounted) setState(() => _recipeImageUrl = url);
                             return url;
                           } catch (e) {
                             ImageProcessingService.showError(
                               context,
-                              '❌ Upload failed: \$e',
+                              '❌ Upload failed: $e',
                             );
                             return '';
                           }

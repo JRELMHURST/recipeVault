@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
-import 'package:recipe_vault/screens/recipe_vault/assign_cat_dialog.dart';
+import 'package:recipe_vault/screens/recipe_vault/assign_cat_dropdown.dart';
 import 'package:recipe_vault/widgets/network_recipe_image.dart';
 
 class RecipeListView extends StatelessWidget {
@@ -27,17 +27,6 @@ class RecipeListView extends StatelessWidget {
     this.onHide,
   });
 
-  void _showCategoryDialog(BuildContext context, RecipeCardModel recipe) {
-    showDialog(
-      context: context,
-      builder: (_) => AssignCategoriesDialog(
-        categories: categories,
-        current: recipe.categories,
-        onConfirm: (selected) => onAssignCategories(recipe, selected),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -49,8 +38,6 @@ class RecipeListView extends StatelessWidget {
         itemCount: recipes.length,
         itemBuilder: (context, index) {
           final recipe = recipes[index];
-          final hasCategory = recipe.categories.isNotEmpty;
-          final primaryCategory = hasCategory ? recipe.categories.first : null;
 
           return Dismissible(
             key: Key(recipe.id),
@@ -154,27 +141,12 @@ class RecipeListView extends StatelessWidget {
                             ),
                             onPressed: () => onToggleFavourite(recipe),
                           ),
-                          GestureDetector(
-                            onTap: () => _showCategoryDialog(context, recipe),
-                            child: Container(
-                              margin: const EdgeInsets.only(top: 4),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                primaryCategory ?? 'Add',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ),
+                          const SizedBox(height: 4),
+                          AssignCategoryDropdown(
+                            categories: categories,
+                            current: recipe.categories,
+                            onChanged: (selected) =>
+                                onAssignCategories(recipe, selected),
                           ),
                         ],
                       ),

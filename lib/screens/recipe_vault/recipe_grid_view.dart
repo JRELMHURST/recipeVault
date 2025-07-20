@@ -1,38 +1,27 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
-import 'package:recipe_vault/screens/recipe_vault/assign_cat_dialog.dart';
+import 'package:recipe_vault/screens/recipe_vault/assign_cat_dropdown.dart';
 
 class RecipeGridView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
   final void Function(RecipeCardModel) onTap;
-  final void Function(RecipeCardModel) onToggleFavourite;
   final void Function(RecipeCardModel) onDelete;
   final List<String> categories;
+  final void Function(RecipeCardModel) onToggleFavourite;
   final void Function(RecipeCardModel, List<String>) onAssignCategories;
 
   const RecipeGridView({
     super.key,
     required this.recipes,
     required this.onTap,
-    required this.onToggleFavourite,
     required this.onDelete,
     required this.categories,
+    required this.onToggleFavourite,
     required this.onAssignCategories,
   });
-
-  void _showCategoryDialog(BuildContext context, RecipeCardModel recipe) {
-    showDialog(
-      context: context,
-      builder: (_) => AssignCategoriesDialog(
-        categories: categories,
-        current: recipe.categories,
-        onConfirm: (selected) => onAssignCategories(recipe, selected),
-      ),
-    );
-  }
 
   void _showDeleteMenu(BuildContext context, RecipeCardModel recipe) {
     showModalBottomSheet(
@@ -73,8 +62,6 @@ class RecipeGridView extends StatelessWidget {
       ),
       itemBuilder: (context, index) {
         final recipe = recipes[index];
-        final hasCategory = recipe.categories.isNotEmpty;
-        final primaryCategory = hasCategory ? recipe.categories.first : null;
 
         return GestureDetector(
           onTap: () => onTap(recipe),
@@ -82,7 +69,7 @@ class RecipeGridView extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
                   color: Colors.black12,
                   blurRadius: 8,
@@ -132,6 +119,7 @@ class RecipeGridView extends StatelessWidget {
                           ),
                         ),
 
+                  // 🌙 Title overlay
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -161,6 +149,7 @@ class RecipeGridView extends StatelessWidget {
                     ),
                   ),
 
+                  // ❤️ Favourite icon
                   Positioned(
                     top: 10,
                     right: 10,
@@ -185,41 +174,15 @@ class RecipeGridView extends StatelessWidget {
                     ),
                   ),
 
+                  // 📂 Category dropdown
                   Positioned(
                     top: 10,
                     left: 10,
-                    child: GestureDetector(
-                      onTap: () => _showCategoryDialog(context, recipe),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.85),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (hasCategory)
-                              Text(
-                                primaryCategory!,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black87,
-                                ),
-                              )
-                            else
-                              const Icon(
-                                Icons.add,
-                                size: 14,
-                                color: Colors.black87,
-                              ),
-                          ],
-                        ),
-                      ),
+                    child: AssignCategoryDropdown(
+                      categories: categories,
+                      current: recipe.categories,
+                      onChanged: (selected) =>
+                          onAssignCategories(recipe, selected),
                     ),
                   ),
                 ],

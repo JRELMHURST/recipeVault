@@ -40,9 +40,9 @@ migrate_usage_data.js  # Temporary migration script
 .pub-cache/
 .pub/
 build/
+coverage/
 **/doc/api/
 **/ios/Flutter/.last_build_id
-coverage/
 
 # Generated localisation files
 lib/l10n/*.dart
@@ -53,60 +53,67 @@ lib/firebase_options.dart
 # ─────────────────────────────────────────────────────────────
 # 📱 Android
 # ─────────────────────────────────────────────────────────────
-/android/app/debug
-/android/app/profile
-/android/app/release
-/android/local.properties
+android/local.properties
 *.jks
+*.keystore
+*.gradle
+/android/app/debug/
+/android/app/profile/
+/android/app/release/
 
 # ─────────────────────────────────────────────────────────────
 # 🍏 iOS
 # ─────────────────────────────────────────────────────────────
-/ios/Flutter/App.framework
-/ios/Flutter/Flutter.framework
-/ios/Flutter/Generated.xcconfig
-/ios/Flutter/ephemeral/
-/ios/.symlinks/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/.symlinks/
 /ios/Pods/
-/ios/Runner.xcworkspace/
 /ios/build/
+/ios/Runner.xcworkspace/
 /ios/Podfile.lock
-/ios/Runner/GeneratedPluginRegistrant.*
+ios/Runner/GeneratedPluginRegistrant.*
 
 # ─────────────────────────────────────────────────────────────
 # 🔐 Sensitive Files / Secrets
 # ─────────────────────────────────────────────────────────────
-functions/.env
-functions/serviceAccountKey.json
-serviceAccountKey.json
+.env
+.env.*
 .secret.env
 *.p8
 *.key
 *.pem
 *.jks
 *.keystore
+*.credentials.json
+serviceAccountKey.json
+**/serviceAccountKey.json
+**/*.gcp-credentials.json
+recipevault-bg-ai-*.json
 
 # ─────────────────────────────────────────────────────────────
 # 🔥 Firebase Functions
 # ─────────────────────────────────────────────────────────────
-functions/lib/
-functions/node_modules/
+functions/.env
 functions/.firebase/
 functions/.output/
 functions/.runtimeconfig.json
-functions/tsconfig.tsbuildinfo
 functions/.tsbuildinfo
+functions/tsconfig.tsbuildinfo
+functions/lib/
+functions/node_modules/
+functions/serviceAccountKey.json
 
-# Optional: if you’re using tsc to emit to root (not recommended)
+# Optional: if using `tsc` to emit to root
 *.js
 
-# Root-level Node (created during migration script)
+# Root-level Node
 node_modules/
 
 # ─────────────────────────────────────────────────────────────
 # 📦 RevenueCat / Store Configs
 # ─────────────────────────────────────────────────────────────
-.env*
 **/RevenueCatConfig.*.json
 **/*.xcfilelist
 
@@ -115,4 +122,4 @@ node_modules/
 # ─────────────────────────────────────────────────────────────
 *.test.*
 *.spec.*
-logs/
+logs/recipevault-bg-ai-f82457ab9653.json

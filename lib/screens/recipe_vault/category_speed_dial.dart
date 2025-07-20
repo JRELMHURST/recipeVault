@@ -67,11 +67,6 @@ class CategorySpeedDial extends StatelessWidget {
       foregroundColor: Colors.white,
       children: [
         SpeedDialChild(
-          child: const Icon(Icons.receipt_long_rounded),
-          label: 'Create Recipe',
-          onTap: () => _startCreateFlow(context),
-        ),
-        SpeedDialChild(
           child: const Icon(Icons.category),
           label: allowCreation ? 'New Category' : 'Upgrade to Add Category',
           onTap: allowCreation
@@ -85,6 +80,11 @@ class CategorySpeedDial extends StatelessWidget {
                     ),
                   );
                 },
+        ),
+        SpeedDialChild(
+          child: const Icon(Icons.receipt_long_rounded),
+          label: 'Create Recipe',
+          onTap: () => _startCreateFlow(context),
         ),
       ],
     );

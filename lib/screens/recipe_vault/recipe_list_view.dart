@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_card_menu.dart';
+import 'package:recipe_vault/screens/recipe_vault/assign_cat_dialog.dart';
 
 class RecipeListView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
@@ -27,58 +28,13 @@ class RecipeListView extends StatelessWidget {
   });
 
   void _showCategoryDialog(BuildContext context, RecipeCardModel recipe) {
-    final selected = Set<String>.from(recipe.categories);
     showDialog(
       context: context,
-      builder: (_) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Assign Categories'),
-              content: SingleChildScrollView(
-                child: Column(
-                  children: categories
-                      .where(
-                        (c) =>
-                            c != 'Favourites' &&
-                            c != 'Translated' &&
-                            c != 'All',
-                      )
-                      .map(
-                        (cat) => CheckboxListTile(
-                          value: selected.contains(cat),
-                          onChanged: (val) {
-                            setState(() {
-                              if (val == true) {
-                                selected.add(cat);
-                              } else {
-                                selected.remove(cat);
-                              }
-                            });
-                          },
-                          title: Text(cat),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel"),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    onAssignCategories(recipe, selected.toList());
-                    Navigator.pop(context);
-                  },
-                  child: const Text("Save"),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (_) => AssignCategoriesDialog(
+        allCategories: categories,
+        initialSelection: recipe.categories,
+        onConfirm: (selected) => onAssignCategories(recipe, selected),
+      ),
     );
   }
 

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
+import 'package:recipe_vault/screens/recipe_vault/assign_cat_dialog.dart';
 
 class RecipeGridView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
@@ -20,50 +21,15 @@ class RecipeGridView extends StatelessWidget {
     required this.onAssignCategories,
   });
 
-  void _showCategoryDialog(BuildContext context, RecipeCardModel recipe) async {
-    final selected = await showDialog<List<String>>(
+  void _showCategoryDialog(BuildContext context, RecipeCardModel recipe) {
+    showDialog(
       context: context,
-      builder: (context) {
-        final selectedCategories = Set<String>.from(recipe.categories);
-        return AlertDialog(
-          title: const Text('Assign Categories'),
-          content: SingleChildScrollView(
-            child: Wrap(
-              spacing: 8,
-              children: categories.map((category) {
-                final isSelected = selectedCategories.contains(category);
-                return FilterChip(
-                  label: Text(category),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) {
-                      selectedCategories.add(category);
-                    } else {
-                      selectedCategories.remove(category);
-                    }
-                  },
-                );
-              }).toList(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () =>
-                  Navigator.pop(context, selectedCategories.toList()),
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
+      builder: (_) => AssignCategoriesDialog(
+        allCategories: categories,
+        initialSelection: recipe.categories,
+        onConfirm: (selected) => onAssignCategories(recipe, selected),
+      ),
     );
-
-    if (selected != null) {
-      onAssignCategories(recipe, selected);
-    }
   }
 
   @override
@@ -211,20 +177,21 @@ class RecipeGridView extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            hasCategory
-                                ? Text(
-                                    primaryCategory!,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black87,
-                                    ),
-                                  )
-                                : const Icon(
-                                    Icons.add,
-                                    size: 14,
-                                    color: Colors.black87,
-                                  ),
+                            if (hasCategory)
+                              Text(
+                                primaryCategory!,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                              )
+                            else
+                              const Icon(
+                                Icons.add,
+                                size: 14,
+                                color: Colors.black87,
+                              ),
                           ],
                         ),
                       ),

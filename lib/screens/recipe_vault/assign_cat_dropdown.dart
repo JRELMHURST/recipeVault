@@ -18,7 +18,6 @@ class AssignCategoryDropdown extends StatefulWidget {
 
 class _AssignCategoryDropdownState extends State<AssignCategoryDropdown> {
   String? selected;
-  bool isDropdownVisible = false;
 
   @override
   void initState() {
@@ -32,7 +31,6 @@ class _AssignCategoryDropdownState extends State<AssignCategoryDropdown> {
     if (widget.current != oldWidget.current) {
       setState(() {
         selected = widget.current.isNotEmpty ? widget.current.first : null;
-        isDropdownVisible = widget.current.isNotEmpty;
       });
     }
   }
@@ -42,17 +40,6 @@ class _AssignCategoryDropdownState extends State<AssignCategoryDropdown> {
     final filtered = widget.categories
         .where((c) => c != 'Favourites' && c != 'Translated' && c != 'All')
         .toList();
-
-    if (!isDropdownVisible &&
-        (selected == null || !filtered.contains(selected))) {
-      return IconButton(
-        icon: const Icon(Icons.add_circle_outline, size: 20),
-        tooltip: 'Assign category',
-        onPressed: () {
-          setState(() => isDropdownVisible = true);
-        },
-      );
-    }
 
     return Container(
       height: 32,
@@ -81,10 +68,7 @@ class _AssignCategoryDropdownState extends State<AssignCategoryDropdown> {
               .toList(),
           onChanged: (value) {
             if (value != null) {
-              setState(() {
-                selected = value;
-                isDropdownVisible = true;
-              });
+              setState(() => selected = value);
               widget.onChanged([value]);
             }
           },

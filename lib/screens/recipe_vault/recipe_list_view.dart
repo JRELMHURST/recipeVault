@@ -78,7 +78,6 @@ class RecipeListView extends StatelessWidget {
             },
             child: GestureDetector(
               onTap: () => onTap(recipe),
-              onLongPress: () => onDelete(recipe),
               child: Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(

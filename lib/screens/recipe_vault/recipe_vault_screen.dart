@@ -12,7 +12,7 @@ import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/rev_cat/trial_prompt_helper.dart';
 import 'package:recipe_vault/rev_cat/upgrade_banner.dart';
 import 'package:recipe_vault/screens/recipe_vault/category_speed_dial.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_category_filter_bar.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_chip_filter_bar.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_dialog.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
@@ -78,10 +78,12 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   Future<void> _loadCustomCategories() async {
     final saved = await CategoryService.getAllCategories();
+    final hidden = await CategoryService.getHiddenDefaultCategories();
+
     setState(() {
       _allCategories = [
         'All',
-        ..._defaultCategories,
+        ..._defaultCategories.where((c) => !hidden.contains(c)),
         ...saved.where((c) => !_defaultCategories.contains(c)),
       ];
     });
@@ -254,9 +256,12 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   }
 
   void _removeCategory(String category) async {
-    if (_defaultCategories.contains(category) || category == 'All') return;
+    if (_defaultCategories.contains(category) || category == 'All') {
+      await CategoryService.hideDefaultCategory(category);
+    } else {
+      await CategoryService.deleteCategory(category);
+    }
 
-    await CategoryService.deleteCategory(category);
     await _loadCustomCategories();
     if (_selectedCategory == category) {
       setState(() => _selectedCategory = 'All');
@@ -297,12 +302,13 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         ).copyWith(textScaler: TextScaler.linear(scale)),
         child: Column(
           children: [
-            RecipeCategoryFilterBar(
+            RecipeChipFilterBar(
               categories: _allCategories,
               selectedCategory: _selectedCategory,
               onCategorySelected: (cat) =>
                   setState(() => _selectedCategory = cat),
               onCategoryDeleted: _removeCategory,
+              allRecipes: _allRecipes,
             ),
             RecipeSearchBar(
               initialValue: _searchQuery,

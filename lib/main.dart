@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:recipe_vault/services/category_service.dart';
 
 import 'firebase_options.dart';
 import 'services/notification_service.dart';
@@ -63,7 +64,11 @@ Future<void> main() async {
   try {
     await Hive.openBox<RecipeCardModel>('recipes');
     await Hive.openBox<CategoryModel>('categories');
-    await Hive.openBox<String>('customCategories');
+    // Remove this line:
+    // await Hive.openBox<String>('customCategories');
+
+    // Replace it with this:
+    await CategoryService.init(); // ✅ opens both custom + hidden boxes
   } catch (e, stack) {
     debugPrint('❌ Hive box opening failed: $e');
     debugPrint(stack.toString());

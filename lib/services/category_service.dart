@@ -3,15 +3,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class CategoryService {
-  static const _boxName = 'customCategories';
+  static const _customBoxName = 'customCategories';
+  static const _hiddenDefaultBox = 'hiddenDefaultCategories';
   static const _systemCategories = ['Favourites', 'Translated'];
+  static const _defaultCategories = [
+    'Favourites',
+    'Translated',
+    'Breakfast',
+    'Main',
+    'Dessert',
+  ];
 
   static Future<void> init() async {
-    await Hive.openBox<String>(_boxName);
+    await Hive.openBox<String>(_customBoxName);
+    await Hive.openBox<String>(_hiddenDefaultBox);
   }
 
   static Future<List<String>> getAllCategories() async {
-    final box = Hive.box<String>(_boxName);
+    final box = Hive.box<String>(_customBoxName);
     return box.values.toList();
   }
 
@@ -20,7 +29,7 @@ class CategoryService {
       return; // Skip saving system categories
     }
 
-    final box = Hive.box<String>(_boxName);
+    final box = Hive.box<String>(_customBoxName);
     if (!box.values.contains(category)) {
       await box.add(category);
     }
@@ -40,7 +49,7 @@ class CategoryService {
       return; // Prevent deletion of system categories
     }
 
-    final box = Hive.box<String>(_boxName);
+    final box = Hive.box<String>(_customBoxName);
     final key = box.keys.firstWhere(
       (k) => box.get(k) == category,
       orElse: () => null,
@@ -69,8 +78,8 @@ class CategoryService {
         .collection('categories');
 
     final snapshot = await ref.get();
-    final box = Hive.box<String>(_boxName);
-    await box.clear(); // Optional: reset local categories
+    final box = Hive.box<String>(_customBoxName);
+    await box.clear();
 
     for (final doc in snapshot.docs) {
       final name = doc['name'];
@@ -78,5 +87,21 @@ class CategoryService {
         await box.add(name);
       }
     }
+  }
+
+  static Future<void> hideDefaultCategory(String category) async {
+    if (!_defaultCategories.contains(category)) return;
+    final box = Hive.box<String>(_hiddenDefaultBox);
+    await box.put(category, category);
+  }
+
+  static Future<void> unhideDefaultCategory(String category) async {
+    final box = Hive.box<String>(_hiddenDefaultBox);
+    await box.delete(category);
+  }
+
+  static Future<List<String>> getHiddenDefaultCategories() async {
+    final box = Hive.box<String>(_hiddenDefaultBox);
+    return box.values.toList();
   }
 }

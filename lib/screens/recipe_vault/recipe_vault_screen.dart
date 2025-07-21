@@ -17,6 +17,7 @@ import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_dialog.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_search_bar.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
@@ -35,6 +36,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   String? userId;
   late final CollectionReference<Map<String, dynamic>> recipeCollection;
   String _selectedCategory = 'All';
+  String _searchQuery = '';
 
   static const List<String> _defaultCategories = [
     'Favourites',
@@ -154,9 +156,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
             .collection('hiddenGlobalRecipes')
             .doc(recipe.id)
             .set({'hiddenAt': FieldValue.serverTimestamp()});
-        debugPrint(
-          "🙈 Soft-deleted global recipe ${recipe.id} for user $userId",
-        );
       } else {
         await recipeCollection.doc(recipe.id).delete();
         if (recipe.imageUrl?.isNotEmpty ?? false) {
@@ -239,9 +238,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final filtered = switch (_selectedCategory) {
+  List<RecipeCardModel> get _filteredRecipes {
+    List<RecipeCardModel> base = switch (_selectedCategory) {
       'All' => _allRecipes,
       'Favourites' => _allRecipes.where((r) => r.isFavourite).toList(),
       'Translated' => _allRecipes.where((r) => r.translationUsed).toList(),
@@ -251,6 +249,17 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
             .toList(),
     };
 
+    if (_searchQuery.trim().isEmpty) return base;
+
+    return base
+        .where(
+          (r) => r.title.toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final view = ViewMode.values[widget.viewMode];
     final scale = Provider.of<TextScaleNotifier>(context).scaleFactor;
 
@@ -268,6 +277,10 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                   setState(() => _selectedCategory = cat),
               onCategoryDeleted: _removeCategory,
             ),
+            RecipeSearchBar(
+              initialValue: _searchQuery,
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
             ValueListenableBuilder<String?>(
               valueListenable: ImageProcessingService.upgradeBannerMessage,
               builder: (_, message, __) => message == null
@@ -275,14 +288,14 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                   : UpgradeBanner(message: message),
             ),
             Expanded(
-              child: filtered.isEmpty
+              child: _filteredRecipes.isEmpty
                   ? const Center(child: Text("No recipes found"))
                   : AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300),
                       child: ResponsiveWrapper(
                         child: switch (view) {
                           ViewMode.list => RecipeListView(
-                            recipes: filtered,
+                            recipes: _filteredRecipes,
                             onDelete: _deleteRecipe,
                             onTap: (r) => showRecipeDialog(context, r),
                             onToggleFavourite: _toggleFavourite,
@@ -290,7 +303,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                             onAssignCategories: _assignCategories,
                           ),
                           ViewMode.grid => RecipeGridView(
-                            recipes: filtered,
+                            recipes: _filteredRecipes,
                             onTap: (r) => showRecipeDialog(context, r),
                             onToggleFavourite: _toggleFavourite,
                             onAssignCategories: _assignCategories,
@@ -298,7 +311,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                             onDelete: _deleteRecipe,
                           ),
                           ViewMode.compact => RecipeCompactView(
-                            recipes: filtered,
+                            recipes: _filteredRecipes,
                             onTap: (r) => showRecipeDialog(context, r),
                             onToggleFavourite: _toggleFavourite,
                             onDelete: _deleteRecipe,

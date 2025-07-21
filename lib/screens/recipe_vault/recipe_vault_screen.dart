@@ -250,12 +250,14 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     };
 
     if (_searchQuery.trim().isEmpty) return base;
+    final query = _searchQuery.toLowerCase();
 
-    return base
-        .where(
-          (r) => r.title.toLowerCase().contains(_searchQuery.toLowerCase()),
-        )
-        .toList();
+    return base.where((r) {
+      return r.title.toLowerCase().contains(query) ||
+          r.ingredients.join(', ').toLowerCase().contains(query) ||
+          r.instructions.join(' ').toLowerCase().contains(query) ||
+          r.categories.any((cat) => cat.toLowerCase().contains(query));
+    }).toList();
   }
 
   @override

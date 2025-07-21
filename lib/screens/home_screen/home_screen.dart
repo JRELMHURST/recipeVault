@@ -21,7 +21,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 1;
-  int _viewMode = 0;
+  int _viewMode = 1;
   final PageStorageBucket _bucket = PageStorageBucket();
 
   @override

@@ -9,6 +9,7 @@ class RecipeCompactView extends StatelessWidget {
   final void Function(RecipeCardModel) onDelete;
   final void Function(RecipeCardModel) onToggleFavourite;
   final void Function(RecipeCardModel, List<String>) onAssignCategories;
+  final void Function(RecipeCardModel) onAddOrUpdateImage;
   final List<String> categories;
 
   const RecipeCompactView({
@@ -18,6 +19,7 @@ class RecipeCompactView extends StatelessWidget {
     required this.onDelete,
     required this.onToggleFavourite,
     required this.onAssignCategories,
+    required this.onAddOrUpdateImage,
     required this.categories,
   });
 
@@ -28,6 +30,7 @@ class RecipeCompactView extends StatelessWidget {
       onDelete: () => onDelete(recipe),
       categories: categories,
       onAssignCategory: (selected) => onAssignCategories(recipe, selected),
+      onAddOrUpdateImage: () => onAddOrUpdateImage(recipe),
     );
   }
 

@@ -11,6 +11,7 @@ class RecipeListView extends StatelessWidget {
   final void Function(RecipeCardModel) onDelete;
   final void Function(RecipeCardModel) onTap;
   final void Function(RecipeCardModel) onToggleFavourite;
+  final void Function(RecipeCardModel) onAddOrUpdateImage;
   final List<String> categories;
   final void Function(RecipeCardModel, List<String>) onAssignCategories;
   final void Function(RecipeCardModel)? onHide;
@@ -21,6 +22,7 @@ class RecipeListView extends StatelessWidget {
     required this.onDelete,
     required this.onTap,
     required this.onToggleFavourite,
+    required this.onAddOrUpdateImage,
     required this.categories,
     required this.onAssignCategories,
     this.onHide,
@@ -81,6 +83,7 @@ class RecipeListView extends StatelessWidget {
               onDelete: () => onDelete(recipe),
               onAssignCategory: (selected) =>
                   onAssignCategories(recipe, selected),
+              onAddOrUpdateImage: () => onAddOrUpdateImage(recipe),
               categories: categories,
             ),
             child: Card(

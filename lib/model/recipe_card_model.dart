@@ -123,6 +123,7 @@ class RecipeCardModel extends HiveObject {
       RecipeCardModel.fromJson(jsonDecode(str));
 
   RecipeCardModel copyWith({
+    String? imageUrl,
     bool? isFavourite,
     List<String>? originalImageUrls,
     List<String>? hints,
@@ -137,7 +138,7 @@ class RecipeCardModel extends HiveObject {
       ingredients: ingredients,
       instructions: instructions,
       createdAt: createdAt,
-      imageUrl: imageUrl,
+      imageUrl: imageUrl ?? this.imageUrl,
       categories: categories ?? this.categories,
       isFavourite: isFavourite ?? this.isFavourite,
       originalImageUrls: originalImageUrls ?? this.originalImageUrls,
@@ -147,6 +148,15 @@ class RecipeCardModel extends HiveObject {
     );
   }
 
+  /// Quickly create a copy with a new image URL
+  RecipeCardModel withUpdatedImageUrl(String url) {
+    return copyWith(imageUrl: url);
+  }
+
+  /// Returns true if a recipe has a main image
+  bool get hasImage => imageUrl?.isNotEmpty ?? false;
+
+  /// Useful for sharing or plain text export
   String get formattedText {
     final ingredientsStr = ingredients.join('\n• ');
     final instructionsStr = instructions
@@ -158,5 +168,6 @@ class RecipeCardModel extends HiveObject {
     return 'Ingredients:\n• $ingredientsStr\n\nInstructions:\n$instructionsStr';
   }
 
+  /// Shortcut check for the 'Translated' category
   bool get isTranslated => categories.contains('Translated');
 }

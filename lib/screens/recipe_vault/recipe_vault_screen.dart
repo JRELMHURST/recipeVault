@@ -228,6 +228,31 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     });
   }
 
+  Future<void> _addOrUpdateImage(RecipeCardModel recipe) async {
+    final imageUrl = await ImageProcessingService.pickAndUploadRecipeImage(
+      context: context,
+      recipeId: recipe.id,
+    );
+    if (imageUrl == null) return;
+
+    final updated = recipe.copyWith(imageUrl: imageUrl);
+    await HiveRecipeService.save(updated);
+
+    final subService = Provider.of<SubscriptionService>(context, listen: false);
+    if (subService.hasAccess) {
+      await recipeCollection
+          .doc(updated.id)
+          .set(updated.toJson(), SetOptions(merge: true));
+    } else {
+      await TrialPromptHelper.showIfTryingRestrictedFeature(context);
+    }
+
+    setState(() {
+      final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
+      if (index != -1) _allRecipes[index] = updated;
+    });
+  }
+
   void _removeCategory(String category) async {
     if (_defaultCategories.contains(category) || category == 'All') return;
 
@@ -303,6 +328,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                             onToggleFavourite: _toggleFavourite,
                             categories: _allCategories,
                             onAssignCategories: _assignCategories,
+                            onAddOrUpdateImage: _addOrUpdateImage,
                           ),
                           ViewMode.grid => RecipeGridView(
                             recipes: _filteredRecipes,
@@ -311,6 +337,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                             onAssignCategories: _assignCategories,
                             categories: _allCategories,
                             onDelete: _deleteRecipe,
+                            onAddOrUpdateImage: _addOrUpdateImage,
                           ),
                           ViewMode.compact => RecipeCompactView(
                             recipes: _filteredRecipes,
@@ -319,6 +346,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                             onDelete: _deleteRecipe,
                             categories: _allCategories,
                             onAssignCategories: _assignCategories,
+                            onAddOrUpdateImage: _addOrUpdateImage,
                           ),
                         },
                       ),

@@ -12,6 +12,7 @@ class RecipeGridView extends StatelessWidget {
   final List<String> categories;
   final void Function(RecipeCardModel) onToggleFavourite;
   final void Function(RecipeCardModel, List<String>) onAssignCategories;
+  final void Function(RecipeCardModel) onAddOrUpdateImage;
 
   const RecipeGridView({
     super.key,
@@ -21,6 +22,7 @@ class RecipeGridView extends StatelessWidget {
     required this.categories,
     required this.onToggleFavourite,
     required this.onAssignCategories,
+    required this.onAddOrUpdateImage,
   });
 
   @override
@@ -45,6 +47,7 @@ class RecipeGridView extends StatelessWidget {
             onDelete: () => onDelete(recipe),
             onAssignCategory: (selected) =>
                 onAssignCategories(recipe, selected),
+            onAddOrUpdateImage: () => onAddOrUpdateImage(recipe),
             categories: categories,
           ),
           child: Container(

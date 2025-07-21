@@ -39,9 +39,9 @@ class TierBadge extends StatelessWidget {
 
         // Known tiers with labels and default colours
         final tierStyles = {
-          'taster': ('🥄 Taster', Colors.deepPurple),
-          'home_chef': ('👨‍🍳 Home Chef', Colors.teal),
-          'master_chef': ('👑 Master Chef', Colors.amber),
+          'taster': ('Taster', Colors.deepPurple),
+          'home_chef': ('Home Chef', Colors.teal),
+          'master_chef': ('Master Chef', Colors.amber),
         };
 
         final style = tierStyles[tier];

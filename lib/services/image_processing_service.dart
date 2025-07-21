@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
@@ -108,6 +109,32 @@ class ImageProcessingService {
     );
 
     return cropped == null ? null : File(cropped.path);
+  }
+
+  /// Uploads a single recipe image after picking and cropping
+  static Future<String?> pickAndUploadRecipeImage({
+    required BuildContext context,
+    required String recipeId,
+  }) async {
+    try {
+      final picked = await _picker.pickImage(source: ImageSource.gallery);
+      if (picked == null) return null;
+
+      final cropped = await cropImage(File(picked.path));
+      if (cropped == null) return null;
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception('User not signed in');
+
+      return await uploadRecipeImage(
+        imageFile: cropped,
+        userId: user.uid,
+        recipeId: recipeId,
+      );
+    } catch (e) {
+      showError(context, 'Image upload failed: $e');
+      return null;
+    }
   }
 
   /// Calls Firebase Function to run OCR → Translate → GPT Format

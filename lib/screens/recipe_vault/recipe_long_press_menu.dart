@@ -6,6 +6,7 @@ class RecipeLongPressMenu {
     required BuildContext context,
     required RecipeCardModel recipe,
     required VoidCallback onDelete,
+    required VoidCallback onAddOrUpdateImage,
     required List<String> categories,
     required void Function(List<String>) onAssignCategory,
   }) async {
@@ -82,6 +83,30 @@ class RecipeLongPressMenu {
               ],
             ),
             const SizedBox(height: 24),
+
+            // 🖼 Add or update image
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.image),
+                label: Text(
+                  recipe.imageUrl?.isNotEmpty == true
+                      ? 'Update Image'
+                      : 'Add Image',
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  onAddOrUpdateImage();
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // 🗂 Category assignment
             if (filteredCategories.isNotEmpty) ...[

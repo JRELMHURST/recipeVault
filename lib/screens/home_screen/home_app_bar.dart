@@ -68,47 +68,27 @@ class _TierAppBarTitle extends StatelessWidget {
     final tier = subService.tierNotifier.value;
 
     final isFree = tier.isEmpty || tier == 'none' || tier == 'free';
-    if (isFree) {
-      return Text(
-        'RecipeVault',
-        style: theme.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      );
-    }
-
-    final tierLabels = {
-      'taster': ('🥄', 'Taster'),
-      'home_chef': ('👨‍🍳', 'Home Chef'),
-      'master_chef': ('👑', 'Master Chef'),
+    final label = switch (tier) {
+      'taster' => 'Taster',
+      'home_chef' => 'Home Chef',
+      'master_chef' => 'Master Chef',
+      _ => 'RecipeVault',
     };
 
-    final (emoji, label) = tierLabels[tier] ?? ('❓', 'Unknown');
+    final displayText = isFree ? 'RecipeVault' : label;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          emoji,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontSize: 24,
-            height: 1,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
-            height: 1.2,
-            color: Colors.white,
-            letterSpacing: 0.4,
-          ),
-        ),
-      ],
+    return Text(
+      displayText,
+      style: theme.textTheme.titleLarge?.copyWith(
+        color: Colors.white,
+        fontWeight: FontWeight.w800,
+        fontSize: 22,
+        letterSpacing: 1.1,
+        fontFamily: 'Roboto', // or try 'Raleway', 'Lora', etc. if added
+        shadows: const [
+          Shadow(blurRadius: 2, offset: Offset(0, 1), color: Colors.black26),
+        ],
+      ),
     );
   }
 }

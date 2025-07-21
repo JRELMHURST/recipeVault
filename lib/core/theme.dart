@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static const Color primaryColor = Color(0xFF77528D); // Unified theme purple
@@ -13,11 +14,11 @@ class AppTheme {
       backgroundColor: backgroundColor,
       elevation: 0,
       centerTitle: true,
-      titleTextStyle: const TextStyle(
-        fontFamily: 'Roboto',
+      titleTextStyle: GoogleFonts.raleway(
         fontSize: 22,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w800,
         color: Colors.white,
+        letterSpacing: 1.2,
       ),
       iconTheme: const IconThemeData(color: Colors.white),
     );
@@ -25,13 +26,13 @@ class AppTheme {
 
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
-    fontFamily: 'Roboto',
     scaffoldBackgroundColor: backgroundLight,
     colorScheme: const ColorScheme.light(
       primary: primaryColor,
       surface: Colors.white,
       surfaceContainerHighest: Color(0xFFF7F4FB),
     ),
+    fontFamily: GoogleFonts.raleway().fontFamily,
     appBarTheme: buildAppBarTheme(primaryColor),
     cardTheme: CardThemeData(
       color: Colors.white,
@@ -40,22 +41,20 @@ class AppTheme {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       shadowColor: Colors.black.withOpacity(0.05),
     ),
-    textTheme: const TextTheme(
-      titleLarge: TextStyle(
-        fontFamily: 'Roboto',
+    textTheme: TextTheme(
+      titleLarge: GoogleFonts.raleway(
         fontSize: 26,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w800,
         color: primaryColor,
       ),
-      titleMedium: TextStyle(
-        fontFamily: 'Roboto',
+      titleMedium: GoogleFonts.raleway(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: Colors.black87,
       ),
-      bodyMedium: TextStyle(
-        fontFamily: 'Roboto',
+      bodyMedium: GoogleFonts.raleway(
         fontSize: 16,
+        fontWeight: FontWeight.w400,
         color: Colors.black87,
       ),
     ),
@@ -65,9 +64,8 @@ class AppTheme {
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        textStyle: const TextStyle(
-          fontFamily: 'Roboto',
-          fontWeight: FontWeight.bold,
+        textStyle: GoogleFonts.raleway(
+          fontWeight: FontWeight.w700,
           fontSize: 16,
         ),
       ),
@@ -78,23 +76,20 @@ class AppTheme {
         side: const BorderSide(color: primaryColor),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        textStyle: const TextStyle(
-          fontFamily: 'Roboto',
-          fontWeight: FontWeight.w500,
-        ),
+        textStyle: GoogleFonts.raleway(fontWeight: FontWeight.w500),
       ),
     ),
   );
 
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
-    fontFamily: 'Roboto',
     scaffoldBackgroundColor: backgroundDark,
     colorScheme: const ColorScheme.dark(
       primary: primaryColor,
       surface: Color(0xFF1E1B26),
       surfaceContainerHighest: Color(0xFF272333),
     ),
+    fontFamily: GoogleFonts.raleway().fontFamily,
     appBarTheme: buildAppBarTheme(primaryColor),
     cardTheme: CardThemeData(
       color: const Color(0xFF23202A),
@@ -106,22 +101,20 @@ class AppTheme {
         side: BorderSide(color: primaryColor, width: 1.3),
       ),
     ),
-    textTheme: const TextTheme(
-      titleLarge: TextStyle(
-        fontFamily: 'Roboto',
+    textTheme: TextTheme(
+      titleLarge: GoogleFonts.raleway(
         fontSize: 26,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w800,
         color: primaryColor,
       ),
-      titleMedium: TextStyle(
-        fontFamily: 'Roboto',
+      titleMedium: GoogleFonts.raleway(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: Colors.white,
       ),
-      bodyMedium: TextStyle(
-        fontFamily: 'Roboto',
+      bodyMedium: GoogleFonts.raleway(
         fontSize: 16,
+        fontWeight: FontWeight.w400,
         color: Colors.white70,
       ),
     ),
@@ -131,8 +124,7 @@ class AppTheme {
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        textStyle: const TextStyle(
-          fontFamily: 'Roboto',
+        textStyle: GoogleFonts.raleway(
           fontWeight: FontWeight.bold,
           fontSize: 16,
         ),
@@ -144,10 +136,7 @@ class AppTheme {
         side: const BorderSide(color: Colors.white70),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        textStyle: const TextStyle(
-          fontFamily: 'Roboto',
-          fontWeight: FontWeight.w500,
-        ),
+        textStyle: GoogleFonts.raleway(fontWeight: FontWeight.w500),
       ),
     ),
   );

@@ -13,9 +13,15 @@ class RecipeLongPressMenu {
         .where((c) => c != 'Favourites' && c != 'Translated' && c != 'All')
         .toList();
 
-    String? selectedCategory = recipe.categories.isNotEmpty
-        ? recipe.categories.first
-        : (filteredCategories.isNotEmpty ? filteredCategories.first : null);
+    String? selectedCategory = recipe.categories.firstWhere(
+      (c) => filteredCategories.contains(c),
+      orElse: () =>
+          filteredCategories.isNotEmpty ? filteredCategories.first : '',
+    );
+
+    if (!filteredCategories.contains(selectedCategory)) {
+      selectedCategory = null;
+    }
 
     await showModalBottomSheet(
       context: context,
@@ -91,7 +97,9 @@ class RecipeLongPressMenu {
               ),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
-                value: selectedCategory,
+                value: filteredCategories.contains(selectedCategory)
+                    ? selectedCategory
+                    : null,
                 isExpanded: true,
                 style: Theme.of(context).textTheme.bodyMedium,
                 decoration: InputDecoration(

@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -8,6 +9,7 @@ import 'package:recipe_vault/rev_cat/pricing_card.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/services/user_session_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -222,6 +224,47 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           style: TextStyle(color: Colors.grey),
                         ),
                       ),
+
+                    const SizedBox(height: 32),
+                    Center(
+                      child: RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          style: Theme.of(context).textTheme.bodySmall,
+                          children: [
+                            const TextSpan(
+                              text: 'By subscribing, you agree to our ',
+                            ),
+                            TextSpan(
+                              text: 'Terms of Use',
+                              style: const TextStyle(
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => launchUrl(
+                                  Uri.parse(
+                                    'https://badger-creations.co.uk/terms',
+                                  ),
+                                ),
+                            ),
+                            const TextSpan(text: ' and '),
+                            TextSpan(
+                              text: 'Privacy Policy',
+                              style: const TextStyle(
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => launchUrl(
+                                  Uri.parse(
+                                    'https://badger-creations.co.uk/privacy',
+                                  ),
+                                ),
+                            ),
+                            const TextSpan(text: '.'),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

@@ -4,13 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
+import 'package:go_router/go_router.dart';
 
 class TrialPromptHelper {
   static bool _hasPromptedThisSession = false;
 
-  /// Call this to check and optionally prompt the user to upgrade.
-  /// If [showDialogInstead] is true, shows a dialog. Otherwise, pushes to full-screen paywall.
-  static Future<void> showIfTryingRestrictedFeature(
+  /// Call this to check and optionally prompt the user to upgrade or start a trial.
+  /// - If [showDialogInstead] is true, shows a modal dialog.
+  /// - Otherwise, pushes the full-screen paywall.
+  static Future<void> checkAndPromptTrial(
     BuildContext context, {
     bool showDialogInstead = true,
   }) async {
@@ -29,34 +31,51 @@ class TrialPromptHelper {
     final shouldPrompt =
         !isDev && (tier == 'free' || (tier == 'taster' && trialExpired));
 
-    if (shouldPrompt) {
-      _hasPromptedThisSession = true;
+    if (!shouldPrompt) return;
 
-      // 🔍 Track event
-      await FirebaseAnalytics.instance.logEvent(
-        name: 'paywall_prompt_shown',
-        parameters: {'tier': tier, 'trial_expired': trialExpired},
-      );
+    _hasPromptedThisSession = true;
 
-      if (showDialogInstead) {
-        _showUpgradeDialog(context, trialExpired: trialExpired);
-      } else {
-        Navigator.of(context).pop();
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.pushNamed(context, '/paywall');
-        });
-      }
+    // 🔍 Analytics event for tracking user gating
+    await FirebaseAnalytics.instance.logEvent(
+      name: 'paywall_prompt_shown',
+      parameters: {'tier': tier, 'trial_expired': trialExpired},
+    );
+
+    if (showDialogInstead) {
+      _showUpgradeDialog(context, trialExpired);
+    } else {
+      Navigator.of(context).pop(); // close current
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushNamed(context, '/paywall');
+      });
     }
   }
 
-  static void _showUpgradeDialog(
-    BuildContext context, {
-    required bool trialExpired,
-  }) {
+  /// Show the correct screen (trial or paywall) based on tier access.
+  static Future<void> showIfTryingRestrictedFeature(
+    BuildContext context,
+  ) async {
+    final subscriptionService = Provider.of<SubscriptionService>(
+      context,
+      listen: false,
+    );
+    await subscriptionService.refresh();
+
+    final tier = subscriptionService.tier;
+    final canStartTrial = subscriptionService.canStartTrial;
+
+    if (tier == 'none' && canStartTrial) {
+      context.go('/trial');
+    } else {
+      context.go('/paywall');
+    }
+  }
+
+  static void _showUpgradeDialog(BuildContext context, bool trialExpired) {
     final title = trialExpired ? 'Trial Ended' : 'Free Plan';
     final message = trialExpired
         ? 'Your 7-day Taster Trial has ended.\n\nTo continue using RecipeVault’s AI tools, please upgrade to a paid plan.'
-        : 'You’re currently on the free plan. AI-powered tools are locked.\n\nTo access scanning, translation, and more, please upgrade.';
+        : 'You’re currently on the free plan. AI-powered tools are locked.\n\nStart a free trial or upgrade to access scanning, translation, and more.';
 
     showDialog(
       context: context,
@@ -80,7 +99,7 @@ class TrialPromptHelper {
     );
   }
 
-  /// 🔄 Reset between sessions or tier changes if needed
+  /// Reset the session flag to allow another prompt (e.g. after logout or reauth).
   static void resetPromptFlag() {
     _hasPromptedThisSession = false;
   }

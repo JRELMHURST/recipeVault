@@ -49,6 +49,83 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   List<String> _allCategories = ['All', 'Favourites', 'Translated'];
   List<RecipeCardModel> _allRecipes = [];
 
+  List<RecipeCardModel> get _filteredRecipes {
+    return _allRecipes.where((recipe) {
+      final matchesCategory =
+          _selectedCategory == 'All' ||
+          (_selectedCategory == 'Favourites' && recipe.isFavourite) ||
+          recipe.categories.contains(_selectedCategory);
+
+      final matchesSearch =
+          _searchQuery.isEmpty ||
+          recipe.title.toLowerCase().contains(_searchQuery.toLowerCase());
+
+      return matchesCategory && matchesSearch;
+    }).toList();
+  }
+
+  Future<void> _deleteRecipe(RecipeCardModel recipe) async {
+    setState(() {
+      _allRecipes.removeWhere((r) => r.id == recipe.id);
+    });
+    await HiveRecipeService.delete(recipe.id);
+    await recipeCollection.doc(recipe.id).delete();
+    if (recipe.imageUrl?.isNotEmpty == true) {
+      final ref = FirebaseStorage.instance.refFromURL(recipe.imageUrl!);
+      await ref.delete().catchError((_) => null);
+    }
+  }
+
+  Future<void> _toggleFavourite(RecipeCardModel recipe) async {
+    final updated = recipe.copyWith(isFavourite: !recipe.isFavourite);
+    await HiveRecipeService.save(updated);
+    await recipeCollection
+        .doc(updated.id)
+        .set(updated.toJson(), SetOptions(merge: true));
+    setState(() {
+      final index = _allRecipes.indexWhere((r) => r.id == updated.id);
+      if (index != -1) _allRecipes[index] = updated;
+    });
+  }
+
+  Future<void> _assignCategories(
+    RecipeCardModel recipe,
+    List<String> categories,
+  ) async {
+    final updated = recipe.copyWith(categories: categories);
+    await HiveRecipeService.save(updated);
+    await recipeCollection
+        .doc(updated.id)
+        .set(updated.toJson(), SetOptions(merge: true));
+    setState(() {
+      final index = _allRecipes.indexWhere((r) => r.id == updated.id);
+      if (index != -1) _allRecipes[index] = updated;
+    });
+  }
+
+  Future<void> _addOrUpdateImage(RecipeCardModel recipe) async {
+    final newImageUrl = await ImageProcessingService.pickAndUploadSingleImage(
+      context: context,
+      recipeId: recipe.id,
+    );
+    if (newImageUrl == null) return;
+
+    final updated = recipe.copyWith(imageUrl: newImageUrl);
+    await HiveRecipeService.save(updated);
+    await recipeCollection
+        .doc(updated.id)
+        .set(updated.toJson(), SetOptions(merge: true));
+    setState(() {
+      final index = _allRecipes.indexWhere((r) => r.id == updated.id);
+      if (index != -1) _allRecipes[index] = updated;
+    });
+  }
+
+  void _removeCategory(String category) async {
+    await CategoryService.hideDefaultCategory(category);
+    await _loadCustomCategories();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -60,6 +137,16 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           .collection('users')
           .doc(userId)
           .collection('recipes');
+
+      final subService = Provider.of<SubscriptionService>(
+        context,
+        listen: false,
+      );
+      await subService.refresh();
+
+      if (subService.tier != 'none' && subService.canStartTrial) {
+        await TrialPromptHelper.checkAndPromptTrial(context);
+      }
 
       await _initializeDefaultCategories();
       await _loadCustomCategories();
@@ -144,150 +231,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         _allRecipes = fallback;
       });
     }
-  }
-
-  Future<void> _deleteRecipe(RecipeCardModel recipe) async {
-    try {
-      final isGlobalRecipe =
-          !(await recipeCollection.doc(recipe.id).get()).exists;
-
-      if (isGlobalRecipe) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .collection('hiddenGlobalRecipes')
-            .doc(recipe.id)
-            .set({'hiddenAt': FieldValue.serverTimestamp()});
-      } else {
-        await recipeCollection.doc(recipe.id).delete();
-        if (recipe.imageUrl?.isNotEmpty ?? false) {
-          try {
-            final ref = FirebaseStorage.instance.refFromURL(recipe.imageUrl!);
-            await ref.delete();
-          } catch (e) {
-            if (!e.toString().contains('object-not-found')) {
-              debugPrint('❌ Failed to delete attached image: $e');
-            }
-          }
-        }
-        for (final url in recipe.originalImageUrls) {
-          try {
-            final ref = FirebaseStorage.instance.refFromURL(url);
-            await ref.delete();
-          } catch (e) {
-            if (!e.toString().contains('object-not-found')) {
-              debugPrint('❌ Failed to delete original image: $e');
-            }
-          }
-        }
-      }
-
-      await HiveRecipeService.delete(recipe.id);
-      setState(() => _allRecipes.removeWhere((r) => r.id == recipe.id));
-    } catch (e) {
-      debugPrint("❌ Error during recipe deletion: $e");
-    }
-  }
-
-  Future<void> _toggleFavourite(RecipeCardModel recipe) async {
-    final updated = recipe.copyWith(isFavourite: !recipe.isFavourite);
-    await HiveRecipeService.save(updated);
-
-    final subService = Provider.of<SubscriptionService>(context, listen: false);
-    if (subService.hasAccess) {
-      await recipeCollection
-          .doc(updated.id)
-          .set(updated.toJson(), SetOptions(merge: true));
-    } else {
-      await TrialPromptHelper.showIfTryingRestrictedFeature(context);
-    }
-
-    setState(() {
-      final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
-      if (index != -1) _allRecipes[index] = updated;
-    });
-  }
-
-  Future<void> _assignCategories(
-    RecipeCardModel recipe,
-    List<String> selected,
-  ) async {
-    final updated = recipe.copyWith(categories: selected.toSet().toList());
-    await HiveRecipeService.save(updated);
-
-    final subService = Provider.of<SubscriptionService>(context, listen: false);
-    if (subService.hasAccess) {
-      await recipeCollection
-          .doc(updated.id)
-          .set(updated.toJson(), SetOptions(merge: true));
-    } else {
-      await TrialPromptHelper.showIfTryingRestrictedFeature(context);
-    }
-
-    setState(() {
-      final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
-      if (index != -1) _allRecipes[index] = updated;
-    });
-  }
-
-  Future<void> _addOrUpdateImage(RecipeCardModel recipe) async {
-    final imageUrl = await ImageProcessingService.pickAndUploadRecipeImage(
-      context: context,
-      recipeId: recipe.id,
-    );
-    if (imageUrl == null) return;
-
-    final updated = recipe.copyWith(imageUrl: imageUrl);
-    await HiveRecipeService.save(updated);
-
-    final subService = Provider.of<SubscriptionService>(context, listen: false);
-    if (subService.hasAccess) {
-      await recipeCollection
-          .doc(updated.id)
-          .set(updated.toJson(), SetOptions(merge: true));
-    } else {
-      await TrialPromptHelper.showIfTryingRestrictedFeature(context);
-    }
-
-    setState(() {
-      final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
-      if (index != -1) _allRecipes[index] = updated;
-    });
-  }
-
-  void _removeCategory(String category) async {
-    if (_defaultCategories.contains(category) || category == 'All') {
-      await CategoryService.hideDefaultCategory(category);
-    } else {
-      await CategoryService.deleteCategory(category);
-    }
-
-    await _loadCustomCategories();
-    if (_selectedCategory == category) {
-      setState(() => _selectedCategory = 'All');
-    }
-  }
-
-  List<RecipeCardModel> get _filteredRecipes {
-    List<RecipeCardModel> base = switch (_selectedCategory) {
-      'All' => _allRecipes,
-      'Favourites' => _allRecipes.where((r) => r.isFavourite).toList(),
-      'Translated' => _allRecipes.where((r) => r.translationUsed).toList(),
-      _ =>
-        _allRecipes
-            .where((r) => r.categories.contains(_selectedCategory))
-            .toList(),
-    };
-
-    if (_searchQuery.trim().isEmpty) return base;
-    final query = _searchQuery.toLowerCase();
-
-    return base.where((r) {
-      return r.title.toLowerCase().contains(query) ||
-          r.ingredients.join(', ').toLowerCase().contains(query) ||
-          r.instructions.join(' ').toLowerCase().contains(query) ||
-          r.categories.any((cat) => cat.toLowerCase().contains(query));
-    }).toList();
   }
 
   @override

@@ -111,8 +111,8 @@ class ImageProcessingService {
     return cropped == null ? null : File(cropped.path);
   }
 
-  /// Uploads a single recipe image after picking and cropping
-  static Future<String?> pickAndUploadRecipeImage({
+  /// Picks a single image, crops it, uploads to Firebase, and returns the download URL
+  static Future<String?> pickAndUploadSingleImage({
     required BuildContext context,
     required String recipeId,
   }) async {

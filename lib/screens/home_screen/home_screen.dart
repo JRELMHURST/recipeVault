@@ -27,10 +27,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _initialisePreferences();
+    _initialisePreferencesAndPrompt();
   }
 
-  Future<void> _initialisePreferences() async {
+  Future<void> _initialisePreferencesAndPrompt() async {
     final storedMode = UserPreferencesService.getViewMode();
     if (mounted) {
       setState(() {
@@ -39,12 +39,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final subService = SubscriptionService();
+    await subService.refresh();
+    if (!mounted) return;
+
     if (subService.tier != 'none') {
-      await TrialPromptHelper.showIfTryingRestrictedFeature(context);
+      if (subService.canStartTrial) {
+        await TrialPromptHelper.checkAndPromptTrial(context);
+      }
     } else {
       void tierListener() async {
-        if (subService.tier != 'none') {
-          await TrialPromptHelper.showIfTryingRestrictedFeature(context);
+        if (subService.tier != 'none' && subService.canStartTrial) {
+          await TrialPromptHelper.checkAndPromptTrial(context);
           subService.tierNotifier.removeListener(tierListener);
         }
       }

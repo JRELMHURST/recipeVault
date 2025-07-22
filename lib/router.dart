@@ -22,7 +22,6 @@ import 'package:recipe_vault/settings/settings_screen.dart';
 import 'package:recipe_vault/settings/account_settings_screen.dart';
 import 'package:recipe_vault/settings/appearance_settings_screen.dart';
 import 'package:recipe_vault/settings/notifications_settings_screen.dart';
-import 'package:recipe_vault/settings/subscription_screen/subscription_settings_screen.dart';
 import 'package:recipe_vault/settings/about_screen.dart';
 import 'package:recipe_vault/settings/storage_sync_screen.dart';
 
@@ -58,7 +57,6 @@ Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
       textScaleNotifier: textScaleNotifier,
     ),
     '/settings/notifications': (context) => const NotificationsSettingsScreen(),
-    '/settings/subscription': (context) => const SubscriptionSettingsScreen(),
     '/settings/about': (context) => const AboutSettingsScreen(),
     '/settings/storage': (context) => const StorageSyncScreen(),
 

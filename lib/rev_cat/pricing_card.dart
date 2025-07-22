@@ -33,7 +33,7 @@ class PricingCard extends StatelessWidget {
         !isAnnual &&
         package.storeProduct.subscriptionPeriod?.toLowerCase().contains('m') ==
             true;
-    final hasFreeTrial = isMonthly; // UI-level assumption only
+    final hasFreeTrial = isMonthly;
 
     return Opacity(
       opacity: isDisabled ? 0.6 : 1.0,
@@ -45,12 +45,13 @@ class PricingCard extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 Card(
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                  elevation: theme.cardTheme.elevation,
+                  shape: theme.cardTheme.shape,
+                  margin: EdgeInsets.zero,
+                  color: theme.cardTheme.color,
+                  shadowColor: theme.cardTheme.shadowColor,
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -76,14 +77,14 @@ class PricingCard extends StatelessWidget {
                               ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 8),
                         Text(description, style: theme.textTheme.bodyMedium),
                         const SizedBox(height: 12),
                         Text(
                           price,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: Colors.deepPurple,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                         if (isAnnual)
@@ -93,7 +94,7 @@ class PricingCard extends StatelessWidget {
                               '🏷️ Best Value – Save £34/year vs monthly & equivalent to £4.17/mo',
                               style: theme.textTheme.labelSmall?.copyWith(
                                 fontWeight: FontWeight.w500,
-                                color: Colors.deepPurple,
+                                color: theme.colorScheme.primary,
                               ),
                             ),
                           ),
@@ -104,10 +105,10 @@ class PricingCard extends StatelessWidget {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.check_circle,
                                   size: 18,
-                                  color: Colors.green,
+                                  color: Colors.green.shade700,
                                 ),
                                 const SizedBox(width: 6),
                                 Flexible(
@@ -120,19 +121,11 @@ class PricingCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: isDisabled ? null : onTap,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurple,
-                              disabledBackgroundColor: Colors.grey.shade400,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
                             child: Text(
                               isDisabled ? 'Current Plan' : 'Subscribe',
                             ),

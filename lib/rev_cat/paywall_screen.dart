@@ -116,12 +116,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final trialActive = _subscriptionService.isTasterTrialActive;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F6FF),
-      appBar: AppBar(
-        title: const Text('Chef Mode: ON'),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
-      ),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(title: const Text('Chef Mode: ON')),
       body: Stack(
         children: [
           ListView(
@@ -132,61 +128,37 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (isFree)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          border: Border.all(color: Colors.orange.shade300),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              '🔓 Free Plan Access',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'You currently have access to a selection of sample global recipes.\n\nTo scan your own, upload images, use AI tools, or save favourites — you’ll need to upgrade.',
-                            ),
-                          ],
-                        ),
+                      _buildNoticeCard(
+                        context,
+                        title: '🔓 Free Plan Access',
+                        content:
+                            'You currently have access to a selection of sample global recipes.\n\nTo scan your own, upload images, use AI tools, or save favourites — you’ll need to upgrade.',
+                        background: Colors.orange.shade50,
+                        border: Colors.orange.shade300,
                       )
                     else if (isTaster && trialActive)
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          border: Border.all(color: Colors.green.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          '🎁 You’re currently on a free 7-day trial. Upgrade to keep full access after it ends.',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
+                      _buildNoticeCard(
+                        context,
+                        title: '🎁 Trial Active',
+                        content:
+                            'You’re currently on a free 7-day trial. Upgrade to keep full access after it ends.',
+                        background: Colors.green.shade50,
+                        border: Colors.green.shade300,
                       )
                     else if (isTaster && trialExpired)
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          border: Border.all(color: Colors.orange.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          '⚠️ Your free trial has ended. Some features are now limited. Upgrade to unlock full access.',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
+                      _buildNoticeCard(
+                        context,
+                        title: '⚠️ Trial Ended',
+                        content:
+                            'Your free trial has ended. Some features are now limited. Upgrade to unlock full access.',
+                        background: Colors.orange.shade50,
+                        border: Colors.orange.shade300,
                       ),
 
                     const SizedBox(height: 24),
                     Text(
                       'Enjoy unlimited access to powerful AI recipe tools, image uploads, category sorting, and more!',
-                      style: theme.textTheme.bodyLarge?.copyWith(fontSize: 16),
+                      style: theme.textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 24),
 
@@ -230,7 +202,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       child: RichText(
                         textAlign: TextAlign.center,
                         text: TextSpan(
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: theme.textTheme.bodySmall,
                           children: [
                             const TextSpan(
                               text: 'By subscribing, you agree to our ',
@@ -272,6 +244,31 @@ class _PaywallScreenState extends State<PaywallScreen> {
           ),
 
           if (_isPurchasing) const LoadingOverlay(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoticeCard(
+    BuildContext context, {
+    required String title,
+    required String content,
+    required Color background,
+    required Color border,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: background,
+        border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Text(content, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
     );

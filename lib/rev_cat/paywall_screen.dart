@@ -58,6 +58,22 @@ class _PaywallScreenState extends State<PaywallScreen> {
       );
 
       _availablePackages = [...homeChefPackages, masterMonthly, masterAnnual];
+
+      // Reorder: current plan first
+      final currentId = _subscriptionService.entitlementId;
+      _availablePackages.sort((a, b) {
+        final aIsCurrent =
+            a.storeProduct.identifier == currentId ||
+            a.identifier == currentId ||
+            a.offeringIdentifier == currentId;
+        final bIsCurrent =
+            b.storeProduct.identifier == currentId ||
+            b.identifier == currentId ||
+            b.offeringIdentifier == currentId;
+        if (aIsCurrent && !bIsCurrent) return -1;
+        if (!aIsCurrent && bIsCurrent) return 1;
+        return 0;
+      });
     } catch (e) {
       debugPrint('❌ Failed to load offerings: $e');
     }
@@ -185,41 +201,32 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           border: Colors.orange.shade300,
                         ),
                       const SizedBox(height: 24),
-                      ...(() {
-                        final widgets = <Widget>[];
+                      ..._availablePackages.map((pkg) {
+                        final isCurrent =
+                            pkg.storeProduct.identifier == entitlementId ||
+                            pkg.identifier == entitlementId ||
+                            pkg.offeringIdentifier == entitlementId;
 
-                        for (final pkg in _availablePackages) {
-                          final isCurrent =
-                              pkg.storeProduct.identifier == entitlementId ||
-                              pkg.identifier == entitlementId ||
-                              pkg.offeringIdentifier == entitlementId;
-
-                          widgets.add(
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: PricingCard(
-                                package: pkg,
-                                onTap: isCurrent
-                                    ? () {}
-                                    : () {
-                                        if (!_isPurchasing) {
-                                          _handlePurchase(pkg);
-                                        }
-                                      },
-                                isDisabled: isCurrent,
-                                badge: isCurrent
-                                    ? '✅ Current Plan'
-                                    : pkg.storeProduct.subscriptionPeriod ==
-                                          'P1Y'
-                                    ? 'Best Value'
-                                    : '7-Day Free Trial',
-                              ),
-                            ),
-                          );
-                        }
-
-                        return widgets;
-                      })(),
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: PricingCard(
+                            package: pkg,
+                            onTap: isCurrent
+                                ? () {}
+                                : () {
+                                    if (!_isPurchasing) {
+                                      _handlePurchase(pkg);
+                                    }
+                                  },
+                            isDisabled: isCurrent,
+                            badge: isCurrent
+                                ? '✅ Current Plan'
+                                : pkg.storeProduct.subscriptionPeriod == 'P1Y'
+                                ? 'Best Value'
+                                : '7-Day Free Trial',
+                          ),
+                        );
+                      }),
                       if (_availablePackages.isEmpty)
                         const Padding(
                           padding: EdgeInsets.only(top: 24),

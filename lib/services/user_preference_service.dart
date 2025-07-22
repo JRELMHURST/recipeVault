@@ -3,7 +3,6 @@ import 'package:hive/hive.dart';
 class UserPreferencesService {
   static const String _boxName = 'userPrefs';
   static const String _keyViewMode = 'viewMode';
-  static const String _keyHasCompletedHomeTutorial = 'hasCompletedHomeTutorial';
 
   static late Box _box;
 
@@ -33,14 +32,5 @@ class UserPreferencesService {
   /// Optional: set raw value (for future custom prefs)
   static Future<void> set(String key, dynamic value) async {
     await _box.put(key, value);
-  }
-
-  /// Tutorial tracking
-  static Future<bool> hasCompletedHomeTutorial() async {
-    return _box.get(_keyHasCompletedHomeTutorial, defaultValue: false) as bool;
-  }
-
-  static Future<void> markHomeTutorialComplete() async {
-    await _box.put(_keyHasCompletedHomeTutorial, true);
   }
 }

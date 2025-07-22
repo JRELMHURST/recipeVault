@@ -14,7 +14,6 @@ import 'package:recipe_vault/login/register_screen.dart';
 
 // Main Screens
 import 'package:recipe_vault/screens/home_screen/home_screen.dart';
-import 'package:recipe_vault/screens/home_screen/home_tutorial_overlay.dart';
 import 'package:recipe_vault/screens/results_screen.dart';
 import 'package:recipe_vault/screens/shared/shared_recipe_screen.dart';
 
@@ -29,29 +28,7 @@ import 'package:recipe_vault/settings/storage_sync_screen.dart';
 // Subscription
 import 'package:recipe_vault/rev_cat/paywall_screen.dart';
 import 'package:recipe_vault/rev_cat/trial_ended_screen.dart';
-
-class AppRoutes {
-  static const String root = '/';
-  static const String login = '/login';
-  static const String register = '/register';
-  static const String home = '/home';
-  static const String results = '/results';
-  static const String homeTutorial = '/home-tutorial';
-
-  // Settings
-  static const String settings = '/settings';
-  static const String accountSettings = '/settings/account';
-  static const String changePassword = '/settings/account/change-password';
-  static const String appearanceSettings = '/settings/appearance';
-  static const String notificationsSettings = '/settings/notifications';
-  static const String aboutSettings = '/settings/about';
-  static const String storageSync = '/settings/storage';
-
-  // Subscription
-  static const String paywall = '/paywall';
-  static const String trialEnded = '/trial-ended';
-  static const String sharedFallback = '/shared';
-}
+// 🔥 Removed: import 'package:recipe_vault/rev_cat/trial_activation_screen.dart';
 
 Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
   final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
@@ -61,43 +38,34 @@ Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
   );
 
   return {
-    AppRoutes.root: (context) {
+    '/': (context) {
       final user = FirebaseAuth.instance.currentUser;
       return user == null ? const LoginScreen() : const HomeScreen();
     },
-    AppRoutes.login: (context) => const LoginScreen(),
-    AppRoutes.register: (context) => const RegisterScreen(),
-    AppRoutes.home: (context) => const HomeScreen(),
-    AppRoutes.results: (context) => const ResultsScreen(),
-
-    AppRoutes.homeTutorial: (context) => HomeTutorialOverlay(
-      targets: [
-        GlobalKey(debugLabel: 'scanButtonKey'),
-        GlobalKey(debugLabel: 'vaultButtonKey'),
-        GlobalKey(debugLabel: 'viewModeToggleKey'),
-        GlobalKey(debugLabel: 'profileButtonKey'),
-      ],
-    ),
+    '/login': (context) => const LoginScreen(),
+    '/register': (context) => const RegisterScreen(),
+    '/home': (context) => const HomeScreen(),
+    '/results': (context) => const ResultsScreen(),
 
     // Settings
-    AppRoutes.settings: (context) => const SettingsScreen(),
-    AppRoutes.accountSettings: (context) => const AccountSettingsScreen(),
-    AppRoutes.changePassword: (context) => const ChangePasswordScreen(),
-    AppRoutes.appearanceSettings: (context) => AppearanceSettingsScreen(
+    '/settings': (context) => const SettingsScreen(),
+    '/settings/account': (context) => const AccountSettingsScreen(),
+    '/settings/account/change-password': (context) =>
+        const ChangePasswordScreen(),
+    '/settings/appearance': (context) => AppearanceSettingsScreen(
       themeNotifier: themeNotifier,
       textScaleNotifier: textScaleNotifier,
     ),
-    AppRoutes.notificationsSettings: (context) =>
-        const NotificationsSettingsScreen(),
-    AppRoutes.aboutSettings: (context) => const AboutSettingsScreen(),
-    AppRoutes.storageSync: (context) => const StorageSyncScreen(),
+    '/settings/notifications': (context) => const NotificationsSettingsScreen(),
+    '/settings/about': (context) => const AboutSettingsScreen(),
+    '/settings/storage': (context) => const StorageSyncScreen(),
 
-    // Subscription
-    AppRoutes.paywall: (context) => const PaywallScreen(),
-    AppRoutes.trialEnded: (context) => const TrialEndedScreen(),
+    // Subscription-related
+    '/paywall': (context) => const PaywallScreen(),
+    '/trial-ended': (context) => const TrialEndedScreen(),
 
-    // Fallback
-    AppRoutes.sharedFallback: (context) => const Scaffold(
+    // Shared fallback
+    '/shared': (context) => const Scaffold(
       body: Center(
         child: Text(
           'Please use a valid shared recipe link.',
@@ -148,7 +116,9 @@ Widget buildAppWithRouter() {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeNotifier.themeMode,
-        supportedLocales: const [Locale('en', 'GB')],
+        supportedLocales: const [
+          Locale('en', 'GB'), // 🇬🇧 British English
+        ],
         locale: const Locale('en', 'GB'),
         onGenerateRoute: generateRoute,
         builder: (context, child) {

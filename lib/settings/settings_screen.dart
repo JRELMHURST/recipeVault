@@ -127,11 +127,11 @@ class SettingsScreen extends StatelessWidget {
                 context,
                 title: 'Subscription',
                 items: [
-                  _buildSettingsTile(
-                    context: context,
-                    icon: Icons.card_membership_outlined,
-                    label: 'Manage Subscription',
-                    route: '/settings/subscription',
+                  ListTile(
+                    leading: const Icon(Icons.card_membership_outlined),
+                    title: const Text('Manage Subscription'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.pushNamed(context, '/paywall'),
                   ),
                 ],
               ),

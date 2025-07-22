@@ -120,7 +120,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     }
 
     final tier = _subscriptionService.tier;
-    final currentEntitlement = _subscriptionService.entitlementId;
+    final entitlementId = _subscriptionService.entitlementId;
     final isFree = tier == 'free';
     final isTaster = _subscriptionService.isTaster;
     final trialExpired = _subscriptionService.isTasterTrialExpired;
@@ -185,30 +185,41 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           border: Colors.orange.shade300,
                         ),
                       const SizedBox(height: 24),
-                      ..._availablePackages.map((pkg) {
-                        final isAnnual =
-                            pkg.storeProduct.subscriptionPeriod == 'P1Y';
-                        final isCurrent = currentEntitlement == pkg.identifier;
-                        final badge = isCurrent
-                            ? 'Current Plan'
-                            : isAnnual
-                            ? 'Best Value'
-                            : '7-Day Free Trial';
+                      ...(() {
+                        final widgets = <Widget>[];
 
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: PricingCard(
-                            package: pkg,
-                            onTap: () {
-                              if (!_isPurchasing && !isCurrent) {
-                                _handlePurchase(pkg);
-                              }
-                            },
-                            isDisabled: isCurrent,
-                            badge: badge,
-                          ),
-                        );
-                      }),
+                        for (final pkg in _availablePackages) {
+                          final isCurrent =
+                              pkg.storeProduct.identifier == entitlementId ||
+                              pkg.identifier == entitlementId ||
+                              pkg.offeringIdentifier == entitlementId;
+
+                          widgets.add(
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: PricingCard(
+                                package: pkg,
+                                onTap: isCurrent
+                                    ? () {}
+                                    : () {
+                                        if (!_isPurchasing) {
+                                          _handlePurchase(pkg);
+                                        }
+                                      },
+                                isDisabled: isCurrent,
+                                badge: isCurrent
+                                    ? '✅ Current Plan'
+                                    : pkg.storeProduct.subscriptionPeriod ==
+                                          'P1Y'
+                                    ? 'Best Value'
+                                    : '7-Day Free Trial',
+                              ),
+                            ),
+                          );
+                        }
+
+                        return widgets;
+                      })(),
                       if (_availablePackages.isEmpty)
                         const Padding(
                           padding: EdgeInsets.only(top: 24),

@@ -31,8 +31,7 @@ class PricingCard extends StatelessWidget {
     final isAnnual = _isAnnual(package);
     final isMonthly =
         !isAnnual &&
-        package.storeProduct.subscriptionPeriod?.toLowerCase().contains('m') ==
-            true;
+        product.subscriptionPeriod?.toLowerCase().contains('m') == true;
     final hasFreeTrial = isMonthly;
 
     return Opacity(
@@ -55,6 +54,7 @@ class PricingCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Title + Subtitle
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -78,8 +78,12 @@ class PricingCard extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 8),
+
+                        // Description
                         Text(description, style: theme.textTheme.bodyMedium),
                         const SizedBox(height: 12),
+
+                        // Price
                         Text(
                           price,
                           style: theme.textTheme.titleLarge?.copyWith(
@@ -87,6 +91,8 @@ class PricingCard extends StatelessWidget {
                             color: theme.colorScheme.primary,
                           ),
                         ),
+
+                        // Annual value note
                         if (isAnnual)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
@@ -99,6 +105,8 @@ class PricingCard extends StatelessWidget {
                             ),
                           ),
                         const SizedBox(height: 16),
+
+                        // Features list
                         ...features.map(
                           (feature) => Padding(
                             padding: const EdgeInsets.symmetric(vertical: 2),
@@ -122,19 +130,30 @@ class PricingCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 20),
+
+                        // Button
                         SizedBox(
                           width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: isDisabled ? null : onTap,
-                            child: Text(
-                              isDisabled ? 'Current Plan' : 'Subscribe',
-                            ),
-                          ),
+                          child: isDisabled
+                              ? OutlinedButton.icon(
+                                  onPressed: null,
+                                  icon: const Icon(Icons.check_circle_outline),
+                                  label: const Text('Current Plan'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.grey.shade600,
+                                  ),
+                                )
+                              : ElevatedButton(
+                                  onPressed: onTap,
+                                  child: const Text('Subscribe'),
+                                ),
                         ),
                       ],
                     ),
                   ),
                 ),
+
+                // Badge or Trial Ribbon
                 if (badge != null || hasFreeTrial)
                   Positioned(
                     top: -12,
@@ -151,7 +170,7 @@ class PricingCard extends StatelessWidget {
                               ? Colors.amber.shade700
                               : Colors.green.shade700,
                           borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(
                               color: Colors.black12,
                               blurRadius: 4,
@@ -184,17 +203,11 @@ class PricingCard extends StatelessWidget {
   }
 
   String _getTitle(Package package) {
-    final offering = package.offeringIdentifier;
-
-    if (offering == 'home_chef_plan') {
-      return '👨‍🍳 Home Chef Plan';
-    }
-
-    if (offering == 'master_chef_plan') {
-      return 'Master Chef';
-    }
-
-    return package.storeProduct.title;
+    return switch (package.offeringIdentifier) {
+      'home_chef_plan' => 'Home Chef Plan',
+      'master_chef_plan' => 'Master Chef',
+      _ => package.storeProduct.title,
+    };
   }
 
   String? _getSubtitle(Package package) {
@@ -209,43 +222,35 @@ class PricingCard extends StatelessWidget {
     final offering = package.offeringIdentifier;
     final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
 
-    if (offering == 'home_chef_plan') {
-      return 'Perfect balance – 20 recipes/month, 5 translations, image uploads.';
-    }
-
-    if (offering == 'master_chef_plan') {
-      return period.contains('y')
-          ? 'Unlimited everything, save 40% – 3+ months free.'
-          : 'Unlimited everything – AI, images, translations, categories.';
-    }
-
-    return 'Enjoy full access to RecipeVault features.';
+    return switch (offering) {
+      'home_chef_plan' =>
+        'Perfect balance – 20 recipes/month, 5 translations, image uploads.',
+      'master_chef_plan' =>
+        period.contains('y')
+            ? 'Unlimited everything, save 40% – 3+ months free.'
+            : 'Unlimited everything – AI, images, translations, categories.',
+      _ => 'Enjoy full access to RecipeVault features.',
+    };
   }
 
   List<String> _getFeatures(Package package) {
-    final offering = package.offeringIdentifier;
-
-    if (offering == 'home_chef_plan') {
-      return [
+    return switch (package.offeringIdentifier) {
+      'home_chef_plan' => [
         '20 AI recipe cards',
         'Recipe image uploads (up to 20)',
         '5 translations per month',
         'Save recipes to your vault',
         'Category sorting',
-      ];
-    }
-
-    if (offering == 'master_chef_plan') {
-      return [
+      ],
+      'master_chef_plan' => [
         'Unlimited AI recipe cards',
         'Unlimited image uploads',
         'Unlimited translations',
         'Save recipes to your vault',
         'Category sorting & management',
         'Priority processing',
-      ];
-    }
-
-    return ['AI recipe formatting', 'Save recipes to your vault'];
+      ],
+      _ => ['AI recipe formatting', 'Save recipes to your vault'],
+    };
   }
 }

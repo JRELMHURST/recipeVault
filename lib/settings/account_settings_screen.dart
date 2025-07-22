@@ -19,7 +19,6 @@ class AccountSettingsScreen extends StatelessWidget {
 
     final email = user.email ?? '';
     final displayName = user.displayName ?? 'No name';
-    final photoUrl = user.photoURL;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Account Settings'), centerTitle: true),
@@ -48,20 +47,7 @@ class AccountSettingsScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircleAvatar(
-                      radius: 44,
-                      backgroundImage: photoUrl != null
-                          ? NetworkImage(photoUrl)
-                          : null,
-                      child: photoUrl == null
-                          ? const Icon(
-                              Icons.person,
-                              size: 44,
-                              color: Colors.white,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Text(
                       displayName,
                       style: theme.textTheme.titleMedium?.copyWith(

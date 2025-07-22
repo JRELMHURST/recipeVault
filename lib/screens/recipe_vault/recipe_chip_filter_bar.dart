@@ -71,8 +71,10 @@ class RecipeChipFilterBar extends StatelessWidget {
                   : null,
               shape: StadiumBorder(
                 side: BorderSide(
-                  color: isSelected ? primary : Colors.transparent,
-                  width: 1.4,
+                  color: isSelected
+                      ? primary
+                      : theme.colorScheme.outline.withOpacity(0.4),
+                  width: 1.2,
                 ),
               ),
               elevation: 0,

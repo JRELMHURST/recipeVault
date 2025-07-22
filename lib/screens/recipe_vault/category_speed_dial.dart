@@ -50,6 +50,17 @@ class CategorySpeedDial extends StatelessWidget {
   }
 
   Future<void> _startCreateFlow(BuildContext context) async {
+    if (!allowCreation) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '🔒 Recipe creation is limited to Home Chef and Master Chef plans.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final files = await ImageProcessingService.pickAndCompressImages();
     if (files.isNotEmpty) {
       ProcessingOverlay.show(context, files);
@@ -83,7 +94,7 @@ class CategorySpeedDial extends StatelessWidget {
         ),
         SpeedDialChild(
           child: const Icon(Icons.receipt_long_rounded),
-          label: 'Create Recipe',
+          label: allowCreation ? 'Create Recipe' : 'Upgrade to Create Recipe',
           onTap: () => _startCreateFlow(context),
         ),
       ],

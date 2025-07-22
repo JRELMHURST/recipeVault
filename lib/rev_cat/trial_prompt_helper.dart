@@ -38,19 +38,17 @@ class TrialPromptHelper {
     // 🔍 Analytics event for tracking user gating
     await FirebaseAnalytics.instance.logEvent(
       name: 'paywall_prompt_shown',
-      parameters: {
-        'tier': tier,
-        'trial_expired': trialExpired.toString(), // ✅ Fix
-      },
+      parameters: {'tier': tier, 'trial_expired': trialExpired.toString()},
     );
+
+    // Delay the popup by 3 seconds
+    await Future.delayed(const Duration(seconds: 3));
 
     if (showDialogInstead) {
       _showUpgradeDialog(context, trialExpired);
     } else {
       Navigator.of(context).pop(); // close current
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushNamed(context, '/paywall');
-      });
+      context.go('/paywall');
     }
   }
 

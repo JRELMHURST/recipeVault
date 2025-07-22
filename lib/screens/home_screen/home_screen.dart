@@ -56,6 +56,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
       subService.tierNotifier.addListener(tierListener);
     }
+
+    // 🆕 Show tutorial if not seen
+    final hasSeenTutorial =
+        await UserPreferencesService.hasCompletedHomeTutorial();
+    if (!hasSeenTutorial && mounted) {
+      await Future.delayed(
+        const Duration(seconds: 2),
+      ); // small delay to allow layout
+      if (!mounted) return;
+      Navigator.pushNamed(context, '/home-tutorial');
+    }
   }
 
   void _toggleViewMode() {

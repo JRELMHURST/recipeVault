@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -160,12 +160,29 @@ class AccountSettingsScreen extends StatelessWidget {
     );
 
     if (confirm == true) {
-      await FirebaseAuth.instance.signOut();
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Signed out')));
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
+      // Show loading spinner
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        await FirebaseAuth.instance.signOut();
+        if (context.mounted) {
+          Navigator.pop(context); // Dismiss loading
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Signed out')));
+          Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
+        }
+      } catch (e) {
+        Navigator.pop(context); // Dismiss loading
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Sign out failed: $e')));
+        }
       }
     }
   }
@@ -195,6 +212,12 @@ class AccountSettingsScreen extends StatelessWidget {
     );
 
     if (confirm == true) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
       try {
         final user = FirebaseAuth.instance.currentUser;
         if (user == null) return;
@@ -206,12 +229,14 @@ class AccountSettingsScreen extends StatelessWidget {
         await FirebaseAuth.instance.signOut();
 
         if (context.mounted) {
+          Navigator.pop(context); // Dismiss loading
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Account deleted successfully.')),
           );
           Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
         }
       } catch (e) {
+        Navigator.pop(context); // Dismiss loading
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to delete account: $e')),

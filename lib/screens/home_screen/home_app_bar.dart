@@ -63,7 +63,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
             )
           : null,
       actions: [
-        if (selectedIndex == 1 && isFree)
+        if ((selectedIndex == 1 || selectedIndex == 2) && isFree)
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: TextButton(
@@ -74,7 +74,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
                   horizontal: 14,
                   vertical: 6,
                 ),
-                shape: StadiumBorder(),
+                shape: const StadiumBorder(),
               ),
               child: const Text(
                 'Upgrade',

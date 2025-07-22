@@ -3,7 +3,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
+import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -20,6 +22,14 @@ class SettingsScreen extends StatelessWidget {
 
     final email = user.email ?? '';
     final displayName = user.displayName ?? 'No name';
+    final tier = Provider.of<SubscriptionService>(context).tierNotifier.value;
+    final planLabel = switch (tier) {
+      'taster' => '🥄 Taster Plan',
+      'home_chef' => '👨‍🍳 Home Chef Plan',
+      'master_chef' => '👑 Master Chef Plan',
+      _ => 'Free Plan',
+    };
+
     return Scaffold(
       body: SafeArea(
         child: ResponsiveWrapper(
@@ -59,6 +69,14 @@ class SettingsScreen extends StatelessWidget {
                       email,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      planLabel,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: Colors.white,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ],
@@ -202,7 +220,7 @@ class SettingsScreen extends StatelessWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      debugPrint('⚠️ Could not launch $url');
+      debugPrint('⚠️ Could not launch \$url');
     }
   }
 

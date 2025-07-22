@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';
@@ -47,40 +49,19 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
     setState(() => _textScale = scale);
   }
 
-  Widget _buildThemeOption(AppThemeMode mode, String title, IconData icon) {
-    final isSelected = _themeMode == mode;
-
+  Widget _buildOptionTile({
+    required String title,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
-      trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
-      onTap: () => _updateTheme(mode),
-    );
-  }
-
-  Widget _buildTextScaleOption(String label, double scale) {
-    final isSelected = (_textScale - scale).abs() < 0.01;
-
-    return ListTile(
-      leading: const Icon(Icons.text_fields),
-      title: Text(label),
-      trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
-      onTap: () => _updateTextScale(scale),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey,
-          letterSpacing: 0.5,
-        ),
-      ),
+      trailing: selected
+          ? const Icon(Icons.check_circle, color: Colors.blue)
+          : null,
+      onTap: onTap,
     );
   }
 
@@ -89,28 +70,107 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
     Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Appearance')),
+      appBar: AppBar(title: const Text('Appearance'), centerTitle: true),
       body: ResponsiveWrapper(
         maxWidth: 520,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        padding: const EdgeInsets.only(bottom: 24),
         child: ListView(
           children: [
-            _buildSectionHeader('App Theme'),
-            _buildThemeOption(
-              AppThemeMode.light,
-              'Light Mode',
-              Icons.light_mode_outlined,
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Card(
+                elevation: 1,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 12,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(left: 8, top: 8, bottom: 4),
+                        child: Text(
+                          'APP THEME',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                      _buildOptionTile(
+                        title: 'Light Mode',
+                        icon: Icons.light_mode_outlined,
+                        selected: _themeMode == AppThemeMode.light,
+                        onTap: () => _updateTheme(AppThemeMode.light),
+                      ),
+                      _buildOptionTile(
+                        title: 'Dark Mode',
+                        icon: Icons.dark_mode_outlined,
+                        selected: _themeMode == AppThemeMode.dark,
+                        onTap: () => _updateTheme(AppThemeMode.dark),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            _buildThemeOption(
-              AppThemeMode.dark,
-              'Dark Mode',
-              Icons.dark_mode_outlined,
+
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Card(
+                elevation: 1,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 12,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(left: 8, top: 8, bottom: 4),
+                        child: Text(
+                          'TEXT SIZE',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                      _buildOptionTile(
+                        title: 'Small',
+                        icon: Icons.text_decrease,
+                        selected: (_textScale - 0.85).abs() < 0.01,
+                        onTap: () => _updateTextScale(0.85),
+                      ),
+                      _buildOptionTile(
+                        title: 'Medium',
+                        icon: Icons.text_fields,
+                        selected: (_textScale - 1.0).abs() < 0.01,
+                        onTap: () => _updateTextScale(1.0),
+                      ),
+                      _buildOptionTile(
+                        title: 'Large',
+                        icon: Icons.text_increase,
+                        selected: (_textScale - 1.25).abs() < 0.01,
+                        onTap: () => _updateTextScale(1.25),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(height: 32),
-            _buildSectionHeader('Text Size'),
-            _buildTextScaleOption('Small', 0.85),
-            _buildTextScaleOption('Medium', 1.0),
-            _buildTextScaleOption('Large', 1.25),
           ],
         ),
       ),

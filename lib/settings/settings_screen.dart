@@ -119,7 +119,7 @@ class SettingsScreen extends StatelessWidget {
                     context: context,
                     icon: Icons.cloud_done_outlined,
                     label: 'Storage & Sync',
-                    route: '/settings/storage-sync',
+                    route: '/settings/storage',
                   ),
                 ],
               ),

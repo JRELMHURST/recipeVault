@@ -1,6 +1,8 @@
-import 'package:cloud_functions/cloud_functions.dart';
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
@@ -20,81 +22,130 @@ class AccountSettingsScreen extends StatelessWidget {
     final photoUrl = user.photoURL;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Account Settings'),
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: ResponsiveWrapper(
-        maxWidth: 600,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: ListView(
-          children: [
-            Center(
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 48,
-                    backgroundImage: photoUrl != null
-                        ? NetworkImage(photoUrl)
-                        : null,
-                    child: photoUrl == null
-                        ? const Icon(Icons.person, size: 48)
-                        : null,
+      appBar: AppBar(title: const Text('Account Settings'), centerTitle: true),
+      body: SafeArea(
+        child: ResponsiveWrapper(
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 24),
+            children: [
+              // 🔮 Gradient Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.only(top: 32, bottom: 32),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.primary.withOpacity(0.85),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    displayName,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(36),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 44,
+                      backgroundImage: photoUrl != null
+                          ? NetworkImage(photoUrl)
+                          : null,
+                      child: photoUrl == null
+                          ? const Icon(
+                              Icons.person,
+                              size: 44,
+                              color: Colors.white,
+                            )
+                          : null,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(email, style: theme.textTheme.bodyMedium),
-                ],
+                    const SizedBox(height: 12),
+                    Text(
+                      displayName,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      email,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
-            _buildSectionHeader('Security'),
-            ListTile(
-              leading: const Icon(Icons.lock_outline),
-              title: const Text('Change Password'),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-              onTap: () => Navigator.pushNamed(
-                context,
-                '/settings/account/change-password',
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8, bottom: 4),
+                      child: Text(
+                        'SECURITY',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                    Card(
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.lock_outline),
+                            title: const Text('Change Password'),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 16,
+                            ),
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              '/settings/account/change-password',
+                            ),
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.logout),
+                            title: const Text('Sign Out'),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 16,
+                            ),
+                            onTap: () => _confirmSignOut(context),
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.delete_forever),
+                            title: const Text('Delete Account'),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 16,
+                            ),
+                            textColor: theme.colorScheme.error,
+                            iconColor: theme.colorScheme.error,
+                            onTap: () => _confirmDeleteAccount(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Sign Out'),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-              onTap: () => _confirmSignOut(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_forever),
-              title: const Text('Delete Account'),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-              textColor: theme.colorScheme.error,
-              iconColor: theme.colorScheme.error,
-              onTap: () => _confirmDeleteAccount(context),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey,
-          letterSpacing: 0.5,
+            ],
+          ),
         ),
       ),
     );
@@ -108,14 +159,14 @@ class AccountSettingsScreen extends StatelessWidget {
         content: const Text('Are you sure you want to sign out?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context, false),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Sign Out'),
           ),
         ],
@@ -128,7 +179,7 @@ class AccountSettingsScreen extends StatelessWidget {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Signed out')));
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
       }
     }
   }
@@ -139,19 +190,18 @@ class AccountSettingsScreen extends StatelessWidget {
       builder: (_) => AlertDialog(
         title: const Text('Delete Your Account?'),
         content: const Text(
-          'This will permanently delete your account and all associated data including recipes, images, and preferences.\n\n'
-          'This action is irreversible.',
+          'This will permanently delete your account and all associated data including recipes, images, and preferences.\n\nThis action is irreversible.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context, false),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete Account'),
           ),
         ],
@@ -161,17 +211,11 @@ class AccountSettingsScreen extends StatelessWidget {
     if (confirm == true) {
       try {
         final user = FirebaseAuth.instance.currentUser;
-        if (user == null) {
-          debugPrint("❌ No user signed in.");
-          return;
-        }
+        if (user == null) return;
 
-        debugPrint('➡️ Calling deleteAccount Callable Function...');
-        final result = await FirebaseFunctions.instanceFor(
+        await FirebaseFunctions.instanceFor(
           region: 'europe-west2',
         ).httpsCallable('deleteAccount').call();
-
-        debugPrint("✅ deleteAccount result: ${result.data}");
 
         await FirebaseAuth.instance.signOut();
 
@@ -179,14 +223,9 @@ class AccountSettingsScreen extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Account deleted successfully.')),
           );
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/login',
-            (route) => false,
-          );
+          Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
         }
-      } catch (e, stack) {
-        debugPrint("❌ Cloud Function error: $e\n$stack");
+      } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to delete account: $e')),

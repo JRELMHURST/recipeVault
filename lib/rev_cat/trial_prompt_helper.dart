@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 
 class TrialPromptHelper {
@@ -25,12 +26,17 @@ class TrialPromptHelper {
     final isDev = subscriptionService.isSuperUser;
     final trialExpired = subscriptionService.isTasterTrialExpired;
 
-    // 👇 Prompt if free or expired taster trial and not a super user
     final shouldPrompt =
         !isDev && (tier == 'free' || (tier == 'taster' && trialExpired));
 
     if (shouldPrompt) {
       _hasPromptedThisSession = true;
+
+      // 🔍 Track event
+      await FirebaseAnalytics.instance.logEvent(
+        name: 'paywall_prompt_shown',
+        parameters: {'tier': tier, 'trial_expired': trialExpired},
+      );
 
       if (showDialogInstead) {
         _showUpgradeDialog(context, trialExpired: trialExpired);
@@ -72,5 +78,10 @@ class TrialPromptHelper {
         ],
       ),
     );
+  }
+
+  /// 🔄 Reset between sessions or tier changes if needed
+  static void resetPromptFlag() {
+    _hasPromptedThisSession = false;
   }
 }

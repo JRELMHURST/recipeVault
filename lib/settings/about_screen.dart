@@ -26,24 +26,50 @@ class _AboutSettingsScreenState extends State<AboutSettingsScreen> {
     });
   }
 
-  void _openURL(String url) async {
+  void _launchURL(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSection(String title, List<Widget> children) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey,
-          letterSpacing: 0.5,
-        ),
+      padding: const EdgeInsets.only(bottom: 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCard({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    VoidCallback? onTap,
+  }) {
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: Icon(icon, size: 24),
+        title: Text(title),
+        subtitle: subtitle != null ? Text(subtitle) : null,
+        onTap: onTap,
+        trailing: onTap != null ? const Icon(Icons.chevron_right) : null,
       ),
     );
   }
@@ -54,39 +80,42 @@ class _AboutSettingsScreenState extends State<AboutSettingsScreen> {
       appBar: AppBar(title: const Text('About & Legal')),
       body: ResponsiveWrapper(
         maxWidth: 520,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: ListView(
           children: [
-            _buildSectionHeader('APP INFO'),
-            ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('Version'),
-              subtitle: Text(_appVersion),
-            ),
-            const SizedBox(height: 24),
-            _buildSectionHeader('LEGAL'),
-            ListTile(
-              leading: const Icon(Icons.privacy_tip_outlined),
-              title: const Text('Privacy Policy'),
-              onTap: () => _openURL('https://badger-creations.co.uk/privacy'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.description_outlined),
-              title: const Text('Terms of Service'),
-              onTap: () => _openURL('https://badger-creations.co.uk/terms'),
-            ),
-            const SizedBox(height: 24),
-            _buildSectionHeader('SUPPORT'),
-            ListTile(
-              leading: const Icon(Icons.link),
-              title: const Text('Visit Website'),
-              onTap: () => _openURL('https://badger-creations.co.uk/'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.mail_outline),
-              title: const Text('Contact Support'),
-              onTap: () => _openURL('https://badger-creations.co.uk/support'),
-            ),
+            _buildSection('App Info', [
+              _buildCard(
+                icon: Icons.info_outline,
+                title: 'Version',
+                subtitle: _appVersion,
+              ),
+            ]),
+            _buildSection('Legal', [
+              _buildCard(
+                icon: Icons.privacy_tip_outlined,
+                title: 'Privacy Policy',
+                onTap: () =>
+                    _launchURL('https://badger-creations.co.uk/privacy'),
+              ),
+              _buildCard(
+                icon: Icons.description_outlined,
+                title: 'Terms of Service',
+                onTap: () => _launchURL('https://badger-creations.co.uk/terms'),
+              ),
+            ]),
+            _buildSection('Support', [
+              _buildCard(
+                icon: Icons.link,
+                title: 'Visit Website',
+                onTap: () => _launchURL('https://badger-creations.co.uk'),
+              ),
+              _buildCard(
+                icon: Icons.mail_outline,
+                title: 'Contact Support',
+                onTap: () =>
+                    _launchURL('https://badger-creations.co.uk/support'),
+              ),
+            ]),
           ],
         ),
       ),

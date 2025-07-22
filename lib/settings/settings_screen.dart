@@ -153,11 +153,23 @@ class SettingsScreen extends StatelessWidget {
               Center(
                 child: Column(
                   children: [
-                    Text(
-                      'Cheeky Badger Creations',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: Colors.grey,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Cheeky Badger Creations',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Image.asset(
+                          'assets/icon/cheeky_badger_round.png',
+                          width: 16,
+                          height: 16,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Wrap(

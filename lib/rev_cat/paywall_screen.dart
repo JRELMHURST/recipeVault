@@ -38,15 +38,26 @@ class _PaywallScreenState extends State<PaywallScreen> {
       final homeChef = offerings.getOffering('home_chef_plan');
       final masterChef = offerings.getOffering('master_chef_plan');
 
-      _availablePackages = [
-        ...?homeChef?.availablePackages,
-        ...?masterChef?.availablePackages,
-      ];
+      final homeChefPackages = homeChef?.availablePackages ?? [];
+      final masterChefPackages = masterChef?.availablePackages ?? [];
 
-      _availablePackages.sort((a, b) {
-        final isBAnnual = b.storeProduct.subscriptionPeriod == 'P1Y';
-        return isBAnnual ? 1 : -1;
-      });
+      final masterMonthly = masterChefPackages.firstWhere(
+        (p) =>
+            p.storeProduct.subscriptionPeriod?.toLowerCase().contains('m') ==
+            true,
+        orElse: () => masterChefPackages.isNotEmpty
+            ? masterChefPackages.first
+            : throw Exception('No Master Chef Monthly plan found'),
+      );
+
+      final masterAnnual = masterChefPackages.firstWhere(
+        (p) =>
+            p.storeProduct.subscriptionPeriod?.toLowerCase().contains('y') ==
+            true,
+        orElse: () => throw Exception('No Master Chef Annual plan found'),
+      );
+
+      _availablePackages = [...homeChefPackages, masterMonthly, masterAnnual];
     } catch (e) {
       debugPrint('❌ Failed to load offerings: $e');
     }

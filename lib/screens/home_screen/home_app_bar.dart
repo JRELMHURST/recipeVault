@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
@@ -17,6 +19,9 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final subService = Provider.of<SubscriptionService>(context);
+    final tier = subService.tierNotifier.value;
+    final isFree = tier.isEmpty || tier == 'none' || tier == 'free';
 
     final showToggle =
         selectedIndex == 1 && viewModeIcon != null && onToggleViewMode != null;
@@ -24,7 +29,30 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       elevation: 0,
       backgroundColor: theme.appBarTheme.backgroundColor,
-      centerTitle: true,
+      automaticallyImplyLeading: false,
+      title: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Title always centred
+          Text(
+            _getAppBarTitle(selectedIndex, tier),
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 22,
+              letterSpacing: 1.1,
+              fontFamily: 'Roboto',
+              shadows: const [
+                Shadow(
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                  color: Colors.black26,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
       leading: showToggle
           ? IconButton(
               icon: Icon(
@@ -34,61 +62,50 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
               onPressed: onToggleViewMode,
             )
           : null,
-      title: selectedIndex == 1
-          ? const _TierAppBarTitle()
-          : Text(switch (selectedIndex) {
-              0 => 'Create',
-              1 => 'RecipeVault', // fallback
-              2 => 'Settings',
-              _ => 'RecipeVault',
-            }, style: theme.appBarTheme.titleTextStyle),
-      actions: showToggle
-          ? [
-              // Invisible placeholder to balance the leading icon
-              Opacity(
-                opacity: 0,
-                child: IconButton(icon: Icon(viewModeIcon), onPressed: () {}),
+      actions: [
+        if (selectedIndex == 1 && isFree)
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: TextButton(
+              onPressed: () => Navigator.pushNamed(context, '/paywall'),
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.1),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
+                shape: StadiumBorder(),
               ),
-            ]
-          : null,
+              child: const Text(
+                'Upgrade',
+                style: TextStyle(
+                  color: Colors.amber,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-}
+  String _getAppBarTitle(int index, String tier) {
+    if (index != 1) {
+      return switch (index) {
+        0 => 'Create',
+        2 => 'Settings',
+        _ => 'RecipeVault',
+      };
+    }
 
-class _TierAppBarTitle extends StatelessWidget {
-  const _TierAppBarTitle();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final subService = Provider.of<SubscriptionService>(context);
-    final tier = subService.tierNotifier.value;
-
-    final isFree = tier.isEmpty || tier == 'none' || tier == 'free';
-    final label = switch (tier) {
+    return switch (tier) {
       'taster' => 'Taster',
       'home_chef' => 'Home Chef',
       'master_chef' => 'Master Chef',
       _ => 'RecipeVault',
     };
-
-    final displayText = isFree ? 'RecipeVault' : label;
-
-    return Text(
-      displayText,
-      style: theme.textTheme.titleLarge?.copyWith(
-        color: Colors.white,
-        fontWeight: FontWeight.w800,
-        fontSize: 22,
-        letterSpacing: 1.1,
-        fontFamily: 'Roboto', // or try 'Raleway', 'Lora', etc. if added
-        shadows: const [
-          Shadow(blurRadius: 2, offset: Offset(0, 1), color: Colors.black26),
-        ],
-      ),
-    );
   }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

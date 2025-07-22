@@ -38,7 +38,10 @@ class TrialPromptHelper {
     // 🔍 Analytics event for tracking user gating
     await FirebaseAnalytics.instance.logEvent(
       name: 'paywall_prompt_shown',
-      parameters: {'tier': tier, 'trial_expired': trialExpired},
+      parameters: {
+        'tier': tier,
+        'trial_expired': trialExpired.toString(), // ✅ Fix
+      },
     );
 
     if (showDialogInstead) {

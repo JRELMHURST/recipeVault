@@ -1,7 +1,9 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
+import 'package:recipe_vault/rev_cat/subscription_service.dart';
 
 class RecipeChipFilterBar extends StatelessWidget {
   final List<String> categories;
@@ -20,6 +22,7 @@ class RecipeChipFilterBar extends StatelessWidget {
   });
 
   static const _systemCategories = ['All', 'Favourites', 'Translated'];
+  static const _protectedDefaults = ['Breakfast', 'Main', 'Dessert'];
 
   bool _isCategoryUsed(String category) {
     return allRecipes.any((r) => r.categories.contains(category));
@@ -27,6 +30,9 @@ class RecipeChipFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final subscriptionService = Provider.of<SubscriptionService>(context);
+    final isFreeUser = subscriptionService.tier == 'free';
+
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
     final textStyle = theme.textTheme.bodySmall;
@@ -37,9 +43,12 @@ class RecipeChipFilterBar extends StatelessWidget {
       child: Row(
         children: categories.map((category) {
           final isSelected = category == selectedCategory;
-          final isDeletable =
-              !_systemCategories.contains(category) &&
-              !_isCategoryUsed(category);
+
+          final isProtected =
+              _systemCategories.contains(category) ||
+              (isFreeUser && _protectedDefaults.contains(category));
+
+          final isDeletable = !isProtected && !_isCategoryUsed(category);
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),

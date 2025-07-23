@@ -71,8 +71,20 @@ Future<void> main() async {
 
   try {
     await Hive.openBox<RecipeCardModel>('recipes');
-    await Hive.openBox<CategoryModel>('categories');
-    await CategoryService.init(); // opens custom + hidden boxes
+    final categoryBox = await Hive.openBox<CategoryModel>('categories');
+
+    // ✅ Migrate legacy string values to CategoryModel
+    final legacyKeys = categoryBox.keys
+        .where((k) => categoryBox.get(k) is String)
+        .toList();
+    for (final key in legacyKeys) {
+      final oldValue = categoryBox.get(key) as String;
+      final migrated = CategoryModel(id: key.toString(), name: oldValue);
+      await categoryBox.put(key, migrated);
+      debugPrint('🔁 Migrated legacy category "$oldValue" to CategoryModel');
+    }
+
+    await CategoryService.init(); // opens hidden box and ensures consistency
   } catch (e, stack) {
     debugPrint('❌ Hive box opening failed: $e');
     debugPrint(stack.toString());

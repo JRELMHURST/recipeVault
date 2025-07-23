@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart'; // ✅ for debugPrint
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:recipe_vault/model/category_model.dart';
 
 class CategoryService {
   static const _customBoxName = 'customCategories';
@@ -15,23 +17,44 @@ class CategoryService {
   ];
 
   static Future<void> init() async {
-    await Hive.openBox<String>(_customBoxName);
+    final customBox = await Hive.openBox(_customBoxName);
     await Hive.openBox<String>(_hiddenDefaultBox);
+
+    // 🔁 Migrate legacy string-based values to CategoryModel
+    final legacyKeys = customBox.keys
+        .where((key) => customBox.get(key) is String)
+        .toList();
+
+    for (final key in legacyKeys) {
+      final name = customBox.get(key) as String;
+      await customBox.put(
+        key,
+        CategoryModel(id: key.toString(), name: name).toJson(),
+      );
+      debugPrint('🔁 Migrated legacy category "$name"');
+    }
   }
 
-  static Future<List<String>> getAllCategories() async {
-    final box = Hive.box<String>(_customBoxName);
-    return box.values.toList();
+  static Future<List<CategoryModel>> getAllCategories() async {
+    final box = Hive.box(_customBoxName);
+
+    return box.values
+        .whereType<Map>()
+        .map((e) => CategoryModel.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   static Future<void> saveCategory(String category) async {
-    if (_systemCategories.contains(category)) {
-      return; // Skip saving system categories
-    }
+    if (_systemCategories.contains(category)) return;
 
-    final box = Hive.box<String>(_customBoxName);
-    if (!box.values.contains(category)) {
-      await box.add(category);
+    final box = Hive.box(_customBoxName);
+    final alreadyExists = box.values.whereType<Map>().any(
+      (e) => e['name'] == category,
+    );
+
+    if (!alreadyExists) {
+      final categoryModel = CategoryModel(id: category, name: category);
+      await box.add(categoryModel.toJson());
     }
 
     final user = FirebaseAuth.instance.currentUser;
@@ -45,13 +68,11 @@ class CategoryService {
   }
 
   static Future<void> deleteCategory(String category) async {
-    if (_systemCategories.contains(category)) {
-      return; // Prevent deletion of system categories
-    }
+    if (_systemCategories.contains(category)) return;
 
-    final box = Hive.box<String>(_customBoxName);
+    final box = Hive.box(_customBoxName);
     final key = box.keys.firstWhere(
-      (k) => box.get(k) == category,
+      (k) => (box.get(k) as Map?)?['name'] == category,
       orElse: () => null,
     );
     if (key != null) {
@@ -78,13 +99,14 @@ class CategoryService {
         .collection('categories');
 
     final snapshot = await ref.get();
-    final box = Hive.box<String>(_customBoxName);
+    final box = Hive.box(_customBoxName);
     await box.clear();
 
     for (final doc in snapshot.docs) {
       final name = doc['name'];
       if (name is String && !_systemCategories.contains(name)) {
-        await box.add(name);
+        final categoryModel = CategoryModel(id: name, name: name);
+        await box.add(categoryModel.toJson());
       }
     }
   }

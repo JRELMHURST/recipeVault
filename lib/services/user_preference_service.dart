@@ -5,6 +5,11 @@ class UserPreferencesService {
   static const String _keyViewMode = 'viewMode';
   static const String _keyVaultTutorialComplete = 'vaultTutorialComplete';
 
+  static const String _keyDismissedScanBubble = 'dismissedScanBubble';
+  static const String _keyDismissedViewToggleBubble =
+      'dismissedViewToggleBubble';
+  static const String _keyDismissedLongPressBubble = 'dismissedLongPressBubble';
+
   static late Box _box;
 
   /// Opens the Hive box for user preferences (called in main.dart)
@@ -32,9 +37,43 @@ class UserPreferencesService {
     return _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
   }
 
+  /// Bubble dismissals
+  static Future<void> dismissScanBubble() async {
+    await _box.put(_keyDismissedScanBubble, true);
+  }
+
+  static Future<void> dismissViewToggleBubble() async {
+    await _box.put(_keyDismissedViewToggleBubble, true);
+  }
+
+  static Future<void> dismissLongPressBubble() async {
+    await _box.put(_keyDismissedLongPressBubble, true);
+  }
+
+  static bool shouldShowScanBubble() {
+    return !(_box.get(_keyDismissedScanBubble, defaultValue: false) as bool);
+  }
+
+  static bool shouldShowViewToggleBubble() {
+    return !(_box.get(_keyDismissedViewToggleBubble, defaultValue: false)
+        as bool);
+  }
+
+  static bool shouldShowLongPressBubble() {
+    return !(_box.get(_keyDismissedLongPressBubble, defaultValue: false)
+        as bool);
+  }
+
   /// Optional: Reset the tutorial completion flag (for dev/testing)
   static Future<void> resetVaultTutorial() async {
     await _box.delete(_keyVaultTutorialComplete);
+  }
+
+  /// Optional: Reset all bubble dismissals (for dev/testing)
+  static Future<void> resetBubbles() async {
+    await _box.delete(_keyDismissedScanBubble);
+    await _box.delete(_keyDismissedViewToggleBubble);
+    await _box.delete(_keyDismissedLongPressBubble);
   }
 
   /// Optional: clear all user preferences

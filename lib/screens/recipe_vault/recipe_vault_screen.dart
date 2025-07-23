@@ -18,7 +18,7 @@ import 'package:recipe_vault/screens/recipe_vault/recipe_dialog.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_search_bar.dart';
-import 'package:recipe_vault/screens/recipe_vault/dismissable_bubble.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_vault_bubbles.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
@@ -178,22 +178,28 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   Future<void> _initializeDefaultCategories() async {
     final savedCategories = await CategoryService.getAllCategories();
+    final savedNames = savedCategories.map((c) => c.name).toList();
     for (final defaultCat in _defaultCategories) {
-      if (!savedCategories.contains(defaultCat)) {
+      if (!savedNames.contains(defaultCat)) {
         await CategoryService.saveCategory(defaultCat);
       }
     }
   }
 
   Future<void> _loadCustomCategories() async {
-    final saved = await CategoryService.getAllCategories();
-    final hidden = await CategoryService.getHiddenDefaultCategories();
+    final saved =
+        await CategoryService.getAllCategories(); // List<CategoryModel>
+    final hidden =
+        await CategoryService.getHiddenDefaultCategories(); // List<String>
+
+    final savedNames = saved.map((c) => c.name).toList();
+    final hiddenNames = hidden.toSet();
 
     setState(() {
       _allCategories = [
         'All',
-        ..._defaultCategories.where((c) => !hidden.contains(c)),
-        ...saved.where((c) => !_defaultCategories.contains(c)),
+        ..._defaultCategories.where((c) => !hiddenNames.contains(c)),
+        ...savedNames.where((c) => !_defaultCategories.contains(c)),
       ];
     });
   }
@@ -327,36 +333,23 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                 ),
               ],
             ),
-            if (_showScanBubble)
-              DismissibleBubble(
-                message:
-                    '🧪 Scan Recipes\nTap here to upload your recipe images.',
-                position: Offset(16, MediaQuery.of(context).size.height - 160),
-                onDismiss: () {
-                  setState(() => _showScanBubble = false);
-                  _checkIfAllBubblesDismissed();
-                },
-              ),
-            if (_showViewModeBubble)
-              DismissibleBubble(
-                message:
-                    '👁️ Switch Views\nTap to change how recipes are displayed.',
-                position: Offset(60, kToolbarHeight + 12),
-                onDismiss: () {
-                  setState(() => _showViewModeBubble = false);
-                  _checkIfAllBubblesDismissed();
-                },
-              ),
-            if (_showLongPressBubble)
-              DismissibleBubble(
-                message:
-                    '📌 Long-press a recipe\nFavourite or assign a category.',
-                position: Offset(20, 220),
-                onDismiss: () {
-                  setState(() => _showLongPressBubble = false);
-                  _checkIfAllBubblesDismissed();
-                },
-              ),
+            RecipeVaultBubbles(
+              showScan: _showScanBubble,
+              showViewToggle: _showViewModeBubble,
+              showLongPress: _showLongPressBubble,
+              onDismissScan: () {
+                setState(() => _showScanBubble = false);
+                _checkIfAllBubblesDismissed();
+              },
+              onDismissViewToggle: () {
+                setState(() => _showViewModeBubble = false);
+                _checkIfAllBubblesDismissed();
+              },
+              onDismissLongPress: () {
+                setState(() => _showLongPressBubble = false);
+                _checkIfAllBubblesDismissed();
+              },
+            ),
           ],
         ),
       ),

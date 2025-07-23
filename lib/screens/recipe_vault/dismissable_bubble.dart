@@ -68,16 +68,20 @@ class _DismissibleBubbleState extends State<DismissibleBubble>
             child: Material(
               color: Colors.transparent,
               child: Container(
-                padding: const EdgeInsets.all(12),
-                constraints: const BoxConstraints(maxWidth: 220),
+                padding: const EdgeInsets.all(14),
+                constraints: const BoxConstraints(maxWidth: 240),
                 decoration: BoxDecoration(
-                  color: Colors.black87,
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    colors: [Colors.black87, Colors.black],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
                   boxShadow: const [
                     BoxShadow(
-                      blurRadius: 8,
-                      offset: Offset(0, 3),
-                      color: Colors.black45,
+                      blurRadius: 10,
+                      offset: Offset(0, 6),
+                      color: Colors.black54,
                     ),
                   ],
                 ),
@@ -85,8 +89,8 @@ class _DismissibleBubbleState extends State<DismissibleBubble>
                   widget.message,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
                     height: 1.4,
                   ),
                 ),

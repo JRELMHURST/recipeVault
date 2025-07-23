@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
 class UserPreferencesService {
@@ -30,10 +33,48 @@ class UserPreferencesService {
   static Future<void> markVaultTutorialCompleted() async {
     await _box.put(_keyVaultTutorialComplete, true);
     await _box.put(_keyIsNewUser, false);
+
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'onboarding': {'vaultTutorialCompleted': true},
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('⚠️ Failed to write onboarding to Firestore: $e');
+      }
+    }
   }
 
   static Future<bool> hasCompletedVaultTutorial() async {
-    return _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
+    final local =
+        _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
+    if (local == true) return true;
+
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return false;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+      final completed =
+          doc.data()?['onboarding']?['vaultTutorialCompleted'] ?? false;
+
+      if (completed) {
+        await _box.put(_keyVaultTutorialComplete, true); // Cache locally
+      }
+
+      return completed;
+    } catch (e) {
+      if (kDebugMode) {
+        print('🧨 Firestore onboarding check failed: $e');
+      }
+      return false;
+    }
   }
 
   // ──────────────────────────────────────────────────────────────────────────────
@@ -45,18 +86,64 @@ class UserPreferencesService {
   static bool get isNewUser =>
       _box.get(_keyIsNewUser, defaultValue: false) as bool;
 
+  static Future<void> clearNewUserFlag() async {
+    await _box.put(_keyIsNewUser, false);
+  }
+
   // ──────────────────────────────────────────────────────────────────────────────
-  /// 💬 Bubble Dismissals (Generalised)
+  /// 💬 Bubble Dismissals (Generalised) with Firestore sync
   static Future<void> markBubbleDismissed(String key) async {
     await _box.put('bubbleDismissed_$key', true);
+
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'onboarding': {
+            'bubbleDismissals': {key: true},
+          },
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('⚠️ Failed to write bubble "$key" dismissal to Firestore: $e');
+      }
+    }
   }
 
   static Future<bool> hasDismissedBubble(String key) async {
-    return _box.get('bubbleDismissed_$key', defaultValue: false) as bool;
+    final local = _box.get('bubbleDismissed_$key', defaultValue: false) as bool;
+    if (local) return true;
+
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return false;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      final dismissed =
+          doc.data()?['onboarding']?['bubbleDismissals']?[key] ?? false;
+
+      if (dismissed) {
+        await _box.put('bubbleDismissed_$key', true); // Cache it
+      }
+
+      return dismissed;
+    } catch (e) {
+      if (kDebugMode) {
+        print('🧨 Firestore bubble dismissal check failed for "$key": $e');
+      }
+      return false;
+    }
   }
 
   static Future<bool> shouldShowBubble(String key) async {
-    return !(await hasDismissedBubble(key));
+    final dismissed = await hasDismissedBubble(key);
+    if (kDebugMode) print('👀 Bubble "$key" dismissed? $dismissed');
+    return !dismissed;
   }
 
   // ──────────────────────────────────────────────────────────────────────────────
@@ -82,9 +169,5 @@ class UserPreferencesService {
 
   static Future<void> set(String key, dynamic value) async {
     await _box.put(key, value);
-  }
-
-  static Future<void> clearNewUserFlag() async {
-    await _box.put('isNewUser', false);
   }
 }

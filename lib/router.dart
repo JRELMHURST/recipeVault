@@ -31,6 +31,7 @@ import 'package:recipe_vault/rev_cat/trial_ended_screen.dart';
 
 // Controllers
 import 'package:recipe_vault/screens/recipe_vault/recipe_vault_controller.dart';
+import 'package:recipe_vault/start_up_gate.dart';
 
 Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
   final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
@@ -42,12 +43,18 @@ Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
   return {
     '/': (context) {
       final user = FirebaseAuth.instance.currentUser;
-      return user == null ? const LoginScreen() : const HomeScreen();
+      return user == null
+          ? const LoginScreen()
+          : StartupGate(
+              child: ChangeNotifierProvider(
+                create: (_) => RecipeVaultController()..initialise(),
+                child: const HomeScreen(),
+              ),
+            );
     },
     '/login': (context) => const LoginScreen(),
     '/register': (context) => const RegisterScreen(),
 
-    // ✅ Wrap HomeScreen with the controller provider
     '/home': (context) => ChangeNotifierProvider(
       create: (_) => RecipeVaultController()..initialise(),
       child: const HomeScreen(),
@@ -68,11 +75,11 @@ Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
     '/settings/about': (context) => const AboutSettingsScreen(),
     '/settings/storage': (context) => const StorageSyncScreen(),
 
-    // Subscription-related
+    // Subscription
     '/paywall': (context) => const PaywallScreen(),
     '/trial-ended': (context) => const TrialEndedScreen(),
 
-    // Fallback
+    // Invalid shared links
     '/shared': (context) => const Scaffold(
       body: Center(
         child: Text(
@@ -85,7 +92,7 @@ Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
 }
 
 Route<dynamic> generateRoute(RouteSettings settings) {
-  if (settings.name != null && settings.name!.startsWith('/shared/')) {
+  if (settings.name?.startsWith('/shared/') == true) {
     final recipeId = settings.name!.split('/').last;
     return MaterialPageRoute(
       builder: (context) => SharedRecipeScreen(recipeId: recipeId),
@@ -93,24 +100,25 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     );
   }
 
+  final routes = buildRoutes(navigatorKey.currentContext!);
+  final builder = routes[settings.name];
   return MaterialPageRoute(
-    builder: (context) {
-      final routes = buildRoutes(context);
-      final builder = routes[settings.name];
-      return builder != null
-          ? builder(context)
-          : const Scaffold(
-              body: Center(
-                child: Text(
-                  '404 – Page not found',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                ),
+    builder: (context) => builder != null
+        ? builder(context)
+        : const Scaffold(
+            body: Center(
+              child: Text(
+                '404 – Page not found',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
               ),
-            );
-    },
+            ),
+          ),
     settings: settings,
   );
 }
+
+// Optional: Global navigator key (if needed)
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Widget buildAppWithRouter() {
   return Builder(
@@ -119,6 +127,7 @@ Widget buildAppWithRouter() {
       final textScaleNotifier = Provider.of<TextScaleNotifier>(context);
 
       return MaterialApp(
+        navigatorKey: navigatorKey,
         title: 'RecipeVault',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,

@@ -1,18 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../rev_cat/subscription_service.dart';
 import '../rev_cat/tier_utils.dart';
-import '../firebase_auth_service.dart'; // For ensureUserDocumentIfMissing
+import '../firebase_auth_service.dart';
+import '../services/user_preference_service.dart';
 
 class UserSessionService {
+  static bool _hasInitialised = false;
+  static bool _retryInProgress = false;
+
   /// 🏁 Initialise RevenueCat + Firestore sync
   static Future<void> init() async {
+    if (_hasInitialised) return;
+    _hasInitialised = true;
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _logDebug('⚠️ No Firebase user found during init');
+      _hasInitialised = false;
       return;
     }
 
@@ -30,13 +39,32 @@ class UserSessionService {
 
       await syncRevenueCatEntitlement();
       await SubscriptionService().refresh();
-
-      // 🔁 Ensure Firestore user doc + refresh global recipes
       await AuthService.ensureUserDocumentIfMissing(user);
+
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
+      final userDoc = await docRef.get();
+      final userData = userDoc.data() ?? {};
+      final tier = userData['tier'] ?? 'free';
+
+      final prefsBox = Hive.box('userPrefs');
+      final hasSeenTutorial =
+          prefsBox.get('vaultTutorialComplete', defaultValue: false) as bool;
+
+      // ✅ Trigger onboarding flags if tier is "free" and user hasn't seen tutorial
+      if (tier == 'free' && !hasSeenTutorial) {
+        await UserPreferencesService.setNewUserFlag();
+        await UserPreferencesService.resetBubbles();
+        _logDebug(
+          '🆕 Onboarding flags set due to free tier and no tutorial completion',
+        );
+      }
 
       _logDebug('✅ UserSessionService initialised for ${user.uid}');
     } catch (e) {
       debugPrint('❌ UserSessionService init failed: $e');
+      _hasInitialised = false;
     }
   }
 
@@ -99,6 +127,9 @@ class UserSessionService {
 
   /// ⏱ Retry sync after short delay
   static void _retryEntitlementSync(String userId) {
+    if (_retryInProgress) return;
+    _retryInProgress = true;
+
     Future.delayed(const Duration(seconds: 2), () async {
       try {
         final retryInfo = await Purchases.getCustomerInfo();
@@ -119,6 +150,8 @@ class UserSessionService {
         }
       } catch (e) {
         debugPrint('❌ Retry failed: $e');
+      } finally {
+        _retryInProgress = false;
       }
     });
   }

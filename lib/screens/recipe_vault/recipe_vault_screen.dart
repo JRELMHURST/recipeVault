@@ -21,7 +21,6 @@ import 'package:recipe_vault/screens/recipe_vault/recipe_vault_bubbles.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
-import 'package:recipe_vault/services/user_preference_service.dart';
 
 enum ViewMode { list, grid, compact }
 
@@ -50,9 +49,10 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   List<String> _allCategories = ['All', 'Favourites', 'Translated'];
   List<RecipeCardModel> _allRecipes = [];
 
-  bool _showViewModeBubble = true;
+  bool _showViewModeBubble = false;
   bool _showLongPressBubble = false;
   bool _showScanBubble = false;
+  bool _hasLoadedBubbles = false;
 
   List<RecipeCardModel> get _filteredRecipes {
     return _allRecipes.where((recipe) {
@@ -152,7 +152,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           _showScanBubble = false;
         });
         debugPrint('✅ All bubbles completed');
-        UserPreferencesService.markVaultTutorialCompleted();
       }
     });
   }
@@ -170,25 +169,30 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           .doc(userId)
           .collection('recipes');
 
-      final tutorialComplete =
-          await UserPreferencesService.hasCompletedVaultTutorial();
-      final isNew = UserPreferencesService.isNewUser;
+      if (!_hasLoadedBubbles && userId != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
 
-      if ((!tutorialComplete || isNew) && mounted) {
-        setState(() {
-          _showViewModeBubble = true;
-          _showLongPressBubble = false;
-          _showScanBubble = false;
-        });
-        await UserPreferencesService.clearNewUserFlag();
-        debugPrint("👁️ View toggle bubble activated");
-      } else {
-        // Ensure flags are all off if tutorial already completed
-        setState(() {
-          _showViewModeBubble = false;
-          _showLongPressBubble = false;
-          _showScanBubble = false;
-        });
+        final tier = userDoc.data()?['tier'] ?? 'free';
+
+        if (tier == 'free' && mounted) {
+          setState(() {
+            _showViewModeBubble = true;
+            _showLongPressBubble = false;
+            _showScanBubble = false;
+          });
+          debugPrint("👁️ View toggle bubble activated (tier: free)");
+        } else {
+          setState(() {
+            _showViewModeBubble = false;
+            _showLongPressBubble = false;
+            _showScanBubble = false;
+          });
+        }
+
+        _hasLoadedBubbles = true;
       }
 
       await _initializeDefaultCategories();
@@ -272,7 +276,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         _allRecipes = merged;
       });
     } catch (e) {
-      debugPrint("\u26a0\ufe0f Firestore fetch failed, loading from Hive: $e");
+      debugPrint("⚠️ Firestore fetch failed, loading from Hive: $e");
       final fallback = HiveRecipeService.getAll();
       setState(() {
         _allRecipes = fallback;

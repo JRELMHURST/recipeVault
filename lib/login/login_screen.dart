@@ -50,7 +50,11 @@ class _LoginScreenState extends State<LoginScreen> {
       FocusManager.instance.primaryFocus?.unfocus();
       await Future.delayed(Duration(milliseconds: 100));
 
-      Navigator.pushReplacementNamed(context, '/home');
+      await UserSessionService.init();
+
+      if (context.mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } catch (e) {
       if (!mounted) return;
       final message = _friendlyAuthError(e);

@@ -167,4 +167,11 @@ class AuthService {
       );
     }
   }
+
+  /// 📄 Returns current user's Firestore document reference if logged in
+  static DocumentReference<Map<String, dynamic>>? userDocRefCurrent() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return null;
+    return FirebaseFirestore.instance.collection('users').doc(uid);
+  }
 }

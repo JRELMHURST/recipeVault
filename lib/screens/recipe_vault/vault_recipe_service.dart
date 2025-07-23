@@ -100,4 +100,10 @@ class VaultRecipeService {
       return HiveRecipeService.getAll();
     }
   }
+
+  /// ✅ Load recipes from Firestore and cache to Hive
+  static Future<void> load() async {
+    await loadAndMergeAllRecipes();
+    debugPrint('📦 VaultRecipeService.load complete');
+  }
 }

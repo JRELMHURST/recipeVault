@@ -3,6 +3,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
+import 'package:recipe_vault/services/user_preference_service.dart';
 
 class SubscriptionService extends ChangeNotifier {
   static final SubscriptionService _instance = SubscriptionService._internal();
@@ -180,6 +181,9 @@ class SubscriptionService extends ChangeNotifier {
           debugPrint('📄 Firestore trialActive: $_firestoreTrialActive');
         }
       }
+
+      /// ✅ Onboarding trigger for eligible free users
+      await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(_tier);
 
       _isSuperUser = await _fetchSuperUserFlag();
       notifyListeners();

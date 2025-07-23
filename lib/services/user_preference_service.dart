@@ -7,7 +7,6 @@ class UserPreferencesService {
   static const String _boxName = 'userPrefs';
   static const String _keyViewMode = 'viewMode';
   static const String _keyVaultTutorialComplete = 'vaultTutorialComplete';
-
   static const List<String> _bubbleKeys = ['scan', 'viewToggle', 'longPress'];
 
   static late Box _box;
@@ -129,6 +128,38 @@ class UserPreferencesService {
     final dismissed = await hasDismissedBubble(key);
     if (kDebugMode) print('👀 Bubble "$key" dismissed? $dismissed');
     return !dismissed;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  /// 🧠 Bubble Onboarding Trigger (Centralised)
+  static Future<void> ensureBubbleFlagTriggeredIfEligible(String tier) async {
+    final hasSeenTutorial =
+        _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
+
+    if (tier == 'free' && !hasSeenTutorial) {
+      await resetBubbles();
+
+      // 🔍 Optional: log to Firestore
+      try {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null) {
+          await FirebaseFirestore.instance.collection('analytics').add({
+            'event': 'bubbles_triggered',
+            'tier': tier,
+            'timestamp': FieldValue.serverTimestamp(),
+            'uid': uid,
+          });
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('📉 Failed to log onboarding analytics: $e');
+        }
+      }
+
+      if (kDebugMode) {
+        print('🆕 Bubbles triggered for free tier (tutorial not yet complete)');
+      }
+    }
   }
 
   // ──────────────────────────────────────────────────────────────────────────────

@@ -35,6 +35,11 @@ class CategoryService {
     }
   }
 
+  static Future<void> load() async {
+    await getAllCategories();
+    debugPrint('📂 CategoryService.load() called');
+  }
+
   static Future<List<CategoryModel>> getAllCategories() async {
     final box = Hive.box(_customBoxName);
 

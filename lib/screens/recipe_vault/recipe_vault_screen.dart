@@ -152,7 +152,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         setState(() {
           _showScanBubble = false;
         });
-        await UserPreferencesService.markVaultTutorialCompleted(); // ✅ Marks tutorial complete
+        await UserPreferencesService.markVaultTutorialCompleted();
         debugPrint('✅ All bubbles completed');
       }
     });
@@ -171,16 +171,16 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           .doc(userId)
           .collection('recipes');
 
-      // 🧠 Bubble onboarding logic
+      final subService = Provider.of<SubscriptionService>(
+        context,
+        listen: false,
+      );
+      final tier = subService.tier;
+      await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(tier);
+
       if (!_hasLoadedBubbles) {
         final tutorialComplete =
             await UserPreferencesService.hasCompletedVaultTutorial();
-
-        final subService = Provider.of<SubscriptionService>(
-          context,
-          listen: false,
-        );
-        final tier = subService.tier; // Use `tier` not `currentTier`
 
         if (tier == 'free' && !tutorialComplete) {
           setState(() {

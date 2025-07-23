@@ -54,12 +54,16 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       leading: showToggle
-          ? IconButton(
-              icon: Icon(
-                viewModeIcon,
-                color: theme.appBarTheme.iconTheme?.color,
+          ? Tooltip(
+              message: 'Toggle view mode',
+              waitDuration: const Duration(milliseconds: 300),
+              child: IconButton(
+                icon: Icon(
+                  viewModeIcon,
+                  color: theme.appBarTheme.iconTheme?.color,
+                ),
+                onPressed: onToggleViewMode,
               ),
-              onPressed: onToggleViewMode,
             )
           : null,
       actions: [

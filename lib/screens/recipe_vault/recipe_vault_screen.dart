@@ -9,7 +9,6 @@ import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
-import 'package:recipe_vault/rev_cat/trial_prompt_helper.dart';
 import 'package:recipe_vault/rev_cat/upgrade_banner.dart';
 import 'package:recipe_vault/screens/recipe_vault/category_speed_dial.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_chip_filter_bar.dart';
@@ -132,8 +131,21 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     await _loadCustomCategories();
   }
 
-  void _checkIfAllBubblesDismissed() async {
-    if (!_showScanBubble && !_showViewModeBubble && !_showLongPressBubble) {
+  void _onboardingBubbleProgression() async {
+    if (_showScanBubble) {
+      setState(() {
+        _showScanBubble = false;
+        _showViewModeBubble = true;
+      });
+    } else if (_showViewModeBubble) {
+      setState(() {
+        _showViewModeBubble = false;
+        _showLongPressBubble = true;
+      });
+    } else if (_showLongPressBubble) {
+      setState(() {
+        _showLongPressBubble = false;
+      });
       await UserPreferencesService.markVaultTutorialCompleted();
     }
   }
@@ -161,20 +173,17 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       if (!tutorialComplete) {
         setState(() {
           _showScanBubble = true;
-          _showViewModeBubble = true;
-          _showLongPressBubble = true;
+          _showViewModeBubble = false;
+          _showLongPressBubble = false;
         });
+
+        // ⏱ Ensure bubble gets drawn before modals interrupt
+        await Future.delayed(const Duration(milliseconds: 150));
       }
 
       await _initializeDefaultCategories();
       await _loadCustomCategories();
       await _loadRecipes();
-
-      // ✅ Trial prompt only after data loads
-      await Future.delayed(const Duration(milliseconds: 300));
-      if (mounted && subService.tier != 'none' && subService.canStartTrial) {
-        await TrialPromptHelper.checkAndPromptTrial(context);
-      }
     });
   }
 
@@ -339,18 +348,9 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               showScan: _showScanBubble,
               showViewToggle: _showViewModeBubble,
               showLongPress: _showLongPressBubble,
-              onDismissScan: () {
-                setState(() => _showScanBubble = false);
-                _checkIfAllBubblesDismissed();
-              },
-              onDismissViewToggle: () {
-                setState(() => _showViewModeBubble = false);
-                _checkIfAllBubblesDismissed();
-              },
-              onDismissLongPress: () {
-                setState(() => _showLongPressBubble = false);
-                _checkIfAllBubblesDismissed();
-              },
+              onDismissScan: _onboardingBubbleProgression,
+              onDismissViewToggle: _onboardingBubbleProgression,
+              onDismissLongPress: _onboardingBubbleProgression,
             ),
           ],
         ),

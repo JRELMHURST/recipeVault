@@ -25,41 +25,45 @@ class RecipeVaultBubbles extends StatelessWidget {
     final screenHeight = mediaQuery.size.height;
     final bottomInset = mediaQuery.padding.bottom;
 
-    // Push it further above FAB
-    final scanOffset = Offset(
-      24,
-      screenHeight -
-          bottomInset -
-          320, // ⬅️ Increased offset to lift bubble higher
-    );
+    final scanOffset = Offset(24, screenHeight - bottomInset - 320);
 
     const viewToggleOffset = Offset(60, kToolbarHeight + 12);
     const longPressOffset = Offset(20, 220);
 
-    return Stack(
-      children: [
-        if (showScan)
+    // Show one bubble at a time based on priority
+    if (showScan) {
+      return Stack(
+        children: [
           DismissibleBubble(
             message: '🧪 Scan Recipes\nTap here to upload your recipe images.',
             position: scanOffset,
             onDismiss: onDismissScan,
           ),
-
-        if (showViewToggle)
+        ],
+      );
+    } else if (showViewToggle) {
+      return Stack(
+        children: [
           DismissibleBubble(
             message:
                 '👁️ Switch Views\nTap to change how recipes are displayed.',
             position: viewToggleOffset,
             onDismiss: onDismissViewToggle,
           ),
-
-        if (showLongPress)
+        ],
+      );
+    } else if (showLongPress) {
+      return Stack(
+        children: [
           DismissibleBubble(
             message: '📌 Long-press a recipe\nFavourite or assign a category.',
             position: longPressOffset,
             onDismiss: onDismissLongPress,
           ),
-      ],
-    );
+        ],
+      );
+    } else {
+      return const SizedBox.shrink();
+    }
   }
 }

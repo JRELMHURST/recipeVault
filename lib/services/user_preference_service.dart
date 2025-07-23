@@ -5,10 +5,7 @@ class UserPreferencesService {
   static const String _keyViewMode = 'viewMode';
   static const String _keyVaultTutorialComplete = 'vaultTutorialComplete';
 
-  static const String _keyDismissedScanBubble = 'dismissedScanBubble';
-  static const String _keyDismissedViewToggleBubble =
-      'dismissedViewToggleBubble';
-  static const String _keyDismissedLongPressBubble = 'dismissedLongPressBubble';
+  static const List<String> _bubbleKeys = ['scan', 'viewToggle', 'longPress'];
 
   static late Box _box;
 
@@ -17,74 +14,75 @@ class UserPreferencesService {
     _box = await Hive.openBox(_boxName);
   }
 
-  /// Gets the current view mode (0 = list, 1 = grid, 2 = compact, etc.)
+  // ──────────────────────────────────────────────────────────────────────────────
+  /// 🧩 View Mode
   static int getViewMode() {
     return _box.get(_keyViewMode, defaultValue: 0) as int;
   }
 
-  /// Saves the selected view mode
   static Future<void> setViewMode(int mode) async {
     await _box.put(_keyViewMode, mode);
   }
 
-  /// Marks the vault tutorial as completed
+  // ──────────────────────────────────────────────────────────────────────────────
+  /// 🧪 Vault Tutorial
   static Future<void> markVaultTutorialCompleted() async {
     await _box.put(_keyVaultTutorialComplete, true);
   }
 
-  /// Checks if the vault tutorial has been completed
   static Future<bool> hasCompletedVaultTutorial() async {
     return _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
   }
 
-  /// Bubble dismissals
-  static Future<void> dismissScanBubble() async {
-    await _box.put(_keyDismissedScanBubble, true);
+  // ──────────────────────────────────────────────────────────────────────────────
+  /// 💬 Bubble Dismissals (Generalised)
+  static Future<void> markBubbleDismissed(String key) async {
+    await _box.put('bubbleDismissed_$key', true);
   }
 
-  static Future<void> dismissViewToggleBubble() async {
-    await _box.put(_keyDismissedViewToggleBubble, true);
+  static Future<bool> hasDismissedBubble(String key) async {
+    return _box.get('bubbleDismissed_$key', defaultValue: false) as bool;
   }
 
-  static Future<void> dismissLongPressBubble() async {
-    await _box.put(_keyDismissedLongPressBubble, true);
+  static Future<bool> shouldShowBubble(String key) async {
+    return !(await hasDismissedBubble(key));
   }
 
-  static bool shouldShowScanBubble() {
-    return !(_box.get(_keyDismissedScanBubble, defaultValue: false) as bool);
-  }
+  // ──────────────────────────────────────────────────────────────────────────────
+  /// 🔁 Bubble Helpers (legacy-style for each bubble)
+  static Future<void> dismissScanBubble() async => markBubbleDismissed('scan');
+  static Future<void> dismissViewToggleBubble() async =>
+      markBubbleDismissed('viewToggle');
+  static Future<void> dismissLongPressBubble() async =>
+      markBubbleDismissed('longPress');
 
-  static bool shouldShowViewToggleBubble() {
-    return !(_box.get(_keyDismissedViewToggleBubble, defaultValue: false)
-        as bool);
-  }
+  static Future<bool> shouldShowScanBubble() async =>
+      !(await hasDismissedBubble('scan'));
+  static Future<bool> shouldShowViewToggleBubble() async =>
+      !(await hasDismissedBubble('viewToggle'));
+  static Future<bool> shouldShowLongPressBubble() async =>
+      !(await hasDismissedBubble('longPress'));
 
-  static bool shouldShowLongPressBubble() {
-    return !(_box.get(_keyDismissedLongPressBubble, defaultValue: false)
-        as bool);
-  }
-
-  /// Optional: Reset the tutorial completion flag (for dev/testing)
+  // ──────────────────────────────────────────────────────────────────────────────
+  /// 🧪 Developer/Test Utilities
   static Future<void> resetVaultTutorial() async {
     await _box.delete(_keyVaultTutorialComplete);
   }
 
-  /// Optional: Reset all bubble dismissals (for dev/testing)
   static Future<void> resetBubbles() async {
-    await _box.delete(_keyDismissedScanBubble);
-    await _box.delete(_keyDismissedViewToggleBubble);
-    await _box.delete(_keyDismissedLongPressBubble);
+    for (final key in _bubbleKeys) {
+      await _box.delete('bubbleDismissed_$key');
+    }
   }
 
-  /// Optional: clear all user preferences
   static Future<void> clearAll() async {
     await _box.clear();
   }
 
-  /// Optional: get raw value (for future custom prefs)
+  // ──────────────────────────────────────────────────────────────────────────────
+  /// 🛠️ Advanced Accessors
   static dynamic get(String key) => _box.get(key);
 
-  /// Optional: set raw value (for future custom prefs)
   static Future<void> set(String key, dynamic value) async {
     await _box.put(key, value);
   }

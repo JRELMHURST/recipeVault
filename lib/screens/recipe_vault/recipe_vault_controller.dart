@@ -8,6 +8,7 @@ import 'package:recipe_vault/model/category_model.dart';
 enum ViewMode { list, grid, compact }
 
 class RecipeVaultController extends ChangeNotifier {
+  // ──────────────────────────────────────────────────────────────────────────────
   /// State
   bool _isLoading = true;
   bool _showScanBubble = false;
@@ -19,6 +20,7 @@ class RecipeVaultController extends ChangeNotifier {
   List<CategoryModel> _customCategories = [];
   Map<String, RecipeCardModel> _allRecipes = {};
 
+  // ──────────────────────────────────────────────────────────────────────────────
   /// Getters
   bool get isLoading => _isLoading;
   bool get showScanBubble => _showScanBubble;
@@ -30,12 +32,18 @@ class RecipeVaultController extends ChangeNotifier {
   Map<String, RecipeCardModel> get allRecipes => _allRecipes;
   int get customCategoryCount => _customCategories.length;
 
+  // ──────────────────────────────────────────────────────────────────────────────
   /// Initial load
   Future<void> initialise() async {
     _viewMode = ViewMode.values[UserPreferencesService.getViewMode()];
-    _showScanBubble = UserPreferencesService.shouldShowScanBubble();
-    _showViewToggleBubble = UserPreferencesService.shouldShowViewToggleBubble();
-    _showLongPressBubble = UserPreferencesService.shouldShowLongPressBubble();
+
+    _showScanBubble = await UserPreferencesService.shouldShowBubble('scan');
+    _showViewToggleBubble = await UserPreferencesService.shouldShowBubble(
+      'viewToggle',
+    );
+    _showLongPressBubble = await UserPreferencesService.shouldShowBubble(
+      'longPress',
+    );
 
     await _loadCustomCategories();
     await _loadAllRecipes();
@@ -44,6 +52,7 @@ class RecipeVaultController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ──────────────────────────────────────────────────────────────────────────────
   /// Load categories
   Future<void> _loadCustomCategories() async {
     _customCategories = await CategoryService.getAllCategories();
@@ -55,32 +64,35 @@ class RecipeVaultController extends ChangeNotifier {
     _allRecipes = {for (final recipe in loadedList) recipe.id: recipe};
   }
 
-  /// Change view mode and persist
+  // ──────────────────────────────────────────────────────────────────────────────
+  /// View mode
   void setViewMode(ViewMode mode) {
     _viewMode = mode;
     UserPreferencesService.setViewMode(mode.index);
     notifyListeners();
   }
 
+  // ──────────────────────────────────────────────────────────────────────────────
   /// Bubble dismissals
-  void dismissScanBubble() {
+  Future<void> dismissScanBubble() async {
     _showScanBubble = false;
-    UserPreferencesService.dismissScanBubble();
+    await UserPreferencesService.markBubbleDismissed('scan');
     notifyListeners();
   }
 
-  void dismissViewToggleBubble() {
+  Future<void> dismissViewToggleBubble() async {
     _showViewToggleBubble = false;
-    UserPreferencesService.dismissViewToggleBubble();
+    await UserPreferencesService.markBubbleDismissed('viewToggle');
     notifyListeners();
   }
 
-  void dismissLongPressBubble() {
+  Future<void> dismissLongPressBubble() async {
     _showLongPressBubble = false;
-    UserPreferencesService.dismissLongPressBubble();
+    await UserPreferencesService.markBubbleDismissed('longPress');
     notifyListeners();
   }
 
+  // ──────────────────────────────────────────────────────────────────────────────
   /// Optional: Trigger upgrade notice
   void setUpgradeMessage(String? message) {
     _upgradeMessage = message;

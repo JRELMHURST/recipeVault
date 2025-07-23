@@ -170,12 +170,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           .doc(userId)
           .collection('recipes');
 
-      final subService = Provider.of<SubscriptionService>(
-        context,
-        listen: false,
-      );
-      await subService.refresh();
-
       final tutorialComplete =
           await UserPreferencesService.hasCompletedVaultTutorial();
 

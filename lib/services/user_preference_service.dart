@@ -49,21 +49,6 @@ class UserPreferencesService {
   }
 
   // ──────────────────────────────────────────────────────────────────────────────
-  /// 🔁 Bubble Helpers (legacy-style for each bubble)
-  static Future<void> dismissScanBubble() async => markBubbleDismissed('scan');
-  static Future<void> dismissViewToggleBubble() async =>
-      markBubbleDismissed('viewToggle');
-  static Future<void> dismissLongPressBubble() async =>
-      markBubbleDismissed('longPress');
-
-  static Future<bool> shouldShowScanBubble() async =>
-      !(await hasDismissedBubble('scan'));
-  static Future<bool> shouldShowViewToggleBubble() async =>
-      !(await hasDismissedBubble('viewToggle'));
-  static Future<bool> shouldShowLongPressBubble() async =>
-      !(await hasDismissedBubble('longPress'));
-
-  // ──────────────────────────────────────────────────────────────────────────────
   /// 🧪 Developer/Test Utilities
   static Future<void> resetVaultTutorial() async {
     await _box.delete(_keyVaultTutorialComplete);

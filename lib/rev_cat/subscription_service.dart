@@ -31,7 +31,7 @@ class SubscriptionService extends ChangeNotifier {
   String get tier => _tier;
   String get entitlementId => _entitlementId;
   String get currentEntitlement => _tier;
-  bool get isLoaded => _tier != 'none';
+  bool get isLoaded => _customerInfo != null;
 
   // 👤 Role
   bool get isSuperUser => _isSuperUser;
@@ -161,7 +161,7 @@ class SubscriptionService extends ChangeNotifier {
         );
       }
 
-      // Fallback: Check Firestore for 'free' or 'taster' + trial info
+      // Fallback: Check Firestore only for free/taster tier users
       if (_tier == 'free' || _tier == 'taster') {
         final doc = await FirebaseFirestore.instance
             .collection('users')
@@ -170,15 +170,14 @@ class SubscriptionService extends ChangeNotifier {
         final data = doc.data();
 
         if (data != null) {
-          _tier = data['tier'] ?? _tier;
-          _firestoreTrialActive = data['trialActive'] == true;
-          tierNotifier.value = _tier;
-
-          if (kDebugMode) {
-            debugPrint(
-              '📄 Firestore fallback → Tier: $_tier, TrialActive: $_firestoreTrialActive',
-            );
+          final fallbackTier = data['tier'];
+          if (fallbackTier != null && fallbackTier != _tier) {
+            debugPrint('📄 Firestore fallback tier override → $fallbackTier');
+            _tier = fallbackTier;
+            tierNotifier.value = _tier;
           }
+          _firestoreTrialActive = data['trialActive'] == true;
+          debugPrint('📄 Firestore trialActive: $_firestoreTrialActive');
         }
       }
 
@@ -186,10 +185,6 @@ class SubscriptionService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('🔴 Error loading subscription status: $e');
-      _tier = 'free';
-      _entitlementId = 'none';
-      _activeEntitlement = null;
-      tierNotifier.value = _tier;
     } finally {
       _isLoadingTier = false;
     }
@@ -234,13 +229,11 @@ class SubscriptionService extends ChangeNotifier {
   ) {
     for (final entry in entitlements.entries) {
       final id = entry.value.productIdentifier;
-      if (id == 'master_chef_monthly' || id == 'master_chef_yearly') {
+      if (['master_chef_monthly', 'master_chef_yearly'].contains(id)) {
         return 'master_chef';
-      } else if (id == 'home_chef_monthly') {
-        return 'home_chef';
-      } else if (entry.key == 'taster_trial') {
-        return 'taster';
       }
+      if (id == 'home_chef_monthly') return 'home_chef';
+      if (entry.key == 'taster_trial') return 'taster';
     }
     return 'free';
   }
@@ -253,9 +246,10 @@ class SubscriptionService extends ChangeNotifier {
       case 'master_chef':
         return entitlements.entries
             .firstWhereOrNull(
-              (e) =>
-                  e.value.productIdentifier == 'master_chef_monthly' ||
-                  e.value.productIdentifier == 'master_chef_yearly',
+              (e) => [
+                'master_chef_monthly',
+                'master_chef_yearly',
+              ].contains(e.value.productIdentifier),
             )
             ?.value;
       case 'home_chef':

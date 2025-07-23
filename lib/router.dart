@@ -6,11 +6,11 @@ import 'package:provider/provider.dart';
 import 'package:recipe_vault/core/theme.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
-import 'package:recipe_vault/login/change_password.dart';
 
 // Auth Screens
 import 'package:recipe_vault/login/login_screen.dart';
 import 'package:recipe_vault/login/register_screen.dart';
+import 'package:recipe_vault/login/change_password.dart';
 
 // Main Screens
 import 'package:recipe_vault/screens/home_screen/home_screen.dart';
@@ -28,7 +28,9 @@ import 'package:recipe_vault/settings/storage_sync_screen.dart';
 // Subscription
 import 'package:recipe_vault/rev_cat/paywall_screen.dart';
 import 'package:recipe_vault/rev_cat/trial_ended_screen.dart';
-// 🔥 Removed: import 'package:recipe_vault/rev_cat/trial_activation_screen.dart';
+
+// Controllers
+import 'package:recipe_vault/screens/recipe_vault/recipe_vault_controller.dart';
 
 Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
   final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
@@ -44,7 +46,13 @@ Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
     },
     '/login': (context) => const LoginScreen(),
     '/register': (context) => const RegisterScreen(),
-    '/home': (context) => const HomeScreen(),
+
+    // ✅ Wrap HomeScreen with the controller provider
+    '/home': (context) => ChangeNotifierProvider(
+      create: (_) => RecipeVaultController()..initialise(),
+      child: const HomeScreen(),
+    ),
+
     '/results': (context) => const ResultsScreen(),
 
     // Settings
@@ -64,7 +72,7 @@ Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
     '/paywall': (context) => const PaywallScreen(),
     '/trial-ended': (context) => const TrialEndedScreen(),
 
-    // Shared fallback
+    // Fallback
     '/shared': (context) => const Scaffold(
       body: Center(
         child: Text(
@@ -116,9 +124,7 @@ Widget buildAppWithRouter() {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeNotifier.themeMode,
-        supportedLocales: const [
-          Locale('en', 'GB'), // 🇬🇧 British English
-        ],
+        supportedLocales: const [Locale('en', 'GB')],
         locale: const Locale('en', 'GB'),
         onGenerateRoute: generateRoute,
         builder: (context, child) {

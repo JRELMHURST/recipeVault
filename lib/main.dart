@@ -27,6 +27,7 @@ import 'rev_cat/subscription_service.dart';
 // App Boot
 import 'start_up_gate.dart';
 import 'router.dart';
+import 'screens/recipe_vault/recipe_vault_controller.dart';
 
 // Firebase globals
 final FirebaseFunctions functions = FirebaseFunctions.instanceFor(
@@ -101,7 +102,16 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeNotifier()..loadTheme()),
         ChangeNotifierProvider(create: (_) => TextScaleNotifier()..loadScale()),
-        ChangeNotifierProvider(create: (_) => SubscriptionService()),
+        ChangeNotifierProvider<SubscriptionService>.value(
+          value: SubscriptionService(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) {
+            final controller = RecipeVaultController();
+            controller.initialise();
+            return controller;
+          },
+        ),
       ],
       child: StartupGate(child: buildAppWithRouter()),
     ),

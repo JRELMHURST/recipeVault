@@ -19,8 +19,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final subService = Provider.of<SubscriptionService>(context);
-    final tier = subService.tierNotifier.value;
+    final tier = context.watch<SubscriptionService>().tier;
     final isFree = tier.isEmpty || tier == 'none' || tier == 'free';
 
     final showToggle =

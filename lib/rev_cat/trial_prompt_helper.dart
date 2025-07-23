@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -19,7 +17,11 @@ class TrialPromptHelper {
       context,
       listen: false,
     );
-    await subscriptionService.refresh();
+
+    // ✅ Only refresh if needed
+    if (!subscriptionService.isLoaded) {
+      await subscriptionService.refresh();
+    }
 
     final tier = subscriptionService.tier;
     final isDev = subscriptionService.isSuperUser;
@@ -49,7 +51,10 @@ class TrialPromptHelper {
       context,
       listen: false,
     );
-    await subscriptionService.refresh();
+
+    if (!subscriptionService.isLoaded) {
+      await subscriptionService.refresh();
+    }
 
     final tier = subscriptionService.tier;
     final canStartTrial = subscriptionService.canStartTrial;

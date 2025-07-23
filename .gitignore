@@ -47,7 +47,7 @@ coverage/
 # Generated localisation files
 lib/l10n/*.dart
 
-# Firebase generated file (safe to regenerate)
+# Firebase generated options file
 lib/firebase_options.dart
 
 # ─────────────────────────────────────────────────────────────
@@ -57,9 +57,10 @@ android/local.properties
 *.jks
 *.keystore
 *.gradle
-/android/app/debug/
-/android/app/profile/
-/android/app/release/
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
 
 # ─────────────────────────────────────────────────────────────
 # 🍏 iOS
@@ -69,10 +70,10 @@ ios/Flutter/Flutter.framework
 ios/Flutter/Generated.xcconfig
 ios/Flutter/ephemeral/
 ios/.symlinks/
-/ios/Pods/
-/ios/build/
-/ios/Runner.xcworkspace/
-/ios/Podfile.lock
+ios/Pods/
+ios/build/
+ios/Runner.xcworkspace/
+ios/Podfile.lock
 ios/Runner/GeneratedPluginRegistrant.*
 
 # ─────────────────────────────────────────────────────────────
@@ -105,7 +106,7 @@ functions/lib/
 functions/node_modules/
 functions/serviceAccountKey.json
 
-# Optional: if using `tsc` to emit to root
+# If outputting compiled JS to project root
 *.js
 
 # Root-level Node

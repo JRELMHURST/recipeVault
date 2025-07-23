@@ -8,7 +8,6 @@ import 'package:recipe_vault/model/category_model.dart';
 enum ViewMode { list, grid, compact }
 
 class RecipeVaultController extends ChangeNotifier {
-  // ──────────────────────────────────────────────────────────────────────────────
   /// State
   bool _isLoading = true;
   bool _showScanBubble = false;
@@ -20,7 +19,9 @@ class RecipeVaultController extends ChangeNotifier {
   List<CategoryModel> _customCategories = [];
   Map<String, RecipeCardModel> _allRecipes = {};
 
-  // ──────────────────────────────────────────────────────────────────────────────
+  /// Cached dismissal flags (once fetched)
+  bool _hasFetchedBubbles = false;
+
   /// Getters
   bool get isLoading => _isLoading;
   bool get showScanBubble => _showScanBubble;
@@ -32,18 +33,34 @@ class RecipeVaultController extends ChangeNotifier {
   Map<String, RecipeCardModel> get allRecipes => _allRecipes;
   int get customCategoryCount => _customCategories.length;
 
-  // ──────────────────────────────────────────────────────────────────────────────
   /// Initial load
   Future<void> initialise() async {
     _viewMode = ViewMode.values[UserPreferencesService.getViewMode()];
 
-    _showScanBubble = await UserPreferencesService.shouldShowBubble('scan');
-    _showViewToggleBubble = await UserPreferencesService.shouldShowBubble(
-      'viewToggle',
-    );
-    _showLongPressBubble = await UserPreferencesService.shouldShowBubble(
-      'longPress',
-    );
+    if (!_hasFetchedBubbles) {
+      final scanDismissed = await UserPreferencesService.hasDismissedBubble(
+        'scan',
+      );
+      final viewToggleDismissed =
+          await UserPreferencesService.hasDismissedBubble('viewToggle');
+      final longPressDismissed =
+          await UserPreferencesService.hasDismissedBubble('longPress');
+
+      debugPrint('🔍 Bubble state on load:');
+      debugPrint('   • Scan dismissed: $scanDismissed');
+      debugPrint('   • ViewToggle dismissed: $viewToggleDismissed');
+      debugPrint('   • LongPress dismissed: $longPressDismissed');
+
+      _showScanBubble = !scanDismissed;
+      _showViewToggleBubble = !viewToggleDismissed;
+      _showLongPressBubble = !longPressDismissed;
+      _hasFetchedBubbles = true;
+
+      debugPrint('📌 Bubble display state after init:');
+      debugPrint('   • showScanBubble = $_showScanBubble');
+      debugPrint('   • showViewToggleBubble = $_showViewToggleBubble');
+      debugPrint('   • showLongPressBubble = $_showLongPressBubble');
+    }
 
     await _loadCustomCategories();
     await _loadAllRecipes();
@@ -52,7 +69,6 @@ class RecipeVaultController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ──────────────────────────────────────────────────────────────────────────────
   /// Load categories
   Future<void> _loadCustomCategories() async {
     _customCategories = await CategoryService.getAllCategories();
@@ -64,35 +80,35 @@ class RecipeVaultController extends ChangeNotifier {
     _allRecipes = {for (final recipe in loadedList) recipe.id: recipe};
   }
 
-  // ──────────────────────────────────────────────────────────────────────────────
-  /// View mode
+  /// Change view mode and persist
   void setViewMode(ViewMode mode) {
     _viewMode = mode;
     UserPreferencesService.setViewMode(mode.index);
     notifyListeners();
   }
 
-  // ──────────────────────────────────────────────────────────────────────────────
   /// Bubble dismissals
-  Future<void> dismissScanBubble() async {
+  void dismissScanBubble() {
     _showScanBubble = false;
-    await UserPreferencesService.markBubbleDismissed('scan');
+    UserPreferencesService.markBubbleDismissed('scan');
+    debugPrint('❌ Scan bubble dismissed');
     notifyListeners();
   }
 
-  Future<void> dismissViewToggleBubble() async {
+  void dismissViewToggleBubble() {
     _showViewToggleBubble = false;
-    await UserPreferencesService.markBubbleDismissed('viewToggle');
+    UserPreferencesService.markBubbleDismissed('viewToggle');
+    debugPrint('❌ ViewToggle bubble dismissed');
     notifyListeners();
   }
 
-  Future<void> dismissLongPressBubble() async {
+  void dismissLongPressBubble() {
     _showLongPressBubble = false;
-    await UserPreferencesService.markBubbleDismissed('longPress');
+    UserPreferencesService.markBubbleDismissed('longPress');
+    debugPrint('❌ LongPress bubble dismissed');
     notifyListeners();
   }
 
-  // ──────────────────────────────────────────────────────────────────────────────
   /// Optional: Trigger upgrade notice
   void setUpgradeMessage(String? message) {
     _upgradeMessage = message;

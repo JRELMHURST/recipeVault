@@ -22,7 +22,7 @@ class SettingsScreen extends StatelessWidget {
 
     final email = user.email ?? '';
     final displayName = user.displayName ?? 'No name';
-    final tier = Provider.of<SubscriptionService>(context).tierNotifier.value;
+    final tier = context.watch<SubscriptionService>().tier;
     final planLabel = switch (tier) {
       'taster' => '🥄 Taster Plan',
       'home_chef' => '👨‍🍳 Home Chef Plan',

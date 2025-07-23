@@ -7,6 +7,7 @@ class UserPreferencesService {
   static const String _boxName = 'userPrefs';
   static const String _keyViewMode = 'viewMode';
   static const String _keyVaultTutorialComplete = 'vaultTutorialComplete';
+  static const String _keyBubblesShownOnce = 'hasShownBubblesOnce';
   static const List<String> _bubbleKeys = ['scan', 'viewToggle', 'longPress'];
 
   static late Box _box;
@@ -138,8 +139,8 @@ class UserPreferencesService {
 
     if (tier == 'free' && !hasSeenTutorial) {
       await resetBubbles();
+      await _box.put(_keyBubblesShownOnce, true);
 
-      // 🔍 Optional: log to Firestore
       try {
         final uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null) {
@@ -160,6 +161,17 @@ class UserPreferencesService {
         print('🆕 Bubbles triggered for free tier (tutorial not yet complete)');
       }
     }
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  /// 🌟 Bubble Shown Flag – for `UserSessionService` logic
+  static Future<bool> get hasShownBubblesOnce async {
+    final prefs = await Hive.openBox(_boxName);
+    return prefs.get(_keyBubblesShownOnce, defaultValue: false) as bool;
+  }
+
+  static Future<void> markBubblesShown() async {
+    await _box.put(_keyBubblesShownOnce, true);
   }
 
   // ──────────────────────────────────────────────────────────────────────────────

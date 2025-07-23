@@ -20,7 +20,7 @@ class UserSessionService {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    _logDebug('👤 Initialising session for UID: ${user.uid}');
+    _logDebug('👤 Initialising session for UID: \${user.uid}');
 
     // ✅ Ensure user doc exists before syncing entitlements
     await AuthService.ensureUserDocumentIfMissing(user);
@@ -30,11 +30,15 @@ class UserSessionService {
     await SubscriptionService().refresh();
 
     final tier = SubscriptionService().tier;
-    _logDebug('🎟️ Tier: $tier');
+    _logDebug('🎟️ Tier: \$tier');
 
-    // 🧠 Bubble tutorial check
-    _logDebug('🔍 Checking if onboarding bubbles should be triggered...');
-    await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(tier);
+    // 🧠 Bubble tutorial check (new method)
+    final hasShown = await UserPreferencesService.hasShownBubblesOnce;
+    if (tier == 'free' && !hasShown) {
+      _logDebug('✨ Marking to show onboarding bubbles for free user...');
+      await UserPreferencesService.markBubblesShown();
+    }
+
     _logDebug('🧼 Bubble trigger check complete');
 
     // 📦 Preload local category + recipe data
@@ -48,7 +52,7 @@ class UserSessionService {
 
   static void _logDebug(String message) {
     if (kDebugMode) {
-      print('🔐 [UserSessionService] $message');
+      print('🔐 [UserSessionService] \$message');
     }
   }
 
@@ -61,7 +65,10 @@ class UserSessionService {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final tier = SubscriptionService().tier;
-      await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(tier);
+      final hasShown = await UserPreferencesService.hasShownBubblesOnce;
+      if (tier == 'free' && !hasShown) {
+        await UserPreferencesService.markBubblesShown();
+      }
     }
   }
 
@@ -81,6 +88,6 @@ class UserSessionService {
       'entitlement': entitlement,
     }, SetOptions(merge: true));
 
-    _logDebug('☁️ Synced tier to Firestore: $tier');
+    _logDebug('☁️ Synced tier to Firestore: \$tier');
   }
 }

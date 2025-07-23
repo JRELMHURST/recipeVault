@@ -26,7 +26,7 @@ import 'rev_cat/subscription_service.dart';
 
 // App Boot
 import 'start_up_gate.dart';
-import 'router.dart'; // ✅ ensures buildAppWithRouter() is available
+import 'router.dart';
 
 // Firebase globals
 final FirebaseFunctions functions = FirebaseFunctions.instanceFor(
@@ -37,16 +37,16 @@ final FirebaseFirestore firestore = FirebaseFirestore.instance;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🧩 Firebase init
+  // 🔌 Firebase Init
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // 🔐 App Check
+  // 🔐 Firebase App Check
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.debug,
     appleProvider: AppleProvider.debug,
   );
 
-  // 🛒 RevenueCat config
+  // 🛒 RevenueCat Setup
   try {
     await Purchases.configure(
       PurchasesConfiguration('appl_oqbgqmtmctjzzERpEkswCejmukh'),
@@ -56,7 +56,7 @@ Future<void> main() async {
     debugPrint(stack.toString());
   }
 
-  // 🔔 Notifications
+  // 🔔 Push Notifications
   try {
     await NotificationService.init();
   } catch (e, stack) {
@@ -64,7 +64,7 @@ Future<void> main() async {
     debugPrint(stack.toString());
   }
 
-  // 🐝 Hive setup
+  // 🐝 Hive Init
   await Hive.initFlutter();
   Hive.registerAdapter(RecipeCardModelAdapter());
   Hive.registerAdapter(CategoryModelAdapter());
@@ -73,10 +73,11 @@ Future<void> main() async {
     await Hive.openBox<RecipeCardModel>('recipes');
     final categoryBox = await Hive.openBox<CategoryModel>('categories');
 
-    // ✅ Migrate legacy string values to CategoryModel
+    // 🔁 Migrate legacy string categories to CategoryModel
     final legacyKeys = categoryBox.keys
         .where((k) => categoryBox.get(k) is String)
         .toList();
+
     for (final key in legacyKeys) {
       final oldValue = categoryBox.get(key) as String;
       final migrated = CategoryModel(id: key.toString(), name: oldValue);
@@ -84,16 +85,17 @@ Future<void> main() async {
       debugPrint('🔁 Migrated legacy category "$oldValue" to CategoryModel');
     }
 
-    await CategoryService.init(); // opens hidden box and ensures consistency
+    // 🧠 Open additional category boxes
+    await CategoryService.init();
   } catch (e, stack) {
-    debugPrint('❌ Hive box opening failed: $e');
+    debugPrint('❌ Hive setup failed: $e');
     debugPrint(stack.toString());
   }
 
-  // ⚙️ Local user prefs
+  // ⚙️ Load local preferences
   await UserPreferencesService.init();
 
-  // 🚀 Launch app
+  // 🚀 Launch App with Providers
   runApp(
     MultiProvider(
       providers: [

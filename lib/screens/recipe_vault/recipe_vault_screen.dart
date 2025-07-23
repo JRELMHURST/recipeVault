@@ -156,10 +156,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       );
       await subService.refresh();
 
-      if (subService.tier != 'none' && subService.canStartTrial) {
-        await TrialPromptHelper.checkAndPromptTrial(context);
-      }
-
       final tutorialComplete =
           await UserPreferencesService.hasCompletedVaultTutorial();
       if (!tutorialComplete) {
@@ -173,6 +169,12 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       await _initializeDefaultCategories();
       await _loadCustomCategories();
       await _loadRecipes();
+
+      // ✅ Trial prompt only after data loads
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (mounted && subService.tier != 'none' && subService.canStartTrial) {
+        await TrialPromptHelper.checkAndPromptTrial(context);
+      }
     });
   }
 

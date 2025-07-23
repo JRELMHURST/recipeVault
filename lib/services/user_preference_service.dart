@@ -4,6 +4,7 @@ class UserPreferencesService {
   static const String _boxName = 'userPrefs';
   static const String _keyViewMode = 'viewMode';
   static const String _keyVaultTutorialComplete = 'vaultTutorialComplete';
+  static const String _keyIsNewUser = 'isNewUser';
 
   static const List<String> _bubbleKeys = ['scan', 'viewToggle', 'longPress'];
 
@@ -28,11 +29,21 @@ class UserPreferencesService {
   /// 🧪 Vault Tutorial
   static Future<void> markVaultTutorialCompleted() async {
     await _box.put(_keyVaultTutorialComplete, true);
+    await _box.put(_keyIsNewUser, false);
   }
 
   static Future<bool> hasCompletedVaultTutorial() async {
     return _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
   }
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  /// 🆕 New User Flag
+  static Future<void> setNewUserFlag() async {
+    await _box.put(_keyIsNewUser, true);
+  }
+
+  static bool get isNewUser =>
+      _box.get(_keyIsNewUser, defaultValue: false) as bool;
 
   // ──────────────────────────────────────────────────────────────────────────────
   /// 💬 Bubble Dismissals (Generalised)
@@ -52,6 +63,7 @@ class UserPreferencesService {
   /// 🧪 Developer/Test Utilities
   static Future<void> resetVaultTutorial() async {
     await _box.delete(_keyVaultTutorialComplete);
+    await _box.put(_keyIsNewUser, true);
   }
 
   static Future<void> resetBubbles() async {
@@ -70,5 +82,9 @@ class UserPreferencesService {
 
   static Future<void> set(String key, dynamic value) async {
     await _box.put(key, value);
+  }
+
+  static Future<void> clearNewUserFlag() async {
+    await _box.put('isNewUser', false);
   }
 }

@@ -172,17 +172,22 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
       final tutorialComplete =
           await UserPreferencesService.hasCompletedVaultTutorial();
+      final isNew = UserPreferencesService.isNewUser;
 
-      if (!tutorialComplete && mounted) {
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            setState(() {
-              _showViewModeBubble = true;
-              _showLongPressBubble = false;
-              _showScanBubble = false;
-            });
-            debugPrint("👁️ View toggle bubble activated");
-          }
+      if ((!tutorialComplete || isNew) && mounted) {
+        setState(() {
+          _showViewModeBubble = true;
+          _showLongPressBubble = false;
+          _showScanBubble = false;
+        });
+        await UserPreferencesService.clearNewUserFlag();
+        debugPrint("👁️ View toggle bubble activated");
+      } else {
+        // Ensure flags are all off if tutorial already completed
+        setState(() {
+          _showViewModeBubble = false;
+          _showLongPressBubble = false;
+          _showScanBubble = false;
         });
       }
 

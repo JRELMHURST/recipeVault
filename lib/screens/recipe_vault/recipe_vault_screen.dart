@@ -21,6 +21,7 @@ import 'package:recipe_vault/screens/recipe_vault/recipe_vault_bubbles.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/services/user_preference_service.dart';
 
 enum ViewMode { list, grid, compact }
 
@@ -131,8 +132,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     await _loadCustomCategories();
   }
 
-  void _onboardingBubbleProgression() {
-    Future.delayed(const Duration(milliseconds: 100), () {
+  void _onboardingBubbleProgression() async {
+    Future.delayed(const Duration(milliseconds: 100), () async {
       if (!mounted) return;
 
       if (_showViewModeBubble) {
@@ -151,6 +152,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         setState(() {
           _showScanBubble = false;
         });
+        await UserPreferencesService.markVaultTutorialCompleted(); // ✅ Marks tutorial complete
         debugPrint('✅ All bubbles completed');
       }
     });
@@ -169,27 +171,22 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           .doc(userId)
           .collection('recipes');
 
-      if (!_hasLoadedBubbles && userId != null) {
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .get();
+      // 🧠 Bubble onboarding logic
+      if (!_hasLoadedBubbles) {
+        final tutorialComplete =
+            await UserPreferencesService.hasCompletedVaultTutorial();
 
-        final tier = userDoc.data()?['tier'] ?? 'free';
+        final subService = Provider.of<SubscriptionService>(
+          context,
+          listen: false,
+        );
+        final tier = subService.tier; // Use `tier` not `currentTier`
 
-        if (tier == 'free' && mounted) {
+        if (tier == 'free' && !tutorialComplete) {
           setState(() {
             _showViewModeBubble = true;
-            _showLongPressBubble = false;
-            _showScanBubble = false;
           });
-          debugPrint("👁️ View toggle bubble activated (tier: free)");
-        } else {
-          setState(() {
-            _showViewModeBubble = false;
-            _showLongPressBubble = false;
-            _showScanBubble = false;
-          });
+          debugPrint("👁️ View toggle bubble activated (tier: $tier)");
         }
 
         _hasLoadedBubbles = true;

@@ -3,11 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-
-import '../rev_cat/subscription_service.dart';
-import '../rev_cat/tier_utils.dart';
-import '../firebase_auth_service.dart';
-import '../services/user_preference_service.dart';
+import 'package:recipe_vault/firebase_auth_service.dart';
+import 'package:recipe_vault/rev_cat/subscription_service.dart';
+import 'package:recipe_vault/rev_cat/tier_utils.dart';
+import 'package:recipe_vault/services/user_preference_service.dart';
 
 class UserSessionService {
   static bool _hasInitialised = false;
@@ -52,13 +51,10 @@ class UserSessionService {
       final hasSeenTutorial =
           prefsBox.get('vaultTutorialComplete', defaultValue: false) as bool;
 
-      // ✅ Trigger onboarding flags if tier is "free" and user hasn't seen tutorial
+      // ✅ Trigger bubbles only once for free users
       if (tier == 'free' && !hasSeenTutorial) {
-        await UserPreferencesService.setNewUserFlag();
         await UserPreferencesService.resetBubbles();
-        _logDebug(
-          '🆕 Onboarding flags set due to free tier and no tutorial completion',
-        );
+        _logDebug('🆕 Bubbles triggered for free tier (first time only)');
       }
 
       _logDebug('✅ UserSessionService initialised for ${user.uid}');
@@ -115,7 +111,6 @@ class UserSessionService {
     }
   }
 
-  /// ♻️ Restore and re-sync RevenueCat entitlement
   static Future<void> restoreAndSyncEntitlement() async {
     try {
       await Purchases.restorePurchases();
@@ -125,7 +120,6 @@ class UserSessionService {
     }
   }
 
-  /// ⏱ Retry sync after short delay
   static void _retryEntitlementSync(String userId) {
     if (_retryInProgress) return;
     _retryInProgress = true;
@@ -156,7 +150,6 @@ class UserSessionService {
     });
   }
 
-  /// 🧪 Check if taster trial is still active (within 7 days)
   static bool _isTrialActive(dynamic trialStart) {
     try {
       final start = trialStart is Timestamp
@@ -168,7 +161,6 @@ class UserSessionService {
     }
   }
 
-  /// 📋 Debug log for entitlement/tier resolution
   static void _logEntitlementSummary(
     CustomerInfo info,
     String tier, {

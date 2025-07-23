@@ -274,4 +274,7 @@ class SubscriptionService extends ChangeNotifier {
 
   /// ✅ Basic access check (alias for allowSaveToVault)
   bool get hasAccess => allowSaveToVault;
+
+  /// Exposes the current tier value (e.g. 'free', 'taster', etc.)
+  String get currentTier => _tier;
 }

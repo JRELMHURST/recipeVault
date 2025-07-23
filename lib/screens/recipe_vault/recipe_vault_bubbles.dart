@@ -25,10 +25,10 @@ class RecipeVaultBubbles extends StatelessWidget {
     final screenHeight = mediaQuery.size.height;
     final bottomInset = mediaQuery.padding.bottom;
 
-    final scanOffset = Offset(24, screenHeight - bottomInset - 320);
+    final scanOffset = Offset(54, screenHeight - bottomInset - 320);
 
-    const viewToggleOffset = Offset(60, kToolbarHeight + 12);
-    const longPressOffset = Offset(20, 220);
+    const viewToggleOffset = Offset(20, kToolbarHeight - 50);
+    const longPressOffset = Offset(40, 200);
 
     // Show one bubble at a time based on priority
     if (showScan) {

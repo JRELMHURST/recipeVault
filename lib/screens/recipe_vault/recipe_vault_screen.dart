@@ -51,8 +51,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   List<RecipeCardModel> _allRecipes = [];
 
   bool _showViewModeBubble = true;
-  bool _showScanBubble = false;
   bool _showLongPressBubble = false;
+  bool _showScanBubble = false;
 
   List<RecipeCardModel> get _filteredRecipes {
     return _allRecipes.where((recipe) {
@@ -135,13 +135,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (!mounted) return;
 
-      if (_showScanBubble) {
-        setState(() {
-          _showScanBubble = false;
-          _showViewModeBubble = true;
-        });
-        debugPrint('👁️ Showing View Toggle bubble');
-      } else if (_showViewModeBubble) {
+      if (_showViewModeBubble) {
         setState(() {
           _showViewModeBubble = false;
           _showLongPressBubble = true;
@@ -150,6 +144,12 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       } else if (_showLongPressBubble) {
         setState(() {
           _showLongPressBubble = false;
+          _showScanBubble = true;
+        });
+        debugPrint('🧪 Showing Scan bubble');
+      } else if (_showScanBubble) {
+        setState(() {
+          _showScanBubble = false;
         });
         debugPrint('✅ All bubbles completed');
         UserPreferencesService.markVaultTutorialCompleted();
@@ -183,11 +183,11 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted) {
             setState(() {
-              _showScanBubble = true;
-              _showViewModeBubble = false;
+              _showViewModeBubble = true;
               _showLongPressBubble = false;
+              _showScanBubble = false;
             });
-            debugPrint("🟢 Scan bubble activated");
+            debugPrint("👁️ View toggle bubble activated");
           }
         });
       }

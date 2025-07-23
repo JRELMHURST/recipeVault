@@ -18,9 +18,11 @@ import 'package:recipe_vault/screens/recipe_vault/recipe_dialog.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_search_bar.dart';
+import 'package:recipe_vault/screens/recipe_vault/dismissable_bubble.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/services/user_preference_service.dart';
 
 enum ViewMode { list, grid, compact }
 
@@ -48,6 +50,10 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   List<String> _allCategories = ['All', 'Favourites', 'Translated'];
   List<RecipeCardModel> _allRecipes = [];
+
+  bool _showScanBubble = false;
+  bool _showViewModeBubble = false;
+  bool _showLongPressBubble = false;
 
   List<RecipeCardModel> get _filteredRecipes {
     return _allRecipes.where((recipe) {
@@ -126,6 +132,12 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     await _loadCustomCategories();
   }
 
+  void _checkIfAllBubblesDismissed() async {
+    if (!_showScanBubble && !_showViewModeBubble && !_showLongPressBubble) {
+      await UserPreferencesService.markVaultTutorialCompleted();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -146,6 +158,16 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
       if (subService.tier != 'none' && subService.canStartTrial) {
         await TrialPromptHelper.checkAndPromptTrial(context);
+      }
+
+      final tutorialComplete =
+          await UserPreferencesService.hasCompletedVaultTutorial();
+      if (!tutorialComplete) {
+        setState(() {
+          _showScanBubble = true;
+          _showViewModeBubble = true;
+          _showLongPressBubble = true;
+        });
       }
 
       await _initializeDefaultCategories();
@@ -225,7 +247,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         _allRecipes = merged;
       });
     } catch (e) {
-      debugPrint("⚠️ Firestore fetch failed, loading from Hive: $e");
+      debugPrint("\u26a0\ufe0f Firestore fetch failed, loading from Hive: $e");
       final fallback = HiveRecipeService.getAll();
       setState(() {
         _allRecipes = fallback;
@@ -243,64 +265,98 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         data: MediaQuery.of(
           context,
         ).copyWith(textScaler: TextScaler.linear(scale)),
-        child: Column(
+        child: Stack(
           children: [
-            RecipeChipFilterBar(
-              categories: _allCategories,
-              selectedCategory: _selectedCategory,
-              onCategorySelected: (cat) =>
-                  setState(() => _selectedCategory = cat),
-              onCategoryDeleted: _removeCategory,
-              allRecipes: _allRecipes,
-            ),
-            RecipeSearchBar(
-              initialValue: _searchQuery,
-              onChanged: (value) => setState(() => _searchQuery = value),
-            ),
-            ValueListenableBuilder<String?>(
-              valueListenable: ImageProcessingService.upgradeBannerMessage,
-              builder: (_, message, __) => message == null
-                  ? const SizedBox.shrink()
-                  : UpgradeBanner(message: message),
-            ),
-            Expanded(
-              child: _filteredRecipes.isEmpty
-                  ? const Center(child: Text("No recipes found"))
-                  : AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: ResponsiveWrapper(
-                        child: switch (view) {
-                          ViewMode.list => RecipeListView(
-                            recipes: _filteredRecipes,
-                            onDelete: _deleteRecipe,
-                            onTap: (r) => showRecipeDialog(context, r),
-                            onToggleFavourite: _toggleFavourite,
-                            categories: _allCategories,
-                            onAssignCategories: _assignCategories,
-                            onAddOrUpdateImage: _addOrUpdateImage,
+            Column(
+              children: [
+                RecipeChipFilterBar(
+                  categories: _allCategories,
+                  selectedCategory: _selectedCategory,
+                  onCategorySelected: (cat) =>
+                      setState(() => _selectedCategory = cat),
+                  onCategoryDeleted: _removeCategory,
+                  allRecipes: _allRecipes,
+                ),
+                RecipeSearchBar(
+                  initialValue: _searchQuery,
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                ),
+                ValueListenableBuilder<String?>(
+                  valueListenable: ImageProcessingService.upgradeBannerMessage,
+                  builder: (_, message, __) => message == null
+                      ? const SizedBox.shrink()
+                      : UpgradeBanner(message: message),
+                ),
+                Expanded(
+                  child: _filteredRecipes.isEmpty
+                      ? const Center(child: Text("No recipes found"))
+                      : AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: ResponsiveWrapper(
+                            child: switch (view) {
+                              ViewMode.list => RecipeListView(
+                                recipes: _filteredRecipes,
+                                onDelete: _deleteRecipe,
+                                onTap: (r) => showRecipeDialog(context, r),
+                                onToggleFavourite: _toggleFavourite,
+                                categories: _allCategories,
+                                onAssignCategories: _assignCategories,
+                                onAddOrUpdateImage: _addOrUpdateImage,
+                              ),
+                              ViewMode.grid => RecipeGridView(
+                                recipes: _filteredRecipes,
+                                onTap: (r) => showRecipeDialog(context, r),
+                                onToggleFavourite: _toggleFavourite,
+                                onAssignCategories: _assignCategories,
+                                categories: _allCategories,
+                                onDelete: _deleteRecipe,
+                                onAddOrUpdateImage: _addOrUpdateImage,
+                              ),
+                              ViewMode.compact => RecipeCompactView(
+                                recipes: _filteredRecipes,
+                                onTap: (r) => showRecipeDialog(context, r),
+                                onToggleFavourite: _toggleFavourite,
+                                onDelete: _deleteRecipe,
+                                categories: _allCategories,
+                                onAssignCategories: _assignCategories,
+                                onAddOrUpdateImage: _addOrUpdateImage,
+                              ),
+                            },
                           ),
-                          ViewMode.grid => RecipeGridView(
-                            recipes: _filteredRecipes,
-                            onTap: (r) => showRecipeDialog(context, r),
-                            onToggleFavourite: _toggleFavourite,
-                            onAssignCategories: _assignCategories,
-                            categories: _allCategories,
-                            onDelete: _deleteRecipe,
-                            onAddOrUpdateImage: _addOrUpdateImage,
-                          ),
-                          ViewMode.compact => RecipeCompactView(
-                            recipes: _filteredRecipes,
-                            onTap: (r) => showRecipeDialog(context, r),
-                            onToggleFavourite: _toggleFavourite,
-                            onDelete: _deleteRecipe,
-                            categories: _allCategories,
-                            onAssignCategories: _assignCategories,
-                            onAddOrUpdateImage: _addOrUpdateImage,
-                          ),
-                        },
-                      ),
-                    ),
+                        ),
+                ),
+              ],
             ),
+            if (_showScanBubble)
+              DismissibleBubble(
+                message:
+                    '🧪 Scan Recipes\nTap here to upload your recipe images.',
+                position: Offset(16, MediaQuery.of(context).size.height - 160),
+                onDismiss: () {
+                  setState(() => _showScanBubble = false);
+                  _checkIfAllBubblesDismissed();
+                },
+              ),
+            if (_showViewModeBubble)
+              DismissibleBubble(
+                message:
+                    '👁️ Switch Views\nTap to change how recipes are displayed.',
+                position: Offset(60, kToolbarHeight + 12),
+                onDismiss: () {
+                  setState(() => _showViewModeBubble = false);
+                  _checkIfAllBubblesDismissed();
+                },
+              ),
+            if (_showLongPressBubble)
+              DismissibleBubble(
+                message:
+                    '📌 Long-press a recipe\nFavourite or assign a category.',
+                position: Offset(20, 220),
+                onDismiss: () {
+                  setState(() => _showLongPressBubble = false);
+                  _checkIfAllBubblesDismissed();
+                },
+              ),
           ],
         ),
       ),

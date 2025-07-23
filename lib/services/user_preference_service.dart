@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 class UserPreferencesService {
   static const String _boxName = 'userPrefs';
   static const String _keyViewMode = 'viewMode';
+  static const String _keyVaultTutorialComplete = 'vaultTutorialComplete';
 
   static late Box _box;
 
@@ -19,6 +20,21 @@ class UserPreferencesService {
   /// Saves the selected view mode
   static Future<void> setViewMode(int mode) async {
     await _box.put(_keyViewMode, mode);
+  }
+
+  /// Marks the vault tutorial as completed
+  static Future<void> markVaultTutorialCompleted() async {
+    await _box.put(_keyVaultTutorialComplete, true);
+  }
+
+  /// Checks if the vault tutorial has been completed
+  static Future<bool> hasCompletedVaultTutorial() async {
+    return _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
+  }
+
+  /// Optional: Reset the tutorial completion flag (for dev/testing)
+  static Future<void> resetVaultTutorial() async {
+    await _box.delete(_keyVaultTutorialComplete);
   }
 
   /// Optional: clear all user preferences

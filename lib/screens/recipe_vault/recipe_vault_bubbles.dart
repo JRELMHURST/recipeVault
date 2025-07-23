@@ -25,7 +25,7 @@ class RecipeVaultBubbles extends StatelessWidget {
     final screenHeight = mediaQuery.size.height;
     final bottomInset = mediaQuery.padding.bottom;
 
-    final scanOffset = Offset(54, screenHeight - bottomInset - 320);
+    final scanOffset = Offset(54, screenHeight - bottomInset - 350);
     const viewToggleOffset = Offset(20, kToolbarHeight - 50);
     const longPressOffset = Offset(40, 200);
 

@@ -4,12 +4,14 @@ class DismissibleBubble extends StatefulWidget {
   final String message;
   final Offset position;
   final VoidCallback onDismiss;
+  final bool showButton;
 
   const DismissibleBubble({
     super.key,
     required this.message,
     required this.position,
     required this.onDismiss,
+    this.showButton = true,
   });
 
   @override
@@ -59,41 +61,64 @@ class _DismissibleBubbleState extends State<DismissibleBubble>
     return Positioned(
       top: widget.position.dy,
       left: widget.position.dx,
-      child: GestureDetector(
-        onTap: _handleDismiss,
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                constraints: const BoxConstraints(maxWidth: 240),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Colors.black87, Colors.black],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              constraints: const BoxConstraints(maxWidth: 240),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                    color: Colors.black45,
                   ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: const [
-                    BoxShadow(
-                      blurRadius: 10,
-                      offset: Offset(0, 6),
-                      color: Colors.black54,
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.message,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      height: 1.4,
+                    ),
+                  ),
+                  if (widget.showButton) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: TextButton(
+                        onPressed: _handleDismiss,
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          minimumSize: const Size(0, 0),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        child: const Text('Got it'),
+                      ),
                     ),
                   ],
-                ),
-                child: Text(
-                  widget.message,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    height: 1.4,
-                  ),
-                ),
+                ],
               ),
             ),
           ),

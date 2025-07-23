@@ -26,44 +26,41 @@ class RecipeVaultBubbles extends StatelessWidget {
     final bottomInset = mediaQuery.padding.bottom;
 
     final scanOffset = Offset(54, screenHeight - bottomInset - 320);
-
     const viewToggleOffset = Offset(20, kToolbarHeight - 50);
     const longPressOffset = Offset(40, 200);
 
-    // Show one bubble at a time based on priority
-    if (showScan) {
-      return Stack(
-        children: [
+    assert(
+      [showScan, showViewToggle, showLongPress].where((x) => x).length <= 1,
+      'Only one bubble should be visible at a time.',
+    );
+
+    return Stack(
+      children: [
+        if (showScan)
           DismissibleBubble(
-            message: '🧪 Scan Recipes\nTap here to upload your recipe images.',
+            key: const ValueKey('bubble_scan'),
+            message:
+                '📸 Scan Recipes\nTap “Create” to upload and scan recipe images.',
             position: scanOffset,
             onDismiss: onDismissScan,
           ),
-        ],
-      );
-    } else if (showViewToggle) {
-      return Stack(
-        children: [
+        if (showViewToggle)
           DismissibleBubble(
+            key: const ValueKey('bubble_view_toggle'),
             message:
                 '👁️ Switch Views\nTap to change how recipes are displayed.',
             position: viewToggleOffset,
             onDismiss: onDismissViewToggle,
           ),
-        ],
-      );
-    } else if (showLongPress) {
-      return Stack(
-        children: [
+        if (showLongPress)
           DismissibleBubble(
-            message: '📌 Long-press a recipe\nFavourite or assign a category.',
+            key: const ValueKey('bubble_long_press'),
+            message:
+                '📌 Long-press a recipe\nTap and hold to favourite or assign a category.',
             position: longPressOffset,
             onDismiss: onDismissLongPress,
           ),
-        ],
-      );
-    } else {
-      return const SizedBox.shrink();
-    }
+      ],
+    );
   }
 }

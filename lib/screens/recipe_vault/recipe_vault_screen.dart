@@ -50,8 +50,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   List<String> _allCategories = ['All', 'Favourites', 'Translated'];
   List<RecipeCardModel> _allRecipes = [];
 
+  bool _showViewModeBubble = true;
   bool _showScanBubble = false;
-  bool _showViewModeBubble = false;
   bool _showLongPressBubble = false;
 
   List<RecipeCardModel> get _filteredRecipes {
@@ -131,28 +131,36 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     await _loadCustomCategories();
   }
 
-  void _onboardingBubbleProgression() async {
-    if (_showScanBubble) {
-      setState(() {
-        _showScanBubble = false;
-        _showViewModeBubble = true;
-      });
-    } else if (_showViewModeBubble) {
-      setState(() {
-        _showViewModeBubble = false;
-        _showLongPressBubble = true;
-      });
-    } else if (_showLongPressBubble) {
-      setState(() {
-        _showLongPressBubble = false;
-      });
-      await UserPreferencesService.markVaultTutorialCompleted();
-    }
+  void _onboardingBubbleProgression() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+
+      if (_showScanBubble) {
+        setState(() {
+          _showScanBubble = false;
+          _showViewModeBubble = true;
+        });
+        debugPrint('👁️ Showing View Toggle bubble');
+      } else if (_showViewModeBubble) {
+        setState(() {
+          _showViewModeBubble = false;
+          _showLongPressBubble = true;
+        });
+        debugPrint('📌 Showing Long Press bubble');
+      } else if (_showLongPressBubble) {
+        setState(() {
+          _showLongPressBubble = false;
+        });
+        debugPrint('✅ All bubbles completed');
+        UserPreferencesService.markVaultTutorialCompleted();
+      }
+    });
   }
 
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final user = FirebaseAuth.instance.currentUser;
       userId = user?.uid;
@@ -170,15 +178,18 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
       final tutorialComplete =
           await UserPreferencesService.hasCompletedVaultTutorial();
-      if (!tutorialComplete) {
-        setState(() {
-          _showScanBubble = true;
-          _showViewModeBubble = false;
-          _showLongPressBubble = false;
-        });
 
-        // ⏱ Ensure bubble gets drawn before modals interrupt
-        await Future.delayed(const Duration(milliseconds: 150));
+      if (!tutorialComplete && mounted) {
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            setState(() {
+              _showScanBubble = true;
+              _showViewModeBubble = false;
+              _showLongPressBubble = false;
+            });
+            debugPrint("🟢 Scan bubble activated");
+          }
+        });
       }
 
       await _initializeDefaultCategories();
@@ -198,10 +209,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   }
 
   Future<void> _loadCustomCategories() async {
-    final saved =
-        await CategoryService.getAllCategories(); // List<CategoryModel>
-    final hidden =
-        await CategoryService.getHiddenDefaultCategories(); // List<String>
+    final saved = await CategoryService.getAllCategories();
+    final hidden = await CategoryService.getHiddenDefaultCategories();
 
     final savedNames = saved.map((c) => c.name).toList();
     final hiddenNames = hidden.toSet();

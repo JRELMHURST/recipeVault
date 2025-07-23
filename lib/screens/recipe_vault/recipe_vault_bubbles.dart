@@ -40,7 +40,7 @@ class RecipeVaultBubbles extends StatelessWidget {
           DismissibleBubble(
             key: const ValueKey('bubble_scan'),
             message:
-                '📸 Scan Recipes\nTap “Create” to upload and scan recipe images.',
+                '📸 Scan Recipes\nTap “Create” or + to upload and scan recipe images.',
             position: scanOffset,
             onDismiss: onDismissScan,
           ),

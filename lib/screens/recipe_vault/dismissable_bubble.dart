@@ -72,12 +72,17 @@ class _DismissibleBubbleState extends State<DismissibleBubble>
               constraints: const BoxConstraints(maxWidth: 240),
               decoration: BoxDecoration(
                 color: Colors.black87,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(4), // Less rounded corner
+                ),
                 boxShadow: const [
                   BoxShadow(
-                    blurRadius: 8,
-                    offset: Offset(0, 3),
-                    color: Colors.black45,
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                    color: Colors.black38,
                   ),
                 ],
               ),

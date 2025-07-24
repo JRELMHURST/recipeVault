@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
@@ -15,49 +16,47 @@ class UserSessionService {
   /// Call on app launch or login
   static Future<void> init() async {
     if (isInitialised) return;
-    isInitialised = true;
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    // 🚫 Ensure we're not still using the guest box
+    if (Hive.isBoxOpen('userPrefs_guest')) {
+      await Hive.box('userPrefs_guest').close();
+      if (kDebugMode) print('🧹 Closed guest box (login detected)');
+    }
+
+    // 🧠 Reopen correct Hive box for current UID
+    await UserPreferencesService.init();
+
     _logDebug('👤 Initialising session for UID: ${user.uid}');
 
     try {
-      // 🧠 Ensure Hive is initialised
-      await UserPreferencesService.init();
-
-      // ✅ Ensure user doc exists before syncing entitlements
+      // ✅ Ensure Firestore user doc exists
       await AuthService.ensureUserDocumentIfMissing(user);
 
-      // 🧾 RevenueCat sync
+      // 🧾 Sync entitlements
       await syncRevenueCatEntitlement();
       await SubscriptionService().refresh();
 
       final tier = SubscriptionService().tier;
       _logDebug('🎟️ Tier resolved: $tier');
 
-      // 🔍 Check Hive flags for bubble onboarding
-      final prefsBox = await UserPreferencesService.getBox();
-      final hasShown = prefsBox.get('bubblesShownOnce');
-      final tutorialComplete = prefsBox.get('vaultTutorialComplete');
-
-      if (tier == 'free' && hasShown == null && tutorialComplete != true) {
-        _logDebug('🆕 New user → setting onboarding flags');
-        await UserPreferencesService.set('bubblesShownOnce', true);
-        await UserPreferencesService.set('vaultTutorialComplete', false);
-      }
-
-      // 🫧 Bubble tutorial flow trigger
+      // 🧠 Check and trigger bubble tutorial
       _logDebug('🫧 Checking onboarding bubble trigger...');
       await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(tier);
       _logDebug('✅ Bubble trigger check complete');
 
-      // 📦 Preload local data
+      // 📂 Preload local data
       _logDebug('📂 Loading categories...');
       await CategoryService.load();
 
       _logDebug('📂 Loading vault recipes...');
       await VaultRecipeService.load();
+
+      // ✅ Fully initialised
+      isInitialised = true;
+      _logDebug('✅ User session initialisation complete');
     } catch (e) {
       _logDebug('❌ Error during UserSession init: $e');
     }
@@ -65,6 +64,7 @@ class UserSessionService {
 
   static Future<void> reset() async {
     isInitialised = false;
+    _logDebug('🔄 Session reset');
   }
 
   static void _logDebug(String message) {

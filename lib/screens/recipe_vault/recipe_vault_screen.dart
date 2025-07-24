@@ -22,11 +22,10 @@ import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
-
-enum ViewMode { list, grid, compact }
+import 'package:recipe_vault/services/view_mode.dart';
 
 class RecipeVaultScreen extends StatefulWidget {
-  final int viewMode;
+  final ViewMode viewMode;
   const RecipeVaultScreen({super.key, required this.viewMode});
 
   @override
@@ -290,7 +289,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final view = ViewMode.values[widget.viewMode];
+    final view = widget.viewMode;
     final scale = Provider.of<TextScaleNotifier>(context).scaleFactor;
 
     return Scaffold(
@@ -369,33 +368,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               onDismissScan: _onboardingBubbleProgression,
               onDismissViewToggle: _onboardingBubbleProgression,
               onDismissLongPress: _onboardingBubbleProgression,
-            ),
-
-            // 🧪 Developer reset button for onboarding
-            Positioned(
-              bottom: 90,
-              right: 16,
-              child: FloatingActionButton.small(
-                heroTag: 'resetBubblesBtn',
-                onPressed: () async {
-                  await UserPreferencesService.setBool(
-                    'vaultTutorialComplete',
-                    false,
-                  );
-                  await UserPreferencesService.setBool(
-                    'bubblesShownOnce',
-                    false,
-                  );
-                  debugPrint('🧪 Onboarding bubbles reset via dev button');
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Onboarding bubbles reset')),
-                    );
-                  }
-                },
-                backgroundColor: Colors.deepPurple,
-                child: const Icon(Icons.refresh),
-              ),
             ),
           ],
         ),

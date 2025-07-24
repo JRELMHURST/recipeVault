@@ -2,9 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
+import 'package:recipe_vault/services/view_mode.dart';
 
 class UserPreferencesService {
-  static const String _boxName = 'userPrefs';
+  static const String _boxPrefix = 'userPrefs';
   static const String _keyViewMode = 'viewMode';
   static const String _keyVaultTutorialComplete = 'vaultTutorialComplete';
   static const String _keyBubblesShownOnce = 'hasShownBubblesOnce';
@@ -12,25 +13,67 @@ class UserPreferencesService {
 
   static late Box _box;
 
+  static String get _boxName {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
+    final name = '${_boxPrefix}_$uid';
+    if (kDebugMode) print('📦 Box name resolved: $name');
+    return name;
+  }
+
   // ──────────────────────────────────────────────────────────────────────────────
   /// 📦 Init
   static Future<void> init() async {
-    _box = await Hive.openBox(_boxName);
+    if (Hive.isBoxOpen('userPrefs_guest') &&
+        FirebaseAuth.instance.currentUser != null) {
+      await Hive.box('userPrefs_guest').close();
+      if (kDebugMode) print('🧹 Closed guest box');
+    }
+
+    final name = _boxName;
+
+    if (Hive.isBoxOpen(name)) {
+      _box = Hive.box(name);
+      if (kDebugMode) print('📦 Hive box reused: $name');
+    } else {
+      _box = await Hive.openBox(name);
+      if (kDebugMode) print('📦 Hive box opened: $name');
+    }
+
+    if (kDebugMode) {
+      print('👤 Firebase UID: ${FirebaseAuth.instance.currentUser?.uid}');
+    }
   }
 
   static Future<Box> getBox() async {
     if (!Hive.isBoxOpen(_boxName)) {
-      return await Hive.openBox(_boxName);
+      _box = await Hive.openBox(_boxName);
+      if (kDebugMode) print('📦 Hive box lazily opened: $_boxName');
     }
-    return Hive.box(_boxName);
+    return _box;
   }
 
   // ──────────────────────────────────────────────────────────────────────────────
   /// 🧩 View Mode
-  static int getViewMode() => _box.get(_keyViewMode, defaultValue: 0) as int;
+  static Future<void> saveViewMode(ViewMode mode) async {
+    await _box.put(_keyViewMode, mode.index);
+    if (kDebugMode) print('💾 Saved view mode: ${mode.name}');
+  }
 
-  static Future<void> setViewMode(int mode) async =>
-      await _box.put(_keyViewMode, mode);
+  static Future<ViewMode> getSavedViewMode() async {
+    final index =
+        _box.get(_keyViewMode, defaultValue: ViewMode.list.index) as int;
+    final mode = ViewMode.values[index];
+    if (kDebugMode) print('📥 Loaded view mode: ${mode.name}');
+    return mode;
+  }
+
+  static Future<int> getViewMode() async {
+    return _box.get(_keyViewMode, defaultValue: 0) as int;
+  }
+
+  static Future<void> setViewMode(int index) async {
+    await _box.put(_keyViewMode, index);
+  }
 
   // ──────────────────────────────────────────────────────────────────────────────
   /// 🧪 Vault Tutorial
@@ -48,37 +91,17 @@ class UserPreferencesService {
     }
   }
 
+  static Future<void> maybeMarkTutorialCompleted() async {
+    final results = await Future.wait(_bubbleKeys.map(hasDismissedBubble));
+    if (results.every((b) => b)) {
+      await markVaultTutorialCompleted();
+    }
+  }
+
   static Future<bool> hasCompletedVaultTutorial() async {
     final local =
         _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
-    if (local) return true;
-
-    try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return false;
-
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
-      final completed =
-          doc.data()?['onboarding']?['vaultTutorialCompleted'] ?? false;
-
-      if (completed == true) {
-        final alreadySet =
-            _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
-        if (!alreadySet) {
-          await _box.put(_keyVaultTutorialComplete, true);
-          if (kDebugMode) {
-            print('📥 Caching vaultTutorialCompleted=true from Firestore');
-          }
-        }
-      }
-      return completed;
-    } catch (e) {
-      if (kDebugMode) print('🧨 Firestore onboarding check failed: $e');
-      return false;
-    }
+    return local;
   }
 
   static Future<void> resetVaultTutorial({bool localOnly = true}) async {
@@ -104,6 +127,7 @@ class UserPreferencesService {
   /// 💬 Bubble Dismissals
   static Future<void> markBubbleDismissed(String key) async {
     await _box.put('bubbleDismissed_$key', true);
+    await maybeMarkTutorialCompleted();
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
@@ -122,25 +146,7 @@ class UserPreferencesService {
 
   static Future<bool> hasDismissedBubble(String key) async {
     final local = _box.get('bubbleDismissed_$key', defaultValue: false) as bool;
-    if (local) return true;
-
-    try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return false;
-
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
-      final dismissed =
-          doc.data()?['onboarding']?['bubbleDismissals']?[key] ?? false;
-
-      if (dismissed) await _box.put('bubbleDismissed_$key', true);
-      return dismissed;
-    } catch (e) {
-      if (kDebugMode) print('🧨 Firestore bubble check failed for "$key": $e');
-      return false;
-    }
+    return local;
   }
 
   static Future<bool> shouldShowBubble(String key) async {
@@ -176,15 +182,18 @@ class UserPreferencesService {
   // ──────────────────────────────────────────────────────────────────────────────
   /// 🧠 Bubble Trigger
   static Future<void> ensureBubbleFlagTriggeredIfEligible(String tier) async {
-    final hasSeenTutorial =
+    final hasShownBubblesOnce =
+        _box.get(_keyBubblesShownOnce, defaultValue: false) as bool;
+    final tutorialComplete =
         _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
+
     if (kDebugMode) {
       print(
-        '📊 Bubble trigger check: tier=$tier, hasSeenTutorial=$hasSeenTutorial',
+        '📊 Bubble trigger check: tier=$tier, bubblesShownOnce=$hasShownBubblesOnce, vaultTutorialCompleted=$tutorialComplete',
       );
     }
 
-    if (tier == 'free' && !hasSeenTutorial) {
+    if (tier == 'free' && !hasShownBubblesOnce) {
       await resetBubbles();
       await _box.put(_keyBubblesShownOnce, true);
 
@@ -203,7 +212,7 @@ class UserPreferencesService {
       }
 
       if (kDebugMode) {
-        print('🆕 Bubbles triggered for free tier (tutorial not yet complete)');
+        print('🆕 Bubbles triggered for free tier (first time)');
       }
     }
   }

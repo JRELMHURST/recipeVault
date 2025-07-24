@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/rev_cat/trial_prompt_helper.dart';
-import 'package:recipe_vault/services/image_processing_service.dart';
-import 'package:recipe_vault/services/user_preference_service.dart';
-import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_vault_screen.dart';
-import 'package:recipe_vault/settings/settings_screen.dart';
 import 'package:recipe_vault/screens/home_screen/home_app_bar.dart';
+import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/services/view_mode.dart';
+import 'package:recipe_vault/settings/settings_screen.dart';
+import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,7 +21,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 1;
-  int _viewMode = 1;
+  ViewMode _viewMode = ViewMode.grid;
   final PageStorageBucket _bucket = PageStorageBucket();
 
   @override
@@ -31,12 +31,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initialisePreferencesAndPrompt() async {
-    final storedMode = UserPreferencesService.getViewMode();
-    if (mounted) {
-      setState(() {
-        _viewMode = storedMode;
-      });
-    }
+    _viewMode = await ViewModeService.getViewMode();
+    if (mounted) setState(() {});
 
     final subService = SubscriptionService();
     await subService.refresh();
@@ -60,9 +56,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _toggleViewMode() {
     setState(() {
-      _viewMode = (_viewMode + 1) % 3;
+      final currentIndex = ViewMode.values.indexOf(_viewMode);
+      final nextIndex = (currentIndex + 1) % ViewMode.values.length;
+      _viewMode = ViewMode.values[nextIndex];
     });
-    UserPreferencesService.setViewMode(_viewMode);
+    ViewModeService.setViewMode(_viewMode);
   }
 
   Future<void> _onNavTap(int index) async {
@@ -123,10 +121,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   IconData get _viewModeIcon {
     return switch (_viewMode) {
-      0 => Icons.grid_view_rounded,
-      1 => Icons.view_module_rounded,
-      2 => Icons.view_agenda_rounded,
-      _ => Icons.grid_view_rounded,
+      ViewMode.list => Icons.view_agenda_rounded,
+      ViewMode.grid => Icons.grid_view_rounded,
+      ViewMode.compact => Icons.view_module_rounded,
     };
   }
 

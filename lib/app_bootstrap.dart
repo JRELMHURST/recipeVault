@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -91,20 +92,31 @@ class AppBootstrap {
       }
     }
 
-    // ⚙️ Load local preferences
-    await UserPreferencesService.init();
-
-    // 🖼 Ensure view mode defaults to grid
-    final savedViewMode = await ViewModeService.getViewMode();
-    if (savedViewMode == ViewMode.list) {
-      await ViewModeService.setViewMode(ViewMode.grid);
-    }
-
     // 👤 Load and sync session (auth, tier, entitlement, onboarding)
     await UserSessionService.init();
 
+    // ⚙️ Load local preferences (only if signed in)
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      await UserPreferencesService.init();
+    }
+
+    // 👤 If signed in, load preferences and view mode
+    if (uid != null) {
+      try {
+        await UserPreferencesService.init();
+        final savedViewMode = await ViewModeService.getViewMode();
+        if (savedViewMode == ViewMode.list) {
+          await ViewModeService.setViewMode(ViewMode.grid);
+        }
+      } catch (e, stack) {
+        if (kDebugMode) {
+          print('⚠️ Failed to load user preferences or view mode: $e');
+          print(stack);
+        }
+      }
+    }
+
     _isReady = true;
   }
-
-  static bool get isReady => _isReady;
 }

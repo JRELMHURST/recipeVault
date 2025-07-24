@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
+import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
+import 'package:recipe_vault/services/user_session_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -34,6 +36,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       await AuthService().registerWithEmail(email, password);
+      await UserSessionService.init();
+      await VaultRecipeService.loadAndMergeAllRecipes(); // ✅ Load after registration
+
       await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
@@ -58,6 +63,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
         return;
       }
+
+      await UserSessionService.init();
+      await VaultRecipeService.loadAndMergeAllRecipes(); // ✅ Load global + personal recipes
 
       await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return;

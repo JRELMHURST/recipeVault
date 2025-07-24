@@ -5,6 +5,7 @@ import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/services/user_session_service.dart';
+import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -44,15 +45,13 @@ class _LoginScreenState extends State<LoginScreen> {
       final password = passwordController.text.trim();
       await AuthService().signInWithEmail(email, password);
       await UserSessionService.init();
+      await VaultRecipeService.loadAndMergeAllRecipes(); // ✅ Load vault recipes after login
+
       if (!mounted) return;
-
-      // ⌨️ Dismiss keyboard before navigating
       FocusManager.instance.primaryFocus?.unfocus();
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
 
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+      Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;
       final message = _friendlyAuthError(e);
@@ -77,11 +76,11 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       await UserSessionService.init();
-      if (!mounted) return;
+      await VaultRecipeService.loadAndMergeAllRecipes(); // ✅ Load recipes after login
 
-      // ⌨️ Dismiss keyboard before navigating
+      if (!mounted) return;
       FocusManager.instance.primaryFocus?.unfocus();
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
 
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {

@@ -10,6 +10,8 @@ class UserPreferencesService {
   static const List<String> _bubbleKeys = ['scan', 'viewToggle', 'longPress'];
 
   static late Box _box;
+  static Box? get _safeBox =>
+      (_box.isOpen && Hive.isBoxOpen(_box.name)) ? _box : null;
 
   static Future<void> init() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -30,20 +32,25 @@ class UserPreferencesService {
   }
 
   static Future<void> saveViewMode(ViewMode mode) async {
-    await _box.put(_keyViewMode, mode.index);
-    if (kDebugMode) print('💾 Saved view mode: ${mode.name}');
+    final box = _safeBox;
+    if (box != null) {
+      await box.put(_keyViewMode, mode.index);
+      if (kDebugMode) print('💾 Saved view mode: ${mode.name}');
+    }
   }
 
   static Future<ViewMode> getSavedViewMode() async {
+    final box = _safeBox;
     final index =
-        _box.get(_keyViewMode, defaultValue: ViewMode.grid.index) as int;
+        box?.get(_keyViewMode, defaultValue: ViewMode.grid.index) as int? ?? 0;
     final mode = ViewMode.values[index];
     if (kDebugMode) print('📥 Loaded view mode: ${mode.name}');
     return mode;
   }
 
   static Future<void> markVaultTutorialCompleted() async {
-    await _box.put(_keyVaultTutorialComplete, true);
+    final box = _safeBox;
+    if (box != null) await box.put(_keyVaultTutorialComplete, true);
   }
 
   static Future<void> maybeMarkTutorialCompleted() async {
@@ -54,16 +61,23 @@ class UserPreferencesService {
   }
 
   static Future<bool> hasCompletedVaultTutorial() async {
-    return _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
+    final box = _safeBox;
+    return box?.get(_keyVaultTutorialComplete, defaultValue: false) as bool? ??
+        false;
   }
 
   static Future<void> markBubbleDismissed(String key) async {
-    await _box.put('bubbleDismissed_$key', true);
-    await maybeMarkTutorialCompleted();
+    final box = _safeBox;
+    if (box != null) {
+      await box.put('bubbleDismissed_$key', true);
+      await maybeMarkTutorialCompleted();
+    }
   }
 
   static Future<bool> hasDismissedBubble(String key) async {
-    return _box.get('bubbleDismissed_$key', defaultValue: false) as bool;
+    final box = _safeBox;
+    return box?.get('bubbleDismissed_$key', defaultValue: false) as bool? ??
+        false;
   }
 
   static Future<bool> shouldShowBubble(String key) async {
@@ -73,16 +87,21 @@ class UserPreferencesService {
   }
 
   static Future<void> resetBubbles() async {
-    for (final key in _bubbleKeys) {
-      await _box.delete('bubbleDismissed_$key');
+    final box = _safeBox;
+    if (box != null) {
+      for (final key in _bubbleKeys) {
+        await box.delete('bubbleDismissed_$key');
+      }
     }
   }
 
   static Future<void> ensureBubbleFlagTriggeredIfEligible(String tier) async {
+    final box = _safeBox;
     final hasShownBubblesOnce =
-        _box.get(_keyBubblesShownOnce, defaultValue: false) as bool;
+        box?.get(_keyBubblesShownOnce, defaultValue: false) as bool? ?? false;
     final tutorialComplete =
-        _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
+        box?.get(_keyVaultTutorialComplete, defaultValue: false) as bool? ??
+        false;
 
     if (kDebugMode) {
       print(
@@ -92,57 +111,71 @@ class UserPreferencesService {
 
     if (tier == 'free' && !hasShownBubblesOnce) {
       await resetBubbles();
-      await _box.put(_keyBubblesShownOnce, true);
+      if (box != null) await box.put(_keyBubblesShownOnce, true);
       if (kDebugMode) print('🆕 Bubbles triggered for free tier (first time)');
     }
   }
 
-  static Future<bool> get hasShownBubblesOnce async =>
-      _box.get(_keyBubblesShownOnce, defaultValue: false) as bool;
+  static Future<bool> get hasShownBubblesOnce async {
+    final box = _safeBox;
+    return box?.get(_keyBubblesShownOnce, defaultValue: false) as bool? ??
+        false;
+  }
 
-  static Future<void> markBubblesShown() async =>
-      await _box.put(_keyBubblesShownOnce, true);
+  static Future<void> markBubblesShown() async {
+    final box = _safeBox;
+    if (box != null) await box.put(_keyBubblesShownOnce, true);
+  }
 
   static Future<void> markAsNewUser() async {
-    await _box.delete(_keyVaultTutorialComplete);
-    await _box.delete(_keyBubblesShownOnce);
-    for (final key in _bubbleKeys) {
-      await _box.delete('bubbleDismissed_$key');
-    }
-    if (kDebugMode) {
-      print('🎯 User marked as new → all onboarding flags cleared');
+    final box = _safeBox;
+    if (box != null) {
+      await box.delete(_keyVaultTutorialComplete);
+      await box.delete(_keyBubblesShownOnce);
+      for (final key in _bubbleKeys) {
+        await box.delete('bubbleDismissed_$key');
+      }
+      if (kDebugMode) {
+        print('🎯 User marked as new → all onboarding flags cleared');
+      }
     }
   }
 
   static Future<void> clearAll() async {
-    final boxName = _box.name;
+    final name = _safeBox?.name;
+    if (name == null) return;
     try {
-      if (Hive.isBoxOpen(boxName)) {
-        await Hive.box(boxName).close();
+      if (Hive.isBoxOpen(name)) {
+        await Hive.box(name).close();
       }
-      await Hive.deleteBoxFromDisk(boxName);
-      if (kDebugMode) {
-        print('🧼 Hive box "$boxName" closed and deleted from disk');
-      }
+      await Hive.deleteBoxFromDisk(name);
+      if (kDebugMode) print('🧼 Hive box "$name" closed and deleted from disk');
     } catch (e) {
       if (kDebugMode) print('⚠️ Hive box deletion failed: $e');
     }
   }
 
-  static dynamic get(String key) => _box.get(key);
+  static dynamic get(String key) => _safeBox?.get(key);
 
-  static Future<void> set(String key, dynamic value) async =>
-      await _box.put(key, value);
+  static Future<void> set(String key, dynamic value) async {
+    final box = _safeBox;
+    if (box != null) await box.put(key, value);
+  }
 
-  static Future<void> setBool(String key, bool value) async =>
-      await _box.put(key, value);
+  static Future<void> setBool(String key, bool value) async {
+    final box = _safeBox;
+    if (box != null) await box.put(key, value);
+  }
 
   static Future<void> waitForBubbleFlags() async {
     await Future.delayed(const Duration(milliseconds: 200));
   }
 
   static Future<void> markUserAsNew() async {
-    await _box.put('isNewUser', true);
-    if (kDebugMode) print('🆕 markUserAsNew → Hive only');
+    final box = _safeBox;
+    if (box != null) {
+      await box.put('isNewUser', true);
+      if (kDebugMode) print('🆕 markUserAsNew → Hive only');
+    }
   }
 }

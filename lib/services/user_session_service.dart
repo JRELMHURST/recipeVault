@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive/hive.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/rev_cat/purchase_helper.dart';
@@ -75,28 +74,16 @@ class UserSessionService {
     _logDebug('🔄 Session reset');
   }
 
-  /// Call on logout
+  /// Call on logout – no Hive clearing here
   static Future<void> logoutReset() async {
     _logDebug('👋 Logging out and resetting session...');
     await VaultRecipeService.clearCache();
     await CategoryService.clearCache();
     await SubscriptionService().reset();
 
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _logDebug('⚠️ Cannot reset session – no signed-in user');
-      return;
-    }
-    final uid = user.uid;
-    final boxName = 'userPrefs_$uid';
-
-    if (Hive.isBoxOpen(boxName)) {
-      await Hive.box(boxName).close();
-    }
-
     _isInitialised = false;
     _bubbleFlagsReady = null;
-    _logDebug('🧹 Session fully cleared for user: $uid');
+    _logDebug('🧹 Session fully cleared');
   }
 
   /// 🧾 Retry syncing entitlements (e.g. after paywall purchase)

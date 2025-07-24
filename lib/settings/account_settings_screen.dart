@@ -172,21 +172,22 @@ class AccountSettingsScreen extends StatelessWidget {
       );
 
       try {
-        await _cleanupUserPrefs();
+        // ✅ Sign out only – do not clear Hive (userPrefs remain intact)
         await FirebaseAuth.instance.signOut();
+
         if (context.mounted) {
-          Navigator.pop(context);
+          Navigator.pop(context); // dismiss loading
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('Signed out')));
           Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
         }
       } catch (e) {
-        Navigator.pop(context);
+        Navigator.pop(context); // dismiss loading
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('Sign out failed: \$e')));
+          ).showSnackBar(SnackBar(content: Text('Sign out failed: $e')));
         }
       }
     }

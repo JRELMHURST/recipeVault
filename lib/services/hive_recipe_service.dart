@@ -9,6 +9,7 @@ class HiveRecipeService {
   static String get _boxName => 'recipes_$_uid';
 
   static Box<RecipeCardModel>? _box;
+  static bool _hasLoggedReuse = false;
 
   /// 📦 Call this once before any recipe access
   static Future<void> init() async {
@@ -17,7 +18,10 @@ class HiveRecipeService {
       debugPrint('📦 Hive box opened: $_boxName');
     } else {
       _box = Hive.box<RecipeCardModel>(_boxName);
-      debugPrint('📦 Hive box reused: $_boxName');
+      if (!_hasLoggedReuse) {
+        debugPrint('📦 Hive box reused: $_boxName');
+        _hasLoggedReuse = true;
+      }
     }
   }
 
@@ -30,7 +34,7 @@ class HiveRecipeService {
     return _box!;
   }
 
-  /// ✅ NEW: For external use to get box manually (e.g. in services)
+  /// ✅ Expose box externally (e.g. VaultRecipeService)
   static Future<Box<RecipeCardModel>> getBox() async {
     await init();
     return box;
@@ -73,7 +77,7 @@ class HiveRecipeService {
         .doc(recipe.id)
         .update({'isFavourite': recipe.isFavourite});
 
-    await save(recipe); // re-save locally
+    await save(recipe);
   }
 
   /// 🔄 Sync categories field to Firestore
@@ -88,7 +92,7 @@ class HiveRecipeService {
         .doc(recipe.id)
         .update({'categories': recipe.categories});
 
-    await save(recipe); // re-save locally
+    await save(recipe);
   }
 
   /// 🧹 Delete recipe box for a specific user (e.g. during account deletion)

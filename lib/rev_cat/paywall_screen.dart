@@ -242,42 +242,65 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             ),
                           const SizedBox(height: 32),
                           Center(
-                            child: RichText(
-                              textAlign: TextAlign.center,
-                              text: TextSpan(
-                                style: theme.textTheme.bodySmall,
-                                children: [
-                                  const TextSpan(
-                                    text: 'By subscribing, you agree to our ',
-                                  ),
-                                  TextSpan(
-                                    text: 'Terms of Use',
-                                    style: const TextStyle(
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () => launchUrl(
-                                        Uri.parse(
-                                          'https://badger-creations.co.uk/terms',
-                                        ),
+                            child: Column(
+                              children: [
+                                RichText(
+                                  textAlign: TextAlign.center,
+                                  text: TextSpan(
+                                    style: theme.textTheme.bodySmall,
+                                    children: [
+                                      const TextSpan(
+                                        text:
+                                            'By subscribing, you agree to our ',
                                       ),
-                                  ),
-                                  const TextSpan(text: ' and '),
-                                  TextSpan(
-                                    text: 'Privacy Policy',
-                                    style: const TextStyle(
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () => launchUrl(
-                                        Uri.parse(
-                                          'https://badger-creations.co.uk/privacy',
+                                      TextSpan(
+                                        text: 'Terms of Use',
+                                        style: const TextStyle(
+                                          decoration: TextDecoration.underline,
                                         ),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = () => launchUrl(
+                                            Uri.parse(
+                                              'https://badger-creations.co.uk/terms',
+                                            ),
+                                          ),
                                       ),
+                                      const TextSpan(text: ' and '),
+                                      TextSpan(
+                                        text: 'Privacy Policy',
+                                        style: const TextStyle(
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                        recognizer: TapGestureRecognizer()
+                                          ..onTap = () => launchUrl(
+                                            Uri.parse(
+                                              'https://badger-creations.co.uk/privacy',
+                                            ),
+                                          ),
+                                      ),
+                                      const TextSpan(text: '.'),
+                                    ],
                                   ),
-                                  const TextSpan(text: '.'),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Subscriptions auto-renew unless cancelled 24h before the end of the period.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Manage or cancel anytime via your Apple ID settings.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.grey,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
                           ),
                         ],

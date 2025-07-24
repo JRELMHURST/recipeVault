@@ -50,8 +50,6 @@ class _LoginScreenState extends State<LoginScreen> {
       FocusManager.instance.primaryFocus?.unfocus();
       await Future.delayed(Duration(milliseconds: 100));
 
-      await UserSessionService.init();
-
       if (context.mounted) {
         Navigator.pushReplacementNamed(context, '/home');
       }

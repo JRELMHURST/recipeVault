@@ -24,9 +24,15 @@ class _HomeScreenState extends State<HomeScreen> {
   ViewMode _viewMode = ViewMode.grid;
   final PageStorageBucket _bucket = PageStorageBucket();
 
+  late final SubscriptionService _subscriptionService;
+  late final VoidCallback _tierListener;
+  bool _isProcessing = false;
+
   @override
   void initState() {
     super.initState();
+    _subscriptionService = SubscriptionService();
+    _tierListener = _onTierChanged;
     _initialisePreferencesAndPrompt();
   }
 
@@ -34,24 +40,27 @@ class _HomeScreenState extends State<HomeScreen> {
     _viewMode = await ViewModeService.getViewMode();
     if (mounted) setState(() {});
 
-    final subService = SubscriptionService();
-    await subService.refresh();
+    await _subscriptionService.refresh();
     if (!mounted) return;
 
-    if (subService.tier != 'none') {
-      if (subService.canStartTrial) {
-        await TrialPromptHelper.checkAndPromptTrial(context);
-      }
+    if (_subscriptionService.canStartTrial) {
+      await TrialPromptHelper.checkAndPromptTrial(context);
     } else {
-      void tierListener() async {
-        if (subService.tier != 'none' && subService.canStartTrial) {
-          await TrialPromptHelper.checkAndPromptTrial(context);
-          subService.tierNotifier.removeListener(tierListener);
-        }
-      }
-
-      subService.tierNotifier.addListener(tierListener);
+      _subscriptionService.tierNotifier.addListener(_tierListener);
     }
+  }
+
+  void _onTierChanged() async {
+    if (_subscriptionService.canStartTrial) {
+      await TrialPromptHelper.checkAndPromptTrial(context);
+      _subscriptionService.tierNotifier.removeListener(_tierListener);
+    }
+  }
+
+  @override
+  void dispose() {
+    _subscriptionService.tierNotifier.removeListener(_tierListener);
+    super.dispose();
   }
 
   void _toggleViewMode() {
@@ -64,12 +73,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onNavTap(int index) async {
-    if (index == 0) {
-      final canCreate = SubscriptionService().allowImageUpload;
+    if (index == 0 && !_isProcessing) {
+      _isProcessing = true;
+
+      final canCreate = _subscriptionService.allowImageUpload;
       if (!canCreate) {
         HapticFeedback.mediumImpact();
-
-        final showTrial = SubscriptionService().canStartTrial;
+        final showTrial = _subscriptionService.canStartTrial;
 
         await showDialog(
           context: context,
@@ -96,6 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
 
+        _isProcessing = false;
         return;
       }
 
@@ -105,6 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       setState(() => _selectedIndex = 1); // fallback to vault
+      _isProcessing = false;
     } else {
       setState(() => _selectedIndex = index);
     }

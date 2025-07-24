@@ -93,14 +93,11 @@ class UserPreferencesService {
   }
 
   static Future<bool> hasCompletedVaultTutorial() async {
-    final local =
-        _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
-    return local;
+    return _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
   }
 
   static Future<void> resetVaultTutorial({bool localOnly = true}) async {
     await _box.delete(_keyVaultTutorialComplete);
-
     if (!localOnly) {
       try {
         final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -137,8 +134,7 @@ class UserPreferencesService {
   }
 
   static Future<bool> hasDismissedBubble(String key) async {
-    final local = _box.get('bubbleDismissed_$key', defaultValue: false) as bool;
-    return local;
+    return _box.get('bubbleDismissed_$key', defaultValue: false) as bool;
   }
 
   static Future<bool> shouldShowBubble(String key) async {
@@ -213,7 +209,18 @@ class UserPreferencesService {
   static Future<void> markBubblesShown() async =>
       await _box.put(_keyBubblesShownOnce, true);
 
-  static Future<void> clearAll() async => await _box.clear();
+  static Future<void> clearAll() async {
+    final name = _boxName;
+    try {
+      if (Hive.isBoxOpen(name)) {
+        await Hive.box(name).close();
+      }
+      await Hive.deleteBoxFromDisk(name);
+      if (kDebugMode) print('🧼 Hive box "$name" closed and deleted from disk');
+    } catch (e) {
+      if (kDebugMode) print('⚠️ Hive box deletion failed: $e');
+    }
+  }
 
   static dynamic get(String key) => _box.get(key);
 

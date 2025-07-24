@@ -142,7 +142,7 @@ class AccountSettingsScreen extends StatelessWidget {
   Future<void> _cleanupUserPrefs() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    final boxName = 'userPrefs_\$uid';
+    final boxName = 'userPrefs_$uid';
     if (Hive.isBoxOpen(boxName)) {
       await Hive.box(boxName).close();
     }

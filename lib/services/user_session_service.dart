@@ -11,70 +11,87 @@ import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/services/category_service.dart';
 
 class UserSessionService {
-  static bool isInitialised = false;
-  static final Completer<void> _bubbleFlagsReady = Completer<void>();
+  static bool _isInitialised = false;
+  static Completer<void>? _bubbleFlagsReady;
 
-  static bool get hasInitialised => isInitialised;
+  static bool get isInitialised => _isInitialised;
 
   /// Call on app launch or login
   static Future<void> init() async {
-    if (isInitialised) return;
+    if (_isInitialised) return;
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    // 🚫 Ensure we're not still using the guest box
-    if (Hive.isBoxOpen('userPrefs_guest')) {
-      await Hive.box('userPrefs_guest').close();
-      if (kDebugMode) print('🧹 Closed guest box (login detected)');
+    if (user == null || user.isAnonymous) {
+      _logDebug('⚠️ No valid signed-in user – skipping session init');
+      return;
     }
 
-    // 🧠 Reopen correct Hive box for current UID
-    await UserPreferencesService.init();
-
+    _bubbleFlagsReady = Completer<void>();
     _logDebug('👤 Initialising session for UID: ${user.uid}');
 
     try {
+      // 🧹 Close guest box if still open
+      if (Hive.isBoxOpen('userPrefs_guest')) {
+        await Hive.box('userPrefs_guest').close();
+        _logDebug('🧹 Closed guest box (login detected)');
+      }
+
+      // 📦 Open correct Hive prefs box
+      await UserPreferencesService.init();
+
       // ✅ Ensure Firestore user doc exists
       await AuthService.ensureUserDocumentIfMissing(user);
 
-      // 🧾 Sync entitlements
+      // 🎟️ Sync entitlements
       await syncRevenueCatEntitlement();
       await SubscriptionService().refresh();
 
       final tier = SubscriptionService().tier;
       _logDebug('🎟️ Tier resolved: $tier');
 
-      // 🧠 Check and trigger bubble tutorial
+      // 🫧 Check and trigger onboarding bubbles
       _logDebug('🫧 Checking onboarding bubble trigger...');
       await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(tier);
-      _bubbleFlagsReady.complete();
+      _bubbleFlagsReady?.complete();
       _logDebug('✅ Bubble trigger check complete');
 
-      // 📂 Preload local data
+      // 📂 Load categories + vault
       _logDebug('📂 Loading categories...');
       await CategoryService.load();
 
       _logDebug('📂 Loading vault recipes...');
       await VaultRecipeService.load();
 
-      // ✅ Fully initialised
-      isInitialised = true;
+      _isInitialised = true;
       _logDebug('✅ User session initialisation complete');
-    } catch (e) {
+    } catch (e, stack) {
       _logDebug('❌ Error during UserSession init: $e');
+      if (kDebugMode) print(stack);
     }
   }
 
   static Future<void> reset() async {
-    isInitialised = false;
+    _isInitialised = false;
+    _bubbleFlagsReady = null;
     _logDebug('🔄 Session reset');
   }
 
-  static void _logDebug(String message) {
-    if (kDebugMode) {
-      print('🔐 [UserSessionService] $message');
+  /// Call on logout
+  static Future<void> logoutReset() async {
+    _logDebug('👋 Logging out and resetting session...');
+    await VaultRecipeService.clearCache();
+    await CategoryService.clearCache();
+    await SubscriptionService().reset();
+
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
+    final boxName = 'userPrefs_$uid';
+    if (Hive.isBoxOpen(boxName)) {
+      await Hive.box(boxName).close();
     }
+
+    _isInitialised = false;
+    _bubbleFlagsReady = null;
+    _logDebug('🧹 Session fully cleared for user: $uid');
   }
 
   /// 🧾 Retry syncing entitlements (e.g. after paywall purchase)
@@ -115,5 +132,12 @@ class UserSessionService {
   }
 
   /// ⏳ Wait for bubble flags to be initialised
-  static Future<void> waitForBubbleFlags() => _bubbleFlagsReady.future;
+  static Future<void> waitForBubbleFlags() =>
+      _bubbleFlagsReady?.future ?? Future.value();
+
+  static void _logDebug(String message) {
+    if (kDebugMode) {
+      print('🔐 [UserSessionService] $message');
+    }
+  }
 }

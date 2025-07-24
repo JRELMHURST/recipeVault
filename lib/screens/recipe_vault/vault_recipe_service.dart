@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 
@@ -101,9 +102,24 @@ class VaultRecipeService {
     }
   }
 
-  /// ✅ Load recipes from Firestore and cache to Hive
+  /// Load recipes from Firestore and cache to Hive
   static Future<void> load() async {
     await loadAndMergeAllRecipes();
     debugPrint('📦 VaultRecipeService.load complete');
+  }
+
+  /// Clear cached Hive recipe data (used on logout or reset)
+  static Future<void> clearCache() async {
+    try {
+      final box = await Hive.openBox<RecipeCardModel>('recipes');
+      await box.clear();
+      if (kDebugMode) {
+        print('🧹 VaultRecipeService cache cleared');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('⚠️ Failed to clear recipe cache: $e');
+      }
+    }
   }
 }

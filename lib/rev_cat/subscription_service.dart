@@ -126,7 +126,8 @@ class SubscriptionService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void reset() {
+  /// 🔁 Awaitable reset to clear all state
+  Future<void> reset() async {
     _tier = 'free';
     _entitlementId = 'none';
     _activeEntitlement = null;
@@ -134,6 +135,10 @@ class SubscriptionService extends ChangeNotifier {
     _isSuperUser = false;
     _firestoreTrialActive = null;
     tierNotifier.value = _tier;
+
+    // Optionally clear RevenueCat cache too
+    await Purchases.invalidateCustomerInfoCache();
+
     notifyListeners();
   }
 
@@ -162,7 +167,7 @@ class SubscriptionService extends ChangeNotifier {
         );
       }
 
-      // Fallback: Check Firestore only for free/taster tier users
+      // Fallback: Firestore check for taster/free
       if (_tier == 'free' || _tier == 'taster') {
         final doc = await FirebaseFirestore.instance
             .collection('users')
@@ -177,12 +182,12 @@ class SubscriptionService extends ChangeNotifier {
             _tier = fallbackTier;
             tierNotifier.value = _tier;
           }
+
           _firestoreTrialActive = data['trialActive'] == true;
           debugPrint('📄 Firestore trialActive: $_firestoreTrialActive');
         }
       }
 
-      /// ✅ Onboarding trigger for eligible free users
       await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(_tier);
 
       _isSuperUser = await _fetchSuperUserFlag();

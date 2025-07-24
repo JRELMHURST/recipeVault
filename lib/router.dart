@@ -3,84 +3,74 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 
 // Core
-import 'package:recipe_vault/core/theme.dart';
-import 'package:recipe_vault/core/theme_notifier.dart';
-import 'package:recipe_vault/core/text_scale_notifier.dart';
+import 'core/theme.dart';
+import 'core/theme_notifier.dart';
+import 'core/text_scale_notifier.dart';
 
 // Auth Screens
-import 'package:recipe_vault/login/login_screen.dart';
-import 'package:recipe_vault/login/register_screen.dart';
-import 'package:recipe_vault/login/change_password.dart';
+import 'login/login_screen.dart';
+import 'login/register_screen.dart';
+import 'login/change_password.dart';
 
 // Main Screens
-import 'package:recipe_vault/screens/home_screen/home_screen.dart';
-import 'package:recipe_vault/screens/results_screen.dart';
-import 'package:recipe_vault/screens/shared/shared_recipe_screen.dart';
+import 'screens/home_screen/home_screen.dart';
+import 'screens/results_screen.dart';
+import 'screens/shared/shared_recipe_screen.dart';
 
 // Settings
-import 'package:recipe_vault/settings/settings_screen.dart';
-import 'package:recipe_vault/settings/account_settings_screen.dart';
-import 'package:recipe_vault/settings/appearance_settings_screen.dart';
-import 'package:recipe_vault/settings/notifications_settings_screen.dart';
-import 'package:recipe_vault/settings/about_screen.dart';
-import 'package:recipe_vault/settings/storage_sync_screen.dart';
+import 'settings/settings_screen.dart';
+import 'settings/account_settings_screen.dart';
+import 'settings/appearance_settings_screen.dart';
+import 'settings/notifications_settings_screen.dart';
+import 'settings/about_screen.dart';
+import 'settings/storage_sync_screen.dart';
 
 // Subscription
-import 'package:recipe_vault/rev_cat/paywall_screen.dart';
-import 'package:recipe_vault/rev_cat/trial_ended_screen.dart';
+import 'rev_cat/paywall_screen.dart';
+import 'rev_cat/trial_ended_screen.dart';
 
-// Controllers
-import 'package:recipe_vault/screens/recipe_vault/recipe_vault_controller.dart';
-import 'package:recipe_vault/start_up_gate.dart';
+/// Global Navigator Key (optional if needed for navigation without context)
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
-  final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
-  final textScaleNotifier = Provider.of<TextScaleNotifier>(
-    context,
-    listen: false,
-  );
+/// Custom route generator
+Route<dynamic> generateRoute(RouteSettings settings) {
+  final user = FirebaseAuth.instance.currentUser;
 
-  return {
-    '/': (context) {
-      final user = FirebaseAuth.instance.currentUser;
-      return user == null
-          ? const LoginScreen()
-          : StartupGate(
-              child: ChangeNotifierProvider(
-                create: (_) => RecipeVaultController()..initialise(),
-                child: const HomeScreen(),
-              ),
-            );
-    },
-    '/login': (context) => const LoginScreen(),
-    '/register': (context) => const RegisterScreen(),
+  // Handle shared recipe deep link
+  if (settings.name?.startsWith('/shared/') == true) {
+    final recipeId = settings.name!.split('/').last;
+    return MaterialPageRoute(
+      builder: (_) => SharedRecipeScreen(recipeId: recipeId),
+      settings: settings,
+    );
+  }
 
-    '/home': (context) => ChangeNotifierProvider(
-      create: (_) => RecipeVaultController()..initialise(),
-      child: const HomeScreen(),
-    ),
-
-    '/results': (context) => const ResultsScreen(),
+  // Route map
+  final routes = <String, WidgetBuilder>{
+    '/': (_) => user == null ? const LoginScreen() : const HomeScreen(),
+    '/login': (_) => const LoginScreen(),
+    '/register': (_) => const RegisterScreen(),
+    '/home': (_) => const HomeScreen(),
+    '/results': (_) => const ResultsScreen(),
 
     // Settings
-    '/settings': (context) => const SettingsScreen(),
-    '/settings/account': (context) => const AccountSettingsScreen(),
-    '/settings/account/change-password': (context) =>
-        const ChangePasswordScreen(),
+    '/settings': (_) => const SettingsScreen(),
+    '/settings/account': (_) => const AccountSettingsScreen(),
+    '/settings/account/change-password': (_) => const ChangePasswordScreen(),
     '/settings/appearance': (context) => AppearanceSettingsScreen(
-      themeNotifier: themeNotifier,
-      textScaleNotifier: textScaleNotifier,
+      themeNotifier: Provider.of<ThemeNotifier>(context, listen: false),
+      textScaleNotifier: Provider.of<TextScaleNotifier>(context, listen: false),
     ),
-    '/settings/notifications': (context) => const NotificationsSettingsScreen(),
-    '/settings/about': (context) => const AboutSettingsScreen(),
-    '/settings/storage': (context) => const StorageSyncScreen(),
+    '/settings/notifications': (_) => const NotificationsSettingsScreen(),
+    '/settings/about': (_) => const AboutSettingsScreen(),
+    '/settings/storage': (_) => const StorageSyncScreen(),
 
     // Subscription
-    '/paywall': (context) => const PaywallScreen(),
-    '/trial-ended': (context) => const TrialEndedScreen(),
+    '/paywall': (_) => const PaywallScreen(),
+    '/trial-ended': (_) => const TrialEndedScreen(),
 
-    // Invalid shared links
-    '/shared': (context) => const Scaffold(
+    // Fallback invalid shared link
+    '/shared': (_) => const Scaffold(
       body: Center(
         child: Text(
           'Please use a valid shared recipe link.',
@@ -89,37 +79,24 @@ Map<String, WidgetBuilder> buildRoutes(BuildContext context) {
       ),
     ),
   };
-}
 
-Route<dynamic> generateRoute(RouteSettings settings) {
-  if (settings.name?.startsWith('/shared/') == true) {
-    final recipeId = settings.name!.split('/').last;
-    return MaterialPageRoute(
-      builder: (context) => SharedRecipeScreen(recipeId: recipeId),
-      settings: settings,
-    );
-  }
-
-  final routes = buildRoutes(navigatorKey.currentContext!);
   final builder = routes[settings.name];
   return MaterialPageRoute(
-    builder: (context) => builder != null
-        ? builder(context)
-        : const Scaffold(
-            body: Center(
-              child: Text(
-                '404 – Page not found',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-              ),
+    builder:
+        builder ??
+        (_) => const Scaffold(
+          body: Center(
+            child: Text(
+              '404 – Page not found',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
             ),
           ),
+        ),
     settings: settings,
   );
 }
 
-// Optional: Global navigator key (if needed)
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
+/// Builds the full app with theme, localisation, and router
 Widget buildAppWithRouter() {
   return Builder(
     builder: (context) {

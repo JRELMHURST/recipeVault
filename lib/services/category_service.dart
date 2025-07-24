@@ -131,4 +131,20 @@ class CategoryService {
     final box = Hive.box<String>(_hiddenDefaultBox);
     return box.values.toList();
   }
+
+  /// 🔄 Clear category cache from Hive (used on logout/reset)
+  static Future<void> clearCache() async {
+    try {
+      if (Hive.isBoxOpen(_customBoxName)) {
+        await Hive.box(_customBoxName).clear();
+        debugPrint('🧹 Cleared $_customBoxName');
+      }
+      if (Hive.isBoxOpen(_hiddenDefaultBox)) {
+        await Hive.box<String>(_hiddenDefaultBox).clear();
+        debugPrint('🧹 Cleared $_hiddenDefaultBox');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to clear category cache: $e');
+    }
+  }
 }

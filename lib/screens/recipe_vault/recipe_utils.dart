@@ -16,8 +16,9 @@ String formatRecipeMarkdown(RecipeCardModel recipe) {
       })
       .join("\n");
 
-  final hints = recipe.hints.isNotEmpty
-      ? recipe.hints.map((h) => "- $h").join("\n")
+  final hintsList = recipe.hints;
+  final hints = hintsList.isNotEmpty
+      ? hintsList.map((h) => "- $h").join("\n")
       : "- No additional tips provided.";
 
   return '''

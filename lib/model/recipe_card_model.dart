@@ -51,15 +51,18 @@ class RecipeCardModel extends HiveObject {
     required this.title,
     required this.ingredients,
     required this.instructions,
+    DateTime? createdAt,
     this.imageUrl,
-    this.categories = const [],
+    List<String>? categories,
     this.isFavourite = false,
-    this.originalImageUrls = const [],
-    this.hints = const [],
+    List<String>? originalImageUrls,
+    List<String>? hints,
     this.translationUsed = false,
     this.isGlobal = false,
-    DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+  }) : categories = categories ?? const [],
+       originalImageUrls = originalImageUrls ?? const [],
+       hints = hints ?? const [],
+       createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -90,19 +93,21 @@ class RecipeCardModel extends HiveObject {
     }
 
     return RecipeCardModel(
-      id: json['id'] as String,
-      userId: json['userId'] as String? ?? '',
-      title: json['title'] as String,
-      ingredients: List<String>.from(json['ingredients'] ?? []),
-      instructions: List<String>.from(json['instructions'] ?? []),
+      id: json['id'] ?? '',
+      userId: json['userId'] ?? '',
+      title: json['title'] ?? '',
+      ingredients: List<String>.from(json['ingredients'] ?? const []),
+      instructions: List<String>.from(json['instructions'] ?? const []),
       createdAt: parsedCreatedAt,
-      imageUrl: json['imageUrl'] as String?,
-      categories: List<String>.from(json['categories'] ?? []),
-      isFavourite: json['isFavourite'] as bool? ?? false,
-      originalImageUrls: List<String>.from(json['originalImageUrls'] ?? []),
-      hints: List<String>.from(json['hints'] ?? []),
-      translationUsed: json['translationUsed'] as bool? ?? false,
-      isGlobal: json['isGlobal'] as bool? ?? false,
+      imageUrl: json['imageUrl'],
+      categories: List<String>.from(json['categories'] ?? const []),
+      isFavourite: json['isFavourite'] ?? false,
+      originalImageUrls: List<String>.from(
+        json['originalImageUrls'] ?? const [],
+      ),
+      hints: List<String>.from(json['hints'] ?? const []),
+      translationUsed: json['translationUsed'] ?? false,
+      isGlobal: json['isGlobal'] ?? false,
     );
   }
 
@@ -139,24 +144,21 @@ class RecipeCardModel extends HiveObject {
       instructions: instructions,
       createdAt: createdAt,
       imageUrl: imageUrl ?? this.imageUrl,
-      categories: categories ?? this.categories,
       isFavourite: isFavourite ?? this.isFavourite,
       originalImageUrls: originalImageUrls ?? this.originalImageUrls,
       hints: hints ?? this.hints,
       translationUsed: translationUsed ?? this.translationUsed,
+      categories: categories ?? this.categories,
       isGlobal: isGlobal ?? this.isGlobal,
     );
   }
 
-  /// Quickly create a copy with a new image URL
   RecipeCardModel withUpdatedImageUrl(String url) {
     return copyWith(imageUrl: url);
   }
 
-  /// Returns true if a recipe has a main image
   bool get hasImage => imageUrl?.isNotEmpty ?? false;
 
-  /// Useful for sharing or plain text export
   String get formattedText {
     final ingredientsStr = ingredients.join('\n• ');
     final instructionsStr = instructions
@@ -164,10 +166,18 @@ class RecipeCardModel extends HiveObject {
         .entries
         .map((e) => '${e.key + 1}. ${e.value}')
         .join('\n\n');
-
     return 'Ingredients:\n• $ingredientsStr\n\nInstructions:\n$instructionsStr';
   }
 
-  /// Shortcut check for the 'Translated' category
   bool get isTranslated => categories.contains('Translated');
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RecipeCardModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

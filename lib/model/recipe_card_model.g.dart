@@ -22,14 +22,14 @@ class RecipeCardModelAdapter extends TypeAdapter<RecipeCardModel> {
       title: fields[2] as String,
       ingredients: (fields[3] as List).cast<String>(),
       instructions: (fields[4] as List).cast<String>(),
+      createdAt: fields[5] as DateTime?,
       imageUrl: fields[6] as String?,
-      categories: (fields[7] as List).cast<String>(),
+      categories: (fields[7] as List?)?.cast<String>(),
       isFavourite: fields[8] as bool,
-      originalImageUrls: (fields[9] as List).cast<String>(),
-      hints: (fields[10] as List).cast<String>(),
+      originalImageUrls: (fields[9] as List?)?.cast<String>(),
+      hints: (fields[10] as List?)?.cast<String>(),
       translationUsed: fields[11] as bool,
       isGlobal: fields[12] as bool,
-      createdAt: fields[5] as DateTime?,
     );
   }
 

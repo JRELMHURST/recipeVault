@@ -25,7 +25,7 @@ class RecipeChipFilterBar extends StatelessWidget {
   static const _protectedDefaults = ['Breakfast', 'Main', 'Dessert'];
 
   bool _isCategoryUsed(String category) {
-    return allRecipes.any((r) => r.categories.contains(category));
+    return allRecipes.any((r) => (r.categories).contains(category));
   }
 
   @override

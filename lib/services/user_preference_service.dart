@@ -1,11 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:recipe_vault/services/view_mode.dart';
 
 class UserPreferencesService {
-  static const String _boxPrefix = 'userPrefs';
   static const String _keyViewMode = 'viewMode';
   static const String _keyVaultTutorialComplete = 'vaultTutorialComplete';
   static const String _keyBubblesShownOnce = 'hasShownBubblesOnce';
@@ -13,41 +11,22 @@ class UserPreferencesService {
 
   static late Box _box;
 
-  static String get _boxName {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
-    final name = '${_boxPrefix}_$uid';
-    if (kDebugMode) print('📦 Box name resolved: $name');
-    return name;
-  }
-
   static Future<void> init() async {
-    if (Hive.isBoxOpen('userPrefs_guest') &&
-        FirebaseAuth.instance.currentUser != null) {
-      await Hive.box('userPrefs_guest').close();
-      if (kDebugMode) print('🧹 Closed guest box');
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      throw Exception(
+        '❌ Cannot initialise UserPreferencesService – no signed-in user',
+      );
     }
 
-    final name = _boxName;
-
-    if (Hive.isBoxOpen(name)) {
-      _box = Hive.box(name);
-      if (kDebugMode) print('📦 Hive box reused: $name');
+    final boxName = 'userPrefs_$uid';
+    if (Hive.isBoxOpen(boxName)) {
+      _box = Hive.box(boxName);
+      if (kDebugMode) print('📦 Hive box reused: $boxName');
     } else {
-      _box = await Hive.openBox(name);
-      if (kDebugMode) print('📦 Hive box opened: $name');
+      _box = await Hive.openBox(boxName);
+      if (kDebugMode) print('📦 Hive box opened: $boxName');
     }
-
-    if (kDebugMode) {
-      print('👤 Firebase UID: ${FirebaseAuth.instance.currentUser?.uid}');
-    }
-  }
-
-  static Future<Box> getBox() async {
-    if (!Hive.isBoxOpen(_boxName)) {
-      _box = await Hive.openBox(_boxName);
-      if (kDebugMode) print('📦 Hive box lazily opened: $_boxName');
-    }
-    return _box;
   }
 
   static Future<void> saveViewMode(ViewMode mode) async {
@@ -63,26 +42,8 @@ class UserPreferencesService {
     return mode;
   }
 
-  static Future<int> getViewMode() async {
-    return _box.get(_keyViewMode, defaultValue: ViewMode.grid.index) as int;
-  }
-
-  static Future<void> setViewMode(int index) async {
-    await _box.put(_keyViewMode, index);
-  }
-
   static Future<void> markVaultTutorialCompleted() async {
     await _box.put(_keyVaultTutorialComplete, true);
-    try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        await FirebaseFirestore.instance.collection('users').doc(uid).set({
-          'onboarding': {'vaultTutorialCompleted': true},
-        }, SetOptions(merge: true));
-      }
-    } catch (e) {
-      if (kDebugMode) print('⚠️ Failed to write onboarding to Firestore: $e');
-    }
   }
 
   static Future<void> maybeMarkTutorialCompleted() async {
@@ -96,41 +57,9 @@ class UserPreferencesService {
     return _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
   }
 
-  static Future<void> resetVaultTutorial({bool localOnly = true}) async {
-    await _box.delete(_keyVaultTutorialComplete);
-    if (!localOnly) {
-      try {
-        final uid = FirebaseAuth.instance.currentUser?.uid;
-        if (uid != null) {
-          await FirebaseFirestore.instance.collection('users').doc(uid).set({
-            'onboarding': {'vaultTutorialCompleted': FieldValue.delete()},
-          }, SetOptions(merge: true));
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          print('⚠️ Failed to delete onboarding from Firestore: $e');
-        }
-      }
-    }
-  }
-
   static Future<void> markBubbleDismissed(String key) async {
     await _box.put('bubbleDismissed_$key', true);
     await maybeMarkTutorialCompleted();
-    try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        await FirebaseFirestore.instance.collection('users').doc(uid).set({
-          'onboarding': {
-            'bubbleDismissals': {key: true},
-          },
-        }, SetOptions(merge: true));
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('⚠️ Failed to write bubble "$key" to Firestore: $e');
-      }
-    }
   }
 
   static Future<bool> hasDismissedBubble(String key) async {
@@ -143,27 +72,9 @@ class UserPreferencesService {
     return !dismissed;
   }
 
-  static Future<void> resetBubbles({bool deleteRemote = false}) async {
+  static Future<void> resetBubbles() async {
     for (final key in _bubbleKeys) {
       await _box.delete('bubbleDismissed_$key');
-    }
-
-    if (deleteRemote) {
-      try {
-        final uid = FirebaseAuth.instance.currentUser?.uid;
-        if (uid != null) {
-          final updates = {
-            for (var key in _bubbleKeys)
-              'onboarding.bubbleDismissals.$key': FieldValue.delete(),
-          };
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .set(updates, SetOptions(merge: true));
-        }
-      } catch (e) {
-        if (kDebugMode) print('⚠️ Failed to delete remote bubbles: $e');
-      }
     }
   }
 
@@ -182,24 +93,7 @@ class UserPreferencesService {
     if (tier == 'free' && !hasShownBubblesOnce) {
       await resetBubbles();
       await _box.put(_keyBubblesShownOnce, true);
-
-      try {
-        final uid = FirebaseAuth.instance.currentUser?.uid;
-        if (uid != null) {
-          await FirebaseFirestore.instance.collection('analytics').add({
-            'event': 'bubbles_triggered',
-            'tier': tier,
-            'timestamp': FieldValue.serverTimestamp(),
-            'uid': uid,
-          });
-        }
-      } catch (e) {
-        if (kDebugMode) print('📉 Failed to log onboarding analytics: $e');
-      }
-
-      if (kDebugMode) {
-        print('🆕 Bubbles triggered for free tier (first time)');
-      }
+      if (kDebugMode) print('🆕 Bubbles triggered for free tier (first time)');
     }
   }
 
@@ -215,20 +109,21 @@ class UserPreferencesService {
     for (final key in _bubbleKeys) {
       await _box.delete('bubbleDismissed_$key');
     }
-
     if (kDebugMode) {
       print('🎯 User marked as new → all onboarding flags cleared');
     }
   }
 
   static Future<void> clearAll() async {
-    final name = _boxName;
+    final boxName = _box.name;
     try {
-      if (Hive.isBoxOpen(name)) {
-        await Hive.box(name).close();
+      if (Hive.isBoxOpen(boxName)) {
+        await Hive.box(boxName).close();
       }
-      await Hive.deleteBoxFromDisk(name);
-      if (kDebugMode) print('🧼 Hive box "$name" closed and deleted from disk');
+      await Hive.deleteBoxFromDisk(boxName);
+      if (kDebugMode) {
+        print('🧼 Hive box "$boxName" closed and deleted from disk');
+      }
     } catch (e) {
       if (kDebugMode) print('⚠️ Hive box deletion failed: $e');
     }
@@ -248,22 +143,6 @@ class UserPreferencesService {
 
   static Future<void> markUserAsNew() async {
     await _box.put('isNewUser', true);
-
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      try {
-        await FirebaseFirestore.instance.collection('users').doc(uid).set({
-          'onboarding': {'isNewUser': true},
-        }, SetOptions(merge: true));
-      } catch (e) {
-        if (kDebugMode) {
-          print('⚠️ Failed to mark user as new in Firestore: $e');
-        }
-      }
-    }
-
-    if (kDebugMode) {
-      print('🆕 markUserAsNew → Hive + Firestore updated');
-    }
+    if (kDebugMode) print('🆕 markUserAsNew → Hive only');
   }
 }

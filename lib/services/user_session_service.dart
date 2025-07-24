@@ -32,12 +32,6 @@ class UserSessionService {
     _logDebug('👤 Initialising session for UID: ${user.uid}');
 
     try {
-      // 🧹 Close guest box if still open
-      if (Hive.isBoxOpen('userPrefs_guest')) {
-        await Hive.box('userPrefs_guest').close();
-        _logDebug('🧹 Closed guest box (login detected)');
-      }
-
       // ✅ Ensure Firestore user doc exists and mark as new if needed
       final isNewUser = await AuthService.ensureUserDocumentIfMissing(user);
       if (isNewUser) {
@@ -88,7 +82,12 @@ class UserSessionService {
     await CategoryService.clearCache();
     await SubscriptionService().reset();
 
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _logDebug('⚠️ Cannot reset session – no signed-in user');
+      return;
+    }
+    final uid = user.uid;
     final boxName = 'userPrefs_$uid';
 
     if (Hive.isBoxOpen(boxName)) {
@@ -127,16 +126,22 @@ class UserSessionService {
     final entitlementId = PurchaseHelper.getActiveEntitlementId(customerInfo);
     final tier = SubscriptionService().tier;
 
-    final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-    await docRef.set({
-      'tier': tier,
-      'entitlementId': entitlementId,
-      'lastLogin': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    try {
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
+      await docRef.set({
+        'tier': tier,
+        'entitlementId': entitlementId,
+        'lastLogin': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-    _logDebug(
-      '☁️ Synced entitlement to Firestore: {tier: $tier, entitlementId: $entitlementId}',
-    );
+      _logDebug(
+        '☁️ Synced entitlement to Firestore: {tier: $tier, entitlementId: $entitlementId}',
+      );
+    } catch (e) {
+      _logDebug('⚠️ Failed to sync entitlement to Firestore: $e');
+    }
   }
 
   /// ⏳ Wait for bubble flags to be initialised

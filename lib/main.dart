@@ -7,14 +7,11 @@ import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/services/user_session_service.dart';
 
+// ✅ main.dart
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 🧩 Core boot sequence (Firebase, Hive, RevenueCat config)
-  await AppBootstrap.ensureReady();
-
-  // 👤 Ensure user session + preferences are loaded before app start
-  await UserSessionService.init();
+  await AppBootstrap.ensureReady(); // ⬅️ all init logic here
+  await UserSessionService.init(); // ⬅️ separate lifecycle
 
   runApp(
     MultiProvider(

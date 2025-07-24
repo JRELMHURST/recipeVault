@@ -56,10 +56,12 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   List<RecipeCardModel> get _filteredRecipes {
     return _allRecipes.where((recipe) {
+      final categories = recipe.categories;
+
       final matchesCategory =
           _selectedCategory == 'All' ||
           (_selectedCategory == 'Favourites' && recipe.isFavourite) ||
-          recipe.categories.contains(_selectedCategory);
+          categories.contains(_selectedCategory);
 
       final matchesSearch =
           _searchQuery.isEmpty ||

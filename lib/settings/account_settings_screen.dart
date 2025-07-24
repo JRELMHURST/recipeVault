@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:hive/hive.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
 
@@ -140,13 +139,6 @@ class AccountSettingsScreen extends StatelessWidget {
   }
 
   Future<void> _cleanupUserPrefs() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-    final boxName = 'userPrefs_$uid';
-    if (Hive.isBoxOpen(boxName)) {
-      await Hive.box(boxName).close();
-    }
-    await Hive.deleteBoxFromDisk(boxName);
     await UserPreferencesService.clearAll();
   }
 

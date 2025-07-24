@@ -15,7 +15,6 @@ class SubscriptionService extends ChangeNotifier {
   // 🔐 Internal state
   String _tier = 'free';
   String _entitlementId = 'none';
-  bool _isSuperUser = false;
   bool? _firestoreTrialActive;
   bool _isLoadingTier = false;
   String? _lastLoggedTier;
@@ -34,9 +33,6 @@ class SubscriptionService extends ChangeNotifier {
   String get currentEntitlement => _tier;
   bool get isLoaded => _customerInfo != null;
 
-  // 👤 Role
-  bool get isSuperUser => _isSuperUser;
-
   // 🔓 Tier checkers
   bool get isFree => _tier == 'free';
   bool get isTaster => _tier == 'taster';
@@ -49,14 +45,11 @@ class SubscriptionService extends ChangeNotifier {
   bool get isTrialExpired => isTasterTrialExpired;
 
   // 🧠 Access control logic
-  bool get allowTranslation =>
-      _isSuperUser || isTaster || isHomeChef || isMasterChef;
-  bool get allowImageUpload =>
-      _isSuperUser || isTaster || isHomeChef || isMasterChef;
-  bool get allowSaveToVault => !isFree || _isSuperUser;
+  bool get allowTranslation => isTaster || isHomeChef || isMasterChef;
+  bool get allowImageUpload => isTaster || isHomeChef || isMasterChef;
+  bool get allowSaveToVault => !isFree;
 
   bool get allowCategoryCreation {
-    if (_isSuperUser) return true;
     return switch (_tier) {
       'master_chef' => true,
       'home_chef' => true,
@@ -121,24 +114,16 @@ class SubscriptionService extends ChangeNotifier {
 
   Future<void> restoreAndSync() async => refresh();
 
-  void updateSuperUser(bool value) {
-    _isSuperUser = value;
-    notifyListeners();
-  }
-
   /// 🔁 Awaitable reset to clear all state
   Future<void> reset() async {
     _tier = 'free';
     _entitlementId = 'none';
     _activeEntitlement = null;
     _customerInfo = null;
-    _isSuperUser = false;
     _firestoreTrialActive = null;
     tierNotifier.value = _tier;
 
-    // Optionally clear RevenueCat cache too
     await Purchases.invalidateCustomerInfoCache();
-
     notifyListeners();
   }
 
@@ -190,24 +175,12 @@ class SubscriptionService extends ChangeNotifier {
 
       await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(_tier);
 
-      _isSuperUser = await _fetchSuperUserFlag();
       notifyListeners();
     } catch (e) {
       debugPrint('🔴 Error loading subscription status: $e');
     } finally {
       _isLoadingTier = false;
     }
-  }
-
-  Future<bool> _fetchSuperUserFlag() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return false;
-
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get();
-    return doc.data()?['isSuperUser'] == true;
   }
 
   Future<void> _loadAvailablePackages() async {

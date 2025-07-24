@@ -57,14 +57,14 @@ class UserPreferencesService {
 
   static Future<ViewMode> getSavedViewMode() async {
     final index =
-        _box.get(_keyViewMode, defaultValue: ViewMode.list.index) as int;
+        _box.get(_keyViewMode, defaultValue: ViewMode.grid.index) as int;
     final mode = ViewMode.values[index];
     if (kDebugMode) print('📥 Loaded view mode: ${mode.name}');
     return mode;
   }
 
   static Future<int> getViewMode() async {
-    return _box.get(_keyViewMode, defaultValue: 0) as int;
+    return _box.get(_keyViewMode, defaultValue: ViewMode.grid.index) as int;
   }
 
   static Future<void> setViewMode(int index) async {

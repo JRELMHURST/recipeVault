@@ -87,6 +87,7 @@ class UserSessionService {
 
     final uid = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
     final boxName = 'userPrefs_$uid';
+
     if (Hive.isBoxOpen(boxName)) {
       await Hive.box(boxName).close();
     }

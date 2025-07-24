@@ -24,13 +24,7 @@ class TrialPromptHelper {
     }
 
     final tier = subscriptionService.tier;
-    final isDev = subscriptionService.isSuperUser;
     final trialExpired = subscriptionService.isTasterTrialExpired;
-
-    final shouldPrompt =
-        !isDev && (tier == 'free' || (tier == 'taster' && trialExpired));
-
-    if (!shouldPrompt) return;
 
     _hasPromptedThisSession = true;
 

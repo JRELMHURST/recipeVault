@@ -57,10 +57,8 @@ class SubscriptionService extends ChangeNotifier {
     };
   }
 
-  /// ✅ Can start taster trial
   bool get canStartTrial => tier == 'free' && !isTasterTrialActive;
 
-  /// 🧩 Emoji icon for tier-based branding
   String get tierIcon {
     return switch (_tier) {
       'master_chef' => '👑',
@@ -84,7 +82,6 @@ class SubscriptionService extends ChangeNotifier {
     return null;
   }
 
-  /// 🔄 Initialise + preload
   Future<void> init() async {
     await Purchases.invalidateCustomerInfoCache();
     await loadSubscriptionStatus();
@@ -95,7 +92,6 @@ class SubscriptionService extends ChangeNotifier {
     await Purchases.invalidateCustomerInfoCache();
     await loadSubscriptionStatus();
 
-    // Reset if sandbox expired
     final now = DateTime.now();
     final expiryString = _activeEntitlement?.expirationDate;
     if (expiryString != null) {
@@ -109,12 +105,22 @@ class SubscriptionService extends ChangeNotifier {
       }
     }
 
+    // ✅ Sync to Firestore
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'tier': _tier,
+        'entitlementId': _entitlementId,
+        'trialActive': isTasterTrialActive,
+        'lastLogin': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+
     notifyListeners();
   }
 
   Future<void> restoreAndSync() async => refresh();
 
-  /// 🔁 Awaitable reset to clear all state
   Future<void> reset() async {
     _tier = 'free';
     _entitlementId = 'none';
@@ -127,7 +133,6 @@ class SubscriptionService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 🔍 Load current tier and trial info
   Future<void> loadSubscriptionStatus() async {
     if (_isLoadingTier) return;
     _isLoadingTier = true;
@@ -152,7 +157,7 @@ class SubscriptionService extends ChangeNotifier {
         );
       }
 
-      // Fallback: Firestore check for taster/free
+      // 🔁 Fallback for Taster tier via Firestore
       if (_tier == 'free' || _tier == 'taster') {
         final doc = await FirebaseFirestore.instance
             .collection('users')
@@ -174,7 +179,6 @@ class SubscriptionService extends ChangeNotifier {
       }
 
       await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(_tier);
-
       notifyListeners();
     } catch (e) {
       debugPrint('🔴 Error loading subscription status: $e');
@@ -192,11 +196,9 @@ class SubscriptionService extends ChangeNotifier {
         homeChefPackage = current.availablePackages.firstWhereOrNull(
           (pkg) => pkg.identifier == 'home_chef_monthly',
         );
-
         masterChefMonthlyPackage = current.availablePackages.firstWhereOrNull(
           (pkg) => pkg.identifier == 'master_chef_monthly',
         );
-
         masterChefYearlyPackage = current.availablePackages.firstWhereOrNull(
           (pkg) => pkg.identifier == 'master_chef_yearly',
         );
@@ -254,9 +256,6 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
-  /// ✅ Basic access check (alias for allowSaveToVault)
   bool get hasAccess => allowSaveToVault;
-
-  /// Exposes the current tier value (e.g. 'free', 'taster', etc.)
   String get currentTier => _tier;
 }

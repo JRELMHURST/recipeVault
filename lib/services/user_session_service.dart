@@ -20,30 +20,47 @@ class UserSessionService {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    _logDebug('👤 Initialising session for UID: \${user.uid}');
+    _logDebug('👤 Initialising session for UID: ${user.uid}');
 
-    // ✅ Ensure user doc exists before syncing entitlements
-    await AuthService.ensureUserDocumentIfMissing(user);
+    try {
+      // 🧠 Ensure Hive is initialised
+      await UserPreferencesService.init();
 
-    // 🧾 RevenueCat sync
-    await syncRevenueCatEntitlement();
-    await SubscriptionService().refresh();
+      // ✅ Ensure user doc exists before syncing entitlements
+      await AuthService.ensureUserDocumentIfMissing(user);
 
-    final tier = SubscriptionService().tier;
-    _logDebug('🎟️ Tier: \$tier');
+      // 🧾 RevenueCat sync
+      await syncRevenueCatEntitlement();
+      await SubscriptionService().refresh();
 
-    // 🧠 Bubble tutorial check (new method)
-    final hasShown = await UserPreferencesService.hasShownBubblesOnce;
-    if (tier == 'free' && !hasShown) {
-      _logDebug('✨ Marking to show onboarding bubbles for free user...');
-      await UserPreferencesService.markBubblesShown();
+      final tier = SubscriptionService().tier;
+      _logDebug('🎟️ Tier resolved: $tier');
+
+      // 🔍 Check Hive flags for bubble onboarding
+      final prefsBox = await UserPreferencesService.getBox();
+      final hasShown = prefsBox.get('bubblesShownOnce');
+      final tutorialComplete = prefsBox.get('vaultTutorialComplete');
+
+      if (tier == 'free' && hasShown == null && tutorialComplete != true) {
+        _logDebug('🆕 New user → setting onboarding flags');
+        await UserPreferencesService.set('bubblesShownOnce', true);
+        await UserPreferencesService.set('vaultTutorialComplete', false);
+      }
+
+      // 🫧 Bubble tutorial flow trigger
+      _logDebug('🫧 Checking onboarding bubble trigger...');
+      await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(tier);
+      _logDebug('✅ Bubble trigger check complete');
+
+      // 📦 Preload local data
+      _logDebug('📂 Loading categories...');
+      await CategoryService.load();
+
+      _logDebug('📂 Loading vault recipes...');
+      await VaultRecipeService.load();
+    } catch (e) {
+      _logDebug('❌ Error during UserSession init: $e');
     }
-
-    _logDebug('🧼 Bubble trigger check complete');
-
-    // 📦 Preload local category + recipe data
-    await CategoryService.load();
-    await VaultRecipeService.load();
   }
 
   static Future<void> reset() async {
@@ -52,7 +69,7 @@ class UserSessionService {
 
   static void _logDebug(String message) {
     if (kDebugMode) {
-      print('🔐 [UserSessionService] \$message');
+      print('🔐 [UserSessionService] $message');
     }
   }
 
@@ -66,7 +83,9 @@ class UserSessionService {
     if (user != null) {
       final tier = SubscriptionService().tier;
       final hasShown = await UserPreferencesService.hasShownBubblesOnce;
+      _logDebug('🎟️ Tier after retry: $tier, HasShownBubblesOnce: $hasShown');
       if (tier == 'free' && !hasShown) {
+        _logDebug('🧪 Marking bubbles shown after retry');
         await UserPreferencesService.markBubblesShown();
       }
     }
@@ -88,6 +107,6 @@ class UserSessionService {
       'entitlement': entitlement,
     }, SetOptions(merge: true));
 
-    _logDebug('☁️ Synced tier to Firestore: \$tier');
+    _logDebug('☁️ Synced tier to Firestore: $tier');
   }
 }

@@ -176,17 +176,24 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         listen: false,
       );
       final tier = subService.tier;
+      debugPrint('🧾 Tier at vault init: $tier');
+
       await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(tier);
+      final hasShown = await UserPreferencesService.hasShownBubblesOnce;
+      final tutorialComplete =
+          await UserPreferencesService.hasCompletedVaultTutorial();
+
+      debugPrint('🎈 Bubbles shown once: $hasShown');
+      debugPrint('✅ Vault tutorial completed: $tutorialComplete');
 
       if (!_hasLoadedBubbles) {
-        final tutorialComplete =
-            await UserPreferencesService.hasCompletedVaultTutorial();
-
-        if (tier == 'free' && !tutorialComplete) {
+        if (tier == 'free' && !tutorialComplete && hasShown) {
           setState(() {
             _showViewModeBubble = true;
           });
           debugPrint("👁️ View toggle bubble activated (tier: $tier)");
+        } else {
+          debugPrint("🚫 No bubble activation → Conditions not met.");
         }
 
         _hasLoadedBubbles = true;
@@ -353,6 +360,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                 ),
               ],
             ),
+
+            // 🫧 Bubbles overlay
             RecipeVaultBubbles(
               showScan: _showScanBubble,
               showViewToggle: _showViewModeBubble,
@@ -360,6 +369,33 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               onDismissScan: _onboardingBubbleProgression,
               onDismissViewToggle: _onboardingBubbleProgression,
               onDismissLongPress: _onboardingBubbleProgression,
+            ),
+
+            // 🧪 Developer reset button for onboarding
+            Positioned(
+              bottom: 90,
+              right: 16,
+              child: FloatingActionButton.small(
+                heroTag: 'resetBubblesBtn',
+                onPressed: () async {
+                  await UserPreferencesService.setBool(
+                    'vaultTutorialComplete',
+                    false,
+                  );
+                  await UserPreferencesService.setBool(
+                    'bubblesShownOnce',
+                    false,
+                  );
+                  debugPrint('🧪 Onboarding bubbles reset via dev button');
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Onboarding bubbles reset')),
+                    );
+                  }
+                },
+                backgroundColor: Colors.deepPurple,
+                child: const Icon(Icons.refresh),
+              ),
             ),
           ],
         ),

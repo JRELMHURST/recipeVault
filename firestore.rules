@@ -48,5 +48,11 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if false;
     }
+
+    // 📊 Allow onboarding analytics logs from signed-in users
+    match /analytics/{docId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if false;
+    }
   }
 }

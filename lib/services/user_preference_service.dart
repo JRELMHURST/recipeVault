@@ -12,26 +12,30 @@ class UserPreferencesService {
 
   static late Box _box;
 
-  /// Opens the Hive box for user preferences (called in main.dart)
+  // ──────────────────────────────────────────────────────────────────────────────
+  /// 📦 Init
   static Future<void> init() async {
     _box = await Hive.openBox(_boxName);
   }
 
-  // ──────────────────────────────────────────────────────────────────────────────
-  /// 🧩 View Mode
-  static int getViewMode() {
-    return _box.get(_keyViewMode, defaultValue: 0) as int;
+  static Future<Box> getBox() async {
+    if (!Hive.isBoxOpen(_boxName)) {
+      return await Hive.openBox(_boxName);
+    }
+    return Hive.box(_boxName);
   }
 
-  static Future<void> setViewMode(int mode) async {
-    await _box.put(_keyViewMode, mode);
-  }
+  // ──────────────────────────────────────────────────────────────────────────────
+  /// 🧩 View Mode
+  static int getViewMode() => _box.get(_keyViewMode, defaultValue: 0) as int;
+
+  static Future<void> setViewMode(int mode) async =>
+      await _box.put(_keyViewMode, mode);
 
   // ──────────────────────────────────────────────────────────────────────────────
   /// 🧪 Vault Tutorial
   static Future<void> markVaultTutorialCompleted() async {
     await _box.put(_keyVaultTutorialComplete, true);
-
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
@@ -40,16 +44,14 @@ class UserPreferencesService {
         }, SetOptions(merge: true));
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('⚠️ Failed to write onboarding to Firestore: $e');
-      }
+      if (kDebugMode) print('⚠️ Failed to write onboarding to Firestore: $e');
     }
   }
 
   static Future<bool> hasCompletedVaultTutorial() async {
     final local =
         _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
-    if (local == true) return true;
+    if (local) return true;
 
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -62,24 +64,46 @@ class UserPreferencesService {
       final completed =
           doc.data()?['onboarding']?['vaultTutorialCompleted'] ?? false;
 
-      if (completed) {
-        await _box.put(_keyVaultTutorialComplete, true); // Cache locally
+      if (completed == true) {
+        final alreadySet =
+            _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
+        if (!alreadySet) {
+          await _box.put(_keyVaultTutorialComplete, true);
+          if (kDebugMode) {
+            print('📥 Caching vaultTutorialCompleted=true from Firestore');
+          }
+        }
       }
-
       return completed;
     } catch (e) {
-      if (kDebugMode) {
-        print('🧨 Firestore onboarding check failed: $e');
-      }
+      if (kDebugMode) print('🧨 Firestore onboarding check failed: $e');
       return false;
     }
   }
 
+  static Future<void> resetVaultTutorial({bool localOnly = true}) async {
+    await _box.delete(_keyVaultTutorialComplete);
+
+    if (!localOnly) {
+      try {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null) {
+          await FirebaseFirestore.instance.collection('users').doc(uid).set({
+            'onboarding': {'vaultTutorialCompleted': FieldValue.delete()},
+          }, SetOptions(merge: true));
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('⚠️ Failed to delete onboarding from Firestore: $e');
+        }
+      }
+    }
+  }
+
   // ──────────────────────────────────────────────────────────────────────────────
-  /// 💬 Bubble Dismissals (Generalised) with Firestore sync
+  /// 💬 Bubble Dismissals
   static Future<void> markBubbleDismissed(String key) async {
     await _box.put('bubbleDismissed_$key', true);
-
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
@@ -91,7 +115,7 @@ class UserPreferencesService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('⚠️ Failed to write bubble "$key" dismissal to Firestore: $e');
+        print('⚠️ Failed to write bubble "$key" to Firestore: $e');
       }
     }
   }
@@ -108,19 +132,13 @@ class UserPreferencesService {
           .collection('users')
           .doc(uid)
           .get();
-
       final dismissed =
           doc.data()?['onboarding']?['bubbleDismissals']?[key] ?? false;
 
-      if (dismissed) {
-        await _box.put('bubbleDismissed_$key', true); // Cache it
-      }
-
+      if (dismissed) await _box.put('bubbleDismissed_$key', true);
       return dismissed;
     } catch (e) {
-      if (kDebugMode) {
-        print('🧨 Firestore bubble dismissal check failed for "$key": $e');
-      }
+      if (kDebugMode) print('🧨 Firestore bubble check failed for "$key": $e');
       return false;
     }
   }
@@ -131,11 +149,40 @@ class UserPreferencesService {
     return !dismissed;
   }
 
+  static Future<void> resetBubbles({bool deleteRemote = false}) async {
+    for (final key in _bubbleKeys) {
+      await _box.delete('bubbleDismissed_$key');
+    }
+
+    if (deleteRemote) {
+      try {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null) {
+          final updates = {
+            for (var key in _bubbleKeys)
+              'onboarding.bubbleDismissals.$key': FieldValue.delete(),
+          };
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .set(updates, SetOptions(merge: true));
+        }
+      } catch (e) {
+        if (kDebugMode) print('⚠️ Failed to delete remote bubbles: $e');
+      }
+    }
+  }
+
   // ──────────────────────────────────────────────────────────────────────────────
-  /// 🧠 Bubble Onboarding Trigger (Centralised)
+  /// 🧠 Bubble Trigger
   static Future<void> ensureBubbleFlagTriggeredIfEligible(String tier) async {
     final hasSeenTutorial =
         _box.get(_keyVaultTutorialComplete, defaultValue: false) as bool;
+    if (kDebugMode) {
+      print(
+        '📊 Bubble trigger check: tier=$tier, hasSeenTutorial=$hasSeenTutorial',
+      );
+    }
 
     if (tier == 'free' && !hasSeenTutorial) {
       await resetBubbles();
@@ -152,9 +199,7 @@ class UserPreferencesService {
           });
         }
       } catch (e) {
-        if (kDebugMode) {
-          print('📉 Failed to log onboarding analytics: $e');
-        }
+        if (kDebugMode) print('📉 Failed to log onboarding analytics: $e');
       }
 
       if (kDebugMode) {
@@ -164,37 +209,22 @@ class UserPreferencesService {
   }
 
   // ──────────────────────────────────────────────────────────────────────────────
-  /// 🌟 Bubble Shown Flag – for `UserSessionService` logic
-  static Future<bool> get hasShownBubblesOnce async {
-    final prefs = await Hive.openBox(_boxName);
-    return prefs.get(_keyBubblesShownOnce, defaultValue: false) as bool;
-  }
+  /// 🌟 Bubble Tracking
+  static Future<bool> get hasShownBubblesOnce async =>
+      _box.get(_keyBubblesShownOnce, defaultValue: false) as bool;
 
-  static Future<void> markBubblesShown() async {
-    await _box.put(_keyBubblesShownOnce, true);
-  }
+  static Future<void> markBubblesShown() async =>
+      await _box.put(_keyBubblesShownOnce, true);
 
   // ──────────────────────────────────────────────────────────────────────────────
-  /// 🧪 Developer/Test Utilities
-  static Future<void> resetVaultTutorial() async {
-    await _box.delete(_keyVaultTutorialComplete);
-  }
+  /// 🧪 Developer Utilities
+  static Future<void> clearAll() async => await _box.clear();
 
-  static Future<void> resetBubbles() async {
-    for (final key in _bubbleKeys) {
-      await _box.delete('bubbleDismissed_$key');
-    }
-  }
-
-  static Future<void> clearAll() async {
-    await _box.clear();
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────────
-  /// 🛠️ Advanced Accessors
   static dynamic get(String key) => _box.get(key);
 
-  static Future<void> set(String key, dynamic value) async {
-    await _box.put(key, value);
-  }
+  static Future<void> set(String key, dynamic value) async =>
+      await _box.put(key, value);
+
+  static Future<void> setBool(String key, bool value) async =>
+      await _box.put(key, value);
 }

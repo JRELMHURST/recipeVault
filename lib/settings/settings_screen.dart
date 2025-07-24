@@ -20,8 +20,6 @@ class SettingsScreen extends StatelessWidget {
       return const Scaffold(body: Center(child: Text("No user signed in")));
     }
 
-    final email = user.email ?? '';
-    final displayName = user.displayName ?? 'No name';
     final tier = context.watch<SubscriptionService>().tier;
     final planLabel = switch (tier) {
       'taster' => '🥄 Taster Plan',
@@ -37,9 +35,11 @@ class SettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 24),
             children: [
               // 🔮 Gradient Header
+              // 🔮 Gradient Header
+              // 🔮 Compact Gradient Header
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.only(top: 48, bottom: 32),
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -50,36 +50,17 @@ class SettingsScreen extends StatelessWidget {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(36),
+                    bottom: Radius.circular(24),
                   ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 10),
-                    Text(
-                      displayName,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
+                child: Center(
+                  child: Text(
+                    planLabel,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      email,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white70,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      planLabel,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: Colors.white,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
 

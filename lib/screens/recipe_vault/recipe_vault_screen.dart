@@ -268,7 +268,9 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
       final List<RecipeCardModel> merged = [];
       for (final recipe in mergedMap.values) {
-        final local = HiveRecipeService.getById(recipe.id);
+        final local = await HiveRecipeService.getById(
+          recipe.id,
+        ); // ✅ await here
         final mergedRecipe = recipe.copyWith(
           isFavourite: local?.isFavourite ?? recipe.isFavourite,
           categories: local?.categories ?? recipe.categories,
@@ -282,10 +284,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       });
     } catch (e) {
       debugPrint("⚠️ Firestore fetch failed, loading from Hive: $e");
-      final fallback = HiveRecipeService.getAll();
-      setState(() {
-        _allRecipes = fallback;
-      });
     }
   }
 

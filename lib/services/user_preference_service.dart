@@ -10,24 +10,26 @@ class UserPreferencesService {
   static const List<String> _bubbleKeys = ['scan', 'viewToggle', 'longPress'];
 
   static late Box _box;
+
+  static String get _uid => FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+  static String get _boxName => 'userPrefs_$_uid';
+
   static Box? get _safeBox =>
       (_box.isOpen && Hive.isBoxOpen(_box.name)) ? _box : null;
 
   static Future<void> init() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
+    if (FirebaseAuth.instance.currentUser == null) {
       throw Exception(
         '❌ Cannot initialise UserPreferencesService – no signed-in user',
       );
     }
 
-    final boxName = 'userPrefs_$uid';
-    if (Hive.isBoxOpen(boxName)) {
-      _box = Hive.box(boxName);
-      if (kDebugMode) print('📦 Hive box reused: $boxName');
+    if (Hive.isBoxOpen(_boxName)) {
+      _box = Hive.box(_boxName);
+      if (kDebugMode) print('📦 Hive box reused: $_boxName');
     } else {
-      _box = await Hive.openBox(boxName);
-      if (kDebugMode) print('📦 Hive box opened: $boxName');
+      _box = await Hive.openBox(_boxName);
+      if (kDebugMode) print('📦 Hive box opened: $_boxName');
     }
   }
 
@@ -141,9 +143,9 @@ class UserPreferencesService {
     }
   }
 
-  static Future<void> clearAll() async {
-    final name = _safeBox?.name;
-    if (name == null) return;
+  /// 🧹 Fully clear the box from disk (used on account deletion)
+  static Future<void> deleteLocalDataForUser(String uid) async {
+    final name = 'userPrefs_$uid';
     try {
       if (Hive.isBoxOpen(name)) {
         await Hive.box(name).close();
@@ -151,7 +153,7 @@ class UserPreferencesService {
       await Hive.deleteBoxFromDisk(name);
       if (kDebugMode) print('🧼 Hive box "$name" closed and deleted from disk');
     } catch (e) {
-      if (kDebugMode) print('⚠️ Hive box deletion failed: $e');
+      if (kDebugMode) print('⚠️ Hive box deletion failed for "$name": $e');
     }
   }
 

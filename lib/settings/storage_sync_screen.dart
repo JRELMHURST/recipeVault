@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
@@ -14,6 +15,14 @@ class StorageSyncScreen extends StatefulWidget {
 }
 
 class _StorageSyncScreenState extends State<StorageSyncScreen> {
+  late String _uid;
+
+  @override
+  void initState() {
+    super.initState();
+    _uid = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+  }
+
   Future<Box<T>> getSafeBox<T>(String name) async {
     if (Hive.isBoxOpen(name)) return Hive.box<T>(name);
     return await Hive.openBox<T>(name);
@@ -25,7 +34,7 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Clear Cache'),
         content: const Text(
-          'This will delete all locally stored recipes and categories. Cloud data will not be affected.',
+          'This will delete all locally stored recipes, categories, and tutorial flags. Cloud data will not be affected.',
         ),
         actions: [
           TextButton(
@@ -41,10 +50,19 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
     );
 
     if (confirm == true) {
-      final recipeBox = await getSafeBox<RecipeCardModel>('recipes');
-      final categoryBox = await getSafeBox<CategoryModel>('categories');
+      final recipeBox = await getSafeBox<RecipeCardModel>('recipes_$_uid');
+      final categoryBox = await getSafeBox<CategoryModel>(
+        'customCategories_$_uid',
+      );
+      final hiddenBox = await getSafeBox<String>(
+        'hiddenDefaultCategories_$_uid',
+      );
+      final prefsBox = await getSafeBox('userPrefs_$_uid');
+
       await recipeBox.clear();
       await categoryBox.clear();
+      await hiddenBox.clear();
+      await prefsBox.clear();
 
       if (mounted) {
         ScaffoldMessenger.of(
@@ -67,7 +85,7 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Delete all recipes and categories stored on this device. Cloud data is safe.',
+              'Delete all recipes, categories and tutorial flags stored on this device. Cloud data is safe.',
               style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 24),

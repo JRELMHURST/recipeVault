@@ -139,7 +139,10 @@ class AccountSettingsScreen extends StatelessWidget {
   }
 
   Future<void> _cleanupUserPrefs() async {
-    await UserPreferencesService.clearAll();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      await UserPreferencesService.deleteLocalDataForUser(uid);
+    }
   }
 
   Future<void> _confirmSignOut(BuildContext context) async {

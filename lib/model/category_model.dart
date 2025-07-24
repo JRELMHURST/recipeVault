@@ -1,4 +1,3 @@
-// lib/model/category_model.dart
 import 'package:hive/hive.dart';
 
 part 'category_model.g.dart';
@@ -13,10 +12,15 @@ class CategoryModel {
 
   CategoryModel({required this.id, required this.name});
 
+  /// ✅ Construct from Firestore or Map-based JSON
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
-    return CategoryModel(id: json['id'] ?? json['name'], name: json['name']);
+    return CategoryModel(
+      id: json['id'] ?? json['name'], // Fallback to name if id is missing
+      name: json['name'],
+    );
   }
 
+  /// 🔁 Convert back to Map for Firestore sync or local save
   Map<String, dynamic> toJson() => {'id': id, 'name': name};
 
   @override

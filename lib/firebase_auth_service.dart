@@ -7,9 +7,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-
-import 'package:recipe_vault/model/recipe_card_model.dart';
-import 'package:recipe_vault/model/category_model.dart';
 import 'package:recipe_vault/rev_cat/tier_utils.dart';
 
 class AuthService {
@@ -75,18 +72,50 @@ class AuthService {
     await Purchases.logOut();
   }
 
-  /// 🧹 Full logout + local storage reset
+  /// 🧹 Full logout + local storage reset (per user only)
   Future<void> fullLogout() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
     await signOut();
-    try {
-      await _safeClearBox<RecipeCardModel>('recipes');
-      await _safeClearBox<CategoryModel>('categories');
-      await _safeClearBox<String>('customCategories');
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
-      debugPrint('✅ Signed out and cleared local storage.');
-    } catch (e) {
-      debugPrint('⚠️ Error clearing Hive or preferences: $e');
+
+    if (uid != null) {
+      try {
+        await _deleteLocalUserData(uid);
+        debugPrint('✅ Signed out and cleared local data for $uid');
+      } catch (e) {
+        debugPrint('⚠️ Failed to clear local user data: $e');
+      }
+    }
+  }
+
+  /// 🔄 Clears local Hive + user-specific prefs for a specific UID
+  Future<void> _deleteLocalUserData(String uid) async {
+    final boxNames = [
+      'recipes_$uid',
+      'categories_$uid',
+      'customCategories_$uid',
+      'userPrefs_$uid',
+    ];
+
+    for (final boxName in boxNames) {
+      if (Hive.isBoxOpen(boxName)) {
+        await Hive.box(boxName).deleteFromDisk();
+      } else if (await Hive.boxExists(boxName)) {
+        await Hive.deleteBoxFromDisk(boxName);
+      }
+    }
+
+    // Only remove keys related to this user from shared preferences
+    final prefs = await SharedPreferences.getInstance();
+    final keysToRemove = [
+      'viewMode_$uid',
+      'hasShownBubblesOnce_$uid',
+      'vaultTutorialComplete_$uid',
+      'isNewUser_$uid',
+    ];
+
+    for (final key in keysToRemove) {
+      await prefs.remove(key);
     }
   }
 
@@ -223,14 +252,6 @@ class AuthService {
 
       return false;
     }
-  }
-
-  /// 🔄 Safely clears a Hive box
-  Future<void> _safeClearBox<T>(String boxName) async {
-    final box = Hive.isBoxOpen(boxName)
-        ? Hive.box<T>(boxName)
-        : await Hive.openBox<T>(boxName);
-    await box.clear();
   }
 
   /// 🐞 Debug log

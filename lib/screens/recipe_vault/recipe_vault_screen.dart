@@ -177,7 +177,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       final tier = subService.tier;
       debugPrint('🧾 Tier at vault init: $tier');
 
-      await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(tier);
+      await UserPreferencesService.waitForBubbleFlags();
       final hasShown = await UserPreferencesService.hasShownBubblesOnce;
       final tutorialComplete =
           await UserPreferencesService.hasCompletedVaultTutorial();

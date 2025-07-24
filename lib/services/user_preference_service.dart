@@ -20,8 +20,6 @@ class UserPreferencesService {
     return name;
   }
 
-  // ──────────────────────────────────────────────────────────────────────────────
-  /// 📦 Init
   static Future<void> init() async {
     if (Hive.isBoxOpen('userPrefs_guest') &&
         FirebaseAuth.instance.currentUser != null) {
@@ -52,8 +50,6 @@ class UserPreferencesService {
     return _box;
   }
 
-  // ──────────────────────────────────────────────────────────────────────────────
-  /// 🧩 View Mode
   static Future<void> saveViewMode(ViewMode mode) async {
     await _box.put(_keyViewMode, mode.index);
     if (kDebugMode) print('💾 Saved view mode: ${mode.name}');
@@ -75,8 +71,6 @@ class UserPreferencesService {
     await _box.put(_keyViewMode, index);
   }
 
-  // ──────────────────────────────────────────────────────────────────────────────
-  /// 🧪 Vault Tutorial
   static Future<void> markVaultTutorialCompleted() async {
     await _box.put(_keyVaultTutorialComplete, true);
     try {
@@ -123,8 +117,6 @@ class UserPreferencesService {
     }
   }
 
-  // ──────────────────────────────────────────────────────────────────────────────
-  /// 💬 Bubble Dismissals
   static Future<void> markBubbleDismissed(String key) async {
     await _box.put('bubbleDismissed_$key', true);
     await maybeMarkTutorialCompleted();
@@ -179,8 +171,6 @@ class UserPreferencesService {
     }
   }
 
-  // ──────────────────────────────────────────────────────────────────────────────
-  /// 🧠 Bubble Trigger
   static Future<void> ensureBubbleFlagTriggeredIfEligible(String tier) async {
     final hasShownBubblesOnce =
         _box.get(_keyBubblesShownOnce, defaultValue: false) as bool;
@@ -217,16 +207,12 @@ class UserPreferencesService {
     }
   }
 
-  // ──────────────────────────────────────────────────────────────────────────────
-  /// 🌟 Bubble Tracking
   static Future<bool> get hasShownBubblesOnce async =>
       _box.get(_keyBubblesShownOnce, defaultValue: false) as bool;
 
   static Future<void> markBubblesShown() async =>
       await _box.put(_keyBubblesShownOnce, true);
 
-  // ──────────────────────────────────────────────────────────────────────────────
-  /// 🧪 Developer Utilities
   static Future<void> clearAll() async => await _box.clear();
 
   static dynamic get(String key) => _box.get(key);
@@ -236,4 +222,8 @@ class UserPreferencesService {
 
   static Future<void> setBool(String key, bool value) async =>
       await _box.put(key, value);
+
+  static Future<void> waitForBubbleFlags() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+  }
 }

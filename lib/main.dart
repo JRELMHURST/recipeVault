@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:recipe_vault/services/view_mode.dart';
 
 // Core & Services
 import 'firebase_options.dart';
@@ -95,6 +96,12 @@ Future<void> main() async {
 
   // ⚙️ Load local preferences
   await UserPreferencesService.init();
+
+  // ✅ Ensure default view mode is grid if none explicitly saved
+  final savedViewMode = await ViewModeService.getViewMode();
+  if (savedViewMode == ViewMode.list) {
+    await ViewModeService.setViewMode(ViewMode.grid);
+  }
 
   // 🚀 Launch App with Providers
   runApp(

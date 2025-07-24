@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -10,6 +12,7 @@ import 'package:recipe_vault/services/category_service.dart';
 
 class UserSessionService {
   static bool isInitialised = false;
+  static final Completer<void> _bubbleFlagsReady = Completer<void>();
 
   static bool get hasInitialised => isInitialised;
 
@@ -45,6 +48,7 @@ class UserSessionService {
       // 🧠 Check and trigger bubble tutorial
       _logDebug('🫧 Checking onboarding bubble trigger...');
       await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(tier);
+      _bubbleFlagsReady.complete();
       _logDebug('✅ Bubble trigger check complete');
 
       // 📂 Preload local data
@@ -109,4 +113,7 @@ class UserSessionService {
 
     _logDebug('☁️ Synced tier to Firestore: $tier');
   }
+
+  /// ⏳ Wait for bubble flags to be initialised
+  static Future<void> waitForBubbleFlags() => _bubbleFlagsReady.future;
 }

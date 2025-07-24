@@ -4,7 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
+import 'package:recipe_vault/rev_cat/purchase_helper.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
@@ -112,23 +114,25 @@ class UserSessionService {
     }
   }
 
-  /// ✅ Push tier to Firestore if RevenueCat changed
+  /// ✅ Push tier to Firestore if RevenueCat changed (safe keys only)
   static Future<void> syncRevenueCatEntitlement() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    final customerInfo = await Purchases.getCustomerInfo();
+    final entitlementId = PurchaseHelper.getActiveEntitlementId(customerInfo);
     final tier = SubscriptionService().tier;
-    final entitlement = SubscriptionService().currentEntitlement;
 
-    final docRef = AuthService.userDocRefCurrent();
-    if (docRef == null) return;
-
+    final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
     await docRef.set({
       'tier': tier,
-      'entitlement': entitlement,
+      'entitlementId': entitlementId,
+      'lastLogin': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    _logDebug('☁️ Synced tier to Firestore: $tier');
+    _logDebug(
+      '☁️ Synced entitlement to Firestore: {tier: $tier, entitlementId: $entitlementId}',
+    );
   }
 
   /// ⏳ Wait for bubble flags to be initialised

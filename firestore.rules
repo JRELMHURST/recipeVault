@@ -2,7 +2,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 🔐 USER ROOT DOC (e.g. /users/{userId})
     match /users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow create, delete: if request.auth != null && request.auth.uid == userId;
@@ -10,7 +9,16 @@ service cloud.firestore {
       allow update: if request.auth != null && request.auth.uid == userId &&
         (
           request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['entitlementId', 'lastLogin', 'trialActive', 'tier']) ||
+            .hasOnly([
+              'entitlementId',
+              'lastLogin',
+              'trialActive',
+              'tier',
+              'superUser',
+              'email',
+              'createdAt',
+              'platform'
+            ]) ||
 
           !request.resource.data.diff(resource.data).affectedKeys()
             .hasAny(['tier']) ||
@@ -18,7 +26,6 @@ service cloud.firestore {
           request.auth.token.admin == true
         );
 
-      // Subcollections
       match /recipes/{recipeId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
@@ -37,19 +44,16 @@ service cloud.firestore {
         allow write: if false;
       }
 
-      // 🕵️ Soft-deleted global recipes per user
       match /hiddenGlobalRecipes/{recipeId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
-    // 🌍 Public global recipes
     match /global_recipes/{recipeId} {
       allow read: if request.auth != null;
       allow write: if false;
     }
 
-    // 📊 Allow onboarding analytics logs from signed-in users
     match /analytics/{docId} {
       allow create: if request.auth != null;
       allow read, update, delete: if false;

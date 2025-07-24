@@ -10,37 +10,27 @@ class RecipeVaultApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ThemeNotifier()..loadTheme()),
-        ChangeNotifierProvider(create: (_) => TextScaleNotifier()..loadScale()),
-      ],
-      child: Builder(
-        builder: (context) {
-          final themeNotifier = context.watch<ThemeNotifier>();
-          final scaleFactor = context.watch<TextScaleNotifier>().scaleFactor;
+    final themeNotifier = context.watch<ThemeNotifier>();
+    final scaleFactor = context.watch<TextScaleNotifier>().scaleFactor;
 
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            navigatorKey: navigatorKey,
-            title: 'RecipeVault',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeNotifier.themeMode,
-            supportedLocales: const [Locale('en', 'GB')],
-            locale: const Locale('en', 'GB'),
-            onGenerateRoute: generateRoute,
-            builder: (context, child) {
-              return MediaQuery(
-                data: MediaQuery.of(
-                  context,
-                ).copyWith(textScaler: TextScaler.linear(scaleFactor)),
-                child: child!,
-              );
-            },
-          );
-        },
-      ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      navigatorKey: navigatorKey,
+      title: 'RecipeVault',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeNotifier.themeMode,
+      supportedLocales: const [Locale('en', 'GB')],
+      locale: const Locale('en', 'GB'),
+      onGenerateRoute: generateRoute,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(scaleFactor)),
+          child: child!,
+        );
+      },
     );
   }
 }

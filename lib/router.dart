@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 
 // Core
-import 'core/theme.dart';
 import 'core/theme_notifier.dart';
 import 'core/text_scale_notifier.dart';
 
@@ -93,35 +92,5 @@ Route<dynamic> generateRoute(RouteSettings settings) {
           ),
         ),
     settings: settings,
-  );
-}
-
-/// Builds the full app with theme, localisation, and router
-Widget buildAppWithRouter() {
-  return Builder(
-    builder: (context) {
-      final themeNotifier = Provider.of<ThemeNotifier>(context);
-      final textScaleNotifier = Provider.of<TextScaleNotifier>(context);
-
-      return MaterialApp(
-        navigatorKey: navigatorKey,
-        title: 'RecipeVault',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: themeNotifier.themeMode,
-        supportedLocales: const [Locale('en', 'GB')],
-        locale: const Locale('en', 'GB'),
-        onGenerateRoute: generateRoute,
-        builder: (context, child) {
-          return MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaler: TextScaler.linear(textScaleNotifier.scaleFactor),
-            ),
-            child: child!,
-          );
-        },
-      );
-    },
   );
 }

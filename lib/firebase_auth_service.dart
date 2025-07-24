@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
+import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -110,6 +111,14 @@ class AuthService {
     if (!doc.exists) {
       await docRef.set(updateData);
       debugPrint('📝 Created Firestore user doc → Tier: $resolvedTier');
+
+      // 🧼 Reset local onboarding flags for new users
+      try {
+        await UserPreferencesService.markAsNewUser();
+        debugPrint('🎈 Onboarding flags reset for new user');
+      } catch (e) {
+        debugPrint('⚠️ Failed to mark user as new in preferences: $e');
+      }
     } else {
       final existing = doc.data() ?? {};
       final needsUpdate =
@@ -139,8 +148,81 @@ class AuthService {
   }
 
   /// 📣 Static method for other services to call (e.g. UserSessionService)
-  static Future<void> ensureUserDocumentIfMissing(User user) async {
-    await AuthService()._ensureUserDocument(user);
+  /// 📣 Static method that returns true if Firestore doc was newly created
+  static Future<bool> ensureUserDocumentIfMissing(User user) async {
+    final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final doc = await docRef.get();
+
+    if (!doc.exists) {
+      final customerInfo = await Purchases.getCustomerInfo();
+      final entitlementId = customerInfo
+          .entitlements
+          .active
+          .values
+          .firstOrNull
+          ?.productIdentifier;
+      final resolvedTier = resolveTier(entitlementId ?? 'free');
+
+      final updateData = {
+        'email': user.email,
+        'entitlementId': entitlementId ?? 'none',
+        'tier': resolvedTier,
+        'trialActive': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      await docRef.set(updateData);
+      debugPrint('📝 Created Firestore user doc → Tier: $resolvedTier');
+
+      try {
+        await UserPreferencesService.markAsNewUser();
+        debugPrint('🎈 Onboarding flags reset for new user');
+      } catch (e) {
+        debugPrint('⚠️ Failed to mark user as new in preferences: $e');
+      }
+
+      // Refresh global recipes
+      try {
+        final callable = FirebaseFunctions.instanceFor(
+          region: 'europe-west2',
+        ).httpsCallable('refreshGlobalRecipesForUser');
+        final result = await callable();
+        final count = result.data['copiedCount'];
+        debugPrint('🍽 Global recipes refreshed: $count item(s) copied');
+      } catch (e, stack) {
+        debugPrint('⚠️ Failed to refresh global recipes: $e');
+        debugPrint(stack.toString());
+      }
+
+      return true;
+    } else {
+      // Check and update tier/entitlement if needed
+      final existing = doc.data() ?? {};
+      final customerInfo = await Purchases.getCustomerInfo();
+      final entitlementId = customerInfo
+          .entitlements
+          .active
+          .values
+          .firstOrNull
+          ?.productIdentifier;
+      final resolvedTier = resolveTier(entitlementId ?? 'free');
+
+      final needsUpdate =
+          existing['tier'] != resolvedTier ||
+          existing['entitlementId'] != entitlementId;
+
+      if (needsUpdate) {
+        await docRef.set({
+          'tier': resolvedTier,
+          'entitlementId': entitlementId ?? 'none',
+        }, SetOptions(merge: true));
+        debugPrint('♻️ Updated Firestore user doc → Tier: $resolvedTier');
+      } else {
+        debugPrint('ℹ️ Firestore user doc already up to date.');
+      }
+
+      return false;
+    }
   }
 
   /// 🔄 Safely clears a Hive box

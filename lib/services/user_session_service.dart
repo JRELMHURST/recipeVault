@@ -38,11 +38,14 @@ class UserSessionService {
         _logDebug('🧹 Closed guest box (login detected)');
       }
 
+      // ✅ Ensure Firestore user doc exists and mark as new if needed
+      final isNewUser = await AuthService.ensureUserDocumentIfMissing(user);
+      if (isNewUser) {
+        await UserPreferencesService.markUserAsNew();
+      }
+
       // 📦 Open correct Hive prefs box
       await UserPreferencesService.init();
-
-      // ✅ Ensure Firestore user doc exists
-      await AuthService.ensureUserDocumentIfMissing(user);
 
       // 🎟️ Sync entitlements
       await syncRevenueCatEntitlement();

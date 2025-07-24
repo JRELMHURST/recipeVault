@@ -209,6 +209,18 @@ class UserPreferencesService {
   static Future<void> markBubblesShown() async =>
       await _box.put(_keyBubblesShownOnce, true);
 
+  static Future<void> markAsNewUser() async {
+    await _box.delete(_keyVaultTutorialComplete);
+    await _box.delete(_keyBubblesShownOnce);
+    for (final key in _bubbleKeys) {
+      await _box.delete('bubbleDismissed_$key');
+    }
+
+    if (kDebugMode) {
+      print('🎯 User marked as new → all onboarding flags cleared');
+    }
+  }
+
   static Future<void> clearAll() async {
     final name = _boxName;
     try {
@@ -232,5 +244,26 @@ class UserPreferencesService {
 
   static Future<void> waitForBubbleFlags() async {
     await Future.delayed(const Duration(milliseconds: 200));
+  }
+
+  static Future<void> markUserAsNew() async {
+    await _box.put('isNewUser', true);
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'onboarding': {'isNewUser': true},
+        }, SetOptions(merge: true));
+      } catch (e) {
+        if (kDebugMode) {
+          print('⚠️ Failed to mark user as new in Firestore: $e');
+        }
+      }
+    }
+
+    if (kDebugMode) {
+      print('🆕 markUserAsNew → Hive + Firestore updated');
+    }
   }
 }

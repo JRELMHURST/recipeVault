@@ -1,6 +1,9 @@
+// ignore_for_file: unnecessary_null_checks
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:recipe_vault/settings/faq_screen.dart';
 
 // Core
 import 'core/theme_notifier.dart';
@@ -61,9 +64,9 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       textScaleNotifier: Provider.of<TextScaleNotifier>(context, listen: false),
     ),
     '/settings/notifications': (_) => const NotificationsSettingsScreen(),
-    '/settings/about': (_) => const AboutSettingsScreen(),
     '/settings/storage': (_) => const StorageSyncScreen(),
-
+    '/settings/about': (_) => const AboutSettingsScreen(),
+    '/settings/faqs': (_) => const FaqsScreen(), // ✅ New route
     // Subscription
     '/paywall': (_) => const PaywallScreen(),
     '/trial-ended': (_) => const TrialEndedScreen(),

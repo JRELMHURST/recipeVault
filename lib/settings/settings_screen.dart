@@ -35,8 +35,6 @@ class SettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 24),
             children: [
               // 🔮 Gradient Header
-              // 🔮 Gradient Header
-              // 🔮 Compact Gradient Header
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 24),
@@ -123,6 +121,12 @@ class SettingsScreen extends StatelessWidget {
                 context,
                 title: 'About',
                 items: [
+                  _buildSettingsTile(
+                    context: context,
+                    icon: Icons.help_outline,
+                    label: 'Help & FAQs',
+                    route: '/settings/faqs',
+                  ),
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.info_outline,

@@ -119,7 +119,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               _buildSettingsCard(
                 context,
-                title: 'About',
+                title: 'Support',
                 items: [
                   _buildSettingsTile(
                     context: context,

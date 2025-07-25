@@ -66,7 +66,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     '/settings/notifications': (_) => const NotificationsSettingsScreen(),
     '/settings/storage': (_) => const StorageSyncScreen(),
     '/settings/about': (_) => const AboutSettingsScreen(),
-    '/settings/faqs': (_) => const FaqsScreen(), // ✅ New route
+    '/settings/faqs': (_) => FaqsScreen(), // ✅ New route
     // Subscription
     '/paywall': (_) => const PaywallScreen(),
     '/trial-ended': (_) => const TrialEndedScreen(),

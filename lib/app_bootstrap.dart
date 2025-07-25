@@ -106,7 +106,7 @@ class AppBootstrap {
       try {
         await UserPreferencesService.init();
         final savedViewMode = await ViewModeService.getViewMode();
-        if (savedViewMode == ViewMode.list) {
+        if (savedViewMode == ViewMode.grid) {
           await ViewModeService.setViewMode(ViewMode.grid);
         }
       } catch (e, stack) {

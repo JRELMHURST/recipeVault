@@ -14,7 +14,7 @@ class RecipeVaultController extends ChangeNotifier {
   bool _showLongPressBubble = false;
   String? _upgradeMessage;
 
-  ViewMode _viewMode = ViewMode.list;
+  ViewMode _viewMode = ViewMode.grid;
   List<CategoryModel> _customCategories = [];
   Map<String, RecipeCardModel> _allRecipes = {};
 

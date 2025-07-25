@@ -57,16 +57,13 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   List<RecipeCardModel> get _filteredRecipes {
     return _allRecipes.where((recipe) {
       final categories = recipe.categories;
-
       final matchesCategory =
           _selectedCategory == 'All' ||
           (_selectedCategory == 'Favourites' && recipe.isFavourite) ||
           categories.contains(_selectedCategory);
-
       final matchesSearch =
           _searchQuery.isEmpty ||
           recipe.title.toLowerCase().contains(_searchQuery.toLowerCase());
-
       return matchesCategory && matchesSearch;
     }).toList();
   }
@@ -142,19 +139,14 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           _showViewModeBubble = false;
           _showLongPressBubble = true;
         });
-        debugPrint('📌 Showing Long Press bubble');
       } else if (_showLongPressBubble) {
         setState(() {
           _showLongPressBubble = false;
           _showScanBubble = true;
         });
-        debugPrint('🧪 Showing Scan bubble');
       } else if (_showScanBubble) {
-        setState(() {
-          _showScanBubble = false;
-        });
+        setState(() => _showScanBubble = false);
         await UserPreferencesService.markVaultTutorialCompleted();
-        debugPrint('✅ All bubbles completed');
       }
     });
   }
@@ -162,48 +154,37 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initVault());
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final user = FirebaseAuth.instance.currentUser;
-      userId = user?.uid;
+  Future<void> _initVault() async {
+    final user = FirebaseAuth.instance.currentUser;
+    userId = user?.uid;
 
-      recipeCollection = FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('recipes');
+    recipeCollection = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('recipes');
 
-      final subService = Provider.of<SubscriptionService>(
-        context,
-        listen: false,
-      );
-      final tier = subService.tier;
-      debugPrint('🧾 Tier at vault init: $tier');
+    final subService = Provider.of<SubscriptionService>(context, listen: false);
+    final tier = subService.tier;
 
-      await UserPreferencesService.waitForBubbleFlags();
-      final hasShown = await UserPreferencesService.hasShownBubblesOnce;
-      final tutorialComplete =
-          await UserPreferencesService.hasCompletedVaultTutorial();
+    await Future.delayed(const Duration(milliseconds: 100));
 
-      debugPrint('🎈 Bubbles shown once: $hasShown');
-      debugPrint('✅ Vault tutorial completed: $tutorialComplete');
+    await Future.wait([
+      _initializeDefaultCategories(),
+      _loadCustomCategories(),
+      _loadRecipes(),
+    ]);
 
-      if (!_hasLoadedBubbles) {
-        if (tier == 'free' && !tutorialComplete && hasShown) {
-          setState(() {
-            _showViewModeBubble = true;
-          });
-          debugPrint("👁️ View toggle bubble activated (tier: $tier)");
-        } else {
-          debugPrint("🚫 No bubble activation → Conditions not met.");
-        }
+    final hasShown = await UserPreferencesService.hasShownBubblesOnce;
+    final tutorialComplete =
+        await UserPreferencesService.hasCompletedVaultTutorial();
 
-        _hasLoadedBubbles = true;
-      }
-
-      await _initializeDefaultCategories();
-      await _loadCustomCategories();
-      await _loadRecipes();
-    });
+    if (!_hasLoadedBubbles && tier == 'free' && !tutorialComplete && hasShown) {
+      setState(() => _showViewModeBubble = true);
+    }
+    _hasLoadedBubbles = true;
   }
 
   Future<void> _initializeDefaultCategories() async {
@@ -219,7 +200,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   Future<void> _loadCustomCategories() async {
     final saved = await CategoryService.getAllCategories();
     final hidden = await CategoryService.getHiddenDefaultCategories();
-
     final savedNames = saved.map((c) => c.name).toList();
     final hiddenNames = hidden.toSet();
 
@@ -257,27 +237,25 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           .map((doc) => RecipeCardModel.fromJson(doc.data()))
           .toList();
 
-      final Map<String, RecipeCardModel> mergedMap = {};
+      final localRecipes = await HiveRecipeService.getAll();
 
-      for (final recipe in globalRecipes) {
-        mergedMap[recipe.id] = recipe;
-      }
-      for (final recipe in userRecipes) {
-        mergedMap[recipe.id] = recipe;
-      }
+      final Map<String, RecipeCardModel> mergedMap = {
+        for (final r in globalRecipes) r.id: r,
+        for (final r in userRecipes) r.id: r,
+      };
 
-      final List<RecipeCardModel> merged = [];
-      for (final recipe in mergedMap.values) {
-        final local = await HiveRecipeService.getById(
-          recipe.id,
-        ); // ✅ await here
-        final mergedRecipe = recipe.copyWith(
-          isFavourite: local?.isFavourite ?? recipe.isFavourite,
-          categories: local?.categories ?? recipe.categories,
+      final List<RecipeCardModel> merged = mergedMap.values.map((recipe) {
+        final local = localRecipes.firstWhere(
+          (r) => r.id == recipe.id,
+          orElse: () => recipe,
         );
-        await HiveRecipeService.save(mergedRecipe);
-        merged.add(mergedRecipe);
-      }
+        final mergedRecipe = recipe.copyWith(
+          isFavourite: local.isFavourite,
+          categories: local.categories,
+        );
+        HiveRecipeService.save(mergedRecipe);
+        return mergedRecipe;
+      }).toList();
 
       setState(() {
         _allRecipes = merged;
@@ -359,8 +337,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                 ),
               ],
             ),
-
-            // 🫧 Bubbles overlay
             RecipeVaultBubbles(
               showScan: _showScanBubble,
               showViewToggle: _showViewModeBubble,

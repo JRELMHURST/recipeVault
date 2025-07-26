@@ -25,8 +25,8 @@ export const sharedRecipePage = onRequest(
       const description = 'View and save this recipe with RecipeVault.';
       const imageUrl = recipe?.imageUrl?.startsWith('http')
         ? recipe.imageUrl
-        : 'https://recipevault.app/assets/icon/round_vaultLogo.png';
-      const pageUrl = `https://recipevault.app/shared/${recipeId}`;
+        : 'https://recipes.badger-creations.co.uk/assets/icon/round_vaultLogo.png';
+      const pageUrl = `https://recipes.badger-creations.co.uk/shared/${recipeId}`;
 
       const html = `<!DOCTYPE html>
 <html lang="en">
@@ -41,15 +41,17 @@ export const sharedRecipePage = onRequest(
     <meta property="og:url" content="${pageUrl}" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- Smart App Banner -->
+    <!-- Smart App Banner for iOS -->
     <meta name="apple-itunes-app" content="app-id=6748146354, app-argument=${pageUrl}" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- App Redirect -->
+    <!-- Deep link redirect logic -->
     <script>
       window.onload = function () {
+        // Attempt to open in app
         window.location.href = 'recipevault://shared/${recipeId}';
+        // Fallback to App Store after delay
         setTimeout(() => {
           window.location.href = 'https://apps.apple.com/app/id6748146354';
         }, 2000);
@@ -64,7 +66,7 @@ export const sharedRecipePage = onRequest(
   </body>
 </html>`;
 
-      res.set('Cache-Control', 'public, max-age=300'); // 5 min cache
+      res.set('Cache-Control', 'public, max-age=300'); // Cache for 5 mins
       res.status(200).send(html);
     } catch (error) {
       console.error('❌ Error generating shared recipe page:', error);
@@ -73,7 +75,7 @@ export const sharedRecipePage = onRequest(
   }
 );
 
-// Escape function to prevent HTML injection
+// Escape HTML to prevent injection
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')

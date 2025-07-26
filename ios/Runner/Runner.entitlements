@@ -6,7 +6,7 @@
 	<string>development</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:recipevault.app</string>
+		<string>applinks:recipes.badger-creations.co.uk</string>
 	</array>
 	<key>com.apple.developer.usernotifications.communication</key>
 	<true/>

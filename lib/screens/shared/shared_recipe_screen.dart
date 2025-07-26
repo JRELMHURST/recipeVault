@@ -56,7 +56,8 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
   }
 
   void _shareLink() {
-    final url = 'https://recipevault.app/shared/${widget.recipeId}';
+    final url =
+        'https://recipes.badger-creations.co.uk/shared/${widget.recipeId}';
 
     final box = context.findRenderObject();
     if (box is RenderBox && box.hasSize) {

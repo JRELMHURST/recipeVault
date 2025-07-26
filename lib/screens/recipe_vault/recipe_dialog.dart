@@ -74,7 +74,7 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
 
   Future<void> _shareLink(BuildContext context) async {
     final recipeLink =
-        'https://recipevault.app/shared/${Uri.encodeComponent(widget.recipeId)}';
+        'https://recipes.badger-creations.co.uk/shared/${Uri.encodeComponent(widget.recipeId)}';
     final box = context.findRenderObject();
     if (box is RenderBox && box.hasSize) {
       final origin = box.localToGlobal(Offset.zero) & box.size;
@@ -86,7 +86,7 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
     } else {
       await Share.share(
         recipeLink,
-        subject: 'Check out this recipe on RecipeVault!',
+        subject: '📋 ${widget.title} – via RecipeVault',
       );
     }
   }

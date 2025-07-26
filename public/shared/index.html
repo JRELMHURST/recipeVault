@@ -2,31 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>RecipeVault</title>
+    <title>View this recipe on RecipeVault</title>
 
-    <!-- Open Graph for previews -->
-    <meta property="og:title" content="View this recipe on RecipeVault" />
-    <meta property="og:description" content="Tap to open this recipe in the RecipeVault app." />
+    <!-- Open Graph (Preview Card Defaults) -->
+    <meta property="og:title" content="A recipe shared via RecipeVault" />
+    <meta property="og:description" content="Open this recipe in the RecipeVault app to view, save, and cook it!" />
     <meta property="og:image" content="https://recipevault.app/assets/icon/round_vaultLogo.png" />
-    <meta property="og:url" content="https://recipevault.app/shared" />
+    <meta property="og:url" content="https://recipes.badger-creations.co.uk/shared" />
+    <meta name="twitter:card" content="summary_large_image" />
 
     <!-- Smart App Banner (iOS Safari) -->
-    <meta name="apple-itunes-app" content="app-id=6748146354, app-argument=https://recipevault.app/shared" />
+    <meta name="apple-itunes-app" content="app-id=6748146354, app-argument=https://recipes.badger-creations.co.uk/shared" />
 
-    <!-- Redirect logic -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- App Redirect Logic -->
     <script>
       window.onload = function () {
-        // Attempt to open the app via your custom scheme
+        // Try to open the app via custom scheme
         window.location.href = 'recipevault://shared';
 
-        // Fallback to App Store after 2s
+        // After 2 seconds, fallback to App Store
         setTimeout(() => {
           window.location.href = 'https://apps.apple.com/app/id6748146354';
         }, 2000);
       };
     </script>
   </head>
-  <body>
-    <p>Opening RecipeVault...</p>
+  <body style="font-family: sans-serif; text-align: center; margin-top: 5rem;">
+    <img src="https://recipevault.app/assets/icon/round_vaultLogo.png" alt="RecipeVault logo" style="max-width: 120px; border-radius: 12px;" />
+    <h1>Opening RecipeVault...</h1>
+    <p>If nothing happens, <a href="https://apps.apple.com/app/id6748146354">tap here to download the app</a>.</p>
   </body>
 </html>

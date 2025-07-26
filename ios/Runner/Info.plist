@@ -79,10 +79,10 @@
 	</dict>
 
 	<!-- ✅ Associated Domains for Universal Links -->
-	<key>com.apple.developer.associated-domains</key>
-	<array>
-		<string>applinks:recipevault.app</string>
-	</array>
+<key>com.apple.developer.associated-domains</key>
+<array>
+	<string>applinks:recipes.badger-creations.co.uk</string>
+</array>
 
 	<!-- ✅ Background modes if needed -->
 	<key>UIBackgroundModes</key>

@@ -61,43 +61,52 @@
 				<string>com.googleusercontent.apps.140256184353-7h32sfm21fg78icmq8csdn7v6v1q43c9</string>
 			</array>
 		</dict>
+		<!-- ✅ Apple Sign In support -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.badgercreations.recipevault</string>
+			</array>
+		</dict>
 	</array>
 
-	<!-- ✅ Firebase Background Push Notifications -->
+	<!-- ✅ Firebase Auth & background -->
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<true/>
 
-	<!-- ✅ Export compliance -->
+	<!-- ✅ Export compliance (no custom encryption) -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 
-	<!-- ✅ HTTP exception for development/emulators -->
+	<!-- ✅ NSAppTransportSecurity for dev/testing -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
 
-	<!-- ✅ Associated Domains for Universal Links -->
-<key>com.apple.developer.associated-domains</key>
-<array>
-	<string>applinks:recipes.badger-creations.co.uk</string>
-</array>
+	<!-- ✅ Universal Links domain (Associated Domains) -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:recipes.badger-creations.co.uk</string>
+	</array>
 
-	<!-- ✅ Background modes if needed -->
+	<!-- ✅ Background fetch + push -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
 
-	<!-- ✅ Communication entitlement compliance -->
+	<!-- ✅ Siri/communication intents (optional) -->
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>INSendMessageIntent</string>
 	</array>
 
-	<!-- ✅ UK Localisation Fix -->
+	<!-- ✅ UK English support -->
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>

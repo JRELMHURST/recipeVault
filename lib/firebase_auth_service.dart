@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/rev_cat/tier_utils.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -65,6 +66,32 @@ class AuthService {
     }
   }
 
+  /// 🍏 Apple Sign-In
+  Future<UserCredential?> signInWithApple() async {
+    try {
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final oauthCredential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+      await Purchases.logIn(userCredential.user!.uid);
+      await _ensureUserDocument(userCredential.user!);
+      return userCredential;
+    } catch (e, stack) {
+      debugPrint('🔴 Apple sign-in failed: $e');
+      debugPrint(stack.toString());
+      return null;
+    }
+  }
+
   /// 🚪 Sign out and RevenueCat logout
   Future<void> signOut() async {
     await _googleSignIn.signOut();
@@ -105,7 +132,6 @@ class AuthService {
       }
     }
 
-    // Only remove keys related to this user from shared preferences
     final prefs = await SharedPreferences.getInstance();
     final keysToRemove = [
       'viewMode_$uid',
@@ -133,15 +159,13 @@ class AuthService {
       'email': user.email,
       'entitlementId': entitlementId ?? 'none',
       'tier': resolvedTier,
-      'trialActive': false, // Manual opt-in only
+      'trialActive': false,
       if (!doc.exists) 'createdAt': FieldValue.serverTimestamp(),
     };
 
     if (!doc.exists) {
       await docRef.set(updateData);
       debugPrint('📝 Created Firestore user doc → Tier: $resolvedTier');
-
-      // 🧼 Reset local onboarding flags for new users
       try {
         await UserPreferencesService.markAsNewUser();
         debugPrint('🎈 Onboarding flags reset for new user');
@@ -162,7 +186,6 @@ class AuthService {
       }
     }
 
-    // 🔄 Refresh global recipes
     try {
       final callable = FirebaseFunctions.instanceFor(
         region: 'europe-west2',
@@ -176,8 +199,6 @@ class AuthService {
     }
   }
 
-  /// 📣 Static method for other services to call (e.g. UserSessionService)
-  /// 📣 Static method that returns true if Firestore doc was newly created
   static Future<bool> ensureUserDocumentIfMissing(User user) async {
     final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final doc = await docRef.get();
@@ -202,7 +223,6 @@ class AuthService {
 
       await docRef.set(updateData);
       debugPrint('📝 Created Firestore user doc → Tier: $resolvedTier');
-
       try {
         await UserPreferencesService.markAsNewUser();
         debugPrint('🎈 Onboarding flags reset for new user');
@@ -210,7 +230,6 @@ class AuthService {
         debugPrint('⚠️ Failed to mark user as new in preferences: $e');
       }
 
-      // Refresh global recipes
       try {
         final callable = FirebaseFunctions.instanceFor(
           region: 'europe-west2',
@@ -225,7 +244,6 @@ class AuthService {
 
       return true;
     } else {
-      // Check and update tier/entitlement if needed
       final existing = doc.data() ?? {};
       final customerInfo = await Purchases.getCustomerInfo();
       final entitlementId = customerInfo
@@ -254,7 +272,6 @@ class AuthService {
     }
   }
 
-  /// 🐞 Debug log
   void logCurrentUser() {
     final user = _auth.currentUser;
     if (user == null) {
@@ -271,7 +288,6 @@ class AuthService {
     }
   }
 
-  /// 📄 Returns current user's Firestore document reference if logged in
   static DocumentReference<Map<String, dynamic>>? userDocRefCurrent() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return null;

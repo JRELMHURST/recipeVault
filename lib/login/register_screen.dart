@@ -37,7 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       await AuthService().registerWithEmail(email, password);
       await UserSessionService.init();
-      await VaultRecipeService.loadAndMergeAllRecipes(); // ✅ Load after registration
+      await VaultRecipeService.loadAndMergeAllRecipes();
 
       await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return;
@@ -65,7 +65,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
 
       await UserSessionService.init();
-      await VaultRecipeService.loadAndMergeAllRecipes(); // ✅ Load global + personal recipes
+      await VaultRecipeService.loadAndMergeAllRecipes();
 
       await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return;
@@ -75,6 +75,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Google sign-up failed: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _signUpWithApple() async {
+    setState(() => _isLoading = true);
+    try {
+      final credential = await AuthService().signInWithApple();
+      if (credential == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Apple sign-up was cancelled.')),
+        );
+        return;
+      }
+
+      await UserSessionService.init();
+      await VaultRecipeService.loadAndMergeAllRecipes();
+
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Apple sign-up failed: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -216,6 +244,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         ? null
                                         : _signUpWithGoogle,
                                   ),
+                                  const SizedBox(height: 12),
+                                  if (Theme.of(context).platform ==
+                                      TargetPlatform.iOS)
+                                    OutlinedButton.icon(
+                                      icon: const Icon(
+                                        Icons.apple,
+                                        color: Colors.black,
+                                      ),
+                                      label: const Text('Continue with Apple'),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.black,
+                                        backgroundColor: Colors.white,
+                                        side: const BorderSide(
+                                          color: Colors.black12,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 14,
+                                          horizontal: 16,
+                                        ),
+                                      ),
+                                      onPressed: _isLoading
+                                          ? null
+                                          : _signUpWithApple,
+                                    ),
                                 ],
                               ),
                             ),

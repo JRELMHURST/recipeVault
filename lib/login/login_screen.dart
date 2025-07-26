@@ -45,12 +45,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final password = passwordController.text.trim();
       await AuthService().signInWithEmail(email, password);
       await UserSessionService.init();
-      await VaultRecipeService.loadAndMergeAllRecipes(); // ✅ Load vault recipes after login
+      await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
       FocusManager.instance.primaryFocus?.unfocus();
       await Future.delayed(const Duration(milliseconds: 100));
-
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;
@@ -74,14 +73,41 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         return;
       }
-
       await UserSessionService.init();
-      await VaultRecipeService.loadAndMergeAllRecipes(); // ✅ Load recipes after login
+      await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
       FocusManager.instance.primaryFocus?.unfocus();
       await Future.delayed(const Duration(milliseconds: 100));
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      if (!mounted) return;
+      final message = _friendlyAuthError(e);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
+  Future<void> _signInWithApple() async {
+    setState(() => _isLoading = true);
+    try {
+      final credential = await AuthService().signInWithApple();
+      if (credential == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Apple sign-in was cancelled.')),
+        );
+        return;
+      }
+      await UserSessionService.init();
+      await VaultRecipeService.loadAndMergeAllRecipes();
+
+      if (!mounted) return;
+      FocusManager.instance.primaryFocus?.unfocus();
+      await Future.delayed(const Duration(milliseconds: 100));
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;
@@ -97,17 +123,21 @@ class _LoginScreenState extends State<LoginScreen> {
   String _friendlyAuthError(Object e) {
     final message = e.toString().toLowerCase();
     if (message.contains('invalid-credential')) {
-      return 'The email or password is incorrect. Please try again.';
-    } else if (message.contains('user-not-found')) {
-      return 'No account found with this email address.';
-    } else if (message.contains('wrong-password')) {
-      return 'Incorrect password. Please try again.';
-    } else if (message.contains('too-many-requests')) {
-      return 'Too many attempts. Please wait and try again later.';
-    } else if (message.contains('network-request-failed')) {
-      return 'Network error. Please check your connection.';
+      return 'The email or password is incorrect.';
     }
-    return 'Login failed. Please check your details and try again.';
+    if (message.contains('user-not-found')) {
+      return 'No account found with this email.';
+    }
+    if (message.contains('wrong-password')) {
+      return 'Incorrect password. Please try again.';
+    }
+    if (message.contains('too-many-requests')) {
+      return 'Too many attempts. Please try again later.';
+    }
+    if (message.contains('network-request-failed')) {
+      return 'Network error. Check your connection.';
+    }
+    return 'Login failed. Please try again.';
   }
 
   void _goToRegister() {
@@ -222,6 +252,28 @@ class _LoginScreenState extends State<LoginScreen> {
                                 label: const Text('Sign in with Google'),
                                 onPressed: _signInWithGoogle,
                               ),
+                              const SizedBox(height: 12),
+                              if (Theme.of(context).platform ==
+                                  TargetPlatform.iOS)
+                                OutlinedButton.icon(
+                                  icon: const Icon(
+                                    Icons.apple,
+                                    color: Colors.black,
+                                  ),
+                                  label: const Text('Sign in with Apple'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.black,
+                                    backgroundColor: Colors.white,
+                                    side: const BorderSide(
+                                      color: Colors.black12,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                      horizontal: 16,
+                                    ),
+                                  ),
+                                  onPressed: _signInWithApple,
+                                ),
                             ],
                           ),
                         ),

@@ -60,6 +60,8 @@ dependencies:
 
   # ───── Authentication ─────
   google_sign_in: ^6.2.1
+  sign_in_with_apple: ^5.0.0
+  crypto: ^3.0.3
 
   # ───── Local Storage ─────
   hive: ^2.2.3

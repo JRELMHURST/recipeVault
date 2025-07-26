@@ -277,65 +277,81 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         ).copyWith(textScaler: TextScaler.linear(scale)),
         child: Stack(
           children: [
-            Column(
-              children: [
-                RecipeChipFilterBar(
-                  categories: _allCategories,
-                  selectedCategory: _selectedCategory,
-                  onCategorySelected: (cat) =>
-                      setState(() => _selectedCategory = cat),
-                  onCategoryDeleted: _removeCategory,
-                  allRecipes: _allRecipes,
-                ),
-                RecipeSearchBar(
-                  initialValue: _searchQuery,
-                  onChanged: (value) => setState(() => _searchQuery = value),
-                ),
-                ValueListenableBuilder<String?>(
-                  valueListenable: ImageProcessingService.upgradeBannerMessage,
-                  builder: (_, message, __) => message == null
-                      ? const SizedBox.shrink()
-                      : UpgradeBanner(message: message),
-                ),
-                Expanded(
-                  child: _filteredRecipes.isEmpty
-                      ? const Center(child: Text("No recipes found"))
-                      : AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          child: ResponsiveWrapper(
-                            child: switch (view) {
-                              ViewMode.list => RecipeListView(
-                                recipes: _filteredRecipes,
-                                onDelete: _deleteRecipe,
-                                onTap: (r) => showRecipeDialog(context, r),
-                                onToggleFavourite: _toggleFavourite,
-                                categories: _allCategories,
-                                onAssignCategories: _assignCategories,
-                                onAddOrUpdateImage: _addOrUpdateImage,
-                              ),
-                              ViewMode.grid => RecipeGridView(
-                                recipes: _filteredRecipes,
-                                onTap: (r) => showRecipeDialog(context, r),
-                                onToggleFavourite: _toggleFavourite,
-                                onAssignCategories: _assignCategories,
-                                categories: _allCategories,
-                                onDelete: _deleteRecipe,
-                                onAddOrUpdateImage: _addOrUpdateImage,
-                              ),
-                              ViewMode.compact => RecipeCompactView(
-                                recipes: _filteredRecipes,
-                                onTap: (r) => showRecipeDialog(context, r),
-                                onToggleFavourite: _toggleFavourite,
-                                onDelete: _deleteRecipe,
-                                categories: _allCategories,
-                                onAssignCategories: _assignCategories,
-                                onAddOrUpdateImage: _addOrUpdateImage,
-                              ),
-                            },
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12.0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  RecipeSearchBar(
+                    initialValue: _searchQuery,
+                    onChanged: (value) => setState(() => _searchQuery = value),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 6.0),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: RecipeChipFilterBar(
+                        categories: _allCategories,
+                        selectedCategory: _selectedCategory,
+                        onCategorySelected: (cat) =>
+                            setState(() => _selectedCategory = cat),
+                        onCategoryDeleted: _removeCategory,
+                        allRecipes: _allRecipes,
+                      ),
+                    ),
+                  ),
+                  ValueListenableBuilder<String?>(
+                    valueListenable:
+                        ImageProcessingService.upgradeBannerMessage,
+                    builder: (_, message, __) => message == null
+                        ? const SizedBox.shrink()
+                        : UpgradeBanner(message: message),
+                  ),
+                  Expanded(
+                    child: _filteredRecipes.isEmpty
+                        ? const Center(child: Text("No recipes found"))
+                        : AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            child: ResponsiveWrapper(
+                              child: switch (view) {
+                                ViewMode.list => RecipeListView(
+                                  recipes: _filteredRecipes,
+                                  onDelete: _deleteRecipe,
+                                  onTap: (r) => showRecipeDialog(context, r),
+                                  onToggleFavourite: _toggleFavourite,
+                                  categories: _allCategories,
+                                  onAssignCategories: _assignCategories,
+                                  onAddOrUpdateImage: _addOrUpdateImage,
+                                ),
+                                ViewMode.grid => RecipeGridView(
+                                  recipes: _filteredRecipes,
+                                  onTap: (r) => showRecipeDialog(context, r),
+                                  onToggleFavourite: _toggleFavourite,
+                                  onAssignCategories: _assignCategories,
+                                  categories: _allCategories,
+                                  onDelete: _deleteRecipe,
+                                  onAddOrUpdateImage: _addOrUpdateImage,
+                                ),
+                                ViewMode.compact => RecipeCompactView(
+                                  recipes: _filteredRecipes,
+                                  onTap: (r) => showRecipeDialog(context, r),
+                                  onToggleFavourite: _toggleFavourite,
+                                  onDelete: _deleteRecipe,
+                                  categories: _allCategories,
+                                  onAssignCategories: _assignCategories,
+                                  onAddOrUpdateImage: _addOrUpdateImage,
+                                ),
+                              },
+                            ),
                           ),
-                        ),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
             RecipeVaultBubbles(
               showScan: _showScanBubble,

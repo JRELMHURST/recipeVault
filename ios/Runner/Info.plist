@@ -127,9 +127,5 @@
 	<key>NSHumanReadableDescription</key>
 	<string>Used to sign in with your Apple ID</string>
 
-	<!-- ✅ Optional tracking usage description (future-proofing) -->
-	<key>NSUserTrackingUsageDescription</key>
-	<string>Used to securely authenticate your account via Apple Sign-In</string>
-
 </dict>
 </plist>

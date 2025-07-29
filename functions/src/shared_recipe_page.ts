@@ -23,6 +23,12 @@ export const sharedRecipePage = onRequest(
       const recipe = doc.data();
       const title = escapeHtml(recipe?.title || 'A Recipe on RecipeVault');
       const description = 'View and save this recipe with RecipeVault.';
+      const formattedText = escapeHtml(recipe?.formattedText || '');
+      const previewText = formattedText
+        .split('\n')
+        .slice(0, 8) // Show top 8 lines of recipe
+        .join('<br>');
+
       const imageUrl = recipe?.imageUrl?.startsWith('http')
         ? recipe.imageUrl
         : 'https://recipes.badger-creations.co.uk/assets/icon/round_vaultLogo.png';
@@ -46,27 +52,32 @@ export const sharedRecipePage = onRequest(
 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Deep link redirect logic -->
     <script>
       window.onload = function () {
-        // Attempt to open in app
         window.location.href = 'recipevault://shared/${recipeId}';
-        // Fallback to App Store after delay
         setTimeout(() => {
           window.location.href = 'https://apps.apple.com/app/id6748146354';
         }, 2000);
       };
     </script>
   </head>
-  <body style="font-family: sans-serif; text-align: center; margin-top: 5rem;">
+  <body style="font-family: sans-serif; text-align: center; margin-top: 4rem;">
     <img src="${imageUrl}" alt="Recipe image" style="max-width: 80%; border-radius: 8px;" />
     <h1>${title}</h1>
     <p>${description}</p>
-    <p>Opening the RecipeVault app...</p>
+    <div style="max-width: 600px; margin: 2rem auto; padding: 1rem; text-align: left; background: #f9f9f9; border-radius: 6px;">
+      <h3>Recipe Preview:</h3>
+      <p style="white-space: pre-line; line-height: 1.5; font-size: 15px;">
+        ${previewText}
+      </p>
+    </div>
+    <p style="margin-top: 3rem; font-size: 14px; color: #666;">
+      If the RecipeVault app doesn’t open automatically, <br/>you’ll be redirected to the App Store shortly.
+    </p>
   </body>
 </html>`;
 
-      res.set('Cache-Control', 'public, max-age=300'); // Cache for 5 mins
+      res.set('Cache-Control', 'public, max-age=300');
       res.status(200).send(html);
     } catch (error) {
       console.error('❌ Error generating shared recipe page:', error);

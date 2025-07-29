@@ -50,9 +50,10 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 
-	<!-- ✅ Firebase Google Sign-In -->
+	<!-- ✅ Firebase Sign-In, Apple Sign-In, and Custom URI Scheme -->
 	<key>CFBundleURLTypes</key>
 	<array>
+		<!-- Google Sign-In -->
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
@@ -61,13 +62,22 @@
 				<string>com.googleusercontent.apps.140256184353-7h32sfm21fg78icmq8csdn7v6v1q43c9</string>
 			</array>
 		</dict>
-		<!-- ✅ Apple Sign In support -->
+		<!-- Apple Sign-In -->
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.badgercreations.recipevault</string>
+			</array>
+		</dict>
+		<!-- Custom Scheme: recipevault:// -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>recipevault</string>
 			</array>
 		</dict>
 	</array>

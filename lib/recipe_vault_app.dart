@@ -32,12 +32,18 @@ class _RecipeVaultAppState extends State<RecipeVaultApp> {
 
   Future<void> _processUri(Uri uri) async {
     if (uri.pathSegments.isNotEmpty && uri.pathSegments.first == 'shared') {
-      final id = uri.pathSegments[1];
+      final id = uri.pathSegments.length > 1 ? uri.pathSegments[1] : null;
+      if (id == null || id.isEmpty) return;
+
       final prefs = await SharedPreferences.getInstance();
 
       if (UserSessionService.isInitialised && UserSessionService.isSignedIn) {
-        navigatorKey.currentState?.pushNamed('/shared/$id');
+        // ✅ Safely navigate using Future.microtask
+        Future.microtask(() {
+          navigatorKey.currentState?.pushNamed('/shared/$id');
+        });
       } else {
+        // ✅ Store it for post-login processing
         await prefs.setString('pendingSharedRecipeId', id);
       }
     }

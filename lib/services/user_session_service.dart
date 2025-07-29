@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_null_checks
+
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -72,13 +74,16 @@ class UserSessionService {
     }
   }
 
+  /// ✅ New method to safely route after cold-start link
   static Future<void> _checkAndNavigateToPendingSharedRecipe() async {
     final prefs = await SharedPreferences.getInstance();
     final sharedId = prefs.getString('pendingSharedRecipeId');
-    if (sharedId != null) {
-      prefs.remove('pendingSharedRecipeId');
+    if (sharedId != null && sharedId.isNotEmpty) {
+      await prefs.remove('pendingSharedRecipeId');
       _logDebug('🔗 Navigating to shared recipe: $sharedId');
-      navigatorKey.currentState?.pushNamed('/shared/$sharedId');
+      Future.microtask(() {
+        navigatorKey.currentState?.pushNamed('/shared/$sharedId');
+      });
     }
   }
 

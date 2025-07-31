@@ -18,6 +18,7 @@ import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_search_bar.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_vault_bubbles.dart';
+import 'package:recipe_vault/screens/home_screen/home_chef_usage.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
@@ -284,6 +285,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const HomeChefUsageWidget(),
                   RecipeSearchBar(
                     initialValue: _searchQuery,
                     onChanged: (value) => setState(() => _searchQuery = value),

@@ -23,6 +23,7 @@ dependencies:
 
   # ───── Routing ─────
   uni_links: ^0.5.1
+  intl: ^0.19.0
 
   # ───── Image Handling ─────
   image_picker: ^1.0.4

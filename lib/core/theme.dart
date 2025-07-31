@@ -3,6 +3,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+class AppColours {
+  static const turquoise = Color(0xFF3CCFBD);
+  static const lavender = Color(0xFFA593E0);
+  static const coral = Color(0xFFFF6B6B);
+  static const lemon = Color(0xFFFFD93D);
+  static const mint = Color(0xFF7DDE92);
+  static const steel = Color(0xFF6C7A89);
+}
+
 class AppTheme {
   static const Color primaryColor = Color(0xFF77528D); // Unified theme purple
   static const Color loginBackground = Color(0xFFF3EEFF); // Soft lavender
@@ -98,7 +107,7 @@ class AppTheme {
       shadowColor: const Color(0x77000000),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(20)),
-        side: BorderSide(color: primaryColor, width: 1.3),
+        side: BorderSide(color: AppTheme.primaryColor, width: 1.3),
       ),
     ),
     textTheme: TextTheme(

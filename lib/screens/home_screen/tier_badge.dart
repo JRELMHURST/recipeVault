@@ -23,6 +23,7 @@ class TierBadge extends StatelessWidget {
       builder: (context, tier, _) {
         // Fallback for unrecognised tiers
         final isFreeTier = tier.isEmpty || tier == 'none' || tier == 'free';
+        final isSpecial = subscriptionService.hasSpecialAccess;
 
         if (isFreeTier) {
           return showAsTitle
@@ -45,8 +46,13 @@ class TierBadge extends StatelessWidget {
         };
 
         final style = tierStyles[tier];
-        final label = style?.$1 ?? '❓ Unknown';
+        String label = style?.$1 ?? '❓ Unknown';
         final baseColour = overrideColor ?? style?.$2 ?? Colors.grey;
+
+        // ✨ Add star for special Home Chef users
+        if (tier == 'home_chef' && isSpecial) {
+          label = '⭐ $label';
+        }
 
         if (showAsTitle) {
           final parts = label.split(' ');

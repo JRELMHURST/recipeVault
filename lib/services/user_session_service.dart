@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/rev_cat/purchase_helper.dart';
+import 'package:recipe_vault/rev_cat/tier_utils.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
@@ -18,20 +19,17 @@ class UserSessionService {
 
   static bool get isInitialised => _isInitialised;
 
-  /// ✅ New getter to check if a user is signed in (non-anonymous)
   static bool get isSignedIn {
     final user = FirebaseAuth.instance.currentUser;
     return user != null && !user.isAnonymous;
   }
 
-  /// ✅ Force sync entitlement + reload session
   static Future<void> syncEntitlementAndRefreshSession() async {
     _logDebug('🔄 Manually syncing entitlement and refreshing session...');
     await SubscriptionService().syncRevenueCatEntitlement();
     await init();
   }
 
-  /// Call on app launch or login
   static Future<void> init() async {
     if (_isInitialised) return;
 
@@ -48,7 +46,6 @@ class UserSessionService {
       await UserPreferencesService.init();
 
       final isNewUser = await AuthService.ensureUserDocumentIfMissing(user);
-
       if (isNewUser) {
         try {
           await UserPreferencesService.markUserAsNew();
@@ -57,8 +54,9 @@ class UserSessionService {
           if (kDebugMode) print(stack);
         }
       }
-      await SubscriptionService().refresh(); // ✅ Now loads tier first
-      await syncRevenueCatEntitlement(); // ✅ Then syncs accurate tier
+
+      await SubscriptionService().refresh();
+      await syncRevenueCatEntitlement();
 
       final tier = SubscriptionService().tier;
       _logDebug('🎟️ Tier resolved: $tier');
@@ -76,8 +74,6 @@ class UserSessionService {
 
       _isInitialised = true;
       _logDebug('✅ User session initialisation complete');
-
-      // ✅ Removed shared recipe deep link check
     } catch (e, stack) {
       _logDebug('❌ Error during UserSession init: $e');
       if (kDebugMode) print(stack);
@@ -95,7 +91,6 @@ class UserSessionService {
     await VaultRecipeService.clearCache();
     await CategoryService.clearCache();
     await SubscriptionService().reset();
-
     _isInitialised = false;
     _bubbleFlagsReady = null;
     _logDebug('🧹 Session fully cleared');
@@ -124,12 +119,18 @@ class UserSessionService {
 
     final customerInfo = await Purchases.getCustomerInfo();
     final entitlementId = PurchaseHelper.getActiveEntitlementId(customerInfo);
-    final tier = SubscriptionService().tier;
+    final tier = resolveTier(entitlementId); // ✅ from tier_utils.dart
+    SubscriptionService().updateTier(tier); // Keep in sync
 
     try {
       final docRef = FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid);
+
+      _logDebug(
+        '☁️ Updating Firestore with tier: $tier and entitlementId: $entitlementId',
+      );
+
       await docRef.set({
         'tier': tier,
         'entitlementId': entitlementId,

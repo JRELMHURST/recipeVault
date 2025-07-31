@@ -79,6 +79,19 @@ class SubscriptionService extends ChangeNotifier {
     return null;
   }
 
+  void updateTier(String newTier) {
+    if (_tier != newTier) {
+      _tier = newTier;
+      tierNotifier.value = newTier;
+      _logTierOnce();
+      notifyListeners();
+
+      if (kDebugMode) {
+        debugPrint('🧾 [SubscriptionService] Tier manually updated → $_tier');
+      }
+    }
+  }
+
   Future<void> init() async {
     await Purchases.invalidateCustomerInfoCache();
     await loadSubscriptionStatus();

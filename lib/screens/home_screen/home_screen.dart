@@ -79,30 +79,81 @@ class _HomeScreenState extends State<HomeScreen> {
       final canCreate = _subscriptionService.allowImageUpload;
       if (!canCreate) {
         HapticFeedback.mediumImpact();
-        final showTrial = _subscriptionService.canStartTrial;
 
         await showDialog(
           context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Upgrade to Unlock'),
-            content: const Text(
-              'Creating recipes by uploading images is only available on paid plans.\n\n'
-              'Start a free trial or upgrade to unlock this feature.',
+          barrierDismissible: true,
+          builder: (_) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
             ),
-            actions: [
-              if (showTrial)
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, '/paywall');
-                  },
-                  child: const Text('View Plans'),
-                ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 40,
+            ),
+            backgroundColor: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.lock_outline_rounded,
+                    size: 48,
+                    color: Colors.deepPurple,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Upgrade to Unlock',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Creating recipes from images is available on paid plans.',
+                    style: TextStyle(fontSize: 15, color: Colors.black87),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Start a free trial or upgrade to unlock this feature.',
+                    style: TextStyle(fontSize: 14, color: Colors.black54),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/paywall');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'View Plans',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
 

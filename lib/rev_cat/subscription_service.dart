@@ -16,6 +16,7 @@ class SubscriptionService extends ChangeNotifier {
   String _tier = 'free';
   String _entitlementId = 'none';
   bool? _firestoreTrialActive;
+  bool _hasSpecialAccess = false; // ✅ New state
   bool _isLoadingTier = false;
   String? _lastLoggedTier;
 
@@ -58,6 +59,8 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   bool get canStartTrial => tier == 'free' && !isTasterTrialActive;
+
+  bool get hasSpecialAccess => _hasSpecialAccess; // ✅ Public getter
 
   String get tierIcon {
     return switch (_tier) {
@@ -127,6 +130,7 @@ class SubscriptionService extends ChangeNotifier {
     _activeEntitlement = null;
     _customerInfo = null;
     _firestoreTrialActive = null;
+    _hasSpecialAccess = false; // ✅ Reset this too
     tierNotifier.value = _tier;
 
     await Purchases.invalidateCustomerInfoCache();
@@ -157,24 +161,32 @@ class SubscriptionService extends ChangeNotifier {
         );
       }
 
-      // 🔁 Fallback for Taster tier via Firestore
-      if (_tier == 'free' || _tier == 'taster') {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-        final data = doc.data();
+      // 🔁 Firestore fallback for trial + special access
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      final data = doc.data();
 
-        if (data != null) {
-          final fallbackTier = data['tier'];
-          if (fallbackTier != null && fallbackTier != _tier) {
-            debugPrint('📄 Firestore fallback tier override → $fallbackTier');
-            _tier = fallbackTier;
-            tierNotifier.value = _tier;
-          }
+      if (data != null) {
+        final fallbackTier = data['tier'];
+        if (fallbackTier != null && fallbackTier != _tier) {
+          debugPrint('📄 Firestore fallback tier override → $fallbackTier');
+          _tier = fallbackTier;
+          tierNotifier.value = _tier;
+        }
 
-          _firestoreTrialActive = data['trialActive'] == true;
-          debugPrint('📄 Firestore trialActive: $_firestoreTrialActive');
+        _firestoreTrialActive = data['trialActive'] == true;
+        _hasSpecialAccess = data['specialAccess'] == true;
+
+        debugPrint('📄 Firestore trialActive: $_firestoreTrialActive');
+        debugPrint('📄 Firestore specialAccess: $_hasSpecialAccess');
+
+        // 🎁 Promote special access users to Home Chef
+        if (_hasSpecialAccess && _tier == 'free') {
+          _tier = 'home_chef';
+          tierNotifier.value = _tier;
+          debugPrint('🎁 specialAccess override → Home Chef tier');
         }
       }
 

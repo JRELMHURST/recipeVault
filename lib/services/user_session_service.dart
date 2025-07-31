@@ -133,14 +133,17 @@ class UserSessionService {
       final docRef = FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid);
+
       await docRef.set({
+        'uid': user.uid, // ✅ Explicitly store the auth UID as a field
+        'email': user.email,
         'tier': tier,
         'entitlementId': entitlementId,
         'lastLogin': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
       _logDebug(
-        '☁️ Synced entitlement to Firestore: {tier: $tier, entitlementId: $entitlementId}',
+        '☁️ Synced entitlement to Firestore: {uid: ${user.uid}, tier: $tier, entitlementId: $entitlementId}',
       );
     } catch (e) {
       _logDebug('⚠️ Failed to sync entitlement to Firestore: $e');

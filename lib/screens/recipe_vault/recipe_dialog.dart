@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
@@ -52,11 +54,25 @@ class _ShareableRecipeCard extends StatefulWidget {
 
 class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
   Color iconColor = Colors.black;
+  bool _iconReady = false;
 
   @override
   void initState() {
     super.initState();
-    _loadAndUpdateIconColor();
+
+    // Always try loading icon colour shortly after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadAndUpdateIconColor();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _ShareableRecipeCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.imageUrl != widget.imageUrl && widget.imageUrl != null) {
+      _loadAndUpdateIconColor();
+    }
   }
 
   Future<void> _loadAndUpdateIconColor() async {
@@ -75,10 +91,12 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
         iconColor = (brightness != null && brightness > 0.5)
             ? Colors.black
             : Colors.white;
+        _iconReady = true;
       });
     } catch (_) {
       setState(() {
-        iconColor = Colors.black;
+        iconColor = Colors.white;
+        _iconReady = true;
       });
     }
   }
@@ -116,7 +134,12 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
                     width: double.infinity,
                     fit: BoxFit.cover,
                     loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
+                      if (loadingProgress == null) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!_iconReady) _loadAndUpdateIconColor();
+                        });
+                        return child;
+                      }
                       return Container(
                         height: 200,
                         color: Colors.deepPurple.shade50,
@@ -139,55 +162,60 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
             ],
           ),
         ),
-        Positioned(
-          top: 8,
-          right: 8,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildActionIcon(
-                icon: Icons.share,
-                tooltip: 'Share as PDF',
-                onPressed: () => _shareAsPdf(context),
-              ),
-              const SizedBox(width: 4),
-              _buildActionIcon(
-                icon: Icons.close,
-                tooltip: 'Close',
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionIcon({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.black.withOpacity(0.4),
-      ),
-      child: IconButton(
-        icon: Icon(
-          icon,
-          color: iconColor,
-          shadows: [
-            Shadow(
-              blurRadius: 4,
-              color: Colors.black.withOpacity(0.5),
-              offset: const Offset(0, 1),
+        if (_iconReady)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withOpacity(0.4),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.share,
+                      color: iconColor,
+                      shadows: const [
+                        Shadow(
+                          blurRadius: 4,
+                          offset: Offset(1, 1),
+                          color: Colors.black45,
+                        ),
+                      ],
+                    ),
+                    tooltip: 'Share as PDF',
+                    onPressed: () => _shareAsPdf(context),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withOpacity(0.4),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.close,
+                      color: iconColor,
+                      shadows: const [
+                        Shadow(
+                          blurRadius: 4,
+                          offset: Offset(1, 1),
+                          color: Colors.black45,
+                        ),
+                      ],
+                    ),
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        tooltip: tooltip,
-        onPressed: onPressed,
-      ),
+          ),
+      ],
     );
   }
 }

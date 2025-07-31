@@ -173,15 +173,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Widget get _currentPage {
-    return switch (_selectedIndex) {
-      0 => const SizedBox.shrink(),
-      1 => RecipeVaultScreen(viewMode: _viewMode),
-      2 => const SettingsScreen(),
-      _ => const SizedBox.shrink(),
-    };
-  }
-
   IconData get _viewModeIcon {
     return switch (_viewMode) {
       ViewMode.list => Icons.view_agenda_rounded,
@@ -202,7 +193,17 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
-        child: PageStorage(bucket: _bucket, child: _currentPage),
+        child: PageStorage(
+          bucket: _bucket,
+          child: IndexedStack(
+            index: _selectedIndex,
+            children: [
+              const SizedBox.shrink(), // placeholder for "Create"
+              RecipeVaultScreen(viewMode: _viewMode),
+              const SettingsScreen(),
+            ],
+          ),
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         backgroundColor: theme.colorScheme.surface,

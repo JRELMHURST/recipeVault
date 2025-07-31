@@ -24,6 +24,13 @@ class UserSessionService {
     return user != null && !user.isAnonymous;
   }
 
+  /// ✅ Force sync entitlement + reload session
+  static Future<void> syncEntitlementAndRefreshSession() async {
+    _logDebug('🔄 Manually syncing entitlement and refreshing session...');
+    await SubscriptionService().syncRevenueCatEntitlement();
+    await init();
+  }
+
   /// Call on app launch or login
   static Future<void> init() async {
     if (_isInitialised) return;

@@ -12,29 +12,25 @@ class SubscriptionService extends ChangeNotifier {
 
   final ValueNotifier<String> tierNotifier = ValueNotifier('free');
 
-  // 🔐 Internal state
   String _tier = 'free';
   String _entitlementId = 'none';
   bool? _firestoreTrialActive;
-  bool _hasSpecialAccess = false; // ✅ New state
+  bool _hasSpecialAccess = false;
   bool _isLoadingTier = false;
   String? _lastLoggedTier;
 
   CustomerInfo? _customerInfo;
   EntitlementInfo? _activeEntitlement;
 
-  // 🎟️ Available packages
   Package? homeChefPackage;
   Package? masterChefMonthlyPackage;
   Package? masterChefYearlyPackage;
 
-  // 🧾 Tier accessors
   String get tier => _tier;
   String get entitlementId => _entitlementId;
   String get currentEntitlement => _tier;
   bool get isLoaded => _customerInfo != null;
 
-  // 🔓 Tier checkers
   bool get isFree => _tier == 'free';
   bool get isTaster => _tier == 'taster';
   bool get isHomeChef => _tier == 'home_chef';
@@ -45,7 +41,6 @@ class SubscriptionService extends ChangeNotifier {
   bool get isTasterTrialExpired => isTaster && (_firestoreTrialActive == false);
   bool get isTrialExpired => isTasterTrialExpired;
 
-  // 🧠 Access control logic
   bool get allowTranslation => isTaster || isHomeChef || isMasterChef;
   bool get allowImageUpload => isTaster || isHomeChef || isMasterChef;
   bool get allowSaveToVault => !isFree;
@@ -59,8 +54,7 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   bool get canStartTrial => tier == 'free' && !isTasterTrialActive;
-
-  bool get hasSpecialAccess => _hasSpecialAccess; // ✅ Public getter
+  bool get hasSpecialAccess => _hasSpecialAccess;
 
   String get tierIcon {
     return switch (_tier) {
@@ -113,7 +107,6 @@ class SubscriptionService extends ChangeNotifier {
       }
     }
 
-    // ✅ Sync to Firestore
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
@@ -125,6 +118,32 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
+  Future<void> syncRevenueCatEntitlement() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final customerInfo = await Purchases.getCustomerInfo();
+      final entitlement = _getActiveEntitlement(
+        customerInfo.entitlements.active,
+        _tier,
+      );
+      final entitlementId = entitlement?.productIdentifier ?? 'none';
+
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'tier': _tier,
+        'entitlementId': entitlementId,
+        'lastLogin': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      debugPrint(
+        '☁️ Synced entitlement to Firestore: {tier: $_tier, entitlementId: $entitlementId}',
+      );
+    } catch (e) {
+      debugPrint('⚠️ Failed to sync entitlement to Firestore: $e');
+    }
+  }
+
   Future<void> restoreAndSync() async => refresh();
 
   Future<void> reset() async {
@@ -133,7 +152,7 @@ class SubscriptionService extends ChangeNotifier {
     _activeEntitlement = null;
     _customerInfo = null;
     _firestoreTrialActive = null;
-    _hasSpecialAccess = false; // ✅ Reset this too
+    _hasSpecialAccess = false;
     tierNotifier.value = _tier;
 
     await Purchases.invalidateCustomerInfoCache();
@@ -164,7 +183,6 @@ class SubscriptionService extends ChangeNotifier {
         );
       }
 
-      // 🔁 Firestore fallback for trial + special access
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -185,7 +203,6 @@ class SubscriptionService extends ChangeNotifier {
         debugPrint('📄 Firestore trialActive: $_firestoreTrialActive');
         debugPrint('📄 Firestore specialAccess: $_hasSpecialAccess');
 
-        // 🎁 Promote special access users to Home Chef
         if (_hasSpecialAccess && _tier == 'free') {
           _tier = 'home_chef';
           tierNotifier.value = _tier;

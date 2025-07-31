@@ -3,7 +3,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/rev_cat/pricing_card.dart';
@@ -88,16 +87,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
     try {
       await Purchases.purchasePackage(package);
 
-      // Refresh user session
-      await UserSessionService.init();
+      // ✅ Immediately sync entitlements and Firestore
+      await SubscriptionService().refresh();
+      await UserSessionService.syncRevenueCatEntitlement();
 
-      // ✅ Refresh and notify the actual SubscriptionService
-      final subscriptionService = Provider.of<SubscriptionService>(
-        context,
-        listen: false,
-      );
-      await subscriptionService.init(); // <- reloads from Firestore/RevenueCat
-      await SubscriptionService().refreshAndNotify(); // ✅ LEGAL and safe
+      // ✅ Re-initialise user session (loads categories, vault, bubbles etc.)
+      await UserSessionService.init();
 
       if (!mounted) return;
       LoadingOverlay.hide();
@@ -109,8 +104,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ),
       );
 
-      // ⤴️ Push to home with updated tier now loaded
-      Navigator.pushReplacementNamed(context, '/home');
+      // ✅ Cleanly navigate to Home and rebuild stack
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
     } on PlatformException catch (e) {
       if (!mounted) return;
       LoadingOverlay.hide();

@@ -56,24 +56,26 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
   @override
   void initState() {
     super.initState();
-    if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty) {
-      _updateIconColor(widget.imageUrl!);
-    }
+    _loadAndUpdateIconColor();
   }
 
-  Future<void> _updateIconColor(String imageUrl) async {
+  Future<void> _loadAndUpdateIconColor() async {
+    if (widget.imageUrl == null || widget.imageUrl!.isEmpty) return;
+
     try {
       final palette = await PaletteGenerator.fromImageProvider(
-        NetworkImage(imageUrl),
+        NetworkImage(widget.imageUrl!),
         size: const Size(100, 100),
       );
+
       final dominant = palette.dominantColor?.color;
-      if (dominant != null) {
-        final brightness = dominant.computeLuminance();
-        setState(() {
-          iconColor = brightness > 0.5 ? Colors.black : Colors.white;
-        });
-      }
+      final brightness = dominant?.computeLuminance();
+
+      setState(() {
+        iconColor = (brightness != null && brightness > 0.5)
+            ? Colors.black
+            : Colors.white;
+      });
     } catch (_) {
       setState(() {
         iconColor = Colors.black;
@@ -143,13 +145,14 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                icon: Icon(Icons.share, color: iconColor),
+              _buildActionIcon(
+                icon: Icons.share,
                 tooltip: 'Share as PDF',
                 onPressed: () => _shareAsPdf(context),
               ),
-              IconButton(
-                icon: Icon(Icons.close, color: iconColor),
+              const SizedBox(width: 4),
+              _buildActionIcon(
+                icon: Icons.close,
                 tooltip: 'Close',
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -157,6 +160,34 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildActionIcon({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.black.withOpacity(0.4),
+      ),
+      child: IconButton(
+        icon: Icon(
+          icon,
+          color: iconColor,
+          shadows: [
+            Shadow(
+              blurRadius: 4,
+              color: Colors.black.withOpacity(0.5),
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        tooltip: tooltip,
+        onPressed: onPressed,
+      ),
     );
   }
 }

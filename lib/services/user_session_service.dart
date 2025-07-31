@@ -45,11 +45,17 @@ class UserSessionService {
     _logDebug('👤 Initialising session for UID: ${user.uid}');
 
     try {
-      final isNewUser = await AuthService.ensureUserDocumentIfMissing(user);
       await UserPreferencesService.init();
 
+      final isNewUser = await AuthService.ensureUserDocumentIfMissing(user);
+
       if (isNewUser) {
-        await UserPreferencesService.markUserAsNew();
+        try {
+          await UserPreferencesService.markUserAsNew();
+        } catch (e, stack) {
+          _logDebug('⚠️ Failed to mark user as new in preferences: $e');
+          if (kDebugMode) print(stack);
+        }
       }
       await SubscriptionService().refresh(); // ✅ Now loads tier first
       await syncRevenueCatEntitlement(); // ✅ Then syncs accurate tier

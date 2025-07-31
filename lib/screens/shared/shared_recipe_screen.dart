@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
-import 'package:recipe_vault/widgets/loading_overlay.dart';
 
 class SharedRecipeScreen extends StatefulWidget {
   final String recipeId;
@@ -95,7 +94,9 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const LoadingOverlay();
+    if (_loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     if (_error != null) {
       return Scaffold(

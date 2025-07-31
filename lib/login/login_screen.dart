@@ -19,8 +19,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final passwordController = TextEditingController();
   late FocusNode _emailFocus;
 
-  bool _isLoading = false;
-
   @override
   void initState() {
     super.initState();
@@ -39,8 +37,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _signInWithEmail() async {
-    FocusScope.of(context).unfocus(); // ✅ Hide keyboard immediately
-    setState(() => _isLoading = true);
+    FocusScope.of(context).unfocus();
+    LoadingOverlay.show(context);
+
     try {
       final email = emailController.text.trim();
       final password = passwordController.text.trim();
@@ -58,13 +57,14 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      LoadingOverlay.hide();
     }
   }
 
   Future<void> _signInWithGoogle() async {
-    FocusScope.of(context).unfocus(); // ✅ Hide keyboard immediately
-    setState(() => _isLoading = true);
+    FocusScope.of(context).unfocus();
+    LoadingOverlay.show(context);
+
     try {
       final credential = await AuthService().signInWithGoogle();
       if (credential == null) {
@@ -87,13 +87,14 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      LoadingOverlay.hide();
     }
   }
 
   Future<void> _signInWithApple() async {
-    FocusScope.of(context).unfocus(); // ✅ Hide keyboard immediately
-    setState(() => _isLoading = true);
+    FocusScope.of(context).unfocus();
+    LoadingOverlay.show(context);
+
     try {
       final credential = await AuthService().signInWithApple();
       if (credential == null) {
@@ -116,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      LoadingOverlay.hide();
     }
   }
 
@@ -148,150 +149,139 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Stack(
-      children: [
-        GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
-          behavior: HitTestBehavior.opaque,
-          child: Scaffold(
-            backgroundColor: const Color(0xFFE6E2FF),
-            body: SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 32,
-                  ),
-                  child: ResponsiveWrapper(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFE6E2FF),
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: ResponsiveWrapper(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
                           ),
-                          child: Column(
-                            children: [
-                              Image.asset(
-                                'assets/icon/round_vaultLogo.png',
-                                height: 64,
-                                width: 64,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Welcome to\nRecipeVault',
-                                textAlign: TextAlign.center,
-                                style: theme.textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.deepPurple,
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/icon/round_vaultLogo.png',
+                            height: 64,
+                            width: 64,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Welcome to\nRecipeVault',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.deepPurple,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Free 7-day trial. No card needed. Full access.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          TextField(
+                            controller: emailController,
+                            focusNode: _emailFocus,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: 'Email',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: passwordController,
+                            obscureText: true,
+                            textInputAction: TextInputAction.done,
+                            decoration: const InputDecoration(
+                              labelText: 'Password',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _signInWithEmail,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.deepPurple,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'Free 7-day trial. No card needed. Full access.',
-                                textAlign: TextAlign.center,
+                              child: const Text(
+                                'Sign in with Email',
                                 style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black54,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(height: 24),
-                              TextField(
-                                controller: emailController,
-                                focusNode: _emailFocus,
-                                keyboardType: TextInputType.emailAddress,
-                                textInputAction: TextInputAction.next,
-                                decoration: const InputDecoration(
-                                  labelText: 'Email',
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              TextField(
-                                controller: passwordController,
-                                obscureText: true,
-                                textInputAction: TextInputAction.done,
-                                decoration: const InputDecoration(
-                                  labelText: 'Password',
-                                  border: OutlineInputBorder(),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: _signInWithEmail,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.deepPurple,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Sign in with Email',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              OutlinedButton.icon(
-                                icon: const Icon(Icons.login),
-                                label: const Text('Sign in with Google'),
-                                onPressed: _signInWithGoogle,
-                              ),
-                              const SizedBox(height: 12),
-                              if (Theme.of(context).platform ==
-                                  TargetPlatform.iOS)
-                                OutlinedButton.icon(
-                                  icon: const Icon(
-                                    Icons.apple,
-                                    color: Colors.black,
-                                  ),
-                                  label: const Text('Sign in with Apple'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.black,
-                                    backgroundColor: Colors.white,
-                                    side: const BorderSide(
-                                      color: Colors.black12,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                      horizontal: 16,
-                                    ),
-                                  ),
-                                  onPressed: _signInWithApple,
-                                ),
-                            ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        TextButton(
-                          onPressed: _goToRegister,
-                          child: const Text("Don't have an account? Register"),
-                        ),
-                      ],
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.login),
+                            label: const Text('Sign in with Google'),
+                            onPressed: _signInWithGoogle,
+                          ),
+                          const SizedBox(height: 12),
+                          if (Theme.of(context).platform == TargetPlatform.iOS)
+                            OutlinedButton.icon(
+                              icon: const Icon(
+                                Icons.apple,
+                                color: Colors.black,
+                              ),
+                              label: const Text('Sign in with Apple'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.black,
+                                backgroundColor: Colors.white,
+                                side: const BorderSide(color: Colors.black12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                  horizontal: 16,
+                                ),
+                              ),
+                              onPressed: _signInWithApple,
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                    TextButton(
+                      onPressed: _goToRegister,
+                      child: const Text("Don't have an account? Register"),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
         ),
-        if (_isLoading) const LoadingOverlay(),
-      ],
+      ),
     );
   }
 }

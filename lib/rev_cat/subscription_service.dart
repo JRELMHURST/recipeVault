@@ -91,6 +91,11 @@ class SubscriptionService extends ChangeNotifier {
     await _loadAvailablePackages();
   }
 
+  Future<void> refreshAndNotify() async {
+    await refresh();
+    notifyListeners();
+  }
+
   Future<void> refresh() async {
     await Purchases.invalidateCustomerInfoCache();
     await loadSubscriptionStatus();
@@ -118,8 +123,6 @@ class SubscriptionService extends ChangeNotifier {
         'lastLogin': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     }
-
-    notifyListeners();
   }
 
   Future<void> restoreAndSync() async => refresh();

@@ -22,7 +22,6 @@ import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
-import 'package:recipe_vault/services/view_mode.dart';
 
 class RecipeVaultScreen extends StatefulWidget {
   final ViewMode viewMode;

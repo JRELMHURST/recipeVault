@@ -1,8 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
+import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/services/user_session_service.dart';
@@ -33,7 +33,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    LoadingOverlay.show(context);
 
     try {
       await AuthService().registerWithEmail(email, password);
@@ -49,7 +49,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Registration failed: $e')));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      LoadingOverlay.hide();
     }
   }
 
@@ -291,7 +291,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
         ),
-        if (_isLoading) const LoadingOverlay(),
       ],
     );
   }

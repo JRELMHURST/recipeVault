@@ -14,7 +14,6 @@ import 'services/category_service.dart';
 import 'services/notification_service.dart';
 import 'services/user_preference_service.dart';
 import 'services/user_session_service.dart';
-import 'services/view_mode.dart';
 
 class AppBootstrap {
   static bool _isReady = false;
@@ -98,17 +97,11 @@ class AppBootstrap {
     // ⚙️ Load local preferences (only if signed in)
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      await UserPreferencesService.init();
-    }
-
-    // 👤 If signed in, load preferences and view mode
-    if (uid != null) {
       try {
         await UserPreferencesService.init();
-        final savedViewMode = await ViewModeService.getViewMode();
-        if (savedViewMode == ViewMode.grid) {
-          await ViewModeService.setViewMode(ViewMode.grid);
-        }
+
+        final viewMode = await UserPreferencesService.getSavedViewMode();
+        await UserPreferencesService.saveViewMode(viewMode);
       } catch (e, stack) {
         if (kDebugMode) {
           print('⚠️ Failed to load user preferences or view mode: $e');

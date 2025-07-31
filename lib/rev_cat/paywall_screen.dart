@@ -1,8 +1,9 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/rev_cat/pricing_card.dart';
@@ -59,7 +60,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
       _availablePackages = [...homeChefPackages, masterMonthly, masterAnnual];
 
-      // Reorder: current plan first
       final currentId = _subscriptionService.entitlementId;
       _availablePackages.sort((a, b) {
         final aIsCurrent =
@@ -83,14 +83,24 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   Future<void> _handlePurchase(Package package) async {
     setState(() => _isPurchasing = true);
+    LoadingOverlay.show(context);
 
     try {
       await Purchases.purchasePackage(package);
-      await _subscriptionService
-          .refresh(); // Already re-syncs RevenueCat + Firestore
-      await UserSessionService.init(); // Optionally reloads onboarding, categories etc.
+
+      // Refresh user session
+      await UserSessionService.init();
+
+      // ✅ Refresh and notify the actual SubscriptionService
+      final subscriptionService = Provider.of<SubscriptionService>(
+        context,
+        listen: false,
+      );
+      await subscriptionService.init(); // <- reloads from Firestore/RevenueCat
+      await SubscriptionService().refreshAndNotify(); // ✅ LEGAL and safe
 
       if (!mounted) return;
+      LoadingOverlay.hide();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -99,9 +109,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ),
       );
 
+      // ⤴️ Push to home with updated tier now loaded
       Navigator.pushReplacementNamed(context, '/home');
     } on PlatformException catch (e) {
       if (!mounted) return;
+      LoadingOverlay.hide();
 
       final isCancelled =
           e.code == '1' ||
@@ -116,6 +128,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      LoadingOverlay.hide();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -312,7 +325,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
             ],
           ),
         ),
-        if (_isPurchasing) const LoadingOverlay(),
       ],
     );
   }

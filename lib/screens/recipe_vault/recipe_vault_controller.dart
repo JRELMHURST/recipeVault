@@ -4,7 +4,6 @@ import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/model/category_model.dart';
-import 'package:recipe_vault/services/view_mode.dart';
 
 class RecipeVaultController extends ChangeNotifier {
   /// State
@@ -34,7 +33,7 @@ class RecipeVaultController extends ChangeNotifier {
 
   /// Initial load
   Future<void> initialise() async {
-    _viewMode = await ViewModeService.getViewMode();
+    _viewMode = await UserPreferencesService.getSavedViewMode();
 
     if (!_hasFetchedBubbles) {
       final scanDismissed = await UserPreferencesService.hasDismissedBubble(
@@ -82,7 +81,7 @@ class RecipeVaultController extends ChangeNotifier {
   /// Change view mode and persist
   Future<void> setViewMode(ViewMode mode) async {
     _viewMode = mode;
-    await ViewModeService.setViewMode(mode);
+    await UserPreferencesService.saveViewMode(mode);
     notifyListeners();
   }
 

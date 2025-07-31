@@ -7,7 +7,7 @@ import 'package:recipe_vault/rev_cat/trial_prompt_helper.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_vault_screen.dart';
 import 'package:recipe_vault/screens/home_screen/home_app_bar.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
-import 'package:recipe_vault/services/view_mode.dart';
+import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/settings/settings_screen.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -37,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initialisePreferencesAndPrompt() async {
-    _viewMode = await ViewModeService.getViewMode();
+    _viewMode = await UserPreferencesService.getSavedViewMode();
     if (mounted) setState(() {});
 
     await _subscriptionService.refresh();
@@ -69,7 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
       final nextIndex = (currentIndex + 1) % ViewMode.values.length;
       _viewMode = ViewMode.values[nextIndex];
     });
-    ViewModeService.setViewMode(_viewMode);
+
+    // Save the updated view mode
+    UserPreferencesService.saveViewMode(_viewMode);
   }
 
   Future<void> _onNavTap(int index) async {

@@ -1,7 +1,33 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
-import 'package:recipe_vault/services/view_mode.dart';
+
+/// 🧭 User-facing view modes
+enum ViewMode { list, grid, compact }
+
+extension ViewModeExtension on ViewMode {
+  String get label {
+    switch (this) {
+      case ViewMode.list:
+        return 'List';
+      case ViewMode.grid:
+        return 'Grid';
+      case ViewMode.compact:
+        return 'Compact';
+    }
+  }
+
+  String get iconAsset {
+    switch (this) {
+      case ViewMode.list:
+        return 'assets/icons/view_list.png';
+      case ViewMode.grid:
+        return 'assets/icons/view_grid.png';
+      case ViewMode.compact:
+        return 'assets/icons/view_compact.png';
+    }
+  }
+}
 
 class UserPreferencesService {
   static const String _keyViewMode = 'viewMode';
@@ -43,9 +69,10 @@ class UserPreferencesService {
 
   static Future<ViewMode> getSavedViewMode() async {
     final box = _safeBox;
-    final index =
-        box?.get(_keyViewMode, defaultValue: ViewMode.grid.index) as int? ?? 0;
-    final mode = ViewMode.values[index];
+    final index = box?.get(_keyViewMode) as int?;
+    final mode = index != null && index >= 0 && index < ViewMode.values.length
+        ? ViewMode.values[index]
+        : ViewMode.grid;
     if (kDebugMode) print('📥 Loaded view mode: ${mode.name}');
     return mode;
   }

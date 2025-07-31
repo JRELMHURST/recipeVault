@@ -5,13 +5,11 @@ import 'package:recipe_vault/recipe_vault_app.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
-import 'package:recipe_vault/services/user_session_service.dart';
 
 // ✅ main.dart
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppBootstrap.ensureReady(); // ⬅️ all init logic here
-  await UserSessionService.init(); // ⬅️ separate lifecycle
+  await AppBootstrap.ensureReady(); // includes Firebase, Hive, RevenueCat, UserSessionService
 
   runApp(
     MultiProvider(

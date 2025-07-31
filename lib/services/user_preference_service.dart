@@ -45,9 +45,10 @@ class UserPreferencesService {
 
   static Future<void> init() async {
     if (FirebaseAuth.instance.currentUser == null) {
-      throw Exception(
-        '❌ Cannot initialise UserPreferencesService – no signed-in user',
-      );
+      if (kDebugMode) {
+        print('🟡 Skipping UserPreferencesService.init() – no user signed in');
+      }
+      return; // ✅ Exit silently instead of throwing
     }
 
     if (Hive.isBoxOpen(_boxName)) {

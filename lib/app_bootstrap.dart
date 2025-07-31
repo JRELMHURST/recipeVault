@@ -91,24 +91,26 @@ class AppBootstrap {
       }
     }
 
+    // ✅ Preferences init moved higher to avoid LateInitializationError
+    await UserPreferencesService.init();
+
+    // 👤 Debug: track auth user restoration
+    if (kDebugMode) {
+      FirebaseAuth.instance.authStateChanges().listen((user) {
+        if (user == null) {
+          if (kDebugMode) {
+            print('🧍 FirebaseAuth: No user signed in');
+          }
+        } else {
+          if (kDebugMode) {
+            print('✅ FirebaseAuth: User signed in with UID = ${user.uid}');
+          }
+        }
+      });
+    }
+
     // 👤 Load and sync session (auth, tier, entitlement, onboarding)
     await UserSessionService.init();
-
-    // ⚙️ Load local preferences (only if signed in)
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      try {
-        await UserPreferencesService.init();
-
-        final viewMode = await UserPreferencesService.getSavedViewMode();
-        await UserPreferencesService.saveViewMode(viewMode);
-      } catch (e, stack) {
-        if (kDebugMode) {
-          print('⚠️ Failed to load user preferences or view mode: $e');
-          print(stack);
-        }
-      }
-    }
 
     _isReady = true;
   }

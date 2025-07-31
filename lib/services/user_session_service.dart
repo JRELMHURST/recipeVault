@@ -46,11 +46,11 @@ class UserSessionService {
 
     try {
       final isNewUser = await AuthService.ensureUserDocumentIfMissing(user);
+      await UserPreferencesService.init();
+
       if (isNewUser) {
         await UserPreferencesService.markUserAsNew();
       }
-
-      await UserPreferencesService.init();
       await SubscriptionService().refresh(); // ✅ Now loads tier first
       await syncRevenueCatEntitlement(); // ✅ Then syncs accurate tier
 

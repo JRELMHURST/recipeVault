@@ -83,7 +83,7 @@ class SubscriptionService extends ChangeNotifier {
     if (_tier != newTier) {
       _tier = newTier;
       tierNotifier.value = newTier;
-      _logTierOnce();
+      _logTierOnce(source: 'updateTier');
       notifyListeners();
 
       if (kDebugMode) {
@@ -149,9 +149,7 @@ class SubscriptionService extends ChangeNotifier {
         'lastLogin': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      debugPrint(
-        '☁️ Synced entitlement to Firestore: {tier: $_tier, entitlementId: $entitlementId}',
-      );
+      _logTierOnce(source: 'syncRevenueCatEntitlement');
     } catch (e) {
       debugPrint('⚠️ Failed to sync entitlement to Firestore: $e');
     }
@@ -188,7 +186,7 @@ class SubscriptionService extends ChangeNotifier {
       _entitlementId = _activeEntitlement?.productIdentifier ?? 'none';
       tierNotifier.value = _tier;
 
-      _logTierOnce();
+      _logTierOnce(source: 'loadSubscriptionStatus');
 
       if (kDebugMode) {
         debugPrint(
@@ -294,9 +292,9 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
-  void _logTierOnce() {
+  void _logTierOnce({String source = 'unknown'}) {
     if (_lastLoggedTier != _tier) {
-      debugPrint('📦 Tier changed → $_tier');
+      debugPrint('📦 Tier changed → $_tier (source: $source)');
       _lastLoggedTier = _tier;
     }
   }

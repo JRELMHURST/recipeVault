@@ -133,7 +133,7 @@ class UserSessionService {
 
       await docRef.set({
         'tier': tier,
-        'entitlementId': entitlementId,
+        'entitlementId': entitlementId ?? 'none',
         'lastLogin': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 

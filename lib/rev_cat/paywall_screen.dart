@@ -87,11 +87,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
     try {
       await Purchases.purchasePackage(package);
 
-      // ✅ Immediately sync entitlements and Firestore
       await SubscriptionService().refresh();
       await UserSessionService.syncRevenueCatEntitlement();
-
-      // ✅ Re-initialise user session (loads categories, vault, bubbles etc.)
       await UserSessionService.init();
 
       if (!mounted) return;
@@ -104,7 +101,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ),
       );
 
-      // ✅ Cleanly navigate to Home and rebuild stack
       Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
     } on PlatformException catch (e) {
       if (!mounted) return;

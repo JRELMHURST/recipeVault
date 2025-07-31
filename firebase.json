@@ -25,10 +25,6 @@
     ],
     "rewrites": [
       {
-        "source": "/shared/**",
-        "function": "sharedRecipePage"
-      },
-      {
         "source": "**",
         "destination": "/index.html"
       }

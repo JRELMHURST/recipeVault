@@ -166,7 +166,7 @@ class RecipeCardModel extends HiveObject {
         .entries
         .map((e) => '${e.key + 1}. ${e.value}')
         .join('\n\n');
-    return 'Ingredients:\n• $ingredientsStr\n\nInstructions:\n$instructionsStr';
+    return '## Ingredients\n• $ingredientsStr\n\n## Instructions\n$instructionsStr';
   }
 
   bool get isTranslated => categories.contains('Translated');

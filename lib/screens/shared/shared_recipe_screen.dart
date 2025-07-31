@@ -1,10 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
-import 'package:recipe_vault/widgets/recipe_card.dart';
-import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class SharedRecipeScreen extends StatefulWidget {
   final String recipeId;
@@ -55,20 +56,41 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
     }
   }
 
-  void _shareLink() {
-    final url =
-        'https://recipes.badger-creations.co.uk/shared/${widget.recipeId}';
+  Future<Uint8List> _generateRecipePdf(RecipeCardModel recipe) async {
+    final pdf = pw.Document();
 
-    final box = context.findRenderObject();
-    if (box is RenderBox && box.hasSize) {
-      final origin = box.localToGlobal(Offset.zero) & box.size;
-      Share.share(
-        'Check out this recipe on RecipeVault:\n$url',
-        sharePositionOrigin: origin,
-      );
-    } else {
-      Share.share('Check out this recipe on RecipeVault:\n$url');
-    }
+    pdf.addPage(
+      pw.Page(
+        pageTheme: pw.PageTheme(
+          margin: const pw.EdgeInsets.all(32),
+          theme: pw.ThemeData.withFont(
+            base: await PdfGoogleFonts.robotoRegular(),
+            bold: await PdfGoogleFonts.robotoBold(),
+          ),
+        ),
+        build: (context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                recipe.title,
+                style: pw.TextStyle(
+                  fontSize: 24,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 12),
+              pw.Text(
+                recipe.formattedText,
+                style: const pw.TextStyle(fontSize: 14),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    return pdf.save();
   }
 
   @override
@@ -85,21 +107,14 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
     final recipe = _recipe!;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(recipe.title),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: _shareLink,
-            tooltip: 'Share',
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: ResponsiveWrapper(
-          child: RecipeCard(recipeText: recipe.formattedText),
-        ),
+      appBar: AppBar(title: Text(recipe.title)),
+      body: PdfPreview(
+        build: (format) => _generateRecipePdf(recipe),
+        canChangePageFormat: false,
+        canChangeOrientation: false,
+        allowPrinting: true,
+        allowSharing: true,
+        pdfFileName: '${recipe.title.replaceAll(' ', '_')}.pdf',
       ),
     );
   }

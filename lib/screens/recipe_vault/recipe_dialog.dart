@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_utils.dart';
+import 'package:recipe_vault/utils/recipe_pdf_generator.dart';
 
 void showRecipeDialog(BuildContext context, RecipeCardModel recipe) {
   final markdown = formatRecipeMarkdown(recipe);
@@ -19,6 +19,9 @@ void showRecipeDialog(BuildContext context, RecipeCardModel recipe) {
         title: recipe.title,
         imageUrl: recipe.imageUrl,
         recipeId: recipe.id,
+        userId: recipe.userId,
+        ingredients: recipe.ingredients,
+        instructions: recipe.instructions,
       ),
     ),
   );
@@ -29,11 +32,17 @@ class _ShareableRecipeCard extends StatefulWidget {
   final String title;
   final String? imageUrl;
   final String recipeId;
+  final String userId;
+  final List<String> ingredients;
+  final List<String> instructions;
 
   const _ShareableRecipeCard({
     required this.markdown,
     required this.title,
     required this.recipeId,
+    required this.userId,
+    required this.ingredients,
+    required this.instructions,
     this.imageUrl,
   });
 
@@ -72,23 +81,18 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
     }
   }
 
-  Future<void> _shareLink(BuildContext context) async {
-    final recipeLink =
-        'https://recipes.badger-creations.co.uk/shared/${Uri.encodeComponent(widget.recipeId)}';
-    final box = context.findRenderObject();
-    if (box is RenderBox && box.hasSize) {
-      final origin = box.localToGlobal(Offset.zero) & box.size;
-      await Share.share(
-        recipeLink,
-        subject: 'Check out this recipe on RecipeVault!',
-        sharePositionOrigin: origin,
-      );
-    } else {
-      await Share.share(
-        recipeLink,
-        subject: '📋 ${widget.title} – via RecipeVault',
-      );
-    }
+  Future<void> _shareAsPdf(BuildContext context) async {
+    final recipe = RecipeCardModel(
+      id: widget.recipeId,
+      userId: widget.userId,
+      title: widget.title,
+      ingredients: widget.ingredients,
+      instructions: widget.instructions,
+      imageUrl: widget.imageUrl,
+      createdAt: DateTime.now(),
+    );
+
+    await RecipePdfGenerator.sharePdf(recipe);
   }
 
   @override
@@ -140,9 +144,9 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
-                icon: Icon(Icons.share, color: iconColor),
-                tooltip: 'Share recipe',
-                onPressed: () => _shareLink(context),
+                icon: Icon(Icons.picture_as_pdf, color: iconColor),
+                tooltip: 'Share as PDF',
+                onPressed: () => _shareAsPdf(context),
               ),
               IconButton(
                 icon: Icon(Icons.close, color: iconColor),

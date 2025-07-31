@@ -17,7 +17,6 @@ import 'login/change_password.dart';
 // Main Screens
 import 'screens/home_screen/home_screen.dart';
 import 'screens/results_screen.dart';
-import 'screens/shared/shared_recipe_screen.dart';
 
 // Settings
 import 'settings/settings_screen.dart';
@@ -38,15 +37,6 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Route<dynamic> generateRoute(RouteSettings settings) {
   final user = FirebaseAuth.instance.currentUser;
 
-  // Handle shared recipe deep link
-  if (settings.name?.startsWith('/shared/') == true) {
-    final recipeId = settings.name!.split('/').last;
-    return MaterialPageRoute(
-      builder: (_) => SharedRecipeScreen(recipeId: recipeId),
-      settings: settings,
-    );
-  }
-
   // Route map
   final routes = <String, WidgetBuilder>{
     '/': (_) => user == null ? const LoginScreen() : const HomeScreen(),
@@ -66,20 +56,11 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     '/settings/notifications': (_) => const NotificationsSettingsScreen(),
     '/settings/storage': (_) => const StorageSyncScreen(),
     '/settings/about': (_) => const AboutSettingsScreen(),
-    '/settings/faqs': (_) => FaqsScreen(), // ✅ New route
+    '/settings/faqs': (_) => FaqsScreen(),
+
     // Subscription
     '/paywall': (_) => const PaywallScreen(),
     '/trial-ended': (_) => const TrialEndedScreen(),
-
-    // Fallback invalid shared link
-    '/shared': (_) => const Scaffold(
-      body: Center(
-        child: Text(
-          'Please use a valid shared recipe link.',
-          style: TextStyle(fontSize: 16),
-        ),
-      ),
-    ),
   };
 
   final builder = routes[settings.name];

@@ -11,8 +11,6 @@ import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/services/category_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:recipe_vault/router.dart';
 
 class UserSessionService {
   static bool _isInitialised = false;
@@ -66,24 +64,10 @@ class UserSessionService {
       _isInitialised = true;
       _logDebug('✅ User session initialisation complete');
 
-      // 🔗 Check for shared recipe link after init
-      await _checkAndNavigateToPendingSharedRecipe();
+      // ✅ Removed shared recipe deep link check
     } catch (e, stack) {
       _logDebug('❌ Error during UserSession init: $e');
       if (kDebugMode) print(stack);
-    }
-  }
-
-  /// ✅ New method to safely route after cold-start link
-  static Future<void> _checkAndNavigateToPendingSharedRecipe() async {
-    final prefs = await SharedPreferences.getInstance();
-    final sharedId = prefs.getString('pendingSharedRecipeId');
-    if (sharedId != null && sharedId.isNotEmpty) {
-      await prefs.remove('pendingSharedRecipeId');
-      _logDebug('🔗 Navigating to shared recipe: $sharedId');
-      Future.microtask(() {
-        navigatorKey.currentState?.pushNamed('/shared/$sharedId');
-      });
     }
   }
 

@@ -1,7 +1,11 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/rev_cat/pricing_card.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
+import 'package:recipe_vault/services/user_session_service.dart';
 
 class TrialEndedScreen extends StatefulWidget {
   const TrialEndedScreen({super.key});
@@ -28,16 +32,22 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
   }
 
   Future<void> _handlePurchase(Package package) async {
+    LoadingOverlay.show(context); // ⬅️ Show overlay
     try {
       await Purchases.purchasePackage(package);
       await _subscriptionService.refresh();
+      await UserSessionService.syncRevenueCatEntitlement();
+      await UserSessionService.init();
+
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('❌ Purchase failed: $e')));
+    } finally {
+      LoadingOverlay.hide(); // ⬅️ Always hide overlay
     }
   }
 

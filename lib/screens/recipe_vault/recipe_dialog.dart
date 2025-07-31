@@ -144,7 +144,7 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
-                icon: Icon(Icons.picture_as_pdf, color: iconColor),
+                icon: Icon(Icons.share, color: iconColor),
                 tooltip: 'Share as PDF',
                 onPressed: () => _shareAsPdf(context),
               ),

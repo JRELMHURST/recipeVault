@@ -44,8 +44,8 @@ class UserSessionService {
       }
 
       await UserPreferencesService.init();
-      await syncRevenueCatEntitlement();
-      await SubscriptionService().refresh();
+      await SubscriptionService().refresh(); // ✅ Now loads tier first
+      await syncRevenueCatEntitlement(); // ✅ Then syncs accurate tier
 
       final tier = SubscriptionService().tier;
       _logDebug('🎟️ Tier resolved: $tier');
@@ -90,8 +90,8 @@ class UserSessionService {
 
   static Future<void> retryEntitlementSync() async {
     _logDebug('🔁 Retrying entitlement sync...');
-    await syncRevenueCatEntitlement();
     await SubscriptionService().refresh();
+    await syncRevenueCatEntitlement();
 
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {

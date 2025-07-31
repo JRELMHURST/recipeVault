@@ -39,6 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _signInWithEmail() async {
+    FocusScope.of(context).unfocus(); // ✅ Hide keyboard immediately
     setState(() => _isLoading = true);
     try {
       final email = emailController.text.trim();
@@ -48,7 +49,6 @@ class _LoginScreenState extends State<LoginScreen> {
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      FocusManager.instance.primaryFocus?.unfocus();
       await Future.delayed(const Duration(milliseconds: 100));
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
@@ -63,6 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
+    FocusScope.of(context).unfocus(); // ✅ Hide keyboard immediately
     setState(() => _isLoading = true);
     try {
       final credential = await AuthService().signInWithGoogle();
@@ -77,7 +78,6 @@ class _LoginScreenState extends State<LoginScreen> {
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      FocusManager.instance.primaryFocus?.unfocus();
       await Future.delayed(const Duration(milliseconds: 100));
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
@@ -92,6 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _signInWithApple() async {
+    FocusScope.of(context).unfocus(); // ✅ Hide keyboard immediately
     setState(() => _isLoading = true);
     try {
       final credential = await AuthService().signInWithApple();
@@ -106,7 +107,6 @@ class _LoginScreenState extends State<LoginScreen> {
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      FocusManager.instance.primaryFocus?.unfocus();
       await Future.delayed(const Duration(milliseconds: 100));
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {

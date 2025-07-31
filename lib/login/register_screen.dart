@@ -21,6 +21,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
 
   Future<void> _registerWithEmail() async {
+    FocusScope.of(context).unfocus(); // ✅ Hide keyboard
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
     final confirm = confirmPasswordController.text.trim();
@@ -53,6 +54,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _signUpWithGoogle() async {
+    FocusScope.of(context).unfocus(); // ✅ Hide keyboard
     setState(() => _isLoading = true);
     try {
       final credential = await AuthService().signInWithGoogle();
@@ -81,6 +83,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _signUpWithApple() async {
+    FocusScope.of(context).unfocus(); // ✅ Hide keyboard
     setState(() => _isLoading = true);
     try {
       final credential = await AuthService().signInWithApple();

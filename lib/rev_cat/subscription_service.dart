@@ -71,6 +71,19 @@ class SubscriptionService extends ChangeNotifier {
     };
   }
 
+  String get entitlementLabel {
+    return switch (entitlementId) {
+      'master_chef_monthly' => 'Master Chef – Monthly',
+      'master_chef_yearly' => 'Master Chef – Yearly',
+      'home_chef_monthly' => 'Home Chef – Monthly',
+      'taster' => 'Taster Trial',
+      _ => 'Free Plan',
+    };
+  }
+
+  bool get isYearly => entitlementId.endsWith('_yearly');
+  String get billingCycle => isYearly ? 'Yearly' : 'Monthly';
+
   String get trialEndDateFormatted {
     final date = trialEndDate;
     return date != null ? '${date.day}/${date.month}/${date.year}' : 'N/A';

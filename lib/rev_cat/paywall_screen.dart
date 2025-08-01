@@ -132,42 +132,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
     }
   }
 
-  Future<void> _handleRestore() async {
-    setState(() => _isPurchasing = true);
-    LoadingOverlay.show(context);
-
-    try {
-      await Purchases.restorePurchases();
-      await SubscriptionService().refresh();
-      await UserSessionService.syncRevenueCatEntitlement();
-      await UserSessionService.init();
-
-      if (!mounted) return;
-      LoadingOverlay.hide();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🔄 Purchases restored.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
-    } catch (e) {
-      if (!mounted) return;
-      LoadingOverlay.hide();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Restore failed: $e'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isPurchasing = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -280,14 +244,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                 style: TextStyle(color: Colors.grey),
                               ),
                             ),
-                          const SizedBox(height: 24),
-                          Center(
-                            child: TextButton.icon(
-                              icon: const Icon(Icons.restore),
-                              label: const Text('Restore Purchases'),
-                              onPressed: _isPurchasing ? null : _handleRestore,
-                            ),
-                          ),
                           const SizedBox(height: 32),
                           Center(
                             child: Column(

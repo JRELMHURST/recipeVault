@@ -104,6 +104,22 @@ class UserSessionService {
     try {
       await UserPreferencesService.init();
 
+      final customerInfo = await Purchases.getCustomerInfo();
+      final entitlementId = PurchaseHelper.getActiveEntitlementId(customerInfo);
+      final tierFromRC = resolveTier(entitlementId);
+
+      if (tierFromRC != 'free') {
+        SubscriptionService().updateTier(tierFromRC);
+        await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'tier': tierFromRC,
+          'entitlementId': entitlementId ?? 'none',
+          'lastLogin': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        _logDebug('☁️ Firestore updated with RC tier: $tierFromRC');
+      } else {
+        await SubscriptionService().refresh();
+      }
+
       final isNewUser = await AuthService.ensureUserDocumentIfMissing(user);
       if (isNewUser) {
         try {
@@ -113,9 +129,6 @@ class UserSessionService {
           if (kDebugMode) print(stack);
         }
       }
-
-      await SubscriptionService().refresh();
-      await syncRevenueCatEntitlement();
 
       final tier = SubscriptionService().tier;
       _logDebug('🎟️ Tier resolved: $tier');

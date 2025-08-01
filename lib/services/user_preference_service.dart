@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
-/// 🧭 User-facing view modes
+/// 🛍 User-facing view modes
 enum ViewMode { list, grid, compact }
 
 extension ViewModeExtension on ViewMode {
@@ -33,6 +33,8 @@ class UserPreferencesService {
   static const String _keyViewMode = 'viewMode';
   static const String _keyVaultTutorialComplete = 'vaultTutorialComplete';
   static const String _keyBubblesShownOnce = 'hasShownBubblesOnce';
+  static const String _keyAiUsage = 'aiUsage';
+  static const String _keyTranslationUsage = 'translationUsage';
   static const List<String> _bubbleKeys = ['scan', 'viewToggle', 'longPress'];
 
   static late Box _box;
@@ -48,7 +50,7 @@ class UserPreferencesService {
       if (kDebugMode) {
         print('🟡 Skipping UserPreferencesService.init() – no user signed in');
       }
-      return; // ✅ Exit silently instead of throwing
+      return;
     }
 
     if (Hive.isBoxOpen(_boxName)) {
@@ -64,7 +66,7 @@ class UserPreferencesService {
     final box = _safeBox;
     if (box != null) {
       await box.put(_keyViewMode, mode.index);
-      if (kDebugMode) print('💾 Saved view mode: ${mode.name}');
+      if (kDebugMode) print('📂 Saved view mode: ${mode.name}');
     }
   }
 
@@ -74,7 +76,7 @@ class UserPreferencesService {
     final mode = index != null && index >= 0 && index < ViewMode.values.length
         ? ViewMode.values[index]
         : ViewMode.grid;
-    if (kDebugMode) print('📥 Loaded view mode: ${mode.name}');
+    if (kDebugMode) print('📅 Loaded view mode: ${mode.name}');
     return mode;
   }
 
@@ -142,7 +144,7 @@ class UserPreferencesService {
     if (tier == 'free' && !hasShownBubblesOnce) {
       await resetBubbles();
       if (box != null) await box.put(_keyBubblesShownOnce, true);
-      if (kDebugMode) print('🆕 Bubbles triggered for free tier (first time)');
+      if (kDebugMode) print('🌟 Bubbles triggered for free tier (first time)');
     }
   }
 
@@ -171,7 +173,7 @@ class UserPreferencesService {
     }
   }
 
-  /// 🧹 Fully clear the box from disk (used on account deletion)
+  /// 🛉 Fully clear the box from disk (used on account deletion)
   static Future<void> deleteLocalDataForUser(String uid) async {
     final name = 'userPrefs_$uid';
     try {
@@ -179,7 +181,7 @@ class UserPreferencesService {
         await Hive.box(name).close();
       }
       await Hive.deleteBoxFromDisk(name);
-      if (kDebugMode) print('🧼 Hive box "$name" closed and deleted from disk');
+      if (kDebugMode) print('🛄 Hive box "$name" closed and deleted from disk');
     } catch (e) {
       if (kDebugMode) print('⚠️ Hive box deletion failed for "$name": $e');
     }
@@ -205,7 +207,34 @@ class UserPreferencesService {
     final box = _safeBox;
     if (box != null) {
       await box.put('isNewUser', true);
-      if (kDebugMode) print('🆕 markUserAsNew → Hive only');
+      if (kDebugMode) print('🔟 markUserAsNew → Hive only');
     }
+  }
+
+  // 🔍 Caching usage metrics
+  static Future<void> setCachedUsage({int? ai, int? translations}) async {
+    final box = _safeBox;
+    if (box != null) {
+      if (ai != null) await box.put(_keyAiUsage, ai);
+      if (translations != null) {
+        await box.put(_keyTranslationUsage, translations);
+      }
+      if (kDebugMode) {
+        print(
+          '📂 Cached usage: '
+          'AI=${ai ?? '(unchanged)'}, Translations=${translations ?? '(unchanged)'}',
+        );
+      }
+    }
+  }
+
+  static Future<int> getCachedAiUsage() async {
+    final box = _safeBox;
+    return box?.get(_keyAiUsage, defaultValue: 0) as int? ?? 0;
+  }
+
+  static Future<int> getCachedTranslationUsage() async {
+    final box = _safeBox;
+    return box?.get(_keyTranslationUsage, defaultValue: 0) as int? ?? 0;
   }
 }

@@ -1,13 +1,11 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/core/theme.dart';
-import 'package:intl/intl.dart';
 
 class HomeChefUsageWidget extends StatefulWidget {
   const HomeChefUsageWidget({super.key});
@@ -26,17 +24,10 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
   late final AnimationController _controller;
   late Animation<double> _recipeAnimation;
   late Animation<double> _translationAnimation;
-  late final String monthKey;
-
-  StreamSubscription<DocumentSnapshot>? _aiUsageSub;
-  StreamSubscription<DocumentSnapshot>? _translationSub;
 
   @override
   void initState() {
     super.initState();
-
-    final now = DateTime.now();
-    monthKey = DateFormat('yyyy-MM').format(now);
 
     _controller = AnimationController(
       vsync: this,
@@ -49,63 +40,32 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
       end: 0,
     ).animate(_controller);
 
-    _listenToUsage();
+    _loadUsageFromSubscriptionService();
   }
 
-  void _listenToUsage() async {
+  Future<void> _loadUsageFromSubscriptionService() async {
     final user = FirebaseAuth.instance.currentUser;
     if (!mounted || user == null || user.isAnonymous) {
-      debugPrint('⚠️ Skipping usage stream – no signed-in user');
+      debugPrint('⚠️ Skipping usage load – no signed-in user');
       return;
     }
 
-    final tier = Provider.of<SubscriptionService>(context, listen: false).tier;
-    if (tier != 'home_chef') return;
-
-    final uid = user.uid;
-
-    final aiUsageRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('aiUsage')
-        .doc('usage');
-
-    final translationUsageRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('translationUsage')
-        .doc('usage');
-
-    _aiUsageSub = aiUsageRef.snapshots().listen(
-      (doc) {
-        final data = doc.data() ?? {};
-        final used = (data[monthKey] ?? 0) as int;
-        if (!mounted) return;
-        setState(() {
-          recipesUsed = used;
-          _updateAnimation();
-        });
-      },
-      onError: (error) {
-        debugPrint('⚠️ AI usage stream error: $error');
-      },
+    final subscription = Provider.of<SubscriptionService>(
+      context,
+      listen: false,
     );
+    if (subscription.tier != 'home_chef') return;
 
-    _translationSub = translationUsageRef.snapshots().listen(
-      (doc) {
-        final data = doc.data() ?? {};
-        final used = (data[monthKey] ?? 0) as int;
-        if (!mounted) return;
-        setState(() {
-          translationsUsed = used;
-          loading = false;
-          _updateAnimation();
-        });
-      },
-      onError: (error) {
-        debugPrint('⚠️ Translation usage stream error: $error');
-      },
-    );
+    final recipeCount = subscription.aiUsage;
+    final translationCount = subscription.translationUsage;
+
+    if (!mounted) return;
+    setState(() {
+      recipesUsed = recipeCount;
+      translationsUsed = translationCount;
+      loading = false;
+      _updateAnimation();
+    });
   }
 
   void _updateAnimation() {
@@ -116,6 +76,7 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
       begin: 0,
       end: recipePercent,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
     _translationAnimation = Tween<double>(
       begin: 0,
       end: translationPercent,
@@ -127,8 +88,6 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
   @override
   void dispose() {
     _controller.dispose();
-    _aiUsageSub?.cancel();
-    _translationSub?.cancel();
     super.dispose();
   }
 

@@ -26,6 +26,11 @@ class SubscriptionService extends ChangeNotifier {
   Package? masterChefMonthlyPackage;
   Package? masterChefYearlyPackage;
 
+  final Map<String, Map<String, int>> _usageData = {
+    'aiUsage': {},
+    'translationUsage': {},
+  };
+
   String get tier => _tier;
   String get entitlementId => _entitlementId;
   String get currentEntitlement => _tier;
@@ -221,6 +226,32 @@ class SubscriptionService extends ChangeNotifier {
         }
       }
 
+      try {
+        final usageDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('aiUsage')
+            .doc('usage')
+            .get();
+        _usageData['aiUsage'] = Map<String, int>.from(usageDoc.data() ?? {});
+      } catch (e) {
+        debugPrint('⚠️ Failed to load AI usage data: $e');
+      }
+
+      try {
+        final translationDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('translationUsage')
+            .doc('usage')
+            .get();
+        _usageData['translationUsage'] = Map<String, int>.from(
+          translationDoc.data() ?? {},
+        );
+      } catch (e) {
+        debugPrint('⚠️ Failed to load translation usage data: $e');
+      }
+
       await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(_tier);
       notifyListeners();
     } catch (e) {
@@ -301,4 +332,16 @@ class SubscriptionService extends ChangeNotifier {
 
   bool get hasAccess => allowSaveToVault;
   String get currentTier => _tier;
+
+  int get aiUsage {
+    final now = DateTime.now();
+    final key = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    return _usageData['aiUsage']?[key] ?? 0;
+  }
+
+  int get translationUsage {
+    final now = DateTime.now();
+    final key = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    return _usageData['translationUsage']?[key] ?? 0;
+  }
 }

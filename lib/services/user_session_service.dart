@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/rev_cat/purchase_helper.dart';
@@ -17,6 +18,8 @@ class UserSessionService {
   static bool _isInitialised = false;
   static Completer<void>? _bubbleFlagsReady;
   static StreamSubscription<DocumentSnapshot>? _userDocSubscription;
+  static StreamSubscription<DocumentSnapshot>? _aiUsageSub;
+  static StreamSubscription<DocumentSnapshot>? _translationSub;
 
   static bool get isInitialised => _isInitialised;
 
@@ -49,24 +52,54 @@ class UserSessionService {
     _logDebug('👤 Initialising session for UID: ${user.uid}');
 
     await _userDocSubscription?.cancel();
+    await _aiUsageSub?.cancel();
+    await _translationSub?.cancel();
 
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null && !currentUser.isAnonymous) {
-      _userDocSubscription = FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .snapshots()
-          .listen(
-            (snapshot) {
-              _logDebug('📡 User doc listener received update');
-            },
-            onError: (error) {
-              _logDebug('⚠️ User doc listener error: $error');
-            },
+    final uid = user.uid;
+    final monthKey = DateFormat('yyyy-MM').format(DateTime.now());
+
+    _userDocSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .listen(
+          (snapshot) => _logDebug('📡 User doc listener received update'),
+          onError: (error) => _logDebug('⚠️ User doc listener error: $error'),
+        );
+
+    _aiUsageSub = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('aiUsage')
+        .doc('usage')
+        .snapshots()
+        .listen((doc) async {
+          final used = (doc.data()?[monthKey] ?? 0) as int;
+          _logDebug('📊 AI usage [$monthKey]: $used');
+          await UserPreferencesService.setCachedUsage(
+            ai: used,
+            translations: null,
           );
-    } else {
-      _logDebug('⚠️ Skipped setting user doc listener – no signed-in user');
-    }
+        }, onError: (error) => _logDebug('⚠️ AI usage stream error: $error'));
+
+    _translationSub = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('translationUsage')
+        .doc('usage')
+        .snapshots()
+        .listen(
+          (doc) async {
+            final used = (doc.data()?[monthKey] ?? 0) as int;
+            _logDebug('🌐 Translation usage [$monthKey]: $used');
+            await UserPreferencesService.setCachedUsage(
+              ai: null,
+              translations: used,
+            );
+          },
+          onError: (error) =>
+              _logDebug('⚠️ Translation usage stream error: $error'),
+        );
 
     try {
       await UserPreferencesService.init();
@@ -115,11 +148,13 @@ class UserSessionService {
   static Future<void> logoutReset() async {
     _logDebug('👋 Logging out and resetting session...');
 
-    if (_userDocSubscription != null) {
-      _logDebug('🛑 Cancelling user doc listener');
-      await _userDocSubscription!.cancel();
-      _userDocSubscription = null;
-    }
+    await _userDocSubscription?.cancel();
+    await _aiUsageSub?.cancel();
+    await _translationSub?.cancel();
+
+    _userDocSubscription = null;
+    _aiUsageSub = null;
+    _translationSub = null;
 
     await VaultRecipeService.clearCache();
     await CategoryService.clearCache();
@@ -153,8 +188,8 @@ class UserSessionService {
 
     final customerInfo = await Purchases.getCustomerInfo();
     final entitlementId = PurchaseHelper.getActiveEntitlementId(customerInfo);
-    final tier = resolveTier(entitlementId); // ✅ from tier_utils.dart
-    SubscriptionService().updateTier(tier); // Keep in sync
+    final tier = resolveTier(entitlementId);
+    SubscriptionService().updateTier(tier);
 
     try {
       final docRef = FirebaseFirestore.instance

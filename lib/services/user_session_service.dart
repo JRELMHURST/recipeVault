@@ -16,6 +16,7 @@ import 'package:recipe_vault/services/category_service.dart';
 class UserSessionService {
   static bool _isInitialised = false;
   static Completer<void>? _bubbleFlagsReady;
+  static StreamSubscription<DocumentSnapshot>? _userDocSubscription;
 
   static bool get isInitialised => _isInitialised;
 
@@ -41,6 +42,21 @@ class UserSessionService {
 
     _bubbleFlagsReady = Completer<void>();
     _logDebug('👤 Initialising session for UID: ${user.uid}');
+
+    // 🔄 Start listening to the user doc
+    _userDocSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .snapshots()
+        .listen(
+          (snapshot) {
+            _logDebug('📡 User doc listener received update');
+            // You could optionally handle real-time updates here
+          },
+          onError: (error) {
+            _logDebug('⚠️ User doc listener error: $error');
+          },
+        );
 
     try {
       await UserPreferencesService.init();
@@ -88,9 +104,17 @@ class UserSessionService {
 
   static Future<void> logoutReset() async {
     _logDebug('👋 Logging out and resetting session...');
+
+    if (_userDocSubscription != null) {
+      _logDebug('🛑 Cancelling user doc listener');
+      await _userDocSubscription!.cancel();
+      _userDocSubscription = null;
+    }
+
     await VaultRecipeService.clearCache();
     await CategoryService.clearCache();
     await SubscriptionService().reset();
+
     _isInitialised = false;
     _bubbleFlagsReady = null;
     _logDebug('🧹 Session fully cleared');

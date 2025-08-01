@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -35,6 +36,7 @@ class RecipeVaultScreen extends StatefulWidget {
 class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   String? userId;
   late final CollectionReference<Map<String, dynamic>> recipeCollection;
+  StreamSubscription<QuerySnapshot>? _recipeStreamSubscription;
   String _selectedCategory = 'All';
   String _searchQuery = '';
 
@@ -66,6 +68,12 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           recipe.title.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     }).toList();
+  }
+
+  @override
+  void dispose() {
+    _recipeStreamSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _deleteRecipe(RecipeCardModel recipe) async {
@@ -174,7 +182,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     await Future.wait([
       _initializeDefaultCategories(),
       _loadCustomCategories(),
-      _loadRecipes(),
+      Future(_startRecipeListener),
     ]);
 
     final hasShown = await UserPreferencesService.hasShownBubblesOnce;
@@ -185,6 +193,70 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       setState(() => _showViewModeBubble = true);
     }
     _hasLoadedBubbles = true;
+  }
+
+  void _startRecipeListener() {
+    _recipeStreamSubscription = recipeCollection
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .listen(
+          (snapshot) async {
+            try {
+              final userRecipes = snapshot.docs
+                  .map((doc) => RecipeCardModel.fromJson(doc.data()))
+                  .toList();
+
+              final hiddenSnapshot = await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(userId)
+                  .collection('hiddenGlobalRecipes')
+                  .get();
+              final hiddenGlobalIds = hiddenSnapshot.docs
+                  .map((doc) => doc.id)
+                  .toSet();
+
+              final globalSnapshot = await FirebaseFirestore.instance
+                  .collection('global_recipes')
+                  .orderBy('createdAt', descending: true)
+                  .get();
+              final globalRecipes = globalSnapshot.docs
+                  .where((doc) => !hiddenGlobalIds.contains(doc.id))
+                  .map((doc) => RecipeCardModel.fromJson(doc.data()))
+                  .toList();
+
+              final localRecipes = await HiveRecipeService.getAll();
+
+              final Map<String, RecipeCardModel> mergedMap = {
+                for (final r in globalRecipes) r.id: r,
+                for (final r in userRecipes) r.id: r,
+              };
+
+              final List<RecipeCardModel> merged = mergedMap.values.map((
+                recipe,
+              ) {
+                final local = localRecipes.firstWhere(
+                  (r) => r.id == recipe.id,
+                  orElse: () => recipe,
+                );
+                final mergedRecipe = recipe.copyWith(
+                  isFavourite: local.isFavourite,
+                  categories: local.categories,
+                );
+                HiveRecipeService.save(mergedRecipe);
+                return mergedRecipe;
+              }).toList();
+
+              setState(() {
+                _allRecipes = merged;
+              });
+            } catch (e) {
+              debugPrint("⚠️ Live recipe sync failed: $e");
+            }
+          },
+          onError: (e) {
+            debugPrint("⚠️ Recipe stream error: $e");
+          },
+        );
   }
 
   Future<void> _initializeDefaultCategories() async {
@@ -210,59 +282,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         ...savedNames.where((c) => !_defaultCategories.contains(c)),
       ];
     });
-  }
-
-  Future<void> _loadRecipes() async {
-    try {
-      final snapshot = await recipeCollection
-          .orderBy('createdAt', descending: true)
-          .get();
-      final userRecipes = snapshot.docs
-          .map((doc) => RecipeCardModel.fromJson(doc.data()))
-          .toList();
-
-      final hiddenSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('hiddenGlobalRecipes')
-          .get();
-      final hiddenGlobalIds = hiddenSnapshot.docs.map((doc) => doc.id).toSet();
-
-      final globalSnapshot = await FirebaseFirestore.instance
-          .collection('global_recipes')
-          .orderBy('createdAt', descending: true)
-          .get();
-      final globalRecipes = globalSnapshot.docs
-          .where((doc) => !hiddenGlobalIds.contains(doc.id))
-          .map((doc) => RecipeCardModel.fromJson(doc.data()))
-          .toList();
-
-      final localRecipes = await HiveRecipeService.getAll();
-
-      final Map<String, RecipeCardModel> mergedMap = {
-        for (final r in globalRecipes) r.id: r,
-        for (final r in userRecipes) r.id: r,
-      };
-
-      final List<RecipeCardModel> merged = mergedMap.values.map((recipe) {
-        final local = localRecipes.firstWhere(
-          (r) => r.id == recipe.id,
-          orElse: () => recipe,
-        );
-        final mergedRecipe = recipe.copyWith(
-          isFavourite: local.isFavourite,
-          categories: local.categories,
-        );
-        HiveRecipeService.save(mergedRecipe);
-        return mergedRecipe;
-      }).toList();
-
-      setState(() {
-        _allRecipes = merged;
-      });
-    } catch (e) {
-      debugPrint("⚠️ Firestore fetch failed, loading from Hive: $e");
-    }
   }
 
   @override

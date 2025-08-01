@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -20,12 +21,15 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
   int recipesUsed = 0;
   int translationsUsed = 0;
   bool loading = true;
-  bool _collapsed = true; // ✅ Starts collapsed
+  bool _collapsed = true; // ✅ starts collapsed
 
   late final AnimationController _controller;
   late Animation<double> _recipeAnimation;
   late Animation<double> _translationAnimation;
   late final String monthKey;
+
+  StreamSubscription<DocumentSnapshot>? _aiUsageSub;
+  StreamSubscription<DocumentSnapshot>? _translationSub;
 
   @override
   void initState() {
@@ -50,7 +54,7 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
 
   void _listenToUsage() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (!mounted || user == null) return;
 
     final tier = Provider.of<SubscriptionService>(context, listen: false).tier;
     if (tier != 'home_chef') return;
@@ -69,18 +73,20 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
         .collection('translationUsage')
         .doc('usage');
 
-    aiUsageRef.snapshots().listen((doc) {
+    _aiUsageSub = aiUsageRef.snapshots().listen((doc) {
       final data = doc.data() ?? {};
       final used = (data[monthKey] ?? 0) as int;
+      if (!mounted) return;
       setState(() {
         recipesUsed = used;
         _updateAnimation();
       });
     });
 
-    translationUsageRef.snapshots().listen((doc) {
+    _translationSub = translationUsageRef.snapshots().listen((doc) {
       final data = doc.data() ?? {};
       final used = (data[monthKey] ?? 0) as int;
+      if (!mounted) return;
       setState(() {
         translationsUsed = used;
         loading = false;
@@ -97,7 +103,6 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
       begin: 0,
       end: recipePercent,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
     _translationAnimation = Tween<double>(
       begin: 0,
       end: translationPercent,
@@ -109,6 +114,8 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
   @override
   void dispose() {
     _controller.dispose();
+    _aiUsageSub?.cancel();
+    _translationSub?.cancel();
     super.dispose();
   }
 

@@ -167,7 +167,13 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   Future<void> _initVault() async {
     final user = FirebaseAuth.instance.currentUser;
-    userId = user?.uid;
+
+    if (user == null || user.isAnonymous) {
+      debugPrint('⚠️ Skipped vault init – no signed-in user');
+      return;
+    }
+
+    userId = user.uid;
 
     recipeCollection = FirebaseFirestore.instance
         .collection('users')
@@ -192,6 +198,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     if (!_hasLoadedBubbles && tier == 'free' && !tutorialComplete && hasShown) {
       setState(() => _showViewModeBubble = true);
     }
+
     _hasLoadedBubbles = true;
   }
 

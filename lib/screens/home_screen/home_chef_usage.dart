@@ -21,7 +21,7 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
   int recipesUsed = 0;
   int translationsUsed = 0;
   bool loading = true;
-  bool _collapsed = true; // ✅ starts collapsed
+  bool _collapsed = true;
 
   late final AnimationController _controller;
   late Animation<double> _recipeAnimation;
@@ -54,7 +54,10 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
 
   void _listenToUsage() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (!mounted || user == null) return;
+    if (!mounted || user == null || user.isAnonymous) {
+      debugPrint('⚠️ Skipping usage stream – no signed-in user');
+      return;
+    }
 
     final tier = Provider.of<SubscriptionService>(context, listen: false).tier;
     if (tier != 'home_chef') return;
@@ -73,26 +76,36 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
         .collection('translationUsage')
         .doc('usage');
 
-    _aiUsageSub = aiUsageRef.snapshots().listen((doc) {
-      final data = doc.data() ?? {};
-      final used = (data[monthKey] ?? 0) as int;
-      if (!mounted) return;
-      setState(() {
-        recipesUsed = used;
-        _updateAnimation();
-      });
-    });
+    _aiUsageSub = aiUsageRef.snapshots().listen(
+      (doc) {
+        final data = doc.data() ?? {};
+        final used = (data[monthKey] ?? 0) as int;
+        if (!mounted) return;
+        setState(() {
+          recipesUsed = used;
+          _updateAnimation();
+        });
+      },
+      onError: (error) {
+        debugPrint('⚠️ AI usage stream error: $error');
+      },
+    );
 
-    _translationSub = translationUsageRef.snapshots().listen((doc) {
-      final data = doc.data() ?? {};
-      final used = (data[monthKey] ?? 0) as int;
-      if (!mounted) return;
-      setState(() {
-        translationsUsed = used;
-        loading = false;
-        _updateAnimation();
-      });
-    });
+    _translationSub = translationUsageRef.snapshots().listen(
+      (doc) {
+        final data = doc.data() ?? {};
+        final used = (data[monthKey] ?? 0) as int;
+        if (!mounted) return;
+        setState(() {
+          translationsUsed = used;
+          loading = false;
+          _updateAnimation();
+        });
+      },
+      onError: (error) {
+        debugPrint('⚠️ Translation usage stream error: $error');
+      },
+    );
   }
 
   void _updateAnimation() {

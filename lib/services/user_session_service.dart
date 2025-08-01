@@ -40,23 +40,33 @@ class UserSessionService {
       return;
     }
 
+    if (_userDocSubscription != null) {
+      _logDebug('🛑 User doc listener already active – skipping re-init');
+      return;
+    }
+
     _bubbleFlagsReady = Completer<void>();
     _logDebug('👤 Initialising session for UID: ${user.uid}');
 
-    // 🔄 Start listening to the user doc
-    _userDocSubscription = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .snapshots()
-        .listen(
-          (snapshot) {
-            _logDebug('📡 User doc listener received update');
-            // You could optionally handle real-time updates here
-          },
-          onError: (error) {
-            _logDebug('⚠️ User doc listener error: $error');
-          },
-        );
+    await _userDocSubscription?.cancel();
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null && !currentUser.isAnonymous) {
+      _userDocSubscription = FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .snapshots()
+          .listen(
+            (snapshot) {
+              _logDebug('📡 User doc listener received update');
+            },
+            onError: (error) {
+              _logDebug('⚠️ User doc listener error: $error');
+            },
+          );
+    } else {
+      _logDebug('⚠️ Skipped setting user doc listener – no signed-in user');
+    }
 
     try {
       await UserPreferencesService.init();

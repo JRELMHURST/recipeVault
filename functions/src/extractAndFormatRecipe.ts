@@ -3,6 +3,7 @@ import { defineSecret } from "firebase-functions/params";
 import { getStorage } from "firebase-admin/storage";
 import { decode } from "html-entities";
 import admin from "./firebase.js"; // ✅ Ensures Firebase is initialised
+import dayjs from "dayjs";
 
 import { extractTextFromImages } from "./ocr.js";
 import { detectLanguage } from "./detect.js";
@@ -149,6 +150,33 @@ if (!isLikelyEnglish) {
       console.log("✅ GPT formatting complete.");
 
       await incrementGptRecipeUsage(uid);
+
+      try {
+const monthKey = dayjs().format("YYYY-MM");
+
+// ✅ Increment AI recipe usage
+await admin.firestore().doc(`users/${uid}/aiUsage/usage`).set(
+  {
+    [monthKey]: admin.firestore.FieldValue.increment(1),
+    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+  },
+  { merge: true }
+);
+
+// ✅ Increment translation usage if applicable
+if (translationUsed) {
+  await admin.firestore().doc(`users/${uid}/translationUsage/usage`).set(
+    {
+      [monthKey]: admin.firestore.FieldValue.increment(1),
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+  console.log("📈 Synced usage metrics to Firestore");
+} catch (err) {
+  console.warn("⚠️ Failed to sync usage metrics to Firestore:", err);
+}
 
       await Promise.all(imageUrls.map(deleteUploadedImage));
 

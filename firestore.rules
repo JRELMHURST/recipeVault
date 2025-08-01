@@ -3,10 +3,10 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow create, delete: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
+      allow create, delete: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
 
-      allow update: if request.auth != null && request.auth.uid == userId &&
+      allow update: if request.auth != null && request.auth.uid != null && request.auth.uid == userId &&
         (
           request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly([
@@ -17,7 +17,8 @@ service cloud.firestore {
               'superUser',
               'email',
               'createdAt',
-              'platform'
+              'platform',
+              'usage'
             ]) ||
 
           !request.resource.data.diff(resource.data).affectedKeys()
@@ -27,35 +28,35 @@ service cloud.firestore {
         );
 
       match /recipes/{recipeId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
       }
 
       match /categories/{categoryId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
       }
 
       match /translationUsage/{docId} {
-        allow read: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
         allow write: if false;
       }
 
       match /aiUsage/{docId} {
-        allow read: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
         allow write: if false;
       }
 
       match /hiddenGlobalRecipes/{recipeId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
       }
     }
 
     match /global_recipes/{recipeId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && request.auth.uid != null;
       allow write: if false;
     }
 
     match /analytics/{docId} {
-      allow create: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid != null;
       allow read, update, delete: if false;
     }
   }

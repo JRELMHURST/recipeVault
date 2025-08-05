@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
-import 'package:recipe_vault/rev_cat/trial_prompt_helper.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_vault_screen.dart';
 import 'package:recipe_vault/screens/home_screen/home_app_bar.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
@@ -25,41 +24,23 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageStorageBucket _bucket = PageStorageBucket();
 
   late final SubscriptionService _subscriptionService;
-  late final VoidCallback _tierListener;
   bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
     _subscriptionService = SubscriptionService();
-    _tierListener = _onTierChanged;
-    _initialisePreferencesAndPrompt();
+    _initialisePreferences();
   }
 
-  Future<void> _initialisePreferencesAndPrompt() async {
+  Future<void> _initialisePreferences() async {
     _viewMode = await UserPreferencesService.getSavedViewMode();
     if (mounted) setState(() {});
-
     await _subscriptionService.refresh();
-    if (!mounted) return;
-
-    if (_subscriptionService.canStartTrial) {
-      await TrialPromptHelper.checkAndPromptTrial(context);
-    } else {
-      _subscriptionService.tierNotifier.addListener(_tierListener);
-    }
-  }
-
-  void _onTierChanged() async {
-    if (_subscriptionService.canStartTrial) {
-      await TrialPromptHelper.checkAndPromptTrial(context);
-      _subscriptionService.tierNotifier.removeListener(_tierListener);
-    }
   }
 
   @override
   void dispose() {
-    _subscriptionService.tierNotifier.removeListener(_tierListener);
     super.dispose();
   }
 
@@ -70,7 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _viewMode = ViewMode.values[nextIndex];
     });
 
-    // Save the updated view mode
     UserPreferencesService.saveViewMode(_viewMode);
   }
 
@@ -121,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Start a free trial or upgrade to unlock this feature.',
+                    'Upgrade to unlock this feature.',
                     style: TextStyle(fontSize: 14, color: Colors.black54),
                     textAlign: TextAlign.center,
                   ),
@@ -168,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ProcessingOverlay.show(context, files);
       }
 
-      setState(() => _selectedIndex = 1); // fallback to vault
+      setState(() => _selectedIndex = 1);
       _isProcessing = false;
     } else {
       setState(() => _selectedIndex = index);
@@ -200,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: IndexedStack(
             index: _selectedIndex,
             children: [
-              const SizedBox.shrink(), // placeholder for "Create"
+              const SizedBox.shrink(),
               RecipeVaultScreen(viewMode: _viewMode),
               const SettingsScreen(),
             ],

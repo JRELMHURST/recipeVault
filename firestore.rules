@@ -3,61 +3,61 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
-      allow create, delete: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
+      allow read, create, delete: if request.auth != null && request.auth.uid == userId;
 
-      allow update: if request.auth != null && request.auth.uid != null && request.auth.uid == userId &&
+      allow update: if request.auth != null && request.auth.uid == userId &&
         (
+          // Allow updates to specific safe fields
           request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly([
               'entitlementId',
-              'lastLogin',
-              'trialActive',
               'tier',
               'superUser',
+              'lastLogin',
               'email',
               'createdAt',
               'platform',
               'usage'
             ]) ||
 
-          !request.resource.data.diff(resource.data).affectedKeys()
-            .hasAny(['tier']) ||
+          // Allow updates if 'tier' is unchanged
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['tier']) ||
 
+          // Allow full update if user is admin
           request.auth.token.admin == true
         );
 
       match /recipes/{recipeId} {
-        allow read, write: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
 
       match /categories/{categoryId} {
-        allow read, write: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
 
       match /translationUsage/{docId} {
-        allow read: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
-        allow write: if false;
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;  // Writes from backend only
       }
 
       match /aiUsage/{docId} {
-        allow read: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
-        allow write: if false;
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;  // Writes from backend only
       }
 
       match /hiddenGlobalRecipes/{recipeId} {
-        allow read, write: if request.auth != null && request.auth.uid != null && request.auth.uid == userId;
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
     match /global_recipes/{recipeId} {
       allow read: if request.auth != null && request.auth.uid != null;
-      allow write: if false;
+      allow write: if false;  // Global recipes are read-only
     }
 
     match /analytics/{docId} {
       allow create: if request.auth != null && request.auth.uid != null;
-      allow read, update, delete: if false;
+      allow read, update, delete: if false;  // Write-once event logging
     }
   }
 }

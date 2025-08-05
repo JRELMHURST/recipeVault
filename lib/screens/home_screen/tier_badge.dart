@@ -21,7 +21,6 @@ class TierBadge extends StatelessWidget {
     return ValueListenableBuilder<String>(
       valueListenable: subscriptionService.tierNotifier,
       builder: (context, tier, _) {
-        // Fallback for unrecognised tiers
         final isFreeTier = tier.isEmpty || tier == 'none' || tier == 'free';
         final isSpecial = subscriptionService.hasSpecialAccess;
 
@@ -38,9 +37,8 @@ class TierBadge extends StatelessWidget {
               : const SizedBox.shrink();
         }
 
-        // Known tiers with labels and default colours
+        // Known entitlements
         final tierStyles = {
-          'taster': ('Taster', Colors.deepPurple),
           'home_chef': ('Home Chef', Colors.teal),
           'master_chef': ('Master Chef', Colors.amber),
         };
@@ -49,7 +47,6 @@ class TierBadge extends StatelessWidget {
         String label = style?.$1 ?? '❓ Unknown';
         final baseColour = overrideColor ?? style?.$2 ?? Colors.grey;
 
-        // ✨ Add star for special Home Chef users
         if (tier == 'home_chef' && isSpecial) {
           label = '⭐ $label';
         }

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,7 +16,6 @@ class SubscriptionService extends ChangeNotifier {
 
   String _tier = 'free';
   String _entitlementId = 'none';
-  bool? _firestoreTrialActive;
   bool _hasSpecialAccess = false;
   bool _isLoadingTier = false;
   String? _lastLoggedTier;
@@ -37,57 +38,34 @@ class SubscriptionService extends ChangeNotifier {
   bool get isLoaded => _customerInfo != null;
 
   bool get isFree => _tier == 'free';
-  bool get isTaster => _tier == 'taster';
   bool get isHomeChef => _tier == 'home_chef';
   bool get isMasterChef => _tier == 'master_chef';
 
   bool get hasActiveSubscription => isHomeChef || isMasterChef;
-  bool get isTasterTrialActive => isTaster && (_firestoreTrialActive == true);
-  bool get isTasterTrialExpired => isTaster && (_firestoreTrialActive == false);
-  bool get isTrialExpired => isTasterTrialExpired;
 
-  bool get allowTranslation => isTaster || isHomeChef || isMasterChef;
-  bool get allowImageUpload => isTaster || isHomeChef || isMasterChef;
+  bool get allowTranslation => hasActiveSubscription;
+  bool get allowImageUpload => hasActiveSubscription;
   bool get allowSaveToVault => !isFree;
 
-  bool get allowCategoryCreation {
-    return switch (_tier) {
-      'master_chef' => true,
-      'home_chef' => true,
-      _ => false,
-    };
-  }
-
-  bool get canStartTrial => tier == 'free' && !isTasterTrialActive;
+  bool get allowCategoryCreation => isMasterChef || isHomeChef;
   bool get hasSpecialAccess => _hasSpecialAccess;
 
-  String get tierIcon {
-    return switch (_tier) {
-      'master_chef' => '👑',
-      'home_chef' => '👨‍🍳',
-      'taster' => '🥄',
-      'free' => '🆓',
-      _ => '❓',
-    };
-  }
+  String get tierIcon => switch (_tier) {
+    'master_chef' => '👑',
+    'home_chef' => '👨‍🍳',
+    'free' => '🆓',
+    _ => '❓',
+  };
 
-  String get entitlementLabel {
-    return switch (entitlementId) {
-      'master_chef_monthly' => 'Master Chef – Monthly',
-      'master_chef_yearly' => 'Master Chef – Yearly',
-      'home_chef_monthly' => 'Home Chef – Monthly',
-      'taster' => 'Taster Trial',
-      _ => 'Free Plan',
-    };
-  }
+  String get entitlementLabel => switch (entitlementId) {
+    'master_chef_monthly' => 'Master Chef – Monthly',
+    'master_chef_yearly' => 'Master Chef – Yearly',
+    'home_chef_monthly' => 'Home Chef – Monthly',
+    _ => 'Free Plan',
+  };
 
   bool get isYearly => entitlementId.endsWith('_yearly');
   String get billingCycle => isYearly ? 'Yearly' : 'Monthly';
-
-  String get trialEndDateFormatted {
-    final date = trialEndDate;
-    return date != null ? '${date.day}/${date.month}/${date.year}' : 'N/A';
-  }
 
   DateTime? get trialEndDate {
     final expiry = _activeEntitlement?.expirationDate;
@@ -95,6 +73,11 @@ class SubscriptionService extends ChangeNotifier {
       return DateTime.tryParse(expiry);
     }
     return null;
+  }
+
+  String get trialEndDateFormatted {
+    final date = trialEndDate;
+    return date != null ? '${date.day}/${date.month}/${date.year}' : 'N/A';
   }
 
   void updateTier(String newTier) {
@@ -143,7 +126,6 @@ class SubscriptionService extends ChangeNotifier {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
         'tier': _tier,
         'entitlementId': _entitlementId,
-        'trialActive': isTasterTrialActive,
         'lastLogin': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     }
@@ -180,7 +162,6 @@ class SubscriptionService extends ChangeNotifier {
     _entitlementId = 'none';
     _activeEntitlement = null;
     _customerInfo = null;
-    _firestoreTrialActive = null;
     _hasSpecialAccess = false;
     tierNotifier.value = _tier;
 
@@ -206,12 +187,6 @@ class SubscriptionService extends ChangeNotifier {
 
       _logTierOnce(source: 'loadSubscriptionStatus');
 
-      if (kDebugMode) {
-        debugPrint(
-          '🧾 [SubscriptionService] Entitlements: ${entitlements.keys} → Tier: $_tier',
-        );
-      }
-
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -226,10 +201,7 @@ class SubscriptionService extends ChangeNotifier {
           tierNotifier.value = _tier;
         }
 
-        _firestoreTrialActive = data['trialActive'] == true;
         _hasSpecialAccess = data['specialAccess'] == true;
-
-        debugPrint('📄 Firestore trialActive: $_firestoreTrialActive');
         debugPrint('📄 Firestore specialAccess: $_hasSpecialAccess');
 
         if (_hasSpecialAccess && _tier == 'free') {
@@ -304,7 +276,6 @@ class SubscriptionService extends ChangeNotifier {
         return 'master_chef';
       }
       if (id == 'home_chef_monthly') return 'home_chef';
-      if (entry.key == 'taster_trial') return 'taster';
     }
     return 'free';
   }
@@ -329,8 +300,6 @@ class SubscriptionService extends ChangeNotifier {
               (e) => e.value.productIdentifier == 'home_chef_monthly',
             )
             ?.value;
-      case 'taster':
-        return entitlements['taster_trial'];
       default:
         return null;
     }
@@ -356,5 +325,34 @@ class SubscriptionService extends ChangeNotifier {
     final now = DateTime.now();
     final key = '${now.year}-${now.month.toString().padLeft(2, '0')}';
     return _usageData['translationUsage']?[key] ?? 0;
+  }
+
+  Future<String> getResolvedTier() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return 'free';
+
+    final uid = user.uid;
+    final firestore = FirebaseFirestore.instance;
+
+    final customerInfo = await Purchases.getCustomerInfo();
+    final entitlements = customerInfo.entitlements.active;
+    final rcTier = _resolveTierFromEntitlements(entitlements);
+    final entitlementId =
+        _getActiveEntitlement(entitlements, rcTier)?.productIdentifier ??
+        'none';
+
+    final doc = await firestore.collection('users').doc(uid).get();
+    final fsTier = doc.data()?['tier'] as String? ?? 'free';
+
+    final resolvedTier = fsTier != 'free' ? fsTier : rcTier;
+    updateTier(resolvedTier);
+
+    await firestore.collection('users').doc(uid).set({
+      'tier': resolvedTier,
+      'entitlementId': entitlementId,
+      'lastLogin': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    return resolvedTier;
   }
 }

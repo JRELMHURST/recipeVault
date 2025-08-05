@@ -35,40 +35,17 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
     try {
       final offerings = await Purchases.getOfferings();
-      final homeChef = offerings.getOffering('home_chef_plan');
-      final masterChef = offerings.getOffering('master_chef_plan');
-
-      final homeChefPackages = homeChef?.availablePackages ?? [];
-      final masterChefPackages = masterChef?.availablePackages ?? [];
-
-      final masterMonthly = masterChefPackages.firstWhere(
-        (p) =>
-            p.storeProduct.subscriptionPeriod?.toLowerCase().contains('m') ==
-            true,
-        orElse: () => masterChefPackages.isNotEmpty
-            ? masterChefPackages.first
-            : throw Exception('No Master Chef Monthly plan found'),
-      );
-
-      final masterAnnual = masterChefPackages.firstWhere(
-        (p) =>
-            p.storeProduct.subscriptionPeriod?.toLowerCase().contains('y') ==
-            true,
-        orElse: () => throw Exception('No Master Chef Annual plan found'),
-      );
-
-      _availablePackages = [...homeChefPackages, masterMonthly, masterAnnual];
+      final current = offerings.current;
+      if (current == null) throw Exception('No current offering available');
 
       final currentId = _subscriptionService.entitlementId;
+      _availablePackages = current.availablePackages;
+
       _availablePackages.sort((a, b) {
         final aIsCurrent =
-            a.storeProduct.identifier == currentId ||
-            a.identifier == currentId ||
-            a.offeringIdentifier == currentId;
+            a.storeProduct.identifier == currentId || a.identifier == currentId;
         final bIsCurrent =
-            b.storeProduct.identifier == currentId ||
-            b.identifier == currentId ||
-            b.offeringIdentifier == currentId;
+            b.storeProduct.identifier == currentId || b.identifier == currentId;
         if (aIsCurrent && !bIsCurrent) return -1;
         if (!aIsCurrent && bIsCurrent) return 1;
         return 0;
@@ -86,7 +63,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
     try {
       await Purchases.purchasePackage(package);
-
       await SubscriptionService().refresh();
       await UserSessionService.syncRevenueCatEntitlement();
       await UserSessionService.init();
@@ -142,10 +118,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
     final tier = _subscriptionService.tier;
     final entitlementId = _subscriptionService.entitlementId;
-    final isFree = tier == 'free';
-    final isTaster = _subscriptionService.isTaster;
-    final trialExpired = _subscriptionService.isTasterTrialExpired;
-    final trialActive = _subscriptionService.isTasterTrialActive;
+    final isFree = tier == 'free' || tier == 'none';
 
     return Stack(
       children: [
@@ -186,24 +159,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
                               title: '🔓 Free Plan Access',
                               content:
                                   'You currently have access to a selection of sample global recipes.\n\nTo scan your own, upload images, use AI tools, or save favourites — you’ll need to upgrade.',
-                              background: Colors.orange.shade50,
-                              border: Colors.orange.shade300,
-                            )
-                          else if (isTaster && trialActive)
-                            _buildNoticeCard(
-                              context,
-                              title: '🎁 Trial Active',
-                              content:
-                                  'You’re currently on a free 7-day trial. Upgrade to keep full access after it ends.',
-                              background: Colors.green.shade50,
-                              border: Colors.green.shade300,
-                            )
-                          else if (isTaster && trialExpired)
-                            _buildNoticeCard(
-                              context,
-                              title: '⚠️ Trial Ended',
-                              content:
-                                  'Your free trial has ended. Some features are now limited. Upgrade to unlock full access.',
                               background: Colors.orange.shade50,
                               border: Colors.orange.shade300,
                             ),

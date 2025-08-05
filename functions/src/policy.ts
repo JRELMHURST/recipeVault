@@ -4,14 +4,14 @@ import { getUserEntitlementFromRevenueCat } from "./get_user_entitlement.js";
 
 const firestore = getFirestore();
 
-/** Centralised plan limits for reference */
+/** 🔐 Centralised tier limits */
 export const tierLimits = {
   free:        { translation: 0, recipes: 0, images: 0 },
   home_chef:   { translation: 5, recipes: 20, images: 20 },
   master_chef: { translation: Infinity, recipes: Infinity, images: Infinity },
 };
 
-/** Maps RevenueCat product IDs to internal tier labels */
+/** 🧠 Maps RevenueCat entitlement IDs to internal tier labels */
 function resolveTierFromEntitlement(entitlementId: string): 'master_chef' | 'home_chef' | 'free' {
   switch (entitlementId) {
     case 'master_chef_yearly':
@@ -24,7 +24,7 @@ function resolveTierFromEntitlement(entitlementId: string): 'master_chef' | 'hom
   }
 }
 
-/** Retrieves the resolved tier for a user via Firestore or RevenueCat fallback */
+/** 🧩 Resolves user tier from Firestore (preferred) or RevenueCat (fallback) */
 async function getResolvedTier(uid: string): Promise<'free' | 'home_chef' | 'master_chef'> {
   const userRef = firestore.collection("users").doc(uid);
   const doc = await userRef.get();
@@ -43,7 +43,7 @@ async function getResolvedTier(uid: string): Promise<'free' | 'home_chef' | 'mas
     return firestoreTier;
   }
 
-  console.warn(`⚠️ Incomplete Firestore tier for UID ${uid} — resolving from RevenueCat...`);
+  console.warn(`⚠️ Missing tier or entitlement in Firestore — resolving via RevenueCat...`);
 
   const entitlementFromRevenueCat = await getUserEntitlementFromRevenueCat(uid);
   if (entitlementFromRevenueCat) {
@@ -55,19 +55,15 @@ async function getResolvedTier(uid: string): Promise<'free' | 'home_chef' | 'mas
     };
 
     await userRef.set(update, { merge: true });
-    console.log(`✅ Updated Firestore tier for UID ${uid}:`, {
-      tier: resolvedTier,
-      entitlementId: entitlementFromRevenueCat,
-    });
-
+    console.log(`✅ Firestore updated from RevenueCat → Tier: ${resolvedTier}`);
     return resolvedTier;
   }
 
-  console.warn(`❌ No entitlement found in RevenueCat — defaulting to "free" for UID ${uid}`);
+  console.warn(`❌ No RevenueCat entitlement found — defaulting to "free"`);
   return 'free';
 }
 
-/** Enforces GPT recipe generation limits based on subscription tier. */
+/** 🧠 GPT recipe generation enforcement */
 async function enforceGptRecipePolicy(uid: string): Promise<void> {
   const tier = await getResolvedTier(uid);
   const limits = tierLimits[tier];
@@ -80,10 +76,10 @@ async function enforceGptRecipePolicy(uid: string): Promise<void> {
     throw new HttpsError("resource-exhausted", `${tier.replace("_", " ")} plan allows up to ${limits.recipes} AI recipes per month.`);
   }
 
-  console.log(`✅ GPT usage allowed for UID ${uid} — tier: ${tier}, monthUsed: ${monthlyUsed}`);
+  console.log(`✅ GPT usage allowed → Tier: ${tier}, Used: ${monthlyUsed}`);
 }
 
-/** Increments GPT usage count for non-MasterChef users */
+/** 📈 GPT usage increment */
 async function incrementGptRecipeUsage(uid: string): Promise<void> {
   const tier = await getResolvedTier(uid);
   if (tier === "master_chef") return;
@@ -98,13 +94,12 @@ async function incrementGptRecipeUsage(uid: string): Promise<void> {
   console.log(`📈 GPT usage incremented for UID ${uid}`);
 }
 
-/** Enforces translation limits by subscription tier */
+/** 🧠 Translation limit enforcement */
 async function enforceTranslationPolicy(uid: string): Promise<void> {
   const tier = await getResolvedTier(uid);
   const limits = tierLimits[tier];
 
-  console.log(`🧪 enforceTranslationPolicy for UID ${uid}`);
-  console.log(`📊 Resolved tier: ${tier}`);
+  console.log(`🧪 enforceTranslationPolicy for UID ${uid} — Tier: ${tier}`);
 
   if (tier === "master_chef") {
     console.log("🟢 Master Chef tier — translation allowed.");
@@ -119,10 +114,10 @@ async function enforceTranslationPolicy(uid: string): Promise<void> {
     throw new HttpsError("resource-exhausted", `${tier.replace("_", " ")} plan allows up to ${limits.translation} translations per month.`);
   }
 
-  console.log(`✅ Translation usage allowed for UID ${uid} — tier: ${tier}, monthUsed: ${monthlyUsed}`);
+  console.log(`✅ Translation allowed → Tier: ${tier}, Used: ${monthlyUsed}`);
 }
 
-/** Increments translation usage count for non-MasterChef users */
+/** 📈 Translation usage increment */
 async function incrementTranslationUsage(uid: string): Promise<void> {
   const tier = await getResolvedTier(uid);
   if (tier === "master_chef") return;

@@ -104,21 +104,11 @@ class UserSessionService {
     try {
       await UserPreferencesService.init();
 
-      final customerInfo = await Purchases.getCustomerInfo();
-      final entitlementId = PurchaseHelper.getActiveEntitlementId(customerInfo);
-      final tierFromRC = resolveTier(entitlementId);
+      final resolvedTier = await SubscriptionService().getResolvedTier();
 
-      if (tierFromRC != 'free') {
-        SubscriptionService().updateTier(tierFromRC);
-        await FirebaseFirestore.instance.collection('users').doc(uid).set({
-          'tier': tierFromRC,
-          'entitlementId': entitlementId ?? 'none',
-          'lastLogin': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-        _logDebug('☁️ Firestore updated with RC tier: $tierFromRC');
-      } else {
-        await SubscriptionService().refresh();
-      }
+      _logDebug('🧾 Tier resolved via getResolvedTier(): $resolvedTier');
+
+      // Firestore + SubscriptionService will now be in sync
 
       final isNewUser = await AuthService.ensureUserDocumentIfMissing(user);
       if (isNewUser) {

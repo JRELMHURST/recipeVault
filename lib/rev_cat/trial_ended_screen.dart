@@ -1,5 +1,3 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
@@ -32,7 +30,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
   }
 
   Future<void> _handlePurchase(Package package) async {
-    LoadingOverlay.show(context); // ⬅️ Show overlay
+    LoadingOverlay.show(context);
     try {
       await Purchases.purchasePackage(package);
       await _subscriptionService.refresh();
@@ -47,14 +45,13 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('❌ Purchase failed: $e')));
     } finally {
-      LoadingOverlay.hide(); // ⬅️ Always hide overlay
+      LoadingOverlay.hide();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isFree = _subscriptionService.tier == 'free';
     final homeChef = _subscriptionService.homeChefPackage;
     final masterChef = _subscriptionService.masterChefMonthlyPackage;
 
@@ -66,7 +63,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
         leading: const SizedBox(),
         centerTitle: true,
         title: Text(
-          isFree ? 'Limited Access' : 'Trial Ended',
+          'Limited Access',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -88,45 +85,23 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                       children: [
                         const SizedBox(height: 12),
 
-                        if (isFree)
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              border: Border.all(color: Colors.red.shade300),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              '⚠️ You’re currently on Free access. Most AI features are disabled.\n\nStart your 7-day Taster Trial to unlock recipe generation, translation, and more.',
-                              style: TextStyle(fontWeight: FontWeight.w500),
-                              textAlign: TextAlign.center,
-                            ),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            border: Border.all(color: Colors.red.shade300),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-
-                        if (!isFree) ...[
-                          Text(
-                            'Trial Over – AI Features Locked',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.deepPurple,
-                            ),
+                          child: const Text(
+                            '⚠️ You’re currently on Free access. AI-powered features like recipe scanning, formatting, and translation are disabled. You can still access saved recipes in your vault.',
+                            style: TextStyle(fontWeight: FontWeight.w500),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'You’ve used your 7-day trial (5 recipes & 1 translation).\n\n'
-                            'AI-powered features like scanning, formatting, and translation are now locked.\n'
-                            'You can still view saved recipes in your vault.',
-                            style: theme.textTheme.bodyMedium,
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                        ),
 
                         const SizedBox(height: 24),
                         Text(
-                          isFree
-                              ? 'Start your free Taster Trial:'
-                              : 'Upgrade to continue using RecipeVault AI:',
+                          'Upgrade to continue using RecipeVault AI:',
                           style: theme.textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -134,24 +109,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        if (isFree)
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.pushReplacementNamed(context, '/trial');
-                            },
-                            icon: const Icon(Icons.redeem),
-                            label: const Text('Start Free Taster Trial'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 16,
-                              ),
-                              backgroundColor: Colors.deepPurple,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-
-                        if (!isFree && homeChef != null)
+                        if (homeChef != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: PricingCard(
@@ -160,7 +118,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                             ),
                           ),
 
-                        if (!isFree && masterChef != null)
+                        if (masterChef != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: PricingCard(
@@ -183,9 +141,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                               builder: (_) => AlertDialog(
                                 title: const Text('Limited Free Access'),
                                 content: const Text(
-                                  'You can still access your previously saved recipes.\n\n'
-                                  'However, features like recipe scanning and translation are now locked.\n'
-                                  'To continue using RecipeVault AI, please subscribe.',
+                                  'You can still access your previously saved recipes.\n\nHowever, features like recipe scanning and translation are now locked.\nTo continue using RecipeVault AI, please subscribe.',
                                 ),
                                 actions: [
                                   TextButton(

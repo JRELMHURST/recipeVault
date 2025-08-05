@@ -36,8 +36,7 @@ class _UpgradeBannerState extends State<UpgradeBanner> {
     final subscription = context.watch<SubscriptionService>();
     final tier = subscription.tier;
 
-    final shouldHideBanner =
-        !_visible || (tier != 'taster' && tier != 'free' && tier != 'none');
+    final shouldHideBanner = !_visible || (tier != 'free' && tier != 'none');
 
     if (shouldHideBanner) return const SizedBox.shrink();
 

@@ -22,10 +22,9 @@ class SettingsScreen extends StatelessWidget {
 
     final tier = context.watch<SubscriptionService>().tier;
     final planLabel = switch (tier) {
-      'taster' => '🥄 Taster Plan',
       'home_chef' => '👨‍🍳 Home Chef Plan',
       'master_chef' => '👑 Master Chef Plan',
-      _ => 'Free Plan',
+      _ => '🆓 Free Plan',
     };
 
     return Scaffold(
@@ -205,7 +204,7 @@ class SettingsScreen extends StatelessWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      debugPrint('⚠️ Could not launch \$url');
+      debugPrint('⚠️ Could not launch $url');
     }
   }
 

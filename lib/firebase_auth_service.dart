@@ -152,20 +152,21 @@ class AuthService {
 
     final customerInfo = await Purchases.getCustomerInfo();
     final entitlementId =
-        customerInfo.entitlements.active.values.firstOrNull?.productIdentifier;
+        customerInfo.entitlements.active.values.firstOrNull?.identifier;
     final resolvedTier = resolveTier(entitlementId ?? 'free');
 
     final updateData = {
       'email': user.email,
       'entitlementId': entitlementId ?? 'none',
       'tier': resolvedTier,
-      'trialActive': false,
       if (!doc.exists) 'createdAt': FieldValue.serverTimestamp(),
     };
 
     if (!doc.exists) {
       await docRef.set(updateData);
-      debugPrint('📝 Created Firestore user doc → Tier: $resolvedTier');
+      debugPrint(
+        '📝 Created Firestore user doc → Tier: $resolvedTier, Entitlement: $entitlementId',
+      );
       try {
         await UserPreferencesService.markAsNewUser();
         debugPrint('🎈 Onboarding flags reset for new user');
@@ -180,7 +181,9 @@ class AuthService {
 
       if (needsUpdate) {
         await docRef.set(updateData, SetOptions(merge: true));
-        debugPrint('♻️ Updated Firestore user doc → Tier: $resolvedTier');
+        debugPrint(
+          '♻️ Updated Firestore user doc → Tier: $resolvedTier, Entitlement: $entitlementId',
+        );
       } else {
         debugPrint('ℹ️ Firestore user doc already up to date.');
       }
@@ -203,26 +206,23 @@ class AuthService {
     final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final doc = await docRef.get();
 
-    if (!doc.exists) {
-      final customerInfo = await Purchases.getCustomerInfo();
-      final entitlementId = customerInfo
-          .entitlements
-          .active
-          .values
-          .firstOrNull
-          ?.productIdentifier;
-      final resolvedTier = resolveTier(entitlementId ?? 'free');
+    final customerInfo = await Purchases.getCustomerInfo();
+    final entitlementId =
+        customerInfo.entitlements.active.values.firstOrNull?.identifier;
+    final resolvedTier = resolveTier(entitlementId ?? 'free');
 
+    if (!doc.exists) {
       final updateData = {
         'email': user.email,
         'entitlementId': entitlementId ?? 'none',
         'tier': resolvedTier,
-        'trialActive': false,
         'createdAt': FieldValue.serverTimestamp(),
       };
 
       await docRef.set(updateData);
-      debugPrint('📝 Created Firestore user doc → Tier: $resolvedTier');
+      debugPrint(
+        '📝 Created Firestore user doc → Tier: $resolvedTier, Entitlement: $entitlementId',
+      );
       try {
         await UserPreferencesService.markAsNewUser();
         debugPrint('🎈 Onboarding flags reset for new user');
@@ -245,15 +245,6 @@ class AuthService {
       return true;
     } else {
       final existing = doc.data() ?? {};
-      final customerInfo = await Purchases.getCustomerInfo();
-      final entitlementId = customerInfo
-          .entitlements
-          .active
-          .values
-          .firstOrNull
-          ?.productIdentifier;
-      final resolvedTier = resolveTier(entitlementId ?? 'free');
-
       final needsUpdate =
           existing['tier'] != resolvedTier ||
           existing['entitlementId'] != entitlementId;
@@ -263,7 +254,9 @@ class AuthService {
           'tier': resolvedTier,
           'entitlementId': entitlementId ?? 'none',
         }, SetOptions(merge: true));
-        debugPrint('♻️ Updated Firestore user doc → Tier: $resolvedTier');
+        debugPrint(
+          '♻️ Updated Firestore user doc → Tier: $resolvedTier, Entitlement: $entitlementId',
+        );
       } else {
         debugPrint('ℹ️ Firestore user doc already up to date.');
       }

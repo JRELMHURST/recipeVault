@@ -13,21 +13,20 @@ interface RevenueCatResponse {
   };
 }
 
-// 🧭 Define entitlement-to-tier mapping
-const ENTITLEMENT_TIER_MAP: Record<string, 'taster' | 'home_chef' | 'master_chef'> = {
-  taster_trial: "taster",
+// ✅ Only valid, paid entitlements mapped to internal tiers
+const ENTITLEMENT_TIER_MAP: Record<string, 'home_chef' | 'master_chef'> = {
   home_chef_monthly: "home_chef",
   master_chef_monthly: "master_chef",
   master_chef_yearly: "master_chef",
 };
 
 /**
- * 🔍 Queries RevenueCat to get the user's active tier and saves it to Firestore.
- * Returns the mapped tier (e.g. 'master_chef') or 'free' if none.
+ * 🔍 Queries RevenueCat for the user's active entitlement and syncs tier to Firestore.
+ * Falls back to 'free' if no valid entitlement is found.
  */
 export async function getUserEntitlementFromRevenueCat(
   uid: string
-): Promise<'free' | 'taster' | 'home_chef' | 'master_chef'> {
+): Promise<'free' | 'home_chef' | 'master_chef'> {
   const apiKey = process.env.REVENUECAT_SECRET_KEY;
   if (!apiKey) {
     throw new Error("❌ REVENUECAT_SECRET_KEY is not set in environment.");
@@ -46,7 +45,7 @@ export async function getUserEntitlementFromRevenueCat(
 
     if (!response.ok) {
       console.error(`❌ RevenueCat request failed: ${response.status} ${response.statusText}`);
-      await saveToFirestore(uid, 'free', null, false);
+      await saveToFirestore(uid, 'free', null);
       return 'free';
     }
 
@@ -55,7 +54,7 @@ export async function getUserEntitlementFromRevenueCat(
 
     if (!entitlements || Object.keys(entitlements).length === 0) {
       console.log(`ℹ️ No entitlements found for UID: ${uid} — defaulting to 'free'`);
-      await saveToFirestore(uid, 'free', null, false);
+      await saveToFirestore(uid, 'free', null);
       return 'free';
     }
 
@@ -69,31 +68,29 @@ export async function getUserEntitlementFromRevenueCat(
 
       if (ENTITLEMENT_TIER_MAP[product_identifier]) {
         const tier = ENTITLEMENT_TIER_MAP[product_identifier];
-        const isTrial = period_type === "trial" || period_type === "intro";
 
         console.log(`🎯 RevenueCat resolved UID ${uid} → ${tier} (via ${product_identifier})`);
 
-        await saveToFirestore(uid, tier, product_identifier, isTrial);
+        await saveToFirestore(uid, tier, product_identifier);
         return tier;
       }
     }
 
     console.warn(`⚠️ No recognised entitlements matched for UID: ${uid}`);
-    await saveToFirestore(uid, 'free', null, false);
+    await saveToFirestore(uid, 'free', null);
     return 'free';
 
   } catch (error) {
     console.error("❌ Failed to fetch entitlement from RevenueCat:", error);
-    await saveToFirestore(uid, 'free', null, false);
+    await saveToFirestore(uid, 'free', null);
     return 'free';
   }
 }
 
 async function saveToFirestore(
   uid: string,
-  tier: 'free' | 'taster' | 'home_chef' | 'master_chef',
+  tier: 'free' | 'home_chef' | 'master_chef',
   entitlementId: string | null,
-  trialActive: boolean
 ): Promise<void> {
   try {
     await getFirestore()
@@ -103,12 +100,11 @@ async function saveToFirestore(
         {
           tier,
           entitlementId: entitlementId ?? null,
-          trialActive,
         },
         { merge: true }
       );
 
-    console.log(`✅ Synced entitlementId, tier, and trialActive to Firestore`);
+    console.log(`✅ Synced entitlementId and tier to Firestore`);
   } catch (err) {
     console.error("❌ Failed to write user entitlement to Firestore:", err);
   }

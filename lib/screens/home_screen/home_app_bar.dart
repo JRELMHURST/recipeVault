@@ -32,7 +32,6 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Stack(
         alignment: Alignment.center,
         children: [
-          // Title always centred
           Text(
             _getAppBarTitle(selectedIndex, tier),
             style: theme.textTheme.titleLarge?.copyWith(
@@ -102,7 +101,6 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     }
 
     return switch (tier) {
-      'taster' => 'Taster',
       'home_chef' => 'Home Chef',
       'master_chef' => 'Master Chef',
       _ => 'RecipeVault',

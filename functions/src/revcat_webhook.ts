@@ -3,9 +3,18 @@ import { firestore } from './firebase.js';
 import admin from './firebase.js';
 import * as functions from 'firebase-functions';
 
+// 🧭 Maps product identifiers from RevenueCat to internal tier names
+const ENTITLEMENT_TIER_MAP: Record<string, 'home_chef' | 'master_chef'> = {
+  home_chef_monthly: 'home_chef',
+  master_chef_monthly: 'master_chef',
+  master_chef_yearly: 'master_chef',
+};
+
 export const revenueCatWebhook = https.onRequest(async (req, res) => {
   try {
-    const secret = process.env.REVENUECAT_WEBHOOK_SECRET || functions.config().revenuecat?.webhook_secret;
+    const secret =
+      process.env.REVENUECAT_WEBHOOK_SECRET ||
+      functions.config().revenuecat?.webhook_secret;
     const authHeader = req.headers.authorization;
 
     if (!secret || authHeader !== `Bearer ${secret}`) {
@@ -18,16 +27,20 @@ export const revenueCatWebhook = https.onRequest(async (req, res) => {
     const { event: eventType, app_user_id, aliases, ...data } = event;
 
     const uid = app_user_id || aliases?.[0];
-    const entitlement = data.entitlement_id || data.entitlement_ids?.[0];
+    const entitlementId = data.entitlement_id || data.entitlement_ids?.[0];
+    const resolvedTier = ENTITLEMENT_TIER_MAP[entitlementId] ?? 'free';
 
-    console.log(`📦 RevenueCat event received: ${eventType} for user ${uid ?? 'unknown'} (entitlement: ${entitlement})`);
+    console.log(
+      `📦 RevenueCat event received: ${eventType} for user ${uid ?? 'unknown'} (entitlement: ${entitlementId} → ${resolvedTier})`
+    );
 
     // 🧠 Log the webhook event to Firestore
     await firestore.collection('logs').doc().set({
       source: 'revcat_webhook',
       uid: uid ?? null,
       eventType: eventType ?? 'unknown',
-      entitlement: entitlement ?? null,
+      entitlement: entitlementId ?? null,
+      resolvedTier,
       environment: data.environment ?? 'unknown',
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
       rawPayload: event,
@@ -46,32 +59,28 @@ export const revenueCatWebhook = https.onRequest(async (req, res) => {
       case 'RENEWAL':
       case 'PRODUCT_CHANGE':
       case 'TRIAL_STARTED':
-        if (entitlement) {
-          await userRef.set(
-            {
-              subscription: {
-                tier: entitlement,
-                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-              },
-            },
-            { merge: true }
-          );
-          console.log(`✅ Entitlement "${entitlement}" synced for ${uid}`);
-        }
+      case 'TRIAL_CONVERTED':
+        await userRef.set(
+          {
+            tier: resolvedTier,
+            entitlementId,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+        console.log(`✅ Tier "${resolvedTier}" synced to Firestore for ${uid}`);
         break;
 
       case 'CANCELLATION':
       case 'NON_RENEWING_PURCHASE':
       case 'UNCANCELLATION':
       case 'EXPIRATION':
-      case 'TRIAL_CONVERTED':
       case 'TRIAL_EXPIRED':
         await userRef.set(
           {
-            subscription: {
-              tier: 'free',
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            },
+            tier: 'free',
+            entitlementId: null,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           { merge: true }
         );
@@ -83,7 +92,6 @@ export const revenueCatWebhook = https.onRequest(async (req, res) => {
     }
 
     res.status(200).send('OK');
-    return;
   } catch (err) {
     console.error('❌ RevenueCat Webhook error:', err);
     res.status(500).send('Internal Server Error');

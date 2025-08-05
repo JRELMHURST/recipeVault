@@ -12,12 +12,20 @@ class FirebaseStorageService {
     final urls = <String>[];
 
     if (user == null) {
-      throw Exception('❌ Not signed in — cannot upload images');
+      throw Exception('❌ Not signed in — cannot upload images.');
     }
 
     final subService = SubscriptionService();
+
+    if (!subService.isLoaded) {
+      if (kDebugMode) {
+        print('🔄 Loading subscription tier before image upload...');
+      }
+      await subService.refresh();
+    }
+
     if (!subService.allowImageUpload) {
-      throw Exception('🔒 Your plan does not allow image uploads.');
+      throw Exception('🔒 Your current plan does not allow image uploads.');
     }
 
     for (final file in files) {
@@ -26,21 +34,15 @@ class FirebaseStorageService {
         final path = 'users/${user.uid}/tempUploads/$fileName.jpg';
         final ref = storage.ref().child(path);
 
-        if (kDebugMode) {
-          print('📤 Uploading: $path');
-        }
+        if (kDebugMode) print('📤 Uploading image: $path');
 
         final uploadTask = await ref.putFile(file);
         final url = await uploadTask.ref.getDownloadURL();
         urls.add(url);
 
-        if (kDebugMode) {
-          print('✅ Uploaded to: $url');
-        }
+        if (kDebugMode) print('✅ Image uploaded to: $url');
       } catch (e) {
-        if (kDebugMode) {
-          print('❌ Failed to upload image: $e');
-        }
+        if (kDebugMode) print('❌ Failed to upload image: $e');
         rethrow;
       }
     }

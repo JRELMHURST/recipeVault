@@ -33,12 +33,11 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
     LoadingOverlay.show(context);
     try {
       await Purchases.purchasePackage(package);
-      await _subscriptionService.refresh();
-      await UserSessionService.syncRevenueCatEntitlement();
+      await _subscriptionService.syncRevenueCatEntitlement();
       await UserSessionService.init();
 
       if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -84,7 +83,6 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                       shrinkWrap: true,
                       children: [
                         const SizedBox(height: 12),
-
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -98,7 +96,6 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                             textAlign: TextAlign.center,
                           ),
                         ),
-
                         const SizedBox(height: 24),
                         Text(
                           'Upgrade to continue using RecipeVault AI:',
@@ -108,7 +105,6 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
-
                         if (homeChef != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
@@ -117,7 +113,6 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                               onTap: () => _handlePurchase(homeChef),
                             ),
                           ),
-
                         if (masterChef != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
@@ -126,13 +121,11 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                               onTap: () => _handlePurchase(masterChef),
                             ),
                           ),
-
                         if (homeChef == null && masterChef == null)
                           const Text(
                             'No subscription packages available at the moment. Please try again later.',
                             textAlign: TextAlign.center,
                           ),
-
                         const SizedBox(height: 24),
                         TextButton(
                           onPressed: () {

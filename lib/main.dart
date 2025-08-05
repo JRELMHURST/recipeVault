@@ -6,17 +6,18 @@ import 'package:recipe_vault/core/theme_notifier.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 
-// ✅ main.dart
+final subscriptionService = SubscriptionService();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppBootstrap.ensureReady(); // includes Firebase, Hive, RevenueCat, UserSessionService
+  await AppBootstrap.ensureReady();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         ChangeNotifierProvider(create: (_) => TextScaleNotifier()),
-        ChangeNotifierProvider(create: (_) => SubscriptionService()),
+        ChangeNotifierProvider.value(value: subscriptionService),
       ],
       child: const RecipeVaultApp(),
     ),

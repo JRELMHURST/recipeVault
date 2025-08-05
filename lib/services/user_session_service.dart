@@ -1,4 +1,4 @@
-// ignore_for_file: unnecessary_null_checks
+// ignore_for_file: use_build_context_synchronously, unnecessary_null_checks
 
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -105,10 +105,7 @@ class UserSessionService {
       await UserPreferencesService.init();
 
       final resolvedTier = await SubscriptionService().getResolvedTier();
-
       _logDebug('🧾 Tier resolved via getResolvedTier(): $resolvedTier');
-
-      // Firestore + SubscriptionService will now be in sync
 
       final isNewUser = await AuthService.ensureUserDocumentIfMissing(user);
       if (isNewUser) {

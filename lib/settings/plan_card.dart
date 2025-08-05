@@ -27,8 +27,8 @@ class PlanCard extends StatelessWidget {
         };
 
         final label = switch (actualTier) {
-          'master_chef' => 'Master Chef Plan$suffix',
-          'home_chef' => 'Home Chef Plan',
+          'master_chef' => '👑 Master Chef Plan$suffix',
+          'home_chef' => '👨‍🍳 Home Chef Plan',
           'free' => '🔓 Free Plan',
           _ => '🔓 Free Plan',
         };
@@ -61,7 +61,7 @@ class PlanCard extends StatelessWidget {
             '📁 Up to 3 custom categories',
           ],
           'free' => [
-            '🧠 Limited AI recipe cards (manual trial opt-in)',
+            '🧠 Limited AI recipe cards (trial opt-in required)',
             '🌐 No translation access',
             '📷 No image uploads',
             '📤 Vault saving (local only)',

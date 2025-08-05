@@ -60,12 +60,14 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
     final translationCount = subscription.translationUsage;
 
     if (!mounted) return;
+
     setState(() {
       recipesUsed = recipeCount;
       translationsUsed = translationCount;
       loading = false;
-      _updateAnimation();
     });
+
+    _updateAnimation();
   }
 
   void _updateAnimation() {
@@ -76,7 +78,6 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
       begin: 0,
       end: recipePercent,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
     _translationAnimation = Tween<double>(
       begin: 0,
       end: translationPercent,
@@ -93,7 +94,7 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
 
   @override
   Widget build(BuildContext context) {
-    final tier = Provider.of<SubscriptionService>(context).tier;
+    final tier = context.watch<SubscriptionService>().tier;
     if (tier != 'home_chef' || loading) return const SizedBox.shrink();
 
     return Padding(

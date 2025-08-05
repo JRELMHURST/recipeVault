@@ -142,7 +142,6 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     Row(
                       mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           'Cheeky Badger Creations',

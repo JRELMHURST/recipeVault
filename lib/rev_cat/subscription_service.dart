@@ -1,4 +1,5 @@
-// ignore_for_file: deprecated_member_use
+// Full updated SubscriptionService.dart
+// [Refreshed August 2025] - resolves Home Chef always displaying issue
 
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -32,9 +33,9 @@ class SubscriptionService extends ChangeNotifier {
     'translationUsage': {},
   };
 
+  // ───── Public Getters ─────
   String get tier => _tier;
   String get entitlementId => _entitlementId;
-  String get currentEntitlement => _tier;
   bool get isLoaded => _customerInfo != null;
 
   bool get isFree => _tier == 'free';
@@ -47,7 +48,7 @@ class SubscriptionService extends ChangeNotifier {
   bool get allowImageUpload => hasActiveSubscription;
   bool get allowSaveToVault => !isFree;
 
-  bool get allowCategoryCreation => isMasterChef || isHomeChef;
+  bool get allowCategoryCreation => hasActiveSubscription;
   bool get hasSpecialAccess => _hasSpecialAccess;
 
   String get tierIcon => switch (_tier) {
@@ -57,14 +58,14 @@ class SubscriptionService extends ChangeNotifier {
     _ => '❓',
   };
 
-  String get entitlementLabel => switch (entitlementId) {
+  String get entitlementLabel => switch (_entitlementId) {
     'master_chef_monthly' => 'Master Chef – Monthly',
     'master_chef_yearly' => 'Master Chef – Yearly',
     'home_chef_monthly' => 'Home Chef – Monthly',
     _ => 'Free Plan',
   };
 
-  bool get isYearly => entitlementId.endsWith('_yearly');
+  bool get isYearly => _entitlementId.endsWith('_yearly');
   String get billingCycle => isYearly ? 'Yearly' : 'Monthly';
 
   DateTime? get trialEndDate {
@@ -80,18 +81,22 @@ class SubscriptionService extends ChangeNotifier {
     return date != null ? '${date.day}/${date.month}/${date.year}' : 'N/A';
   }
 
-  void updateTier(String newTier) {
-    if (_tier != newTier) {
-      _tier = newTier;
-      tierNotifier.value = newTier;
-      _logTierOnce(source: 'updateTier');
-      notifyListeners();
+  bool get hasAccess => allowSaveToVault;
+  String get currentTier => _tier;
 
-      if (kDebugMode) {
-        debugPrint('🧾 [SubscriptionService] Tier manually updated → $_tier');
-      }
-    }
+  int get aiUsage {
+    final now = DateTime.now();
+    final key = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    return _usageData['aiUsage']?[key] ?? 0;
   }
+
+  int get translationUsage {
+    final now = DateTime.now();
+    final key = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    return _usageData['translationUsage']?[key] ?? 0;
+  }
+
+  // ───── Lifecycle Methods ─────
 
   Future<void> init() async {
     await Purchases.invalidateCustomerInfoCache();
@@ -99,60 +104,14 @@ class SubscriptionService extends ChangeNotifier {
     await _loadAvailablePackages();
   }
 
-  Future<void> refreshAndNotify() async {
-    await refresh();
-    notifyListeners();
-  }
-
   Future<void> refresh() async {
     await Purchases.invalidateCustomerInfoCache();
     await loadSubscriptionStatus();
-
-    final now = DateTime.now();
-    final expiryString = _activeEntitlement?.expirationDate;
-    if (expiryString != null) {
-      final expiryDate = DateTime.tryParse(expiryString);
-      if (expiryDate != null && now.isAfter(expiryDate)) {
-        debugPrint('⚠️ Sandbox entitlement expired – resetting tier to free.');
-        _tier = 'free';
-        _entitlementId = 'none';
-        _activeEntitlement = null;
-        tierNotifier.value = _tier;
-      }
-    }
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'tier': _tier,
-        'entitlementId': _entitlementId,
-        'lastLogin': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
   }
 
-  Future<void> syncRevenueCatEntitlement() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    try {
-      final customerInfo = await Purchases.getCustomerInfo();
-      final entitlement = _getActiveEntitlement(
-        customerInfo.entitlements.active,
-        _tier,
-      );
-      final entitlementId = entitlement?.productIdentifier ?? 'none';
-
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'tier': _tier,
-        'entitlementId': entitlementId,
-        'lastLogin': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      _logTierOnce(source: 'syncRevenueCatEntitlement');
-    } catch (e) {
-      debugPrint('⚠️ Failed to sync entitlement to Firestore: $e');
-    }
+  Future<void> refreshAndNotify() async {
+    await refresh();
+    notifyListeners();
   }
 
   Future<void> restoreAndSync() async => refresh();
@@ -169,6 +128,17 @@ class SubscriptionService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateTier(String newTier) {
+    if (_tier != newTier) {
+      _tier = newTier;
+      tierNotifier.value = newTier;
+      _logTierOnce(source: 'updateTier');
+      notifyListeners();
+    }
+  }
+
+  // ───── Subscription Loading ─────
+
   Future<void> loadSubscriptionStatus() async {
     if (_isLoadingTier) return;
     _isLoadingTier = true;
@@ -180,13 +150,18 @@ class SubscriptionService extends ChangeNotifier {
       _customerInfo = await Purchases.getCustomerInfo();
       final entitlements = _customerInfo!.entitlements.active;
 
-      _tier = _resolveTierFromEntitlements(entitlements);
-      _activeEntitlement = _getActiveEntitlement(entitlements, _tier);
-      _entitlementId = _activeEntitlement?.productIdentifier ?? 'none';
+      final rcTier = _resolveTierFromEntitlements(entitlements);
+      final activeEntitlement = _getActiveEntitlement(entitlements, rcTier);
+      final rcEntitlementId = activeEntitlement?.productIdentifier ?? 'none';
+
+      _tier = rcTier;
+      _entitlementId = rcEntitlementId;
+      _activeEntitlement = activeEntitlement;
       tierNotifier.value = _tier;
 
       _logTierOnce(source: 'loadSubscriptionStatus');
 
+      // Firestore override check
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -194,57 +169,61 @@ class SubscriptionService extends ChangeNotifier {
       final data = doc.data();
 
       if (data != null) {
-        final fallbackTier = data['tier'];
-        if (fallbackTier != null && fallbackTier != _tier) {
-          debugPrint('📄 Firestore fallback tier override → $fallbackTier');
-          _tier = fallbackTier;
+        final fsTier = data['tier'];
+        if (fsTier != null && fsTier != _tier && fsTier != 'free') {
+          debugPrint('📄 Firestore override → $fsTier');
+          _tier = fsTier;
           tierNotifier.value = _tier;
         }
 
         _hasSpecialAccess = data['specialAccess'] == true;
-        debugPrint('📄 Firestore specialAccess: $_hasSpecialAccess');
-
         if (_hasSpecialAccess && _tier == 'free') {
           _tier = 'home_chef';
           tierNotifier.value = _tier;
-          debugPrint('🎁 specialAccess override → Home Chef tier');
+          debugPrint('🎁 Special Access: forcing Home Chef tier');
         }
       }
 
-      try {
-        final usageDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('aiUsage')
-            .doc('usage')
-            .get();
-        _usageData['aiUsage'] = Map<String, int>.from(usageDoc.data() ?? {});
-      } catch (e) {
-        debugPrint('⚠️ Failed to load AI usage data: $e');
-      }
-
-      try {
-        final translationDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('translationUsage')
-            .doc('usage')
-            .get();
-        _usageData['translationUsage'] = Map<String, int>.from(
-          translationDoc.data() ?? {},
-        );
-      } catch (e) {
-        debugPrint('⚠️ Failed to load translation usage data: $e');
-      }
-
+      await _loadUsageData(user.uid);
       await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(_tier);
+
       notifyListeners();
     } catch (e) {
-      debugPrint('🔴 Error loading subscription status: $e');
+      debugPrint('🔴 Failed to load subscription: $e');
     } finally {
       _isLoadingTier = false;
     }
   }
+
+  Future<void> _loadUsageData(String uid) async {
+    try {
+      final aiSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('aiUsage')
+          .doc('usage')
+          .get();
+      _usageData['aiUsage'] = Map<String, int>.from(aiSnap.data() ?? {});
+    } catch (e) {
+      debugPrint('⚠️ Failed to load AI usage: $e');
+    }
+
+    try {
+      final txSnap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('translationUsage')
+          .doc('usage')
+          .get();
+      _usageData['translationUsage'] = Map<String, int>.from(
+        txSnap.data() ?? {},
+      );
+    } catch (e) {
+      debugPrint('⚠️ Failed to load translation usage: $e');
+    }
+  }
+
+  // ───── RevenueCat Package Logic ─────
 
   Future<void> _loadAvailablePackages() async {
     try {
@@ -263,9 +242,11 @@ class SubscriptionService extends ChangeNotifier {
         );
       }
     } catch (e) {
-      debugPrint('🔴 Error loading available packages: $e');
+      debugPrint('🔴 Error loading packages: $e');
     }
   }
+
+  // ───── Helper Logic ─────
 
   String _resolveTierFromEntitlements(
     Map<String, EntitlementInfo> entitlements,
@@ -307,25 +288,12 @@ class SubscriptionService extends ChangeNotifier {
 
   void _logTierOnce({String source = 'unknown'}) {
     if (_lastLoggedTier != _tier) {
-      debugPrint('📦 Tier changed → $_tier (source: $source)');
+      debugPrint('📦 Tier updated → $_tier (from: $source)');
       _lastLoggedTier = _tier;
     }
   }
 
-  bool get hasAccess => allowSaveToVault;
-  String get currentTier => _tier;
-
-  int get aiUsage {
-    final now = DateTime.now();
-    final key = '${now.year}-${now.month.toString().padLeft(2, '0')}';
-    return _usageData['aiUsage']?[key] ?? 0;
-  }
-
-  int get translationUsage {
-    final now = DateTime.now();
-    final key = '${now.year}-${now.month.toString().padLeft(2, '0')}';
-    return _usageData['translationUsage']?[key] ?? 0;
-  }
+  // ───── Tier Resolution Public Method ─────
 
   Future<String> getResolvedTier() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -342,17 +310,43 @@ class SubscriptionService extends ChangeNotifier {
         'none';
 
     final doc = await firestore.collection('users').doc(uid).get();
-    final fsTier = doc.data()?['tier'] as String? ?? 'free';
+    final fsTier = doc.data()?['tier'] ?? 'free';
 
-    final resolvedTier = fsTier != 'free' ? fsTier : rcTier;
-    updateTier(resolvedTier);
+    final resolved = fsTier != 'free' ? fsTier : rcTier;
+    updateTier(resolved);
 
     await firestore.collection('users').doc(uid).set({
-      'tier': resolvedTier,
+      'tier': resolved,
       'entitlementId': entitlementId,
       'lastLogin': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    return resolvedTier;
+    return resolved;
+  }
+
+  Future<void> syncRevenueCatEntitlement() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final customerInfo = await Purchases.getCustomerInfo();
+    final entitlements = customerInfo.entitlements.active;
+    final rcTier = _resolveTierFromEntitlements(entitlements);
+    final entitlementId =
+        _getActiveEntitlement(entitlements, rcTier)?.productIdentifier ??
+        'none';
+
+    _tier = rcTier;
+    _entitlementId = entitlementId;
+    _activeEntitlement = _getActiveEntitlement(entitlements, rcTier);
+    tierNotifier.value = _tier;
+
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+      'tier': rcTier,
+      'entitlementId': entitlementId,
+      'lastLogin': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    _logTierOnce(source: 'syncRevenueCatEntitlement');
+    notifyListeners();
   }
 }

@@ -3,6 +3,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/rev_cat/pricing_card.dart';
@@ -19,7 +20,7 @@ class PaywallScreen extends StatefulWidget {
 }
 
 class _PaywallScreenState extends State<PaywallScreen> {
-  final _subscriptionService = SubscriptionService();
+  late final SubscriptionService _subscriptionService;
   bool _isLoading = true;
   bool _isPurchasing = false;
   List<Package> _availablePackages = [];
@@ -27,6 +28,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
   @override
   void initState() {
     super.initState();
+    _subscriptionService = Provider.of<SubscriptionService>(
+      context,
+      listen: false,
+    );
     _loadSubscriptionData();
   }
 
@@ -35,21 +40,38 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
     try {
       final offerings = await Purchases.getOfferings();
-      final current = offerings.current;
-      if (current == null) throw Exception('No current offering available');
+      final entitlementId = _subscriptionService.entitlementId;
 
-      final currentId = _subscriptionService.entitlementId;
-      _availablePackages = current.availablePackages;
+      final packages = <Package>[];
+      final seen = <String>{};
 
-      _availablePackages.sort((a, b) {
+      offerings.all.forEach((key, offering) {
+        for (final pkg in offering.availablePackages) {
+          final id = pkg.storeProduct.identifier;
+          if (!seen.contains(id)) {
+            seen.add(id);
+            packages.add(pkg);
+          }
+        }
+      });
+
+      packages.sort((a, b) {
         final aIsCurrent =
-            a.storeProduct.identifier == currentId || a.identifier == currentId;
+            entitlementId.isNotEmpty &&
+            (a.storeProduct.identifier == entitlementId ||
+                a.identifier == entitlementId ||
+                a.offeringIdentifier == entitlementId);
         final bIsCurrent =
-            b.storeProduct.identifier == currentId || b.identifier == currentId;
+            entitlementId.isNotEmpty &&
+            (b.storeProduct.identifier == entitlementId ||
+                b.identifier == entitlementId ||
+                b.offeringIdentifier == entitlementId);
         if (aIsCurrent && !bIsCurrent) return -1;
         if (!aIsCurrent && bIsCurrent) return 1;
         return 0;
       });
+
+      _availablePackages = packages;
     } catch (e) {
       debugPrint('❌ Failed to load offerings: $e');
     }
@@ -63,8 +85,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
     try {
       await Purchases.purchasePackage(package);
-      await SubscriptionService().refresh();
+      await _subscriptionService.refresh();
       await UserSessionService.syncRevenueCatEntitlement();
+      await _subscriptionService.refresh();
       await UserSessionService.init();
 
       if (!mounted) return;
@@ -165,9 +188,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           const SizedBox(height: 24),
                           ..._availablePackages.map((pkg) {
                             final isCurrent =
-                                pkg.storeProduct.identifier == entitlementId ||
-                                pkg.identifier == entitlementId ||
-                                pkg.offeringIdentifier == entitlementId;
+                                entitlementId.isNotEmpty &&
+                                (pkg.storeProduct.identifier == entitlementId ||
+                                    pkg.identifier == entitlementId ||
+                                    pkg.offeringIdentifier == entitlementId);
 
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 16),

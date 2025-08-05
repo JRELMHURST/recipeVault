@@ -20,7 +20,7 @@ class _UpgradeBannerState extends State<UpgradeBanner> {
   @override
   void initState() {
     super.initState();
-    // Optional auto-dismiss after 10 seconds
+    // Optional: Auto-dismiss after 10 seconds
     Future.delayed(const Duration(seconds: 10), () {
       if (mounted && _visible) _dismiss();
     });
@@ -37,7 +37,6 @@ class _UpgradeBannerState extends State<UpgradeBanner> {
     final tier = subscription.tier;
 
     final shouldHideBanner = !_visible || (tier != 'free' && tier != 'none');
-
     if (shouldHideBanner) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
@@ -51,7 +50,7 @@ class _UpgradeBannerState extends State<UpgradeBanner> {
         onDismissed: (_) => _dismiss(),
         background: Container(
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.1),
+            color: Colors.amber.shade100.withOpacity(0.3),
             borderRadius: BorderRadius.circular(16),
           ),
         ),
@@ -59,7 +58,6 @@ class _UpgradeBannerState extends State<UpgradeBanner> {
           borderRadius: BorderRadius.circular(16),
           onTap: () => Navigator.pushNamed(context, '/paywall'),
           child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: isDark
                   ? Colors.amber.shade200.withOpacity(0.1)
@@ -67,6 +65,7 @@ class _UpgradeBannerState extends State<UpgradeBanner> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.amber.shade300),
             ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
                 const Icon(Icons.lock_outline, size: 20, color: Colors.amber),

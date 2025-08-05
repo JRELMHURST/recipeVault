@@ -20,10 +20,11 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tier = context.watch<SubscriptionService>().tier;
-    final isFree = tier.isEmpty || tier == 'none' || tier == 'free';
 
     final showToggle =
         selectedIndex == 1 && viewModeIcon != null && onToggleViewMode != null;
+
+    final isFreeTier = tier.isEmpty || tier == 'none' || tier == 'free';
 
     return AppBar(
       elevation: 0,
@@ -65,7 +66,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
             )
           : null,
       actions: [
-        if ((selectedIndex == 1 || selectedIndex == 2) && isFree)
+        if ((selectedIndex == 1 || selectedIndex == 2) && isFreeTier)
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: TextButton(
@@ -101,8 +102,9 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     }
 
     return switch (tier) {
-      'home_chef' => 'Home Chef',
-      'master_chef' => 'Master Chef',
+      'taster' => '🥄 Taster',
+      'home_chef' => '👨‍🍳 Home Chef',
+      'master_chef' => '👑 Master Chef',
       _ => 'RecipeVault',
     };
   }

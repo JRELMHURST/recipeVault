@@ -28,6 +28,11 @@ class RecipeChipFilterBar extends StatelessWidget {
     return allRecipes.any((r) => (r.categories).contains(category));
   }
 
+  bool _isProtectedCategory(String category, bool isFreeUser) {
+    return _systemCategories.contains(category) ||
+        (isFreeUser && _protectedDefaults.contains(category));
+  }
+
   @override
   Widget build(BuildContext context) {
     final subscriptionService = Provider.of<SubscriptionService>(context);
@@ -44,10 +49,7 @@ class RecipeChipFilterBar extends StatelessWidget {
         children: categories.map((category) {
           final isSelected = category == selectedCategory;
 
-          final isProtected =
-              _systemCategories.contains(category) ||
-              (isFreeUser && _protectedDefaults.contains(category));
-
+          final isProtected = _isProtectedCategory(category, isFreeUser);
           final isDeletable = !isProtected && !_isCategoryUsed(category);
 
           return Padding(

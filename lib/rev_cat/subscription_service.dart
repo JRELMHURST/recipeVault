@@ -66,7 +66,11 @@ class SubscriptionService extends ChangeNotifier {
   };
 
   bool get isYearly => _entitlementId.endsWith('_yearly');
-  String get billingCycle => isYearly ? 'Yearly' : 'Monthly';
+  String get billingCycle {
+    if (_entitlementId.contains('yearly')) return 'Yearly';
+    if (_entitlementId.contains('monthly')) return 'Monthly';
+    return 'Free';
+  }
 
   DateTime? get trialEndDate {
     final expiry = _activeEntitlement?.expirationDate;
@@ -113,8 +117,6 @@ class SubscriptionService extends ChangeNotifier {
     await refresh();
     notifyListeners();
   }
-
-  Future<void> restoreAndSync() async => refresh();
 
   Future<void> reset() async {
     _tier = 'free';
@@ -295,7 +297,9 @@ class SubscriptionService extends ChangeNotifier {
 
   // ───── Tier Resolution Public Method ─────
 
-  Future<String> getResolvedTier() async {
+  Future<String> getResolvedTier({bool forceRefresh = false}) async {
+    if (!forceRefresh && _tier != 'free') return _tier;
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return 'free';
 
@@ -324,7 +328,9 @@ class SubscriptionService extends ChangeNotifier {
     return resolved;
   }
 
-  Future<void> syncRevenueCatEntitlement() async {
+  Future<void> syncRevenueCatEntitlement({bool forceRefresh = false}) async {
+    if (!forceRefresh && _tier != 'free') return;
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 

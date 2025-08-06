@@ -85,6 +85,10 @@ class UserSessionService {
           .listen(
             (snapshot) {
               if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+              if (!snapshot.exists || snapshot.data() == null) {
+                _logDebug('⚠️ User doc snapshot missing or null');
+                return;
+              }
               _logDebug('📡 User doc listener received update');
             },
             onError: (error) => _logDebug('⚠️ User doc listener error: $error'),
@@ -98,11 +102,20 @@ class UserSessionService {
           .snapshots()
           .listen((doc) async {
             if (FirebaseAuth.instance.currentUser?.uid != uid) return;
-            final used = (doc.data()?[monthKey] ?? 0) as int;
+
+            final data = doc.data();
+            if (data == null) {
+              _logDebug('⚠️ AI usage doc has no data');
+              return;
+            }
+
+            final used = (data[monthKey] ?? 0) as int;
             _logDebug('📊 AI usage [$monthKey]: $used');
+
             if (!UserPreferencesService.isBoxOpen) {
               await UserPreferencesService.init();
             }
+
             await UserPreferencesService.setCachedUsage(
               ai: used,
               translations: null,
@@ -118,11 +131,20 @@ class UserSessionService {
           .listen(
             (doc) async {
               if (FirebaseAuth.instance.currentUser?.uid != uid) return;
-              final used = (doc.data()?[monthKey] ?? 0) as int;
+
+              final data = doc.data();
+              if (data == null) {
+                _logDebug('⚠️ Translation usage doc has no data');
+                return;
+              }
+
+              final used = (data[monthKey] ?? 0) as int;
               _logDebug('🌐 Translation usage [$monthKey]: $used');
+
               if (!UserPreferencesService.isBoxOpen) {
                 await UserPreferencesService.init();
               }
+
               await UserPreferencesService.setCachedUsage(
                 ai: null,
                 translations: used,

@@ -114,6 +114,26 @@ class SettingsScreen extends StatelessWidget {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.pushNamed(context, '/paywall'),
                   ),
+                  const Divider(height: 0),
+                  ListTile(
+                    leading: const Icon(Icons.refresh),
+                    title: const Text('Refresh Plan'),
+                    subtitle: const Text(
+                      'Tap to sync your latest subscription status',
+                    ),
+                    onTap: () async {
+                      final subService = context.read<SubscriptionService>();
+                      await subService.syncRevenueCatEntitlement();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Subscription plan refreshed.'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                  ),
                 ],
               ),
               _buildSettingsCard(
@@ -135,7 +155,6 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
 
-              // 👋 Friendly footer with links
               const SizedBox(height: 12),
               Center(
                 child: Column(

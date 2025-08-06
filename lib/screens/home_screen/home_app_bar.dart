@@ -21,9 +21,6 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     final theme = Theme.of(context);
     final tier = context.watch<SubscriptionService>().tier;
 
-    final showToggle =
-        selectedIndex == 1 && viewModeIcon != null && onToggleViewMode != null;
-
     final isFreeTier = tier.isEmpty || tier == 'none' || tier == 'free';
 
     return AppBar(
@@ -52,19 +49,40 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ],
       ),
-      leading: showToggle
-          ? Tooltip(
-              message: 'Toggle view mode',
-              waitDuration: const Duration(milliseconds: 300),
-              child: IconButton(
-                icon: Icon(
-                  viewModeIcon,
-                  color: theme.appBarTheme.iconTheme?.color,
-                ),
-                onPressed: onToggleViewMode,
-              ),
-            )
-          : null,
+
+      // 🔁 Show either toggle or refresh on the leading side
+      leading: switch (selectedIndex) {
+        1 when viewModeIcon != null && onToggleViewMode != null => Tooltip(
+          message: 'Toggle view mode',
+          waitDuration: const Duration(milliseconds: 300),
+          child: IconButton(
+            icon: Icon(viewModeIcon, color: theme.appBarTheme.iconTheme?.color),
+            onPressed: onToggleViewMode,
+          ),
+        ),
+        2 => Tooltip(
+          message: 'Refresh your subscription plan',
+          waitDuration: const Duration(milliseconds: 300),
+          child: IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () async {
+              final subService = context.read<SubscriptionService>();
+              await subService.syncRevenueCatEntitlement();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Subscription plan refreshed.'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+          ),
+        ),
+        _ => null,
+      },
+
+      // Upgrade button on right if applicable
       actions: [
         if ((selectedIndex == 1 || selectedIndex == 2) && isFreeTier)
           Padding(
@@ -102,7 +120,6 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     }
 
     return switch (tier) {
-      'taster' => '🥄 Taster',
       'home_chef' => '👨‍🍳 Home Chef',
       'master_chef' => '👑 Master Chef',
       _ => 'RecipeVault',

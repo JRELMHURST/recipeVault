@@ -13,11 +13,15 @@ class PlanCard extends StatelessWidget {
     return FutureBuilder<String>(
       future: subscriptionService.getResolvedTier(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final actualTier = snapshot.data!;
+        if (snapshot.hasError || !snapshot.hasData) {
+          return const Text('Unable to load plan info');
+        }
+
+        final actualTier = snapshot.data ?? 'free';
         final entitlementId = subscriptionService.entitlementId;
 
         final suffix = switch (entitlementId) {
@@ -114,6 +118,7 @@ class PlanCard extends StatelessWidget {
                     (item) => Padding(
                       padding: const EdgeInsets.only(bottom: 6),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Icon(
                             Icons.check_circle_outline,

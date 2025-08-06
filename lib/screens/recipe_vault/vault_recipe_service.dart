@@ -18,13 +18,20 @@ class VaultRecipeService {
 
   static CollectionReference<Map<String, dynamic>> get _userRecipeCollection {
     final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      throw Exception('No authenticated user to access user recipes');
+    }
     return _firestore.collection('users').doc(uid).collection('recipes');
   }
 
   /// 🗑️ Delete recipe from Hive, Firestore, and optionally Firebase Storage
   static Future<void> delete(RecipeCardModel recipe) async {
     await HiveRecipeService.delete(recipe.id);
-    await _userRecipeCollection.doc(recipe.id).delete();
+    try {
+      await _userRecipeCollection.doc(recipe.id).delete();
+    } catch (e) {
+      debugPrint("⚠️ Firestore deletion failed: $e");
+    }
 
     if (recipe.imageUrl?.isNotEmpty == true) {
       try {
@@ -39,46 +46,66 @@ class VaultRecipeService {
   /// 💾 Save recipe to Hive and Firestore (merge mode)
   static Future<void> save(RecipeCardModel recipe) async {
     await HiveRecipeService.save(recipe);
-    await _userRecipeCollection
-        .doc(recipe.id)
-        .set(recipe.toJson(), SetOptions(merge: true));
+    try {
+      await _userRecipeCollection
+          .doc(recipe.id)
+          .set(recipe.toJson(), SetOptions(merge: true));
+    } catch (e) {
+      debugPrint("⚠️ Firestore save failed: $e");
+    }
   }
 
   /// 📥 Load user recipes from Firestore
   static Future<List<RecipeCardModel>> _loadUserRecipes() async {
-    final snapshot = await _userRecipeCollection
-        .orderBy('createdAt', descending: true)
-        .get();
+    try {
+      final uid = _auth.currentUser?.uid;
+      if (uid == null) return [];
 
-    return snapshot.docs
-        .map((doc) => RecipeCardModel.fromJson(doc.data()))
-        .toList();
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('recipes')
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => RecipeCardModel.fromJson(doc.data()))
+          .toList();
+    } catch (e) {
+      debugPrint("⚠️ Failed to fetch user recipes: $e");
+      return [];
+    }
   }
 
   /// 🌍 Load global recipes, excluding hidden ones
   static Future<List<RecipeCardModel>> _loadGlobalRecipes() async {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) return [];
+    try {
+      final uid = _auth.currentUser?.uid;
+      if (uid == null) return [];
 
-    final hiddenIds =
-        (await _firestore
-                .collection('users')
-                .doc(uid)
-                .collection('hiddenGlobalRecipes')
-                .get())
-            .docs
-            .map((doc) => doc.id)
-            .toSet();
+      final hiddenIds =
+          (await _firestore
+                  .collection('users')
+                  .doc(uid)
+                  .collection('hiddenGlobalRecipes')
+                  .get())
+              .docs
+              .map((doc) => doc.id)
+              .toSet();
 
-    final globalSnapshot = await _firestore
-        .collection('global_recipes')
-        .orderBy('createdAt', descending: true)
-        .get();
+      final globalSnapshot = await _firestore
+          .collection('global_recipes')
+          .orderBy('createdAt', descending: true)
+          .get();
 
-    return globalSnapshot.docs
-        .where((doc) => !hiddenIds.contains(doc.id))
-        .map((doc) => RecipeCardModel.fromJson(doc.data()))
-        .toList();
+      return globalSnapshot.docs
+          .where((doc) => !hiddenIds.contains(doc.id))
+          .map((doc) => RecipeCardModel.fromJson(doc.data()))
+          .toList();
+    } catch (e) {
+      debugPrint("⚠️ Failed to fetch global recipes: $e");
+      return [];
+    }
   }
 
   /// 🔁 Load, merge, deduplicate, and cache all recipes to Hive
@@ -121,15 +148,28 @@ class VaultRecipeService {
   /// 📡 Listen to Firestore recipe changes
   static void listenToVaultChanges(void Function() onUpdate) {
     final uid = _auth.currentUser?.uid;
-    if (uid == null) return;
+    if (uid == null) {
+      debugPrint("⚠️ Cannot listen to vault changes – no user signed in");
+      return;
+    }
 
     _vaultSub?.cancel();
-    _vaultSub = _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('recipes')
-        .snapshots()
-        .listen((_) => onUpdate());
+
+    try {
+      _vaultSub = _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('recipes')
+          .snapshots()
+          .listen(
+            (_) => onUpdate(),
+            onError: (error) => debugPrint('⚠️ Vault snapshot error: $error'),
+            cancelOnError: true,
+          );
+      debugPrint('📡 Firestore vault listener started');
+    } catch (e) {
+      debugPrint("⚠️ Failed to start vault listener: $e");
+    }
   }
 
   /// ❌ Cancel Firestore recipe listener

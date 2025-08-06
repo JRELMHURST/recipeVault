@@ -97,23 +97,30 @@ class CategoryService {
 
   static Future<void> syncFromFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      debugPrint('⚠️ Cannot sync categories – no user signed in');
+      return;
+    }
 
-    final ref = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('categories');
+    try {
+      final ref = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('categories');
 
-    final snapshot = await ref.get();
-    final box = await _openCategoryBoxIfNeeded();
-    await box.clear();
+      final snapshot = await ref.get();
+      final box = await _openCategoryBoxIfNeeded();
+      await box.clear();
 
-    for (final doc in snapshot.docs) {
-      final name = doc['name'];
-      if (name is String && !_systemCategories.contains(name)) {
-        final categoryModel = CategoryModel(id: name, name: name);
-        await box.add(categoryModel.toJson());
+      for (final doc in snapshot.docs) {
+        final name = doc['name'];
+        if (name is String && !_systemCategories.contains(name)) {
+          final categoryModel = CategoryModel(id: name, name: name);
+          await box.add(categoryModel.toJson());
+        }
       }
+    } catch (e) {
+      debugPrint('⚠️ Failed to sync categories from Firestore: $e');
     }
   }
 

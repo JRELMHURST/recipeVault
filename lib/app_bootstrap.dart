@@ -13,12 +13,11 @@ import 'model/category_model.dart';
 import 'services/category_service.dart';
 import 'services/notification_service.dart';
 import 'services/user_preference_service.dart';
-import 'services/user_session_service.dart';
 
 class AppBootstrap {
   static bool _isReady = false;
 
-  /// Firebase globals – exposed if needed in-app
+  /// Firebase globals – exposed if needed in-app
   static final FirebaseFunctions functions = FirebaseFunctions.instanceFor(
     region: 'europe-west2',
   );
@@ -116,7 +115,7 @@ class AppBootstrap {
       }
     }
 
-    // 👤 Debug: track auth user restoration
+    // 👤 Just log current auth state — do not initialise session here
     if (kDebugMode) {
       FirebaseAuth.instance.authStateChanges().listen((user) {
         if (user == null) {
@@ -131,15 +130,8 @@ class AppBootstrap {
       });
     }
 
-    // 👤 Load and sync session
-    try {
-      await UserSessionService.init();
-    } catch (e, stack) {
-      if (kDebugMode) {
-        print('❌ UserSessionService.init() failed: $e');
-        print(stack);
-      }
-    }
+    // ✅ Do NOT call UserSessionService.init() here anymore
+    // It is now safely handled in main.dart via authStateChanges()
 
     _isReady = true;
   }

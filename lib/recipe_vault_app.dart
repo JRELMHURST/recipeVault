@@ -1,22 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';
 import 'package:recipe_vault/router.dart';
 import 'package:recipe_vault/core/theme.dart';
 
-class RecipeVaultApp extends StatefulWidget {
+class RecipeVaultApp extends StatelessWidget {
   const RecipeVaultApp({super.key});
-
-  @override
-  State<RecipeVaultApp> createState() => _RecipeVaultAppState();
-}
-
-class _RecipeVaultAppState extends State<RecipeVaultApp> {
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {

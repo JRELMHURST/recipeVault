@@ -26,10 +26,9 @@ class UserSessionService {
 
   static bool get isInitialised => _isInitialised;
 
-  static bool get isSignedIn {
-    final user = FirebaseAuth.instance.currentUser;
-    return user != null && !user.isAnonymous;
-  }
+  static bool get isSignedIn =>
+      FirebaseAuth.instance.currentUser != null &&
+      !FirebaseAuth.instance.currentUser!.isAnonymous;
 
   static Future<void> syncEntitlementAndRefreshSession() async {
     _logDebug('🔄 Manually syncing entitlement and refreshing session...');
@@ -54,17 +53,13 @@ class UserSessionService {
     _bubbleFlagsReady = Completer<void>();
     _logDebug('👤 Initialising session for UID: ${user.uid}');
 
-    await _userDocSubscription?.cancel();
-    await _aiUsageSub?.cancel();
-    await _translationSub?.cancel();
-    await _vaultListener?.cancel();
+    await _cancelAllStreams();
 
     final uid = user.uid;
     final monthKey = DateFormat('yyyy-MM').format(DateTime.now());
 
     try {
       await UserPreferencesService.init();
-
       if (!Hive.isBoxOpen('userPrefs_$uid')) {
         await Hive.openBox('userPrefs_$uid');
       }
@@ -77,7 +72,7 @@ class UserSessionService {
         try {
           await UserPreferencesService.markUserAsNew();
         } catch (e, stack) {
-          _logDebug('⚠️ Failed to mark user as new in preferences: $e');
+          _logDebug('⚠️ Failed to mark user as new: $e');
           if (kDebugMode) print(stack);
         }
       }
@@ -106,20 +101,16 @@ class UserSessionService {
           .snapshots()
           .listen((doc) async {
             if (FirebaseAuth.instance.currentUser?.uid != uid) return;
-
             final data = doc.data();
             if (data == null) {
               _logDebug('⚠️ AI usage doc has no data');
               return;
             }
-
             final used = (data[monthKey] ?? 0) as int;
             _logDebug('📊 AI usage [$monthKey]: $used');
-
             if (!UserPreferencesService.isBoxOpen) {
               await UserPreferencesService.init();
             }
-
             await UserPreferencesService.setCachedUsage(
               ai: used,
               translations: null,
@@ -135,20 +126,16 @@ class UserSessionService {
           .listen(
             (doc) async {
               if (FirebaseAuth.instance.currentUser?.uid != uid) return;
-
               final data = doc.data();
               if (data == null) {
                 _logDebug('⚠️ Translation usage doc has no data');
                 return;
               }
-
               final used = (data[monthKey] ?? 0) as int;
               _logDebug('🌐 Translation usage [$monthKey]: $used');
-
               if (!UserPreferencesService.isBoxOpen) {
                 await UserPreferencesService.init();
               }
-
               await UserPreferencesService.setCachedUsage(
                 ai: null,
                 translations: used,
@@ -189,10 +176,49 @@ class UserSessionService {
 
   static Future<void> logoutReset() async {
     _logDebug('👋 Logging out and resetting session...');
+    await _cancelAllStreams();
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      final boxName = 'recipes_$uid';
+      if (Hive.isBoxOpen(boxName)) {
+        try {
+          final box = Hive.box<RecipeCardModel>(boxName);
+          await box.clear();
+          await box.close();
+          _logDebug('📦 Safely cleared & closed box: $boxName');
+        } catch (e, stack) {
+          _logDebug('⚠️ Error clearing box $boxName: $e');
+          if (kDebugMode) print(stack);
+        }
+      } else {
+        try {
+          await Hive.deleteBoxFromDisk(boxName);
+          _logDebug('🧹 Deleted unopened Hive box from disk: $boxName');
+        } catch (e) {
+          _logDebug('⚠️ Failed to delete unopened Hive box: $e');
+        }
+      }
 
-    // Cancel all listeners first
+      try {
+        if (!Hive.isBoxOpen('userPrefs_$uid')) {
+          await Hive.openBox('userPrefs_$uid');
+        }
+        await UserPreferencesService.clearAllUserData(uid);
+      } catch (e) {
+        _logDebug('⚠️ Failed to clear userPrefs: $e');
+      }
+    }
+
+    await CategoryService.clearCache();
+    await SubscriptionService().reset();
+
+    _isInitialised = false;
+    _bubbleFlagsReady = null;
+    _logDebug('🧹 Session fully cleared');
+  }
+
+  static Future<void> _cancelAllStreams() async {
     await _userDocSubscription?.cancel();
     await _aiUsageSub?.cancel();
     await _translationSub?.cancel();
@@ -202,37 +228,6 @@ class UserSessionService {
     _aiUsageSub = null;
     _translationSub = null;
     _vaultListener = null;
-
-    if (uid != null) {
-      // Safely clear recipe Hive box
-      final recipeBoxName = 'recipes_$uid';
-      if (Hive.isBoxOpen(recipeBoxName)) {
-        try {
-          await Hive.box<RecipeCardModel>(recipeBoxName).clear();
-          await Hive.box<RecipeCardModel>(recipeBoxName).close();
-          _logDebug('📦 Cleared & closed box: $recipeBoxName');
-        } catch (e, stack) {
-          _logDebug('⚠️ Failed to clear box $recipeBoxName: $e');
-          if (kDebugMode) print(stack);
-        }
-      }
-
-      // Clear user preferences
-      try {
-        await UserPreferencesService.clearAllUserData(uid);
-      } catch (e) {
-        _logDebug('⚠️ Failed to clear UserPreferencesService: $e');
-      }
-    }
-
-    // Clear static services
-    await CategoryService.clearCache();
-    await SubscriptionService().reset();
-
-    _isInitialised = false;
-    _bubbleFlagsReady = null;
-
-    _logDebug('🧹 Session fully cleared');
   }
 
   static Future<void> reset() async {

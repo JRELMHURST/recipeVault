@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
+import 'package:recipe_vault/services/user_session_service.dart';
 import 'package:hive/hive.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
-import 'package:recipe_vault/services/user_session_service.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
@@ -147,8 +147,8 @@ class AccountSettingsScreen extends StatelessWidget {
         content: const Text('Are you sure you want to sign out?'),
         actions: [
           TextButton(
-            child: const Text('Cancel'),
             onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -169,7 +169,7 @@ class AccountSettingsScreen extends StatelessWidget {
       );
 
       try {
-        await UserSessionService.logoutReset();
+        await UserSessionService.logoutReset(); // ✅ handles Purchases.logOut + cleanup
         await FirebaseAuth.instance.signOut();
 
         if (context.mounted) {
@@ -180,7 +180,7 @@ class AccountSettingsScreen extends StatelessWidget {
           Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
         }
       } catch (e) {
-        Navigator.pop(context); // dismiss loading
+        Navigator.pop(context);
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
@@ -200,8 +200,8 @@ class AccountSettingsScreen extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            child: const Text('Cancel'),
             onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -229,9 +229,10 @@ class AccountSettingsScreen extends StatelessWidget {
           region: 'europe-west2',
         ).httpsCallable('deleteAccount').call();
 
-        await UserSessionService.logoutReset();
+        await UserSessionService.logoutReset(); // ✅ handles Purchases.logOut + local cleanup
         await FirebaseAuth.instance.signOut();
 
+        // Redundant box deletion is already handled inside logoutReset() too, but kept here in case of async edge case:
         final uid = user.uid;
         final boxName = 'recipes_$uid';
 
@@ -239,10 +240,8 @@ class AccountSettingsScreen extends StatelessWidget {
           final box = Hive.box<RecipeCardModel>(boxName);
           await box.clear();
           await box.close();
-          debugPrint('📦 Safely cleared & closed box: $boxName');
         } else if (await Hive.boxExists(boxName)) {
           await Hive.deleteBoxFromDisk(boxName);
-          debugPrint('🧹 Deleted unopened Hive box from disk: $boxName');
         }
 
         if (context.mounted) {

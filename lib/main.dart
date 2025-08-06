@@ -16,26 +16,25 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppBootstrap.ensureReady();
 
-  // 🔁 Start listening to auth changes before UI builds
   FirebaseAuth.instance.authStateChanges().listen((user) async {
     if (user != null && !user.isAnonymous) {
       debugPrint('🧍 FirebaseAuth: User signed in with UID = ${user.uid}');
 
       try {
+        await Purchases.logOut(); // 🔁 Avoid stale entitlements
         await Purchases.logIn(user.uid);
         debugPrint('🛒 RevenueCat logged in as ${user.uid}');
       } catch (e) {
         debugPrint('❌ RevenueCat login failed: $e');
       }
 
-      await UserSessionService.init(); // ✅ Safe session init after RC login
+      await UserSessionService.init();
     } else {
       debugPrint('🧍 FirebaseAuth: No user signed in');
-      await UserSessionService.logoutReset(); // 🧼 Cancel streams + close Hive
+      await UserSessionService.logoutReset(); // 🧼 Now includes Purchases.logOut()
     }
   });
 
-  // 🎯 App UI entrypoint
   runApp(
     MultiProvider(
       providers: [

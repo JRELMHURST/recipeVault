@@ -176,6 +176,14 @@ class UserSessionService {
 
   static Future<void> logoutReset() async {
     _logDebug('👋 Logging out and resetting session...');
+
+    try {
+      await Purchases.logOut(); // ✅ Ensure RC session is cleared
+      _logDebug('🛒 RevenueCat logged out');
+    } catch (e) {
+      _logDebug('❌ RevenueCat logout failed: $e');
+    }
+
     await _cancelAllStreams();
 
     final uid = FirebaseAuth.instance.currentUser?.uid;

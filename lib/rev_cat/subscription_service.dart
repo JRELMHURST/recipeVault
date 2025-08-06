@@ -346,6 +346,9 @@ class SubscriptionService extends ChangeNotifier {
         _getActiveEntitlement(entitlements, rcTier)?.productIdentifier ??
         'none';
 
+    // ✅ Add this debug log right here
+    debugPrint('📦 RevenueCat entitlementId resolved: $entitlementId');
+
     _tier = rcTier;
     _entitlementId = entitlementId;
     _activeEntitlement = _getActiveEntitlement(entitlements, rcTier);

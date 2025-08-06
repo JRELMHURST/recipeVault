@@ -107,6 +107,15 @@ class AuthService {
       try {
         await _deleteLocalUserData(uid);
         debugPrint('✅ Signed out and cleared local data for $uid');
+
+        final boxName = 'recipes_$uid';
+        if (Hive.isBoxOpen(boxName)) {
+          await Hive.box(boxName).close();
+          debugPrint('📦 Box closed early: $boxName');
+        }
+
+        await Hive.deleteFromDisk();
+        debugPrint('🧹 All Hive data deleted from disk');
       } catch (e) {
         debugPrint('⚠️ Failed to clear local user data: $e');
       }
@@ -183,8 +192,9 @@ class AuthService {
         region: 'europe-west2',
       ).httpsCallable('refreshGlobalRecipesForUser');
       final result = await callable();
-      final count = result.data['copiedCount'];
-      debugPrint('🍽 Global recipes refreshed: $count item(s) copied');
+      debugPrint(
+        '🍽 Global recipes refreshed: ${result.data['copiedCount']} item(s) copied',
+      );
     } catch (e, stack) {
       debugPrint('⚠️ Failed to refresh global recipes: $e');
       debugPrint(stack.toString());
@@ -224,8 +234,9 @@ class AuthService {
           region: 'europe-west2',
         ).httpsCallable('refreshGlobalRecipesForUser');
         final result = await callable();
-        final count = result.data['copiedCount'];
-        debugPrint('🍽 Global recipes refreshed: $count item(s) copied');
+        debugPrint(
+          '🍽 Global recipes refreshed: ${result.data['copiedCount']} item(s) copied',
+        );
       } catch (e, stack) {
         debugPrint('⚠️ Failed to refresh global recipes: $e');
         debugPrint(stack.toString());

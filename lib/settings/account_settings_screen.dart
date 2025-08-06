@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
+import 'package:hive/hive.dart';
+import 'package:recipe_vault/model/recipe_card_model.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
@@ -229,6 +231,21 @@ class AccountSettingsScreen extends StatelessWidget {
 
         await AuthService().fullLogout();
 
+        final uid = user.uid;
+        final boxName = 'recipes_$uid';
+
+        if (Hive.isBoxOpen(boxName)) {
+          await Hive.box<RecipeCardModel>(boxName).close();
+          debugPrint('📦 Box closed early: $boxName');
+        }
+
+        try {
+          await Hive.deleteFromDisk();
+          debugPrint('🧹 Hive deleted from disk');
+        } catch (e) {
+          debugPrint('⚠️ Failed Hive disk cleanup: $e');
+        }
+
         if (context.mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -240,7 +257,7 @@ class AccountSettingsScreen extends StatelessWidget {
         Navigator.pop(context);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete account: \$e')),
+            SnackBar(content: Text('Failed to delete account: $e')),
           );
         }
       }

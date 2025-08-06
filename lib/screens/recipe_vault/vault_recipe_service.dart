@@ -1,13 +1,20 @@
+// ignore_for_file: unnecessary_null_checks
+
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 
 class VaultRecipeService {
   static final _auth = FirebaseAuth.instance;
   static final _firestore = FirebaseFirestore.instance;
+
+  static StreamSubscription? _vaultSub;
 
   static CollectionReference<Map<String, dynamic>> get _userRecipeCollection {
     final uid = _auth.currentUser?.uid;
@@ -111,14 +118,45 @@ class VaultRecipeService {
     debugPrint('📦 VaultRecipeService.load complete');
   }
 
+  /// 📡 Listen to Firestore recipe changes
+  static void listenToVaultChanges(void Function() onUpdate) {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+
+    _vaultSub?.cancel();
+    _vaultSub = _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('recipes')
+        .snapshots()
+        .listen((_) => onUpdate());
+  }
+
+  /// ❌ Cancel Firestore recipe listener
+  static void cancelVaultListener() {
+    _vaultSub?.cancel();
+    _vaultSub = null;
+    debugPrint('📡 Firestore vault listener cancelled');
+  }
+
   /// 🧹 Clear local Hive recipe cache
   static Future<void> clearCache() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    await _closeAndDeleteBox<RecipeCardModel>('recipes_$uid');
+  }
+
+  /// 🧰 Safely close and delete a Hive box
+  static Future<void> _closeAndDeleteBox<T>(String name) async {
     try {
-      final box = await HiveRecipeService.getBox();
-      await box.clear();
-      debugPrint('🧹 VaultRecipeService cache cleared');
+      if (Hive.isBoxOpen(name)) {
+        final box = Hive.box<T>(name);
+        if (box.isOpen) await box.close();
+      }
+      await Hive.deleteBoxFromDisk(name);
+      if (kDebugMode) print('📦 Cleared Hive box: $name');
     } catch (e) {
-      debugPrint('⚠️ Failed to clear recipe cache: $e');
+      if (kDebugMode) print('⚠️ Error clearing Hive box $name: $e');
     }
   }
 }

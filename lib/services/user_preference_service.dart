@@ -189,15 +189,7 @@ class UserPreferencesService {
 
   static Future<void> deleteLocalDataForUser(String uid) async {
     final name = 'userPrefs_$uid';
-    try {
-      if (Hive.isBoxOpen(name)) {
-        await Hive.box(name).close();
-      }
-      await Hive.deleteBoxFromDisk(name);
-      if (kDebugMode) print('🛄 Hive box "$name" closed and deleted from disk');
-    } catch (e) {
-      if (kDebugMode) print('⚠️ Hive box deletion failed for "$name": $e');
-    }
+    await _closeAndDeleteBox(name);
   }
 
   static Future<void> clearAllPreferences(String uid) async {
@@ -263,5 +255,19 @@ class UserPreferencesService {
     await deleteLocalDataForUser(uid);
     await clearAllPreferences(uid);
     if (kDebugMode) print('🧼 All local user data cleared for $uid');
+  }
+
+  /// 🔒 Internal: close and delete a Hive box
+  static Future<void> _closeAndDeleteBox(String name) async {
+    try {
+      if (Hive.isBoxOpen(name)) {
+        final box = Hive.box(name);
+        if (box.isOpen) await box.close();
+      }
+      await Hive.deleteBoxFromDisk(name);
+      if (kDebugMode) print('📦 Cleared Hive box "$name"');
+    } catch (e) {
+      if (kDebugMode) print('⚠️ Hive box deletion failed for "$name": $e');
+    }
   }
 }

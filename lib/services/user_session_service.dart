@@ -13,6 +13,8 @@ import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/services/category_service.dart';
+import 'package:hive/hive.dart';
+import 'package:recipe_vault/model/recipe_card_model.dart';
 
 class UserSessionService {
   static bool _isInitialised = false;
@@ -20,6 +22,7 @@ class UserSessionService {
   static StreamSubscription<DocumentSnapshot>? _userDocSubscription;
   static StreamSubscription<DocumentSnapshot>? _aiUsageSub;
   static StreamSubscription<DocumentSnapshot>? _translationSub;
+  static StreamSubscription<QuerySnapshot>? _vaultListener;
 
   static bool get isInitialised => _isInitialised;
 
@@ -54,58 +57,10 @@ class UserSessionService {
     await _userDocSubscription?.cancel();
     await _aiUsageSub?.cancel();
     await _translationSub?.cancel();
+    await _vaultListener?.cancel();
 
     final uid = user.uid;
     final monthKey = DateFormat('yyyy-MM').format(DateTime.now());
-
-    _userDocSubscription = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .snapshots()
-        .listen(
-          (snapshot) => _logDebug('📡 User doc listener received update'),
-          onError: (error) => _logDebug('⚠️ User doc listener error: $error'),
-        );
-
-    _aiUsageSub = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('aiUsage')
-        .doc('usage')
-        .snapshots()
-        .listen((doc) async {
-          final used = (doc.data()?[monthKey] ?? 0) as int;
-          _logDebug('📊 AI usage [$monthKey]: $used');
-          if (!UserPreferencesService.isBoxOpen) {
-            await UserPreferencesService.init();
-          }
-          await UserPreferencesService.setCachedUsage(
-            ai: used,
-            translations: null,
-          );
-        }, onError: (error) => _logDebug('⚠️ AI usage stream error: $error'));
-
-    _translationSub = FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .collection('translationUsage')
-        .doc('usage')
-        .snapshots()
-        .listen(
-          (doc) async {
-            final used = (doc.data()?[monthKey] ?? 0) as int;
-            _logDebug('🌐 Translation usage [$monthKey]: $used');
-            if (!UserPreferencesService.isBoxOpen) {
-              await UserPreferencesService.init();
-            }
-            await UserPreferencesService.setCachedUsage(
-              ai: null,
-              translations: used,
-            );
-          },
-          onError: (error) =>
-              _logDebug('⚠️ Translation usage stream error: $error'),
-        );
 
     try {
       await UserPreferencesService.init();
@@ -123,6 +78,60 @@ class UserSessionService {
         }
       }
 
+      _userDocSubscription = FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .snapshots()
+          .listen(
+            (snapshot) {
+              if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+              _logDebug('📡 User doc listener received update');
+            },
+            onError: (error) => _logDebug('⚠️ User doc listener error: $error'),
+          );
+
+      _aiUsageSub = FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('aiUsage')
+          .doc('usage')
+          .snapshots()
+          .listen((doc) async {
+            if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+            final used = (doc.data()?[monthKey] ?? 0) as int;
+            _logDebug('📊 AI usage [$monthKey]: $used');
+            if (!UserPreferencesService.isBoxOpen) {
+              await UserPreferencesService.init();
+            }
+            await UserPreferencesService.setCachedUsage(
+              ai: used,
+              translations: null,
+            );
+          }, onError: (error) => _logDebug('⚠️ AI usage stream error: $error'));
+
+      _translationSub = FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('translationUsage')
+          .doc('usage')
+          .snapshots()
+          .listen(
+            (doc) async {
+              if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+              final used = (doc.data()?[monthKey] ?? 0) as int;
+              _logDebug('🌐 Translation usage [$monthKey]: $used');
+              if (!UserPreferencesService.isBoxOpen) {
+                await UserPreferencesService.init();
+              }
+              await UserPreferencesService.setCachedUsage(
+                ai: null,
+                translations: used,
+              );
+            },
+            onError: (error) =>
+                _logDebug('⚠️ Translation usage stream error: $error'),
+          );
+
       final tier = SubscriptionService().tier;
       _logDebug('🎟️ Tier resolved: $tier');
 
@@ -137,6 +146,13 @@ class UserSessionService {
       _logDebug('📂 Loading vault recipes...');
       await VaultRecipeService.load();
 
+      _logDebug('📡 Starting vault listener...');
+      if (FirebaseAuth.instance.currentUser?.uid == uid) {
+        VaultRecipeService.listenToVaultChanges(() {
+          debugPrint('📡 Vault changed!');
+        });
+      }
+
       _isInitialised = true;
       _logDebug('✅ User session initialisation complete');
     } catch (e, stack) {
@@ -150,25 +166,51 @@ class UserSessionService {
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
+    if (uid != null) {
+      final boxName = 'recipes_$uid';
+      if (Hive.isBoxOpen(boxName)) {
+        await Hive.box<RecipeCardModel>(boxName).close();
+        _logDebug('📦 Box closed early: $boxName');
+      }
+    }
+
     await _userDocSubscription?.cancel();
     await _aiUsageSub?.cancel();
     await _translationSub?.cancel();
+    await _vaultListener?.cancel();
 
     _userDocSubscription = null;
     _aiUsageSub = null;
     _translationSub = null;
-
-    await VaultRecipeService.clearCache();
-    await CategoryService.clearCache();
-    await SubscriptionService().reset();
+    _vaultListener = null;
 
     if (uid != null) {
+      await _closeAndDeleteBox<RecipeCardModel>('recipes_$uid');
       await UserPreferencesService.clearAllUserData(uid);
     }
+
+    if (uid != null) {
+      Hive.deleteFromDisk();
+    }
+
+    await CategoryService.clearCache();
+    await SubscriptionService().reset();
 
     _isInitialised = false;
     _bubbleFlagsReady = null;
     _logDebug('🧹 Session fully cleared');
+  }
+
+  static Future<void> _closeAndDeleteBox<T>(String boxName) async {
+    try {
+      if (Hive.isBoxOpen(boxName)) {
+        await Hive.box<T>(boxName).close();
+      }
+      await Hive.deleteBoxFromDisk(boxName);
+      if (kDebugMode) print('📦 Cleared Hive box: $boxName');
+    } catch (e) {
+      if (kDebugMode) print('⚠️ Failed to clear Hive box $boxName: $e');
+    }
   }
 
   static Future<void> reset() async {

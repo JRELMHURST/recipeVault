@@ -28,15 +28,30 @@ class AppBootstrap {
     if (_isReady) return;
 
     // 🔌 Firebase Init
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('❌ Firebase initialisation failed: $e');
+        print(stack);
+      }
+      return;
+    }
 
     // 🔐 Firebase App Check
-    await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.debug,
-      appleProvider: AppleProvider.debug,
-    );
+    try {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: AndroidProvider.debug,
+        appleProvider: AppleProvider.debug,
+      );
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('⚠️ Firebase App Check failed: $e');
+        print(stack);
+      }
+    }
 
     // 🛒 RevenueCat Setup
     try {
@@ -61,11 +76,11 @@ class AppBootstrap {
     }
 
     // 🐝 Hive Init
-    await Hive.initFlutter();
-    Hive.registerAdapter(RecipeCardModelAdapter());
-    Hive.registerAdapter(CategoryModelAdapter());
-
     try {
+      await Hive.initFlutter();
+      Hive.registerAdapter(RecipeCardModelAdapter());
+      Hive.registerAdapter(CategoryModelAdapter());
+
       await Hive.openBox<RecipeCardModel>('recipes');
       final categoryBox = await Hive.openBox<CategoryModel>('categories');
 
@@ -91,8 +106,15 @@ class AppBootstrap {
       }
     }
 
-    // ✅ Preferences init moved higher to avoid LateInitializationError
-    await UserPreferencesService.init();
+    // 🧠 User preferences
+    try {
+      await UserPreferencesService.init();
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('⚠️ Failed to initialise user preferences: $e');
+        print(stack);
+      }
+    }
 
     // 👤 Debug: track auth user restoration
     if (kDebugMode) {
@@ -109,8 +131,15 @@ class AppBootstrap {
       });
     }
 
-    // 👤 Load and sync session (auth, tier, entitlement, onboarding)
-    await UserSessionService.init();
+    // 👤 Load and sync session
+    try {
+      await UserSessionService.init();
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('❌ UserSessionService.init() failed: $e');
+        print(stack);
+      }
+    }
 
     _isReady = true;
   }

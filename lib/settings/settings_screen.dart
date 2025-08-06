@@ -108,31 +108,11 @@ class SettingsScreen extends StatelessWidget {
                 context,
                 title: 'Subscription',
                 items: [
-                  ListTile(
-                    leading: const Icon(Icons.card_membership_outlined),
-                    title: const Text('Manage Subscription'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.pushNamed(context, '/paywall'),
-                  ),
-                  const Divider(height: 0),
-                  ListTile(
-                    leading: const Icon(Icons.refresh),
-                    title: const Text('Refresh Plan'),
-                    subtitle: const Text(
-                      'Tap to sync your latest subscription status',
-                    ),
-                    onTap: () async {
-                      final subService = context.read<SubscriptionService>();
-                      await subService.syncRevenueCatEntitlement();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Subscription plan refreshed.'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      }
-                    },
+                  _buildSettingsTile(
+                    context: context,
+                    icon: Icons.card_membership_outlined,
+                    label: 'Manage Subscription',
+                    route: '/paywall',
                   ),
                 ],
               ),

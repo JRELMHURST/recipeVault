@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
-import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/model/category_model.dart';
+import 'package:recipe_vault/services/hive_recipe_service.dart';
 
 class StorageSyncScreen extends StatefulWidget {
   const StorageSyncScreen({super.key});
@@ -24,7 +24,19 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
   }
 
   Future<Box<T>> getSafeBox<T>(String name) async {
-    if (Hive.isBoxOpen(name)) return Hive.box<T>(name);
+    if (Hive.isBoxOpen(name)) {
+      final box = Hive.box(name);
+      if (box is Box<T>) {
+        return box;
+      } else {
+        // Already open but wrong type
+        throw HiveError(
+          'Hive box "$name" is already open with a different type.\n'
+          'Expected: Box<$T>, but got: ${box.runtimeType}',
+        );
+      }
+    }
+
     return await Hive.openBox<T>(name);
   }
 
@@ -50,7 +62,7 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
     );
 
     if (confirm == true) {
-      final recipeBox = await getSafeBox<RecipeCardModel>('recipes_$_uid');
+      final recipeBox = await HiveRecipeService.getBox();
       final categoryBox = await getSafeBox<CategoryModel>(
         'customCategories_$_uid',
       );

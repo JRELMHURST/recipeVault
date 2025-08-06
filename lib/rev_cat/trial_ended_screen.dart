@@ -1,7 +1,7 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
-import 'package:recipe_vault/rev_cat/pricing_card.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 
 class TrialEndedScreen extends StatefulWidget {
@@ -28,29 +28,9 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
     }
   }
 
-  Future<void> _handlePurchase(Package package) async {
-    LoadingOverlay.show(context);
-    try {
-      await Purchases.purchasePackage(package);
-      await _subscriptionService.syncRevenueCatEntitlement();
-
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/home');
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('❌ Purchase failed: $e')));
-    } finally {
-      LoadingOverlay.hide();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final homeChef = _subscriptionService.homeChefPackage;
-    final masterChef = _subscriptionService.masterChefMonthlyPackage;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F7FE),
@@ -71,71 +51,86 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
           : SafeArea(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 600),
+                  constraints: const BoxConstraints(maxWidth: 500),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
+                      horizontal: 20,
+                      vertical: 12,
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.lock_outline,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Your free trial has ended',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'To continue using RecipeVault AI features like scanning, translation, and image uploads, please choose a plan below.',
-                          style: theme.textTheme.bodyMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        if (homeChef != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: PricingCard(
-                              package: homeChef,
-                              onTap: () => _handlePurchase(homeChef),
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      color: theme.colorScheme.surface,
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/icon/lock_icon.png',
+                              width: 90,
+                              height: 90,
+                              fit: BoxFit.contain,
                             ),
-                          ),
-                        if (masterChef != null)
-                          PricingCard(
-                            package: masterChef,
-                            onTap: () => _handlePurchase(masterChef),
-                          ),
-                        if (homeChef == null && masterChef == null)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 16),
-                            child: Text(
-                              'Subscribe to carry on using your recipe cards',
+                            const SizedBox(height: 20),
+
+                            Text(
+                              'Your free trial has ended',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
+                              ),
                               textAlign: TextAlign.center,
                             ),
-                          ),
-                        const SizedBox(height: 32),
-                        TextButton.icon(
-                          onPressed: () async {
-                            LoadingOverlay.show(context);
-                            await Future.delayed(
-                              const Duration(milliseconds: 300),
-                            );
-                            if (!context.mounted) return;
-                            LoadingOverlay.hide();
-                            Navigator.pushNamed(context, '/paywall');
-                          },
-                          icon: const Icon(Icons.arrow_forward_ios),
-                          label: const Text('See all plan options'),
+
+                            const SizedBox(height: 12),
+
+                            Text(
+                              'To continue using RecipeVault AI features like scanning, translation, and image uploads, please choose a plan below.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurface.withOpacity(
+                                  0.85,
+                                ),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            OutlinedButton.icon(
+                              onPressed: () async {
+                                LoadingOverlay.show(context);
+                                await Future.delayed(
+                                  const Duration(milliseconds: 300),
+                                );
+                                if (!context.mounted) return;
+                                LoadingOverlay.hide();
+                                Navigator.pushNamed(context, '/paywall');
+                              },
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 14,
+                                ),
+                                side: BorderSide(
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                              icon: const Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                              ),
+                              label: const Text('See all plan options'),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),

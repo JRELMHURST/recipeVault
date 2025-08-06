@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
-import 'package:recipe_vault/services/user_session_service.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -44,7 +43,6 @@ class _LoginScreenState extends State<LoginScreen> {
       final email = emailController.text.trim();
       final password = passwordController.text.trim();
       await AuthService().signInWithEmail(email, password);
-      await UserSessionService.init();
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
@@ -74,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         return;
       }
-      await UserSessionService.init();
+
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
@@ -104,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         return;
       }
-      await UserSessionService.init();
+
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;

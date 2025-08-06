@@ -5,7 +5,7 @@ import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
-import 'package:recipe_vault/services/user_session_service.dart';
+import 'dart:io' show Platform;
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -20,92 +20,76 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final confirmPasswordController = TextEditingController();
   bool _isLoading = false;
 
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _registerWithEmail() async {
-    FocusScope.of(context).unfocus(); // ✅ Hide keyboard
+    FocusScope.of(context).unfocus();
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
     final confirm = confirmPasswordController.text.trim();
 
     if (password != confirm) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      _showError('Passwords do not match');
       return;
     }
 
     LoadingOverlay.show(context);
-
     try {
       await AuthService().registerWithEmail(email, password);
-      await UserSessionService.init();
       await VaultRecipeService.loadAndMergeAllRecipes();
 
-      await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Registration failed: $e')));
+      _showError('Registration failed: $e');
     } finally {
       LoadingOverlay.hide();
     }
   }
 
   Future<void> _signUpWithGoogle() async {
-    FocusScope.of(context).unfocus(); // ✅ Hide keyboard
+    FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
     try {
       final credential = await AuthService().signInWithGoogle();
       if (credential == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google sign-up was cancelled.')),
-        );
+        _showError('Google sign-up was cancelled.');
         return;
       }
 
-      await UserSessionService.init();
       await VaultRecipeService.loadAndMergeAllRecipes();
 
-      await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Google sign-up failed: $e')));
+      _showError('Google sign-up failed: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _signUpWithApple() async {
-    FocusScope.of(context).unfocus(); // ✅ Hide keyboard
+    FocusScope.of(context).unfocus();
     setState(() => _isLoading = true);
     try {
       final credential = await AuthService().signInWithApple();
       if (credential == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Apple sign-up was cancelled.')),
-        );
+        _showError('Apple sign-up was cancelled.');
         return;
       }
 
-      await UserSessionService.init();
       await VaultRecipeService.loadAndMergeAllRecipes();
 
-      await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Apple sign-up failed: $e')));
+      _showError('Apple sign-up failed: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -113,6 +97,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _goToLogin() {
     Navigator.pushReplacementNamed(context, '/login');
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -123,7 +114,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
-          behavior: HitTestBehavior.opaque,
           child: Scaffold(
             backgroundColor: const Color(0xFFE6E2FF),
             body: SafeArea(
@@ -248,8 +238,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         : _signUpWithGoogle,
                                   ),
                                   const SizedBox(height: 12),
-                                  if (Theme.of(context).platform ==
-                                      TargetPlatform.iOS)
+                                  if (Platform.isIOS)
                                     OutlinedButton.icon(
                                       icon: const Icon(
                                         Icons.apple,

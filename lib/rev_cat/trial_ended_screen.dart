@@ -3,7 +3,6 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/rev_cat/pricing_card.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
-import 'package:recipe_vault/services/user_session_service.dart';
 
 class TrialEndedScreen extends StatefulWidget {
   const TrialEndedScreen({super.key});
@@ -34,9 +33,11 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
     try {
       await Purchases.purchasePackage(package);
       await _subscriptionService.syncRevenueCatEntitlement();
-      await UserSessionService.init();
 
       if (!mounted) return;
+
+      // 🔁 No need to call UserSessionService.init() here anymore –
+      // authStateChanges() listener in main.dart will handle it.
       Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
     } catch (e) {
       if (!mounted) return;
@@ -134,7 +135,9 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                               builder: (_) => AlertDialog(
                                 title: const Text('Limited Free Access'),
                                 content: const Text(
-                                  'You can still access your previously saved recipes.\n\nHowever, features like recipe scanning and translation are now locked.\nTo continue using RecipeVault AI, please subscribe.',
+                                  'You can still access your previously saved recipes.\n\n'
+                                  'However, features like recipe scanning and translation are now locked.\n'
+                                  'To continue using RecipeVault AI, please subscribe.',
                                 ),
                                 actions: [
                                   TextButton(

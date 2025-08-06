@@ -8,7 +8,6 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/rev_cat/pricing_card.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
-import 'package:recipe_vault/services/user_session_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -45,38 +44,30 @@ class _PaywallScreenState extends State<PaywallScreen> {
       final packages = <Package>[];
       final seen = <String>{};
 
-      offerings.all.forEach((key, offering) {
+      offerings.all.forEach((_, offering) {
         for (final pkg in offering.availablePackages) {
           final id = pkg.storeProduct.identifier;
-          if (!seen.contains(id)) {
-            seen.add(id);
+          if (seen.add(id)) {
             packages.add(pkg);
           }
         }
       });
 
       packages.sort((a, b) {
-        // Always show current plan first
-        final aIsCurrent =
-            entitlementId.isNotEmpty &&
-            (a.storeProduct.identifier == entitlementId ||
-                a.identifier == entitlementId ||
-                a.offeringIdentifier == entitlementId);
-        final bIsCurrent =
-            entitlementId.isNotEmpty &&
-            (b.storeProduct.identifier == entitlementId ||
-                b.identifier == entitlementId ||
-                b.offeringIdentifier == entitlementId);
-
-        if (aIsCurrent && !bIsCurrent) return -1;
-        if (!aIsCurrent && bIsCurrent) return 1;
-
-        // Priority order for display
         final priority = [
           'home_chef_monthly',
           'master_chef_monthly',
           'master_chef_yearly',
         ];
+
+        bool isCurrent(Package pkg) =>
+            entitlementId.isNotEmpty &&
+            (pkg.storeProduct.identifier == entitlementId ||
+                pkg.identifier == entitlementId ||
+                pkg.offeringIdentifier == entitlementId);
+
+        if (isCurrent(a) && !isCurrent(b)) return -1;
+        if (!isCurrent(a) && isCurrent(b)) return 1;
 
         int aIndex = priority.indexWhere(
           (id) => a.storeProduct.identifier.toLowerCase().contains(id),
@@ -105,10 +96,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
     try {
       await Purchases.purchasePackage(package);
-      await _subscriptionService.refresh();
-      await UserSessionService.syncRevenueCatEntitlement();
-      await _subscriptionService.refresh();
-      await UserSessionService.init();
+      await _subscriptionService.syncRevenueCatEntitlement();
 
       if (!mounted) return;
       LoadingOverlay.hide();
@@ -128,7 +116,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
       final isCancelled =
           e.code == '1' ||
           e.message?.toLowerCase().contains('cancelled') == true;
-
       final message = isCancelled
           ? 'Purchase was cancelled. No changes were made.'
           : 'Purchase failed: ${e.message ?? 'Unknown error'}';
@@ -201,7 +188,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                               context,
                               title: '🔓 Free Plan Access',
                               content:
-                                  'You currently have access to a selection of sample global recipes.\n\nTo scan your own, upload images, use AI tools, or save favourites — you’ll need to upgrade.',
+                                  'You currently have access to a selection of sample global recipes.\n\n'
+                                  'To scan your own, upload images, use AI tools, or save favourites — you’ll need to upgrade.',
                               background: Colors.orange.shade50,
                               border: Colors.orange.shade300,
                             ),
@@ -217,13 +205,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                               padding: const EdgeInsets.only(bottom: 16),
                               child: PricingCard(
                                 package: pkg,
-                                onTap: isCurrent
-                                    ? () {}
-                                    : () {
-                                        if (!_isPurchasing) {
-                                          _handlePurchase(pkg);
-                                        }
-                                      },
+                                onTap: () {
+                                  if (!isCurrent && !_isPurchasing) {
+                                    _handlePurchase(pkg);
+                                  }
+                                },
                                 isDisabled: isCurrent,
                                 badge: isCurrent
                                     ? '✅ Current Plan'
@@ -244,68 +230,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                               ),
                             ),
                           const SizedBox(height: 32),
-                          Center(
-                            child: Column(
-                              children: [
-                                RichText(
-                                  textAlign: TextAlign.center,
-                                  text: TextSpan(
-                                    style: theme.textTheme.bodySmall,
-                                    children: [
-                                      const TextSpan(
-                                        text:
-                                            'By subscribing, you agree to our ',
-                                      ),
-                                      TextSpan(
-                                        text: 'Terms of Use',
-                                        style: const TextStyle(
-                                          decoration: TextDecoration.underline,
-                                        ),
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () => launchUrl(
-                                            Uri.parse(
-                                              'https://badger-creations.co.uk/terms',
-                                            ),
-                                          ),
-                                      ),
-                                      const TextSpan(text: ' and '),
-                                      TextSpan(
-                                        text: 'Privacy Policy',
-                                        style: const TextStyle(
-                                          decoration: TextDecoration.underline,
-                                        ),
-                                        recognizer: TapGestureRecognizer()
-                                          ..onTap = () => launchUrl(
-                                            Uri.parse(
-                                              'https://badger-creations.co.uk/privacy',
-                                            ),
-                                          ),
-                                      ),
-                                      const TextSpan(text: '.'),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Subscriptions auto-renew unless cancelled 24h before the end of the period.',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                    color: Colors.grey,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Manage or cancel anytime via your Apple ID settings.',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                    color: Colors.grey,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
+                          Center(child: _buildLegalNotice(context)),
                         ],
                       ),
                     ),
@@ -341,6 +266,59 @@ class _PaywallScreenState extends State<PaywallScreen> {
           Text(content, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
+    );
+  }
+
+  Widget _buildLegalNotice(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        RichText(
+          textAlign: TextAlign.center,
+          text: TextSpan(
+            style: theme.textTheme.bodySmall,
+            children: [
+              const TextSpan(text: 'By subscribing, you agree to our '),
+              TextSpan(
+                text: 'Terms of Use',
+                style: const TextStyle(decoration: TextDecoration.underline),
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () => launchUrl(
+                    Uri.parse('https://badger-creations.co.uk/terms'),
+                  ),
+              ),
+              const TextSpan(text: ' and '),
+              TextSpan(
+                text: 'Privacy Policy',
+                style: const TextStyle(decoration: TextDecoration.underline),
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () => launchUrl(
+                    Uri.parse('https://badger-creations.co.uk/privacy'),
+                  ),
+              ),
+              const TextSpan(text: '.'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Subscriptions auto-renew unless cancelled 24h before the end of the period.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontStyle: FontStyle.italic,
+            color: Colors.grey,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Manage or cancel anytime via your Apple ID settings.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontStyle: FontStyle.italic,
+            color: Colors.grey,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }

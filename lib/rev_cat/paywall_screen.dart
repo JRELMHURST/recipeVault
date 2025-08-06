@@ -98,6 +98,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
       await Purchases.purchasePackage(package);
       await _subscriptionService.syncRevenueCatEntitlement();
 
+      // Ensure latest tier is fully loaded before navigating
+      await _subscriptionService.loadSubscriptionStatus();
+
       if (!mounted) return;
       LoadingOverlay.hide();
 

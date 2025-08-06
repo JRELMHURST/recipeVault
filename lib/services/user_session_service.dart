@@ -65,6 +65,10 @@ class UserSessionService {
     try {
       await UserPreferencesService.init();
 
+      if (!Hive.isBoxOpen('userPrefs_$uid')) {
+        await Hive.openBox('userPrefs_$uid');
+      }
+
       final resolvedTier = await SubscriptionService().getResolvedTier();
       _logDebug('🧾 Tier resolved via getResolvedTier(): $resolvedTier');
 
@@ -188,14 +192,7 @@ class UserSessionService {
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
-    if (uid != null) {
-      final boxName = 'recipes_$uid';
-      if (Hive.isBoxOpen(boxName)) {
-        await Hive.box<RecipeCardModel>(boxName).close();
-        _logDebug('📦 Box closed early: $boxName');
-      }
-    }
-
+    // Cancel all listeners first
     await _userDocSubscription?.cancel();
     await _aiUsageSub?.cancel();
     await _translationSub?.cancel();
@@ -207,32 +204,35 @@ class UserSessionService {
     _vaultListener = null;
 
     if (uid != null) {
-      await _closeAndDeleteBox<RecipeCardModel>('recipes_$uid');
-      await UserPreferencesService.clearAllUserData(uid);
+      // Safely clear recipe Hive box
+      final recipeBoxName = 'recipes_$uid';
+      if (Hive.isBoxOpen(recipeBoxName)) {
+        try {
+          await Hive.box<RecipeCardModel>(recipeBoxName).clear();
+          await Hive.box<RecipeCardModel>(recipeBoxName).close();
+          _logDebug('📦 Cleared & closed box: $recipeBoxName');
+        } catch (e, stack) {
+          _logDebug('⚠️ Failed to clear box $recipeBoxName: $e');
+          if (kDebugMode) print(stack);
+        }
+      }
+
+      // Clear user preferences
+      try {
+        await UserPreferencesService.clearAllUserData(uid);
+      } catch (e) {
+        _logDebug('⚠️ Failed to clear UserPreferencesService: $e');
+      }
     }
 
-    if (uid != null) {
-      Hive.deleteFromDisk();
-    }
-
+    // Clear static services
     await CategoryService.clearCache();
     await SubscriptionService().reset();
 
     _isInitialised = false;
     _bubbleFlagsReady = null;
-    _logDebug('🧹 Session fully cleared');
-  }
 
-  static Future<void> _closeAndDeleteBox<T>(String boxName) async {
-    try {
-      if (Hive.isBoxOpen(boxName)) {
-        await Hive.box<T>(boxName).close();
-      }
-      await Hive.deleteBoxFromDisk(boxName);
-      if (kDebugMode) print('📦 Cleared Hive box: $boxName');
-    } catch (e) {
-      if (kDebugMode) print('⚠️ Failed to clear Hive box $boxName: $e');
-    }
+    _logDebug('🧹 Session fully cleared');
   }
 
   static Future<void> reset() async {

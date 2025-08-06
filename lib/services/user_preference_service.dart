@@ -258,4 +258,10 @@ class UserPreferencesService {
     final box = _safeBox;
     return box?.get(_keyTranslationUsage, defaultValue: 0) as int? ?? 0;
   }
+
+  static Future<void> clearAllUserData(String uid) async {
+    await deleteLocalDataForUser(uid);
+    await clearAllPreferences(uid);
+    if (kDebugMode) print('🧼 All local user data cleared for $uid');
+  }
 }

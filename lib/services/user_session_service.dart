@@ -145,14 +145,10 @@ class UserSessionService {
     }
   }
 
-  static Future<void> reset() async {
-    _isInitialised = false;
-    _bubbleFlagsReady = null;
-    _logDebug('🔄 Session reset');
-  }
-
   static Future<void> logoutReset() async {
     _logDebug('👋 Logging out and resetting session...');
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
 
     await _userDocSubscription?.cancel();
     await _aiUsageSub?.cancel();
@@ -166,9 +162,19 @@ class UserSessionService {
     await CategoryService.clearCache();
     await SubscriptionService().reset();
 
+    if (uid != null) {
+      await UserPreferencesService.clearAllUserData(uid);
+    }
+
     _isInitialised = false;
     _bubbleFlagsReady = null;
     _logDebug('🧹 Session fully cleared');
+  }
+
+  static Future<void> reset() async {
+    _isInitialised = false;
+    _bubbleFlagsReady = null;
+    _logDebug('🔄 Session reset');
   }
 
   static Future<void> retryEntitlementSync() async {

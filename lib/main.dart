@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'package:recipe_vault/app_bootstrap.dart';
 import 'package:recipe_vault/recipe_vault_app.dart';
@@ -19,10 +20,18 @@ void main() async {
   FirebaseAuth.instance.authStateChanges().listen((user) async {
     if (user != null && !user.isAnonymous) {
       debugPrint('🧍 FirebaseAuth: User signed in with UID = ${user.uid}');
-      await UserSessionService.init(); // ✅ safe session boot
+
+      try {
+        await Purchases.logIn(user.uid);
+        debugPrint('🛒 RevenueCat logged in as ${user.uid}');
+      } catch (e) {
+        debugPrint('❌ RevenueCat login failed: $e');
+      }
+
+      await UserSessionService.init(); // ✅ Safe session init after RC login
     } else {
       debugPrint('🧍 FirebaseAuth: No user signed in');
-      await UserSessionService.logoutReset(); // 🧼 cancel streams + close Hive
+      await UserSessionService.logoutReset(); // 🧼 Cancel streams + close Hive
     }
   });
 

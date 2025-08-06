@@ -3,12 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
-import 'package:recipe_vault/app_bootstrap.dart';
-import 'package:recipe_vault/recipe_vault_app.dart';
-import 'package:recipe_vault/core/theme_notifier.dart';
-import 'package:recipe_vault/core/text_scale_notifier.dart';
-import 'package:recipe_vault/rev_cat/subscription_service.dart';
-import 'package:recipe_vault/services/user_session_service.dart';
+import 'app_bootstrap.dart';
+import 'recipe_vault_app.dart';
+import 'core/theme_notifier.dart';
+import 'core/text_scale_notifier.dart';
+import 'rev_cat/subscription_service.dart';
+import 'services/user_session_service.dart';
 
 final subscriptionService = SubscriptionService();
 
@@ -21,7 +21,7 @@ void main() async {
       debugPrint('🧍 FirebaseAuth: User signed in with UID = ${user.uid}');
 
       try {
-        await Purchases.logOut(); // 🔁 Avoid stale entitlements
+        await Purchases.logOut(); // Avoid stale RevenueCat session
         await Purchases.logIn(user.uid);
         debugPrint('🛒 RevenueCat logged in as ${user.uid}');
       } catch (e) {
@@ -30,8 +30,8 @@ void main() async {
 
       await UserSessionService.init();
     } else {
-      debugPrint('🧍 FirebaseAuth: No user signed in');
-      await UserSessionService.logoutReset(); // 🧼 Now includes Purchases.logOut()
+      debugPrint('👋 FirebaseAuth: User signed out or null');
+      await UserSessionService.logoutReset(); // Full reset including Hive and RevenueCat
     }
   });
 

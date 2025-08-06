@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:recipe_vault/core/text_scale_notifier.dart';
-import 'package:recipe_vault/core/theme_notifier.dart';
-import 'package:recipe_vault/router.dart';
-import 'package:recipe_vault/core/theme.dart';
+import 'core/text_scale_notifier.dart';
+import 'core/theme_notifier.dart';
+import 'router.dart';
+import 'core/theme.dart';
 
 class RecipeVaultApp extends StatelessWidget {
   const RecipeVaultApp({super.key});

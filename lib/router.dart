@@ -1,9 +1,6 @@
-// ignore_for_file: unnecessary_null_checks
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import 'package:recipe_vault/settings/faq_screen.dart';
 
 // Core
 import 'core/theme_notifier.dart';
@@ -25,19 +22,18 @@ import 'settings/appearance_settings_screen.dart';
 import 'settings/notifications_settings_screen.dart';
 import 'settings/about_screen.dart';
 import 'settings/storage_sync_screen.dart';
+import 'settings/faq_screen.dart';
 
 // Subscription
 import 'rev_cat/paywall_screen.dart';
 import 'rev_cat/trial_ended_screen.dart';
 
-/// Global Navigator Key (optional if needed for navigation without context)
+/// Global Navigator Key
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-/// Custom route generator
 Route<dynamic> generateRoute(RouteSettings settings) {
   final user = FirebaseAuth.instance.currentUser;
 
-  // Route map
   final routes = <String, WidgetBuilder>{
     '/': (_) => user == null ? const LoginScreen() : const HomeScreen(),
     '/login': (_) => const LoginScreen(),

@@ -35,10 +35,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
       await _subscriptionService.syncRevenueCatEntitlement();
 
       if (!mounted) return;
-
-      // 🔁 No need to call UserSessionService.init() here anymore –
-      // authStateChanges() listener in main.dart will handle it.
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -63,7 +60,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
         leading: const SizedBox(),
         centerTitle: true,
         title: Text(
-          'Limited Access',
+          'Trial Ended',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -80,29 +77,26 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                       horizontal: 24,
                       vertical: 16,
                     ),
-                    child: ListView(
-                      shrinkWrap: true,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade50,
-                            border: Border.all(color: Colors.red.shade300),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            '⚠️ You’re currently on Free access. AI-powered features like recipe scanning, formatting, and translation are disabled. You can still access saved recipes in your vault.',
-                            style: TextStyle(fontWeight: FontWeight.w500),
-                            textAlign: TextAlign.center,
-                          ),
+                        const Icon(
+                          Icons.lock_outline,
+                          size: 64,
+                          color: Colors.grey,
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                         Text(
-                          'Upgrade to continue using RecipeVault AI:',
-                          style: theme.textTheme.bodyLarge?.copyWith(
+                          'Your free trial has ended',
+                          style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'To continue using RecipeVault AI features like scanning, translation, and image uploads, please choose a plan below.',
+                          style: theme.textTheme.bodyMedium,
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
@@ -115,45 +109,31 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                             ),
                           ),
                         if (masterChef != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: PricingCard(
-                              package: masterChef,
-                              onTap: () => _handlePurchase(masterChef),
-                            ),
+                          PricingCard(
+                            package: masterChef,
+                            onTap: () => _handlePurchase(masterChef),
                           ),
                         if (homeChef == null && masterChef == null)
-                          const Text(
-                            'No subscription packages available at the moment. Please try again later.',
-                            textAlign: TextAlign.center,
-                          ),
-                        const SizedBox(height: 24),
-                        TextButton(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                title: const Text('Limited Free Access'),
-                                content: const Text(
-                                  'You can still access your previously saved recipes.\n\n'
-                                  'However, features like recipe scanning and translation are now locked.\n'
-                                  'To continue using RecipeVault AI, please subscribe.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('Got it'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            'Continue with limited access',
-                            style: TextStyle(
-                              decoration: TextDecoration.underline,
+                          const Padding(
+                            padding: EdgeInsets.only(top: 16),
+                            child: Text(
+                              'No subscription options available at this time.',
+                              textAlign: TextAlign.center,
                             ),
                           ),
+                        const SizedBox(height: 32),
+                        TextButton.icon(
+                          onPressed: () async {
+                            LoadingOverlay.show(context);
+                            await Future.delayed(
+                              const Duration(milliseconds: 300),
+                            );
+                            if (!context.mounted) return;
+                            LoadingOverlay.hide();
+                            Navigator.pushNamed(context, '/paywall');
+                          },
+                          icon: const Icon(Icons.arrow_forward_ios),
+                          label: const Text('See all plan options'),
                         ),
                       ],
                     ),

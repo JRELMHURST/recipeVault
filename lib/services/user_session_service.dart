@@ -4,11 +4,13 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/rev_cat/purchase_helper.dart';
 import 'package:recipe_vault/rev_cat/tier_utils.dart';
+import 'package:recipe_vault/router.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
@@ -29,6 +31,22 @@ class UserSessionService {
   static bool get isSignedIn =>
       FirebaseAuth.instance.currentUser != null &&
       !FirebaseAuth.instance.currentUser!.isAnonymous;
+
+  static Future<bool> shouldShowTrialEndedScreen() async {
+    try {
+      final info = await Purchases.getCustomerInfo();
+      final entitlement = info.entitlements.active.values.isNotEmpty
+          ? info.entitlements.active.values.first
+          : null;
+      final isTrialEnded =
+          entitlement == null ||
+          (!entitlement.isActive && entitlement.willRenew == false);
+      return isTrialEnded;
+    } catch (e) {
+      _logDebug('⚠️ Error checking trial ended state: $e');
+      return false;
+    }
+  }
 
   static Future<void> syncEntitlementAndRefreshSession() async {
     _logDebug('🔄 Manually syncing entitlement and refreshing session...');
@@ -168,6 +186,20 @@ class UserSessionService {
 
       _isInitialised = true;
       _logDebug('✅ User session initialisation complete');
+
+      final shouldShowTrialEnded = await shouldShowTrialEndedScreen();
+      if (shouldShowTrialEnded) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final context = navigatorKey.currentContext;
+          final currentRoute =
+              ModalRoute.of(context!)?.settings.name ?? 'unknown';
+
+          if (currentRoute != '/trial-ended') {
+            _logDebug('🚪 Redirecting to /trial-ended due to trial expiry');
+            Navigator.pushReplacementNamed(context, '/trial-ended');
+          }
+        });
+      }
     } catch (e, stack) {
       _logDebug('❌ Error during UserSession init: $e');
       if (kDebugMode) print(stack);

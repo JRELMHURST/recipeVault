@@ -59,14 +59,26 @@ class PurchaseHelper {
 
   /// 🔄 Sync entitlementId and tier to Firestore (used for backend resolution)
   static Future<void> syncEntitlementToFirestore(CustomerInfo info) async {
-    final entitlementId = getActiveEntitlementId(info);
+    final entitlement = info.entitlements.active.values.isNotEmpty
+        ? info.entitlements.active.values.first
+        : null;
+
+    final entitlementId = entitlement?.identifier ?? 'none';
+    final tier = resolveTier(entitlementId);
     final userId = info.originalAppUserId;
 
     if (userId.isEmpty) return;
 
-    final tier = resolveTier(entitlementId); // ✅ Shared tier function
-
-    final updateData = {'entitlementId': entitlementId ?? 'none', 'tier': tier};
+    final updateData = {
+      'entitlementId': entitlementId,
+      'tier': tier,
+      'willRenew': entitlement?.willRenew ?? false,
+      'originalPurchaseDate': entitlement?.originalPurchaseDate,
+      'expirationDate': entitlement?.expirationDate,
+      'store': entitlement?.store,
+      'periodType':
+          entitlement?.periodType.name, // ✅ "trial", "intro", or "normal"
+    };
 
     try {
       await FirebaseFirestore.instance
@@ -76,7 +88,9 @@ class PurchaseHelper {
 
       if (kDebugMode) {
         print(
-          '✅ Synced entitlementId "$entitlementId" with resolved tier "$tier"',
+          '✅ Synced entitlementId "$entitlementId", tier "$tier", '
+          'willRenew=${updateData['willRenew']}, '
+          'periodType=${updateData['periodType']}',
         );
       }
     } catch (e) {

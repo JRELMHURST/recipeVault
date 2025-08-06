@@ -97,8 +97,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
     try {
       await Purchases.purchasePackage(package);
       await _subscriptionService.syncRevenueCatEntitlement();
-
-      // Ensure latest tier is fully loaded before navigating
       await _subscriptionService.loadSubscriptionStatus();
 
       if (!mounted) return;
@@ -320,6 +318,20 @@ class _PaywallScreenState extends State<PaywallScreen> {
             color: Colors.grey,
           ),
           textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        TextButton.icon(
+          onPressed: () async {
+            const url = 'https://support.apple.com/en-gb/HT202039';
+            if (await canLaunchUrl(Uri.parse(url))) {
+              await launchUrl(
+                Uri.parse(url),
+                mode: LaunchMode.externalApplication,
+              );
+            }
+          },
+          icon: const Icon(Icons.cancel_outlined),
+          label: const Text('Manage or Cancel Subscription'),
         ),
       ],
     );

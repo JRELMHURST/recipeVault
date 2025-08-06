@@ -2,11 +2,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:provider/provider.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
+import 'package:recipe_vault/screens/home_screen/home_chef_usage.dart';
+import 'package:recipe_vault/rev_cat/subscription_service.dart';
 
-class CategorySpeedDial extends StatelessWidget {
+class CategorySpeedDial extends StatefulWidget {
   final VoidCallback onCategoryChanged;
   final bool allowCreation;
 
@@ -16,6 +19,11 @@ class CategorySpeedDial extends StatelessWidget {
     this.allowCreation = true,
   });
 
+  @override
+  State<CategorySpeedDial> createState() => _CategorySpeedDialState();
+}
+
+class _CategorySpeedDialState extends State<CategorySpeedDial> {
   void _showAddCategoryDialog(BuildContext context) {
     final controller = TextEditingController();
 
@@ -38,7 +46,7 @@ class CategorySpeedDial extends StatelessWidget {
               final newCategory = controller.text.trim();
               if (newCategory.isNotEmpty) {
                 await CategoryService.saveCategory(newCategory);
-                onCategoryChanged(); // Trigger UI update
+                widget.onCategoryChanged(); // Trigger UI update
               }
               Navigator.pop(context);
             },
@@ -50,7 +58,7 @@ class CategorySpeedDial extends StatelessWidget {
   }
 
   Future<void> _startCreateFlow(BuildContext context) async {
-    if (!allowCreation) {
+    if (!widget.allowCreation) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -67,9 +75,29 @@ class CategorySpeedDial extends StatelessWidget {
     }
   }
 
+  void _showUsageDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
+        child: Material(
+          borderRadius: BorderRadius.circular(20),
+          clipBehavior: Clip.antiAlias,
+          color: Theme.of(context).colorScheme.surface,
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: HomeChefUsageWidget(),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final subscription = Provider.of<SubscriptionService>(context);
 
     return SpeedDial(
       icon: Icons.add,
@@ -79,8 +107,10 @@ class CategorySpeedDial extends StatelessWidget {
       children: [
         SpeedDialChild(
           child: const Icon(Icons.category),
-          label: allowCreation ? 'New Category' : 'Upgrade to Add Category',
-          onTap: allowCreation
+          label: widget.allowCreation
+              ? 'New Category'
+              : 'Upgrade to Add Category',
+          onTap: widget.allowCreation
               ? () => _showAddCategoryDialog(context)
               : () {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -92,9 +122,17 @@ class CategorySpeedDial extends StatelessWidget {
                   );
                 },
         ),
+        if (subscription.showUsageWidget)
+          SpeedDialChild(
+            child: const Icon(Icons.bar_chart_rounded),
+            label: 'Usage',
+            onTap: () => _showUsageDialog(context),
+          ),
         SpeedDialChild(
           child: const Icon(Icons.receipt_long_rounded),
-          label: allowCreation ? 'Create Recipe' : 'Upgrade to Create Recipe',
+          label: widget.allowCreation
+              ? 'Create Recipe'
+              : 'Upgrade to Create Recipe',
           onTap: () => _startCreateFlow(context),
         ),
       ],

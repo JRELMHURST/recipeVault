@@ -363,4 +363,9 @@ class SubscriptionService extends ChangeNotifier {
     _logTierOnce(source: 'syncRevenueCatEntitlement');
     notifyListeners();
   }
+
+  // ───── Usage Visibility & Tracking ─────
+
+  bool get showUsageWidget => isHomeChef;
+  bool get trackUsage => hasActiveSubscription;
 }

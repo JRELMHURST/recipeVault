@@ -147,9 +147,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final tier = _subscriptionService.tier;
     final entitlementId = _subscriptionService.entitlementId;
-    final isFree = tier == 'free' || tier == 'none';
 
     return Stack(
       children: [
@@ -184,16 +182,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (isFree)
-                            _buildNoticeCard(
-                              context,
-                              title: '🔓 Free Plan Access',
-                              content:
-                                  'You currently have access to a selection of sample global recipes.\n\n'
-                                  'To scan your own, upload images, use AI tools, or save favourites — you’ll need to upgrade.',
-                              background: Colors.orange.shade50,
-                              border: Colors.orange.shade300,
-                            ),
                           const SizedBox(height: 24),
                           ..._availablePackages.map((pkg) {
                             final isCurrent =
@@ -242,31 +230,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildNoticeCard(
-    BuildContext context, {
-    required String title,
-    required String content,
-    required Color background,
-    required Color border,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: background,
-        border: Border.all(color: border),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(content, style: Theme.of(context).textTheme.bodyMedium),
-        ],
-      ),
     );
   }
 

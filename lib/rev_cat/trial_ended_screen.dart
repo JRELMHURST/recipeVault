@@ -117,7 +117,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                           const Padding(
                             padding: EdgeInsets.only(top: 16),
                             child: Text(
-                              'No subscription options available at this time.',
+                              'Subscribe to carry on using your recipe cards',
                               textAlign: TextAlign.center,
                             ),
                           ),

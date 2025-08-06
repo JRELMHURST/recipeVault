@@ -19,7 +19,6 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
   int recipesUsed = 0;
   int translationsUsed = 0;
   bool loading = true;
-  bool _collapsed = true;
 
   late final AnimationController _controller;
   late Animation<double> _recipeAnimation;
@@ -28,42 +27,32 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
   @override
   void initState() {
     super.initState();
-
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-
     _recipeAnimation = Tween<double>(begin: 0, end: 0).animate(_controller);
     _translationAnimation = Tween<double>(
       begin: 0,
       end: 0,
     ).animate(_controller);
-
     _loadUsageFromSubscriptionService();
   }
 
   Future<void> _loadUsageFromSubscriptionService() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (!mounted || user == null || user.isAnonymous) {
-      debugPrint('⚠️ Skipping usage load – no signed-in user');
-      return;
-    }
+    if (!mounted || user == null || user.isAnonymous) return;
 
     final subscription = Provider.of<SubscriptionService>(
       context,
       listen: false,
     );
-    if (subscription.tier != 'home_chef') return;
 
-    final recipeCount = subscription.aiUsage;
-    final translationCount = subscription.translationUsage;
-
-    if (!mounted) return;
+    if (!subscription.trackUsage) return;
 
     setState(() {
-      recipesUsed = recipeCount;
-      translationsUsed = translationCount;
+      recipesUsed = subscription.aiUsage;
+      translationsUsed = subscription.translationUsage;
       loading = false;
     });
 
@@ -78,6 +67,7 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
       begin: 0,
       end: recipePercent,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
     _translationAnimation = Tween<double>(
       begin: 0,
       end: translationPercent,
@@ -94,129 +84,118 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
 
   @override
   Widget build(BuildContext context) {
-    final tier = context.watch<SubscriptionService>().tier;
-    if (tier != 'home_chef' || loading) return const SizedBox.shrink();
+    final subscription = context.watch<SubscriptionService>();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: GestureDetector(
-        onTap: () => setState(() => _collapsed = !_collapsed),
-        child: AnimatedCrossFade(
-          duration: const Duration(milliseconds: 300),
-          crossFadeState: _collapsed
-              ? CrossFadeState.showFirst
-              : CrossFadeState.showSecond,
-          firstChild: _collapsedView(),
-          secondChild: _expandedView(),
-        ),
-      ),
-    );
-  }
+    if (!subscription.showUsageWidget || loading) {
+      return const SizedBox.shrink();
+    }
 
-  Widget _collapsedView() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      constraints: const BoxConstraints(maxWidth: 280, minWidth: 240),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      margin: const EdgeInsets.only(bottom: 12, right: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: const [
-          Text(
-            'Usage this month',
-            style: TextStyle(fontWeight: FontWeight.w600),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          Icon(Icons.expand_more),
         ],
       ),
-    );
-  }
-
-  Widget _expandedView() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            'Usage this month',
-            style: TextStyle(fontWeight: FontWeight.w600),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '📊 Usage this month',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+            ),
           ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: AnimatedBuilder(
+          const SizedBox(height: 14),
+          AnimatedBuilder(
             animation: _controller,
             builder: (context, _) {
               return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _iconMetric(
+                  _usageMetric(
                     icon: Icons.auto_awesome,
                     label: 'AI Recipes',
                     used: recipesUsed,
                     max: 20,
                     colour: AppColours.turquoise,
                     percent: _recipeAnimation.value,
+                    subtitle: 'out of 20 this month',
                   ),
-                  _iconMetric(
+                  _usageMetric(
                     icon: Icons.translate,
                     label: 'Translations',
                     used: translationsUsed,
                     max: 5,
                     colour: AppColours.lavender,
                     percent: _translationAnimation.value,
+                    subtitle: 'monthly limit of 5',
                   ),
                 ],
               );
             },
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _iconMetric({
+  Widget _usageMetric({
     required IconData icon,
     required String label,
     required int used,
     required int max,
     required Color colour,
     required double percent,
+    required String subtitle,
   }) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 18, color: colour),
-        const SizedBox(height: 2),
-        Text('$used / $max', style: Theme.of(context).textTheme.labelSmall),
+        Icon(icon, size: 20, color: colour),
+        const SizedBox(height: 4),
+        Text(
+          '$used / $max',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 4),
         SizedBox(
-          width: 50,
-          height: 5,
+          width: 56,
+          height: 6,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(3),
             child: LinearProgressIndicator(
               value: percent,
-              backgroundColor: colour.withOpacity(0.1),
+              backgroundColor: colour.withOpacity(0.15),
               valueColor: AlwaysStoppedAnimation(colour),
             ),
           ),
         ),
-        const SizedBox(height: 2),
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 11),
+        ),
+        Text(
+          subtitle,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontSize: 9,
+            color: Theme.of(context).hintColor,
+          ),
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }

@@ -11,7 +11,9 @@ class HiveRecipeService {
   static Box<RecipeCardModel>? _box;
   static bool _hasLoggedReuse = false;
 
-  /// 📦 Call this once before any recipe access
+  /// 📦 True if box has been opened successfully
+  static bool get isBoxOpen => _box?.isOpen == true;
+
   static Future<void> init() async {
     if (!Hive.isBoxOpen(_boxName)) {
       _box = await Hive.openBox<RecipeCardModel>(_boxName);
@@ -25,16 +27,19 @@ class HiveRecipeService {
     }
   }
 
-  static Box<RecipeCardModel> get box {
+  static void _throwIfNotInitialised() {
     if (_box == null) {
       throw HiveError(
         'Box not opened. Did you forget to call HiveRecipeService.init()?',
       );
     }
+  }
+
+  static Box<RecipeCardModel> get box {
+    _throwIfNotInitialised();
     return _box!;
   }
 
-  /// ✅ Expose box externally (e.g. VaultRecipeService)
   static Future<Box<RecipeCardModel>> getBox() async {
     await init();
     return box;
@@ -42,7 +47,7 @@ class HiveRecipeService {
 
   static Future<void> save(RecipeCardModel recipe) async {
     await init();
-    await box.put(recipe.id, recipe);
+    box.put(recipe.id, recipe);
   }
 
   static Future<List<RecipeCardModel>> getAll() async {
@@ -57,15 +62,14 @@ class HiveRecipeService {
 
   static Future<void> delete(String id) async {
     await init();
-    await box.delete(id);
+    box.delete(id);
   }
 
   static Future<void> clearAll() async {
     await init();
-    await box.clear();
+    box.clear();
   }
 
-  /// 🔄 Sync just the favourite field to Firestore
   static Future<void> syncFavouriteToCloud(RecipeCardModel recipe) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || recipe.isGlobal) return;
@@ -80,7 +84,6 @@ class HiveRecipeService {
     await save(recipe);
   }
 
-  /// 🔄 Sync categories field to Firestore
   static Future<void> syncCategoriesToCloud(RecipeCardModel recipe) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || recipe.isGlobal) return;
@@ -95,7 +98,6 @@ class HiveRecipeService {
     await save(recipe);
   }
 
-  /// 🧹 Delete recipe box for a specific user (e.g. during account deletion)
   static Future<void> deleteLocalDataForUser(String uid) async {
     final userBoxName = 'recipes_$uid';
     try {

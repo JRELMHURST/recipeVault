@@ -76,6 +76,9 @@ class UserSessionService {
         .listen((doc) async {
           final used = (doc.data()?[monthKey] ?? 0) as int;
           _logDebug('📊 AI usage [$monthKey]: $used');
+          if (!UserPreferencesService.isBoxOpen) {
+            await UserPreferencesService.init();
+          }
           await UserPreferencesService.setCachedUsage(
             ai: used,
             translations: null,
@@ -92,6 +95,9 @@ class UserSessionService {
           (doc) async {
             final used = (doc.data()?[monthKey] ?? 0) as int;
             _logDebug('🌐 Translation usage [$monthKey]: $used');
+            if (!UserPreferencesService.isBoxOpen) {
+              await UserPreferencesService.init();
+            }
             await UserPreferencesService.setCachedUsage(
               ai: null,
               translations: used,

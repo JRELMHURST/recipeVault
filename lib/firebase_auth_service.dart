@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -102,7 +101,6 @@ class AuthService {
   /// 🧹 Full logout + local storage reset (per user only)
   Future<void> fullLogout() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-
     await signOut();
 
     if (uid != null) {
@@ -126,23 +124,14 @@ class AuthService {
 
     for (final boxName in boxNames) {
       if (Hive.isBoxOpen(boxName)) {
+        await Hive.box(boxName).close();
         await Hive.box(boxName).deleteFromDisk();
       } else if (await Hive.boxExists(boxName)) {
         await Hive.deleteBoxFromDisk(boxName);
       }
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    final keysToRemove = [
-      'viewMode_$uid',
-      'hasShownBubblesOnce_$uid',
-      'vaultTutorialComplete_$uid',
-      'isNewUser_$uid',
-    ];
-
-    for (final key in keysToRemove) {
-      await prefs.remove(key);
-    }
+    await UserPreferencesService.clearAllPreferences(uid);
   }
 
   /// 🔧 Ensure Firestore user doc exists and sync tier/entitlement

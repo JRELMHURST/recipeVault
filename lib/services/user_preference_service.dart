@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 🛍 User-facing view modes
 enum ViewMode { list, grid, compact }
@@ -37,13 +38,20 @@ class UserPreferencesService {
   static const String _keyTranslationUsage = 'translationUsage';
   static const List<String> _bubbleKeys = ['scan', 'viewToggle', 'longPress'];
 
-  static late Box _box;
-
   static String get _uid => FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
   static String get _boxName => 'userPrefs_$_uid';
 
-  static Box? get _safeBox =>
-      (_box.isOpen && Hive.isBoxOpen(_box.name)) ? _box : null;
+  static bool get isBoxOpen => Hive.isBoxOpen(_boxName);
+
+  static Box? get _safeBox {
+    if (!Hive.isBoxOpen(_boxName)) return null;
+    try {
+      return Hive.box(_boxName);
+    } catch (e) {
+      debugPrint('⚠️ _safeBox access failed: $e');
+      return null;
+    }
+  }
 
   static Future<void> init() async {
     if (FirebaseAuth.instance.currentUser == null) {
@@ -54,10 +62,8 @@ class UserPreferencesService {
     }
 
     if (Hive.isBoxOpen(_boxName)) {
-      _box = Hive.box(_boxName);
       if (kDebugMode) print('📦 Hive box reused: $_boxName');
     } else {
-      _box = await Hive.openBox(_boxName);
       if (kDebugMode) print('📦 Hive box opened: $_boxName');
     }
   }
@@ -159,6 +165,14 @@ class UserPreferencesService {
     if (box != null) await box.put(_keyBubblesShownOnce, true);
   }
 
+  static Future<void> markUserAsNew() async {
+    final box = _safeBox;
+    if (box != null) {
+      await box.put('isNewUser', true);
+      if (kDebugMode) print('🔟 markUserAsNew → Hive only');
+    }
+  }
+
   static Future<void> markAsNewUser() async {
     final box = _safeBox;
     if (box != null) {
@@ -173,7 +187,6 @@ class UserPreferencesService {
     }
   }
 
-  /// 🛉 Fully clear the box from disk (used on account deletion)
   static Future<void> deleteLocalDataForUser(String uid) async {
     final name = 'userPrefs_$uid';
     try {
@@ -184,6 +197,26 @@ class UserPreferencesService {
       if (kDebugMode) print('🛄 Hive box "$name" closed and deleted from disk');
     } catch (e) {
       if (kDebugMode) print('⚠️ Hive box deletion failed for "$name": $e');
+    }
+  }
+
+  static Future<void> clearAllPreferences(String uid) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keysToRemove = [
+        'viewMode_$uid',
+        'hasShownBubblesOnce_$uid',
+        'vaultTutorialComplete_$uid',
+        'isNewUser_$uid',
+      ];
+      for (final key in keysToRemove) {
+        await prefs.remove(key);
+      }
+      if (kDebugMode) print('🧹 SharedPreferences cleared for $uid');
+    } catch (e) {
+      if (kDebugMode) {
+        print('⚠️ Failed to clear SharedPreferences for $uid: $e');
+      }
     }
   }
 
@@ -203,15 +236,6 @@ class UserPreferencesService {
     await Future.delayed(const Duration(milliseconds: 200));
   }
 
-  static Future<void> markUserAsNew() async {
-    final box = _safeBox;
-    if (box != null) {
-      await box.put('isNewUser', true);
-      if (kDebugMode) print('🔟 markUserAsNew → Hive only');
-    }
-  }
-
-  // 🔍 Caching usage metrics
   static Future<void> setCachedUsage({int? ai, int? translations}) async {
     final box = _safeBox;
     if (box != null) {
@@ -220,10 +244,7 @@ class UserPreferencesService {
         await box.put(_keyTranslationUsage, translations);
       }
       if (kDebugMode) {
-        print(
-          '📂 Cached usage: '
-          'AI=${ai ?? '(unchanged)'}, Translations=${translations ?? '(unchanged)'}',
-        );
+        print('📂 Cached usage: AI=$ai, Translations=$translations');
       }
     }
   }

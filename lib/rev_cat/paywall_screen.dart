@@ -56,6 +56,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       });
 
       packages.sort((a, b) {
+        // Always show current plan first
         final aIsCurrent =
             entitlementId.isNotEmpty &&
             (a.storeProduct.identifier == entitlementId ||
@@ -66,9 +67,28 @@ class _PaywallScreenState extends State<PaywallScreen> {
             (b.storeProduct.identifier == entitlementId ||
                 b.identifier == entitlementId ||
                 b.offeringIdentifier == entitlementId);
+
         if (aIsCurrent && !bIsCurrent) return -1;
         if (!aIsCurrent && bIsCurrent) return 1;
-        return 0;
+
+        // Priority order for display
+        final priority = [
+          'home_chef_monthly',
+          'master_chef_monthly',
+          'master_chef_yearly',
+        ];
+
+        int aIndex = priority.indexWhere(
+          (id) => a.storeProduct.identifier.toLowerCase().contains(id),
+        );
+        int bIndex = priority.indexWhere(
+          (id) => b.storeProduct.identifier.toLowerCase().contains(id),
+        );
+
+        if (aIndex == -1) aIndex = priority.length;
+        if (bIndex == -1) bIndex = priority.length;
+
+        return aIndex.compareTo(bIndex);
       });
 
       _availablePackages = packages;

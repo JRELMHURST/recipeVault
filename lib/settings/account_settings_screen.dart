@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
-import 'package:recipe_vault/services/user_preference_service.dart';
+import 'package:recipe_vault/firebase_auth_service.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
@@ -138,13 +138,6 @@ class AccountSettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _cleanupUserPrefs() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      await UserPreferencesService.deleteLocalDataForUser(uid);
-    }
-  }
-
   Future<void> _confirmSignOut(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -175,8 +168,7 @@ class AccountSettingsScreen extends StatelessWidget {
       );
 
       try {
-        // ✅ Sign out only – do not clear Hive (userPrefs remain intact)
-        await FirebaseAuth.instance.signOut();
+        await AuthService().fullLogout();
 
         if (context.mounted) {
           Navigator.pop(context); // dismiss loading
@@ -235,8 +227,7 @@ class AccountSettingsScreen extends StatelessWidget {
           region: 'europe-west2',
         ).httpsCallable('deleteAccount').call();
 
-        await _cleanupUserPrefs();
-        await FirebaseAuth.instance.signOut();
+        await AuthService().fullLogout();
 
         if (context.mounted) {
           Navigator.pop(context);

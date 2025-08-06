@@ -134,7 +134,12 @@ class SubscriptionService extends ChangeNotifier {
     if (_tier != newTier) {
       _tier = newTier;
       tierNotifier.value = newTier;
-      _logTierOnce(source: 'updateTier');
+
+      // Only log tier changes if not switching to 'free' again
+      if (newTier != 'free') {
+        _logTierOnce(source: 'updateTier');
+      }
+
       notifyListeners();
     }
   }

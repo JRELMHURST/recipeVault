@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
+import 'package:recipe_vault/screens/recipe_vault/edit_recipe_screen.dart'; // Make sure this exists
 
 class RecipeLongPressMenu {
   static Future<void> show({
@@ -132,6 +133,31 @@ class RecipeLongPressMenu {
                   ),
                   const SizedBox(height: 24),
                 ],
+
+                // ✏️ Edit recipe text
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Edit Recipe Text'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () async {
+                      Navigator.pop(context); // close bottom sheet
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditRecipeScreen(recipe: recipe),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
 
                 const Divider(height: 1),
                 const SizedBox(height: 16),

@@ -19,7 +19,7 @@ class RecipeCardModel extends HiveObject {
   final List<String> ingredients;
 
   @HiveField(4)
-  final List<String> instructions;
+  final String method;
 
   @HiveField(5)
   final DateTime createdAt;
@@ -50,7 +50,7 @@ class RecipeCardModel extends HiveObject {
     required this.userId,
     required this.title,
     required this.ingredients,
-    required this.instructions,
+    required this.method,
     DateTime? createdAt,
     this.imageUrl,
     List<String>? categories,
@@ -59,17 +59,18 @@ class RecipeCardModel extends HiveObject {
     List<String>? hints,
     this.translationUsed = false,
     this.isGlobal = false,
-  }) : categories = categories ?? const [],
+  }) : createdAt = createdAt ?? DateTime.now(),
+       categories = categories ?? const [],
        originalImageUrls = originalImageUrls ?? const [],
-       hints = hints ?? const [],
-       createdAt = createdAt ?? DateTime.now();
+       hints = hints ?? const [];
 
+  /// Converts the model to JSON for Firestore or raw storage.
   Map<String, dynamic> toJson() => {
     'id': id,
     'userId': userId,
     'title': title,
     'ingredients': ingredients,
-    'instructions': instructions,
+    'method': method,
     'createdAt': createdAt.toIso8601String(),
     if (imageUrl != null) 'imageUrl': imageUrl,
     'categories': categories,
@@ -97,7 +98,7 @@ class RecipeCardModel extends HiveObject {
       userId: json['userId'] ?? '',
       title: json['title'] ?? '',
       ingredients: List<String>.from(json['ingredients'] ?? const []),
-      instructions: List<String>.from(json['instructions'] ?? const []),
+      method: json['method'] ?? '',
       createdAt: parsedCreatedAt,
       imageUrl: json['imageUrl'],
       categories: List<String>.from(json['categories'] ?? const []),
@@ -111,16 +112,15 @@ class RecipeCardModel extends HiveObject {
     );
   }
 
-  factory RecipeCardModel.fromMap(Map<String, dynamic> map) =>
-      RecipeCardModel.fromJson(map);
-
   static RecipeCardModel fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
     SnapshotOptions? options,
   ) {
-    final data = doc.data()!;
-    return RecipeCardModel.fromJson(data);
+    return RecipeCardModel.fromJson(doc.data()!);
   }
+
+  factory RecipeCardModel.fromMap(Map<String, dynamic> map) =>
+      RecipeCardModel.fromJson(map);
 
   String toRawJson() => jsonEncode(toJson());
 
@@ -135,13 +135,16 @@ class RecipeCardModel extends HiveObject {
     bool? translationUsed,
     List<String>? categories,
     bool? isGlobal,
+    String? title,
+    List<String>? ingredients,
+    String? method,
   }) {
     return RecipeCardModel(
       id: id,
       userId: userId,
-      title: title,
-      ingredients: ingredients,
-      instructions: instructions,
+      title: title ?? this.title,
+      ingredients: ingredients ?? this.ingredients,
+      method: method ?? this.method,
       createdAt: createdAt,
       imageUrl: imageUrl ?? this.imageUrl,
       isFavourite: isFavourite ?? this.isFavourite,
@@ -159,17 +162,13 @@ class RecipeCardModel extends HiveObject {
 
   bool get hasImage => imageUrl?.isNotEmpty ?? false;
 
+  bool get isTranslated => categories.contains('Translated');
+
   String get formattedText {
     final ingredientsStr = ingredients.join('\n• ');
-    final instructionsStr = instructions
-        .asMap()
-        .entries
-        .map((e) => '${e.key + 1}. ${e.value}')
-        .join('\n\n');
-    return '## Ingredients\n• $ingredientsStr\n\n## Instructions\n$instructionsStr';
+    final methodStr = method.trim();
+    return '## Ingredients\n• $ingredientsStr\n\n## Instructions\n$methodStr';
   }
-
-  bool get isTranslated => categories.contains('Translated');
 
   @override
   bool operator ==(Object other) =>

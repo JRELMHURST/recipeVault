@@ -21,7 +21,7 @@ class RecipeCardModelAdapter extends TypeAdapter<RecipeCardModel> {
       userId: fields[1] as String,
       title: fields[2] as String,
       ingredients: (fields[3] as List).cast<String>(),
-      instructions: (fields[4] as List).cast<String>(),
+      method: fields[4] as String,
       createdAt: fields[5] as DateTime?,
       imageUrl: fields[6] as String?,
       categories: (fields[7] as List?)?.cast<String>(),
@@ -46,7 +46,7 @@ class RecipeCardModelAdapter extends TypeAdapter<RecipeCardModel> {
       ..writeByte(3)
       ..write(obj.ingredients)
       ..writeByte(4)
-      ..write(obj.instructions)
+      ..write(obj.method)
       ..writeByte(5)
       ..write(obj.createdAt)
       ..writeByte(6)

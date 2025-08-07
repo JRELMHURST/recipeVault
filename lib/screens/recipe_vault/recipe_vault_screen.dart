@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:recipe_vault/core/daily_message_bubble.dart.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
@@ -308,6 +309,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  DailyMessageBubble(),
+                  const SizedBox(height: 8),
                   RecipeSearchBar(
                     initialValue: _searchQuery,
                     onChanged: (value) => setState(() => _searchQuery = value),

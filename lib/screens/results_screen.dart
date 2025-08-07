@@ -117,7 +117,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         userId: user.uid,
         title: title,
         ingredients: ingredients,
-        instructions: instructions,
+        method: instructions.join('\n'),
         imageUrl: _recipeImageUrl,
         categories: result.translationUsed ? ['Translated'] : [],
         isFavourite: false,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:recipe_vault/model/recipe_card_model.dart';
+import 'package:recipe_vault/screens/recipe_vault/edit_recipe_screen.dart';
 
 // Core
 import 'core/theme_notifier.dart';
@@ -34,36 +36,103 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Route<dynamic> generateRoute(RouteSettings settings) {
   final user = FirebaseAuth.instance.currentUser;
 
-  final routes = <String, WidgetBuilder>{
-    '/': (_) => user == null ? const LoginScreen() : const HomeScreen(),
-    '/login': (_) => const LoginScreen(),
-    '/register': (_) => const RegisterScreen(),
-    '/home': (_) => const HomeScreen(),
-    '/results': (_) => const ResultsScreen(),
+  switch (settings.name) {
+    case '/':
+      return MaterialPageRoute(
+        builder: (_) => user == null ? const LoginScreen() : const HomeScreen(),
+        settings: settings,
+      );
+    case '/login':
+      return MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+        settings: settings,
+      );
+    case '/register':
+      return MaterialPageRoute(
+        builder: (_) => const RegisterScreen(),
+        settings: settings,
+      );
+    case '/home':
+      return MaterialPageRoute(
+        builder: (_) => const HomeScreen(),
+        settings: settings,
+      );
+    case '/results':
+      return MaterialPageRoute(
+        builder: (_) => const ResultsScreen(),
+        settings: settings,
+      );
+    case '/edit-recipe':
+      final recipe = settings.arguments as RecipeCardModel;
+      return MaterialPageRoute(
+        builder: (_) => EditRecipeScreen(recipe: recipe),
+        settings: settings,
+      );
 
     // Settings
-    '/settings': (_) => const SettingsScreen(),
-    '/settings/account': (_) => const AccountSettingsScreen(),
-    '/settings/account/change-password': (_) => const ChangePasswordScreen(),
-    '/settings/appearance': (context) => AppearanceSettingsScreen(
-      themeNotifier: Provider.of<ThemeNotifier>(context, listen: false),
-      textScaleNotifier: Provider.of<TextScaleNotifier>(context, listen: false),
-    ),
-    '/settings/notifications': (_) => const NotificationsSettingsScreen(),
-    '/settings/storage': (_) => const StorageSyncScreen(),
-    '/settings/about': (_) => const AboutSettingsScreen(),
-    '/settings/faqs': (_) => FaqsScreen(),
+    case '/settings':
+      return MaterialPageRoute(
+        builder: (_) => const SettingsScreen(),
+        settings: settings,
+      );
+    case '/settings/account':
+      return MaterialPageRoute(
+        builder: (_) => const AccountSettingsScreen(),
+        settings: settings,
+      );
+    case '/settings/account/change-password':
+      return MaterialPageRoute(
+        builder: (_) => const ChangePasswordScreen(),
+        settings: settings,
+      );
+    case '/settings/appearance':
+      return MaterialPageRoute(
+        builder: (context) => AppearanceSettingsScreen(
+          themeNotifier: Provider.of<ThemeNotifier>(context, listen: false),
+          textScaleNotifier: Provider.of<TextScaleNotifier>(
+            context,
+            listen: false,
+          ),
+        ),
+        settings: settings,
+      );
+    case '/settings/notifications':
+      return MaterialPageRoute(
+        builder: (_) => const NotificationsSettingsScreen(),
+        settings: settings,
+      );
+    case '/settings/storage':
+      return MaterialPageRoute(
+        builder: (_) => const StorageSyncScreen(),
+        settings: settings,
+      );
+    case '/settings/about':
+      return MaterialPageRoute(
+        builder: (_) => const AboutSettingsScreen(),
+        settings: settings,
+      );
+    case '/settings/faqs':
+      return MaterialPageRoute(
+        builder: (_) => FaqsScreen(),
+        settings: settings,
+      );
 
     // Subscription
-    '/paywall': (_) => const PaywallScreen(),
-    '/trial-ended': (_) => const TrialEndedScreen(),
-  };
+    case '/paywall':
+      return MaterialPageRoute(
+        builder: (_) => const PaywallScreen(),
+        settings: settings,
+      );
+    case '/trial-ended':
+      return MaterialPageRoute(
+        builder: (_) => const TrialEndedScreen(),
+        settings: settings,
+      );
 
-  final builder = routes[settings.name];
-  return MaterialPageRoute(
-    builder:
-        builder ??
-        (_) => const Scaffold(
+    // Default 404
+    default:
+      return MaterialPageRoute(
+        builder: (_) => const Scaffold(
           body: Center(
             child: Text(
               '404 – Page not found',
@@ -71,6 +140,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
             ),
           ),
         ),
-    settings: settings,
-  );
+        settings: settings,
+      );
+  }
 }

@@ -199,4 +199,46 @@ class VaultRecipeService {
       if (kDebugMode) print('⚠️ Error clearing Hive box $name: $e');
     }
   }
+
+  /// ✏️ Update recipe title, ingredients, and method
+  static Future<void> updateTextContent({
+    required String recipeId,
+    required String title,
+    required List<String> ingredients,
+    required String method,
+  }) async {
+    try {
+      final box = await HiveRecipeService.getBox();
+      final recipe = box.get(recipeId);
+
+      if (recipe == null) {
+        debugPrint("⚠️ Recipe not found in Hive: $recipeId");
+        return;
+      }
+
+      final updated = recipe.copyWith(
+        title: title,
+        ingredients: ingredients,
+        method: method,
+      );
+
+      // Save to Hive
+      await HiveRecipeService.save(updated);
+
+      // Sync to Firestore
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('recipes')
+            .doc(recipeId)
+            .set(updated.toJson(), SetOptions(merge: true));
+      }
+
+      debugPrint('✅ Recipe text updated: $recipeId');
+    } catch (e) {
+      debugPrint("⚠️ Failed to update recipe text: $e");
+    }
+  }
 }

@@ -23,7 +23,7 @@ void showRecipeDialog(BuildContext context, RecipeCardModel recipe) {
         recipeId: recipe.id,
         userId: recipe.userId,
         ingredients: recipe.ingredients,
-        instructions: recipe.instructions,
+        method: recipe.method,
       ),
     ),
   );
@@ -36,7 +36,7 @@ class _ShareableRecipeCard extends StatefulWidget {
   final String recipeId;
   final String userId;
   final List<String> ingredients;
-  final List<String> instructions;
+  final String method;
 
   const _ShareableRecipeCard({
     required this.markdown,
@@ -44,7 +44,7 @@ class _ShareableRecipeCard extends StatefulWidget {
     required this.recipeId,
     required this.userId,
     required this.ingredients,
-    required this.instructions,
+    required this.method,
     this.imageUrl,
   });
 
@@ -59,8 +59,6 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
   @override
   void initState() {
     super.initState();
-
-    // Always try loading icon colour shortly after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadAndUpdateIconColor();
     });
@@ -69,7 +67,6 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
   @override
   void didUpdateWidget(covariant _ShareableRecipeCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-
     if (oldWidget.imageUrl != widget.imageUrl && widget.imageUrl != null) {
       _loadAndUpdateIconColor();
     }
@@ -107,7 +104,7 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
       userId: widget.userId,
       title: widget.title,
       ingredients: widget.ingredients,
-      instructions: widget.instructions,
+      method: widget.method,
       imageUrl: widget.imageUrl,
       createdAt: DateTime.now(),
     );

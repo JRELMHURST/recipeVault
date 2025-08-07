@@ -54,7 +54,6 @@ class PricingCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Title + Subtitle
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -78,12 +77,8 @@ class PricingCard extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 8),
-
-                        // Description
                         Text(description, style: theme.textTheme.bodyMedium),
                         const SizedBox(height: 12),
-
-                        // Price
                         Text(
                           price,
                           style: theme.textTheme.titleLarge?.copyWith(
@@ -91,8 +86,6 @@ class PricingCard extends StatelessWidget {
                             color: theme.colorScheme.primary,
                           ),
                         ),
-
-                        // Annual value note
                         if (isAnnual)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
@@ -105,8 +98,6 @@ class PricingCard extends StatelessWidget {
                             ),
                           ),
                         const SizedBox(height: 16),
-
-                        // Features list
                         ...features.map(
                           (feature) => Padding(
                             padding: const EdgeInsets.symmetric(vertical: 2),
@@ -130,8 +121,6 @@ class PricingCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 20),
-
-                        // Button
                         SizedBox(
                           width: double.infinity,
                           child: isDisabled
@@ -152,8 +141,6 @@ class PricingCard extends StatelessWidget {
                     ),
                   ),
                 ),
-
-                // Badge or Trial Ribbon
                 if (badge != null || hasFreeTrial)
                   Positioned(
                     top: -12,
@@ -224,31 +211,32 @@ class PricingCard extends StatelessWidget {
 
     return switch (offering) {
       'home_chef_plan' =>
-        'Perfect balance – 20 recipes/month, 5 translations, image uploads.',
+        'A smart step up – perfect for regular home cooks who want a little more power.',
       'master_chef_plan' =>
         period.contains('y')
-            ? 'Unlimited everything, save 40% – 3+ months free.'
-            : 'Unlimited everything – AI, images, translations, categories.',
-      _ => 'Enjoy full access to RecipeVault features.',
+            ? 'The ultimate plan for serious foodies – best value if you’re all in.'
+            : 'For those who want it all – maximum access, every month.',
+      _ => 'Enjoy full access to RecipeVault features and AI-powered tools.',
     };
   }
 
   List<String> _getFeatures(Package package) {
     return switch (package.offeringIdentifier) {
       'home_chef_plan' => [
-        '20 AI recipe cards',
-        'Recipe image uploads (up to 20)',
-        '5 translations per month',
-        'Save recipes to your vault',
-        'Category sorting',
+        '👨‍🍳 20 AI recipe cards/month – cook new ideas effortlessly',
+        '🌍 5 translations/month – scan handwritten or foreign recipes',
+        '📦 Save your favourite recipes to your personal vault',
+        '🏷️ Create and manage up to 3 custom categories',
+        '🔗 Share your recipes with friends and family',
       ],
+
       'master_chef_plan' => [
-        'Unlimited AI recipe cards',
-        'Unlimited image uploads',
-        'Unlimited translations',
-        'Save recipes to your vault',
-        'Category sorting & management',
-        'Priority processing',
+        '🍽️ 100 AI recipe cards/month – no limits on creativity',
+        '🈂️ 20 translations/month – perfect for international dishes',
+        '📦 Unlimited recipe saving to your personal vault',
+        '🏷️ Unlimited category creation & advanced sorting tools',
+        '🔗 Share your recipes anywhere with public links',
+        '⚡ Priority AI processing – faster and smarter every time',
       ],
       _ => ['AI recipe formatting', 'Save recipes to your vault'],
     };

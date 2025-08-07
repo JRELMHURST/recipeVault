@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
-import 'package:recipe_vault/model/category_model.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 
 class StorageSyncScreen extends StatefulWidget {
@@ -23,31 +22,24 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
     _uid = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
   }
 
-  Future<Box<T>> getSafeBox<T>(String name) async {
+  Future<Box> getSafeBox(String name) async {
     if (Hive.isBoxOpen(name)) {
-      final box = Hive.box(name);
-      if (box is Box<T>) {
-        return box;
-      } else {
-        throw HiveError(
-          'Hive box "$name" is already open with a different type.\nExpected: Box<$T>, but got: ${box.runtimeType}',
-        );
-      }
+      return Hive.box(name); // already opened, assume correct type
     }
-    return await Hive.openBox<T>(name);
+    return await Hive.openBox<dynamic>(name);
   }
 
   Future<void> _clearCache() async {
     final confirm = await _showClearCacheDialog(context);
     if (confirm == true) {
       final recipeBox = await HiveRecipeService.getBox();
-      final categoryBox = await getSafeBox<CategoryModel>(
-        'customCategories_$_uid',
-      );
-      final hiddenBox = await getSafeBox<String>(
-        'hiddenDefaultCategories_$_uid',
-      );
+      final categoryBox = await getSafeBox('customCategories_$_uid');
       final prefsBox = await getSafeBox('userPrefs_$_uid');
+
+      // Use strict open logic for String-only box
+      final hiddenBox = Hive.isBoxOpen('hiddenDefaultCategories_$_uid')
+          ? Hive.box<String>('hiddenDefaultCategories_$_uid')
+          : await Hive.openBox<String>('hiddenDefaultCategories_$_uid');
 
       await recipeBox.clear();
       await categoryBox.clear();
@@ -131,7 +123,7 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Storage')),
+      appBar: AppBar(title: const Text('Local Storage')),
       body: ResponsiveWrapper(
         maxWidth: 520,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),

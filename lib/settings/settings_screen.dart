@@ -94,12 +94,12 @@ class SettingsScreen extends StatelessWidget {
               ),
               _buildSettingsCard(
                 context,
-                title: 'Overview',
+                title: 'Local Storage',
                 items: [
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.cloud_done_outlined,
-                    label: 'Storage & Sync',
+                    label: 'Cache Clear',
                     route: '/settings/storage',
                   ),
                 ],

@@ -62,46 +62,82 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     }
   }
 
+  Widget _buildTextField({
+    required String label,
+    required TextEditingController controller,
+    required int maxLines,
+    TextInputAction action = TextInputAction.newline,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8, bottom: 6),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
+        Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 1,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: TextField(
+              controller: controller,
+              textInputAction: action,
+              maxLines: maxLines,
+              style: Theme.of(context).textTheme.bodyLarge,
+              decoration: const InputDecoration.collapsed(hintText: ''),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Recipe')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: ListView(
-            padding: const EdgeInsets.only(bottom: 120),
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.only(bottom: bottom + 120),
             physics: const BouncingScrollPhysics(),
-            children: [
-              TextField(
-                controller: _titleController,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildTextField(
+                  label: 'Title',
+                  controller: _titleController,
+                  maxLines: 1,
+                  action: TextInputAction.next,
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _ingredientsController,
-                textInputAction: TextInputAction.newline,
-                decoration: const InputDecoration(
-                  labelText: 'Ingredients (one per line)',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 24),
+                _buildTextField(
+                  label: 'Ingredients (one per line)',
+                  controller: _ingredientsController,
+                  maxLines: 6,
                 ),
-                maxLines: 6,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _instructionsController,
-                textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(
-                  labelText: 'Steps',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 24),
+                _buildTextField(
+                  label: 'Steps',
+                  controller: _instructionsController,
+                  maxLines: 10,
                 ),
-                maxLines: 10,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

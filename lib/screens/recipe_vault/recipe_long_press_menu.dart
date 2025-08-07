@@ -181,7 +181,6 @@ class RecipeLongPressMenu {
                           ),
                         if (filteredCategories.isNotEmpty)
                           const SizedBox(height: 24),
-
                         Row(
                           children: [
                             Expanded(
@@ -250,9 +249,7 @@ class RecipeLongPressMenu {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 16),
-
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
@@ -264,26 +261,93 @@ class RecipeLongPressMenu {
                             onPressed: () async {
                               final confirmed = await showDialog<bool>(
                                 context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: const Text('Delete Recipe'),
-                                  content: const Text(
-                                    'Are you sure you want to delete this recipe? This cannot be undone.',
+                                builder: (ctx) => Dialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(ctx).pop(false),
-                                      child: const Text('Cancel'),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 24,
                                     ),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.redAccent,
-                                      ),
-                                      onPressed: () =>
-                                          Navigator.of(ctx).pop(true),
-                                      child: const Text('Delete'),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.warning_amber_rounded,
+                                          size: 40,
+                                          color: Colors.redAccent,
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'Delete Recipe?',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'This action cannot be undone. Are you sure you want to delete this recipe?',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withOpacity(0.7),
+                                              ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        const SizedBox(height: 20),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: OutlinedButton(
+                                                onPressed: () => Navigator.of(
+                                                  ctx,
+                                                ).pop(false),
+                                                style: OutlinedButton.styleFrom(
+                                                  foregroundColor: Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
+                                                  ),
+                                                ),
+                                                child: const Text('Cancel'),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: ElevatedButton(
+                                                onPressed: () =>
+                                                    Navigator.of(ctx).pop(true),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      Colors.redAccent,
+                                                  foregroundColor: Colors.white,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
+                                                  ),
+                                                ),
+                                                child: const Text('Delete'),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
                               );
                               if (confirmed == true) {

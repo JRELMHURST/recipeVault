@@ -19,11 +19,14 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
   int recipesUsed = 0;
   int translationsUsed = 0;
   bool loading = true;
-  bool isUnlimited = false;
+  bool isMasterChef = false;
 
   late final AnimationController _controller;
   late Animation<double> _recipeAnimation;
   late Animation<double> _translationAnimation;
+
+  int maxRecipes = 20;
+  int maxTranslations = 5;
 
   @override
   void initState() {
@@ -54,22 +57,21 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
     setState(() {
       recipesUsed = subscription.aiUsage;
       translationsUsed = subscription.translationUsage;
+      isMasterChef = subscription.isMasterChef;
+      maxRecipes = isMasterChef ? 100 : 20;
+      maxTranslations = isMasterChef ? 20 : 5;
       loading = false;
-      isUnlimited =
-          subscription.tier == 'master_chef_monthly' ||
-          subscription.tier == 'master_chef_yearly';
     });
 
     _updateAnimation();
   }
 
   void _updateAnimation() {
-    final recipePercent = isUnlimited
-        ? 1.0
-        : (recipesUsed / 20).clamp(0.0, 1.0);
-    final translationPercent = isUnlimited
-        ? 1.0
-        : (translationsUsed / 5).clamp(0.0, 1.0);
+    final recipePercent = (recipesUsed / maxRecipes).clamp(0.0, 1.0);
+    final translationPercent = (translationsUsed / maxTranslations).clamp(
+      0.0,
+      1.0,
+    );
 
     _recipeAnimation = Tween<double>(
       begin: 0,
@@ -94,7 +96,6 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
   Widget build(BuildContext context) {
     final subscription = context.watch<SubscriptionService>();
 
-    // Show usage for Home Chef and Master Chef only
     if ((!subscription.trackUsage && !subscription.showUsageWidget) ||
         loading) {
       return const SizedBox.shrink();
@@ -137,23 +138,19 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
                     icon: Icons.auto_awesome,
                     label: 'AI Recipes',
                     used: recipesUsed,
-                    max: isUnlimited ? null : 20,
+                    max: maxRecipes,
                     colour: AppColours.turquoise,
                     percent: _recipeAnimation.value,
-                    subtitle: isUnlimited
-                        ? 'Unlimited usage'
-                        : 'out of 20 this month',
+                    subtitle: 'out of $maxRecipes this month',
                   ),
                   _usageMetric(
                     icon: Icons.translate,
                     label: 'Translations',
                     used: translationsUsed,
-                    max: isUnlimited ? null : 5,
+                    max: maxTranslations,
                     colour: AppColours.lavender,
                     percent: _translationAnimation.value,
-                    subtitle: isUnlimited
-                        ? 'Unlimited translations'
-                        : 'monthly limit of 5',
+                    subtitle: 'monthly limit of $maxTranslations',
                   ),
                 ],
               );
@@ -168,7 +165,7 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
     required IconData icon,
     required String label,
     required int used,
-    required int? max,
+    required int max,
     required Color colour,
     required double percent,
     required String subtitle,
@@ -178,7 +175,7 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
         Icon(icon, size: 20, color: colour),
         const SizedBox(height: 4),
         Text(
-          max == null ? '$used' : '$used / $max',
+          '$used / $max',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.bold,
             fontSize: 13,

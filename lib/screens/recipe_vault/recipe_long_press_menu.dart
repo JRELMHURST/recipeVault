@@ -181,75 +181,85 @@ class RecipeLongPressMenu {
                           ),
                         if (filteredCategories.isNotEmpty)
                           const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.image_rounded),
-                            label: Text(
-                              recipe.imageUrl?.isNotEmpty == true
-                                  ? 'Update Image'
-                                  : 'Add Image',
-                            ),
-                            onPressed: () {
-                              Navigator.pop(context);
-                              onAddOrUpdateImage();
-                            },
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            icon: const Icon(Icons.edit_rounded),
-                            label: const Text('Edit Recipe Text'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.primaryContainer,
-                              foregroundColor: Theme.of(
-                                context,
-                              ).colorScheme.onPrimaryContainer,
-                            ),
-                            onPressed: () async {
-                              Navigator.pop(context);
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      EditRecipeScreen(recipe: recipe),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                icon: const Icon(Icons.image_rounded, size: 18),
+                                label: const Text(
+                                  'Update Image',
+                                  style: TextStyle(fontSize: 13),
                                 ),
-                              );
-                            },
-                          ),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  onAddOrUpdateImage();
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  foregroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primary,
+                                  side: BorderSide(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary.withOpacity(0.5),
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.edit_rounded, size: 18),
+                                label: const Text(
+                                  'Edit',
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                                onPressed: () async {
+                                  Navigator.pop(context);
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          EditRecipeScreen(recipe: recipe),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primary,
+                                  foregroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimary,
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 20),
-                        const Divider(height: 1),
-                        const SizedBox(height: 20),
+
+                        const SizedBox(height: 16),
+
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            icon: const Icon(
-                              Icons.delete_rounded,
-                              color: Colors.white,
-                            ),
-                            label: const Text('Delete Recipe'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.redAccent,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                            icon: const Icon(Icons.delete_rounded, size: 18),
+                            label: const Text(
+                              'Delete',
+                              style: TextStyle(fontSize: 13),
                             ),
                             onPressed: () async {
                               final confirmed = await showDialog<bool>(
@@ -281,6 +291,14 @@ class RecipeLongPressMenu {
                                 onDelete();
                               }
                             },
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              backgroundColor: Colors.redAccent,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
                           ),
                         ),
                       ],

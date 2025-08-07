@@ -42,7 +42,7 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
         return;
       }
 
-      final recipe = RecipeCardModel.fromMap(data);
+      final recipe = RecipeCardModel.fromJson(data);
       setState(() {
         _recipe = recipe;
         _loading = false;

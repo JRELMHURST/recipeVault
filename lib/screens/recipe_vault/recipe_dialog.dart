@@ -23,7 +23,7 @@ void showRecipeDialog(BuildContext context, RecipeCardModel recipe) {
         recipeId: recipe.id,
         userId: recipe.userId,
         ingredients: recipe.ingredients,
-        method: recipe.method,
+        instructions: recipe.instructions,
       ),
     ),
   );
@@ -36,7 +36,7 @@ class _ShareableRecipeCard extends StatefulWidget {
   final String recipeId;
   final String userId;
   final List<String> ingredients;
-  final String method;
+  final List<String> instructions;
 
   const _ShareableRecipeCard({
     required this.markdown,
@@ -44,7 +44,7 @@ class _ShareableRecipeCard extends StatefulWidget {
     required this.recipeId,
     required this.userId,
     required this.ingredients,
-    required this.method,
+    required this.instructions,
     this.imageUrl,
   });
 
@@ -104,7 +104,7 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
       userId: widget.userId,
       title: widget.title,
       ingredients: widget.ingredients,
-      method: widget.method,
+      instructions: widget.instructions,
       imageUrl: widget.imageUrl,
       createdAt: DateTime.now(),
     );

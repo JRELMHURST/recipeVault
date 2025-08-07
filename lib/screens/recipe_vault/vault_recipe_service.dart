@@ -205,7 +205,7 @@ class VaultRecipeService {
     required String recipeId,
     required String title,
     required List<String> ingredients,
-    required String method,
+    required List<String> instructions,
   }) async {
     try {
       final box = await HiveRecipeService.getBox();
@@ -219,7 +219,7 @@ class VaultRecipeService {
       final updated = recipe.copyWith(
         title: title,
         ingredients: ingredients,
-        method: method,
+        instructions: instructions,
       );
 
       // Save to Hive

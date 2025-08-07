@@ -14,7 +14,7 @@ class EditRecipeScreen extends StatefulWidget {
 class _EditRecipeScreenState extends State<EditRecipeScreen> {
   late TextEditingController _titleController;
   late TextEditingController _ingredientsController;
-  late TextEditingController _methodController;
+  late TextEditingController _instructionsController;
   bool _isSaving = false;
 
   @override
@@ -24,14 +24,16 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     _ingredientsController = TextEditingController(
       text: widget.recipe.ingredients.join('\n'),
     );
-    _methodController = TextEditingController(text: widget.recipe.method);
+    _instructionsController = TextEditingController(
+      text: widget.recipe.instructions.join('\n'),
+    );
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _ingredientsController.dispose();
-    _methodController.dispose();
+    _instructionsController.dispose();
     super.dispose();
   }
 
@@ -45,7 +47,11 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
           .split('\n')
           .where((line) => line.trim().isNotEmpty)
           .toList(),
-      method: _methodController.text.trim(),
+      instructions: _instructionsController.text
+          .trim()
+          .split('\n')
+          .where((line) => line.trim().isNotEmpty)
+          .toList(),
     );
 
     await VaultRecipeService.save(updatedRecipe);
@@ -87,7 +93,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
             ),
             const SizedBox(height: 16),
             TextField(
-              controller: _methodController,
+              controller: _instructionsController,
               textInputAction: TextInputAction.done,
               decoration: const InputDecoration(
                 labelText: 'Method',

@@ -7,8 +7,7 @@ String formatRecipeMarkdown(RecipeCardModel recipe) {
   // Strip any leading numbers or bullets from original instructions
   final instructionRegex = RegExp(r'^\s*[\d]+[.)\-]?\s*');
 
-  final methodLines = recipe.method
-      .split('\n')
+  final methodLines = recipe.instructions
       .where((line) => line.trim().isNotEmpty)
       .toList();
 

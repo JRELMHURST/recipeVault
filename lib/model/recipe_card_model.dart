@@ -19,7 +19,7 @@ class RecipeCardModel extends HiveObject {
   final List<String> ingredients;
 
   @HiveField(4)
-  final String method;
+  final List<String> instructions;
 
   @HiveField(5)
   final DateTime createdAt;
@@ -50,7 +50,7 @@ class RecipeCardModel extends HiveObject {
     required this.userId,
     required this.title,
     required this.ingredients,
-    required this.method,
+    required this.instructions,
     DateTime? createdAt,
     this.imageUrl,
     List<String>? categories,
@@ -64,13 +64,12 @@ class RecipeCardModel extends HiveObject {
        originalImageUrls = originalImageUrls ?? const [],
        hints = hints ?? const [];
 
-  /// Converts the model to JSON for Firestore or raw storage.
   Map<String, dynamic> toJson() => {
     'id': id,
     'userId': userId,
     'title': title,
     'ingredients': ingredients,
-    'method': method,
+    'instructions': instructions,
     'createdAt': createdAt.toIso8601String(),
     if (imageUrl != null) 'imageUrl': imageUrl,
     'categories': categories,
@@ -98,7 +97,7 @@ class RecipeCardModel extends HiveObject {
       userId: json['userId'] ?? '',
       title: json['title'] ?? '',
       ingredients: List<String>.from(json['ingredients'] ?? const []),
-      method: json['method'] ?? '',
+      instructions: List<String>.from(json['instructions'] ?? const []),
       createdAt: parsedCreatedAt,
       imageUrl: json['imageUrl'],
       categories: List<String>.from(json['categories'] ?? const []),
@@ -112,21 +111,6 @@ class RecipeCardModel extends HiveObject {
     );
   }
 
-  static RecipeCardModel fromFirestore(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-    SnapshotOptions? options,
-  ) {
-    return RecipeCardModel.fromJson(doc.data()!);
-  }
-
-  factory RecipeCardModel.fromMap(Map<String, dynamic> map) =>
-      RecipeCardModel.fromJson(map);
-
-  String toRawJson() => jsonEncode(toJson());
-
-  factory RecipeCardModel.fromRawJson(String str) =>
-      RecipeCardModel.fromJson(jsonDecode(str));
-
   RecipeCardModel copyWith({
     String? imageUrl,
     bool? isFavourite,
@@ -137,14 +121,14 @@ class RecipeCardModel extends HiveObject {
     bool? isGlobal,
     String? title,
     List<String>? ingredients,
-    String? method,
+    List<String>? instructions,
   }) {
     return RecipeCardModel(
       id: id,
       userId: userId,
       title: title ?? this.title,
       ingredients: ingredients ?? this.ingredients,
-      method: method ?? this.method,
+      instructions: instructions ?? this.instructions,
       createdAt: createdAt,
       imageUrl: imageUrl ?? this.imageUrl,
       isFavourite: isFavourite ?? this.isFavourite,
@@ -156,9 +140,15 @@ class RecipeCardModel extends HiveObject {
     );
   }
 
-  RecipeCardModel withUpdatedImageUrl(String url) {
-    return copyWith(imageUrl: url);
-  }
+  static RecipeCardModel fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+    SnapshotOptions? options,
+  ) => RecipeCardModel.fromJson(doc.data()!);
+
+  String toRawJson() => jsonEncode(toJson());
+
+  factory RecipeCardModel.fromRawJson(String str) =>
+      RecipeCardModel.fromJson(jsonDecode(str));
 
   bool get hasImage => imageUrl?.isNotEmpty ?? false;
 
@@ -166,8 +156,13 @@ class RecipeCardModel extends HiveObject {
 
   String get formattedText {
     final ingredientsStr = ingredients.join('\n• ');
-    final methodStr = method.trim();
-    return '## Ingredients\n• $ingredientsStr\n\n## Instructions\n$methodStr';
+    final instructionsStr = instructions
+        .asMap()
+        .entries
+        .map((e) => '${e.key + 1}. ${e.value}')
+        .join('\n');
+
+    return '## Ingredients\n• $ingredientsStr\n\n## Instructions\n$instructionsStr';
   }
 
   @override

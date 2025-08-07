@@ -64,44 +64,45 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Recipe')),
-      body: Padding(
-        padding: EdgeInsets.fromLTRB(16, 24, 16, bottom + 80),
-        child: ListView(
-          physics: const BouncingScrollPhysics(),
-          children: [
-            TextField(
-              controller: _titleController,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 120),
+            physics: const BouncingScrollPhysics(),
+            children: [
+              TextField(
+                controller: _titleController,
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _ingredientsController,
-              textInputAction: TextInputAction.newline,
-              decoration: const InputDecoration(
-                labelText: 'Ingredients (one per line)',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _ingredientsController,
+                textInputAction: TextInputAction.newline,
+                decoration: const InputDecoration(
+                  labelText: 'Ingredients (one per line)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 6,
               ),
-              maxLines: 6,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _instructionsController,
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                labelText: 'Method',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _instructionsController,
+                textInputAction: TextInputAction.done,
+                decoration: const InputDecoration(
+                  labelText: 'Steps',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 10,
               ),
-              maxLines: 10,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(

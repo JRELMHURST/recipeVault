@@ -7,18 +7,19 @@ import 'package:provider/provider.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/core/theme.dart';
 
-class HomeChefUsageWidget extends StatefulWidget {
-  const HomeChefUsageWidget({super.key});
+class UsageMetricsWidget extends StatefulWidget {
+  const UsageMetricsWidget({super.key});
 
   @override
-  State<HomeChefUsageWidget> createState() => _HomeChefUsageWidgetState();
+  State<UsageMetricsWidget> createState() => _UsageMetricsWidgetState();
 }
 
-class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
+class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
     with SingleTickerProviderStateMixin {
   int recipesUsed = 0;
   int translationsUsed = 0;
   bool loading = true;
+  bool isUnlimited = false;
 
   late final AnimationController _controller;
   late Animation<double> _recipeAnimation;
@@ -54,14 +55,21 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
       recipesUsed = subscription.aiUsage;
       translationsUsed = subscription.translationUsage;
       loading = false;
+      isUnlimited =
+          subscription.tier == 'master_chef_monthly' ||
+          subscription.tier == 'master_chef_yearly';
     });
 
     _updateAnimation();
   }
 
   void _updateAnimation() {
-    final recipePercent = (recipesUsed / 20).clamp(0.0, 1.0);
-    final translationPercent = (translationsUsed / 5).clamp(0.0, 1.0);
+    final recipePercent = isUnlimited
+        ? 1.0
+        : (recipesUsed / 20).clamp(0.0, 1.0);
+    final translationPercent = isUnlimited
+        ? 1.0
+        : (translationsUsed / 5).clamp(0.0, 1.0);
 
     _recipeAnimation = Tween<double>(
       begin: 0,
@@ -86,7 +94,9 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
   Widget build(BuildContext context) {
     final subscription = context.watch<SubscriptionService>();
 
-    if (!subscription.showUsageWidget || loading) {
+    // Show usage for Home Chef and Master Chef only
+    if ((!subscription.trackUsage && !subscription.showUsageWidget) ||
+        loading) {
       return const SizedBox.shrink();
     }
 
@@ -127,19 +137,23 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
                     icon: Icons.auto_awesome,
                     label: 'AI Recipes',
                     used: recipesUsed,
-                    max: 20,
+                    max: isUnlimited ? null : 20,
                     colour: AppColours.turquoise,
                     percent: _recipeAnimation.value,
-                    subtitle: 'out of 20 this month',
+                    subtitle: isUnlimited
+                        ? 'Unlimited usage'
+                        : 'out of 20 this month',
                   ),
                   _usageMetric(
                     icon: Icons.translate,
                     label: 'Translations',
                     used: translationsUsed,
-                    max: 5,
+                    max: isUnlimited ? null : 5,
                     colour: AppColours.lavender,
                     percent: _translationAnimation.value,
-                    subtitle: 'monthly limit of 5',
+                    subtitle: isUnlimited
+                        ? 'Unlimited translations'
+                        : 'monthly limit of 5',
                   ),
                 ],
               );
@@ -154,7 +168,7 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
     required IconData icon,
     required String label,
     required int used,
-    required int max,
+    required int? max,
     required Color colour,
     required double percent,
     required String subtitle,
@@ -164,7 +178,7 @@ class _HomeChefUsageWidgetState extends State<HomeChefUsageWidget>
         Icon(icon, size: 20, color: colour),
         const SizedBox(height: 4),
         Text(
-          '$used / $max',
+          max == null ? '$used' : '$used / $max',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.bold,
             fontSize: 13,

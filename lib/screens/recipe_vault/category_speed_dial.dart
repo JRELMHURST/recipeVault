@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
-import 'package:recipe_vault/screens/home_screen/home_chef_usage.dart';
+import 'package:recipe_vault/screens/home_screen/usage_metrics_widget.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 
 class CategorySpeedDial extends StatefulWidget {
@@ -87,7 +87,7 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
           color: Theme.of(context).colorScheme.surface,
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            child: HomeChefUsageWidget(),
+            child: UsageMetricsWidget(),
           ),
         ),
       ),

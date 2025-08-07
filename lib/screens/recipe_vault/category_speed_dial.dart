@@ -105,6 +105,12 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
       backgroundColor: theme.colorScheme.primary,
       foregroundColor: Colors.white,
       children: [
+        if (subscription.showUsageWidget)
+          SpeedDialChild(
+            child: const Icon(Icons.bar_chart_rounded),
+            label: 'Usage',
+            onTap: () => _showUsageDialog(context),
+          ),
         SpeedDialChild(
           child: const Icon(Icons.category),
           label: widget.allowCreation
@@ -122,12 +128,6 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
                   );
                 },
         ),
-        if (subscription.showUsageWidget)
-          SpeedDialChild(
-            child: const Icon(Icons.bar_chart_rounded),
-            label: 'Usage',
-            onTap: () => _showUsageDialog(context),
-          ),
         SpeedDialChild(
           child: const Icon(Icons.receipt_long_rounded),
           label: widget.allowCreation

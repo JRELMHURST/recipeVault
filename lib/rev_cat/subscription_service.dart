@@ -366,6 +366,6 @@ class SubscriptionService extends ChangeNotifier {
 
   // ───── Usage Visibility & Tracking ─────
 
-  bool get showUsageWidget => isHomeChef;
+  bool get showUsageWidget => isHomeChef || isMasterChef;
   bool get trackUsage => hasActiveSubscription;
 }

@@ -6,9 +6,9 @@ const firestore = getFirestore();
 
 /** 🔐 Centralised tier limits */
 export const tierLimits = {
-  free:        { translation: 0, recipes: 0, images: 0 },
-  home_chef:   { translation: 5, recipes: 20, images: 20 },
-  master_chef: { translation: Infinity, recipes: Infinity, images: Infinity },
+  free:        { translation: 0,  recipes: 0,   images: 0 },
+  home_chef:   { translation: 5,  recipes: 20,  images: 30 },
+  master_chef: { translation: 20, recipes: 100, images: 250 },
 };
 
 /** 🧠 Maps RevenueCat entitlement IDs to internal tier labels */

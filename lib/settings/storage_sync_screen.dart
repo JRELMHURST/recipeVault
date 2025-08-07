@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -29,38 +29,16 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
       if (box is Box<T>) {
         return box;
       } else {
-        // Already open but wrong type
         throw HiveError(
-          'Hive box "$name" is already open with a different type.\n'
-          'Expected: Box<$T>, but got: ${box.runtimeType}',
+          'Hive box "$name" is already open with a different type.\nExpected: Box<$T>, but got: ${box.runtimeType}',
         );
       }
     }
-
     return await Hive.openBox<T>(name);
   }
 
   Future<void> _clearCache() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Clear Cache'),
-        content: const Text(
-          'This will delete all locally stored recipes, categories, and tutorial flags. Cloud data will not be affected.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear'),
-          ),
-        ],
-      ),
-    );
-
+    final confirm = await _showClearCacheDialog(context);
     if (confirm == true) {
       final recipeBox = await HiveRecipeService.getBox();
       final categoryBox = await getSafeBox<CategoryModel>(
@@ -84,6 +62,70 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
     }
   }
 
+  Future<bool?> _showClearCacheDialog(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                size: 48,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Clear Cache?',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'This will delete all locally stored recipes, categories, and tutorial flags.\nYour cloud data will remain safe.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Clear Now'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -92,22 +134,47 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
       appBar: AppBar(title: const Text('Storage')),
       body: ResponsiveWrapper(
         maxWidth: 520,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Delete all recipes, categories and tutorial flags stored on this device. Cloud data is safe.',
-              style: TextStyle(color: Colors.grey),
+            Icon(
+              Icons.storage_rounded,
+              size: 60,
+              color: theme.colorScheme.primary,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+            Text(
+              'Clear Local Cache',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Delete all recipes, categories and tutorial flags stored on this device.\nYour cloud data will not be affected.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.hintColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 40),
             ElevatedButton.icon(
-              onPressed: _clearCache,
               icon: const Icon(Icons.delete_outline),
               label: const Text('Clear Local Cache'),
+              onPressed: _clearCache,
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.errorContainer,
-                foregroundColor: theme.colorScheme.onErrorContainer,
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: theme.colorScheme.onError,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],

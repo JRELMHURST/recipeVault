@@ -81,8 +81,6 @@ async function enforceGptRecipePolicy(uid: string): Promise<void> {
 
 /** 📈 GPT usage increment */
 async function incrementGptRecipeUsage(uid: string): Promise<void> {
-  const tier = await getResolvedTier(uid);
-  if (tier === "master_chef") return;
 
   const monthKey = new Date().toISOString().slice(0, 7);
   const updates: Record<string, any> = {
@@ -119,8 +117,6 @@ async function enforceTranslationPolicy(uid: string): Promise<void> {
 
 /** 📈 Translation usage increment */
 async function incrementTranslationUsage(uid: string): Promise<void> {
-  const tier = await getResolvedTier(uid);
-  if (tier === "master_chef") return;
 
   const monthKey = new Date().toISOString().slice(0, 7);
   const updates: Record<string, any> = {

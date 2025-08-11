@@ -1,0 +1,127 @@
+{
+  "@@locale": "pl",
+  "loading": "Ładowanie...",
+
+  "appTitle": "RecipeVault",
+  "welcomeMessage": "Witamy w RecipeVault",
+
+  "scanRecipe": "Skanuj przepis",
+  "saveToVault": "Zapisz w skarbcu",
+  "settings": "Ustawienia",
+  "logout": "Wyloguj się",
+  "yes": "Tak",
+  "no": "Nie",
+  "cancel": "Anuluj",
+  "close": "Zamknij",
+  "save": "Zapisz",
+  "delete": "Usuń",
+  "edit": "Edytuj",
+  "confirm": "Potwierdź",
+
+  "myVault": "Mój skarbiec",
+  "favourites": "Ulubione",
+  "categories": "Kategorie",
+  "searchRecipes": "Szukaj przepisów...",
+  "noRecipesFound": "Nie znaleziono przepisów",
+  "addCategory": "Dodaj kategorię",
+  "removeCategory": "Usuń kategorię",
+  "assignCategory": "Przypisz kategorię",
+  "recipeDetails": "Szczegóły przepisu",
+  "ingredients": "Składniki",
+  "instructions": "Instrukcje",
+  "notes": "Notatki",
+
+  "dailyTipTitle": "Codzienna porada",
+  "dismiss": "Odrzuć",
+  "dailyMessagePlaceholder": "Twoja codzienna inspiracja pojawi się tutaj.",
+
+  "upgradeNow": "Ulepsz teraz",
+  "trialAvailable": "Dostępny darmowy okres próbny",
+  "trialDaysRemaining": "Pozostało {days} dni",
+  "@trialDaysRemaining": {
+    "description": "Pokazuje liczbę dni pozostałych w okresie próbnym.",
+    "placeholders": { "days": { "type": "int" } }
+  },
+
+  "planTaster": "Degustator",
+  "planHomeChef": "Domowy kucharz",
+  "planMasterChef": "Mistrz kuchni",
+  "planFree": "Plan darmowy",
+  "featureUnlimitedRecipes": "Nieograniczone skanowanie przepisów",
+  "featureUnlimitedTranslations": "Nieograniczone tłumaczenia",
+  "featureCloudBackup": "Kopia zapasowa w chmurze",
+  "featureCategories": "Własne kategorie",
+  "featureFavourites": "Oznacz ulubione",
+  "featureVaultSync": "Synchronizacja między urządzeniami",
+
+  "onboardingScan": "Dotknij +, aby zeskanować przepis i zapisać go natychmiast.",
+  "onboardingSwitchView": "Przełącz widok między siatką a listą tutaj.",
+  "onboardingLongPress": "Przytrzymaj przepis, aby zobaczyć więcej opcji.",
+
+  "deleteConfirmation": "Czy na pewno chcesz to usunąć?",
+  "recipeSaved": "Przepis zapisany w skarbcu!",
+  "recipeDeleted": "Przepis usunięty.",
+  "translationUsed": "Przetłumaczono z języka {language}",
+  "@translationUsed": {
+    "description": "Wyświetlane, gdy przepis został przetłumaczony z określonego języka.",
+    "placeholders": { "language": { "type": "String" } }
+  },
+
+  "error": "Błąd",
+  "networkError": "Błąd sieci, spróbuj ponownie.",
+  "unknownError": "Coś poszło nie tak. Spróbuj ponownie później.",
+
+  "tipScanPlus": "Dotknij +, aby zeskanować przepis. Nawet resztki zasługują na miejsce w skarbcu!",
+  "tipFamilyClassic": "Masz rodzinny klasyk? Dodaj go dziś i zachowaj na zawsze.",
+  "tipLongPressSort": "Przytrzymaj przepis, aby uporządkować go jak profesjonalista. Czysty skarbiec, szczęśliwy kucharz.",
+  "tipFavouriteIt": "Nie tylko zapisuj—oznacz ulubione! Dotknij serca przy swoich najlepszych daniach.",
+  "tipNewCategory": "Spróbuj dziś stworzyć nową kategorię. Może „Przytulne jesienne posiłki”?",
+  "tipEachScanStep": "Każde skanowanie to krok bliżej do własnej książki kucharskiej.",
+
+  "funButter": "Pamiętaj: sekretny składnik to zazwyczaj masło... lub zamieszanie.",
+  "funPastaHeat": "Jeśli nie znosisz gorąca... pewnie rozgotowujesz makaron.",
+  "funPoachIdeas": "Podbieraj pomysły, nie jajka. Mamy też na to poradnik.",
+  "funRusticMess": "Dziś świetny dzień, aby upiec bałagan i nazwać go rustykalnym.",
+  "funCheflebration": "Zapisujesz setny przepis? To nazywamy *kuchar-celebracją* 🎉",
+  "funMoreThanGran": "Kiedy twój skarbiec ma więcej przepisów niż babcia.",
+
+  "factTomatoes": "Kiedyś uważano, że pomidory są trujące. Teraz: 🍝",
+  "factExpensivePizza": "Najdroższa pizza na świecie kosztuje ponad 2000 £. Twoja: bezcenna.",
+  "factBananasBerries": "Banany to jagody. Truskawki nie są. Zachowaj tę ciekawostkę!",
+  "factHoneyNeverSpoils": "Miód nigdy się nie psuje. Tak samo jak najlepsze przepisy.",
+  "factOysters": "Ostrygi kiedyś uważano za jedzenie dla biednych. Teraz? Luksus.",
+  "factPuffLayers": "Ciasto francuskie ma ponad 700 warstw. U nas znajdziesz też skróty.",
+
+  "vaultLikeFridge": "Twój skarbiec jest jak lodówka: zaglądaj często i utrzymuj świeżość.",
+  "vaultBackUpTastebuds": "Zrób kopię zapasową kubków smakowych. Dodaj nowy przepis dziś.",
+  "vaultYouOwnIt": "To twój skarbiec. My tylko pilnujemy drzwi.",
+  "vaultFewerWhatsForDinner": "Każdy zapisany przepis to jedno mniej „Co na obiad?”.",
+  "vaultHungryIdeas": "Twój skarbiec dzwoni. Jest głodny nowych pomysłów.",
+
+  "quoteLoveVisible": "Gotowanie to miłość widoczna – zapisz danie, które dziś cię ucieszyło.",
+  "quoteCuriousCook": "Nikt nie rodzi się wielkim kucharzem – tylko ciekawym.",
+  "quoteStories": "Przepisy są jak historie. Jaką opowiada dziś twój?",
+  "quoteBurntToast": "Nawet przypalony tost to lekcja warta zapamiętania.",
+  "quoteSingleChop": "Każde danie zaczyna się od jednego krojenia.",
+
+  "riddleTinGrin": "🧠 Zagadką: Zaczynam w puszce, kończę w uśmiechu i świetnie pasuję do fasoli. Co to?",
+  "quizPuffPastry": "💡 Sprawdź się: potrafisz wymienić 3 dania z ciasta francuskiego?",
+  "challengeFiveIngredients": "🥄 Wyzwanie: dodaj dziś przepis z tylko 5 składnikami.",
+  "triviaPoachBoil": "🍳 Ciekawostka: jaka jest różnica między gotowaniem a podgotowaniem? Podpowiedź: temperatura!",
+  "rollOldestRecipe": "🎲 Rzuć kostką – ugotuj najstarszy przepis w swoim skarbcu!",
+
+  "encouragementScribbledNote": "Dziś świetny dzień, aby zamienić tę zapisaną kartkę w zapisany przepis.",
+  "encouragementDeliciousNotPerfect": "Nie dąż do perfekcji – dąż do pyszności. Potem zapisz!",
+  "encouragementStockedWithJoy": "Utrzymuj skarbiec jak kuchnię: pełen radości i gotowy do użycia.",
+  "encouragementLegacyCookbook": "Każdy zapisany przepis to krok bliżej do twojej własnej książki kucharskiej.",
+
+  "changePasswordTitle": "Zmień hasło",
+  "passwordUpdated": "Hasło zostało pomyślnie zaktualizowane",
+  "currentPasswordLabel": "Obecne hasło",
+  "newPasswordLabel": "Nowe hasło",
+  "confirmPasswordLabel": "Potwierdź nowe hasło",
+  "enterCurrentPassword": "Wprowadź obecne hasło",
+  "passwordMinLength": "Hasło musi mieć co najmniej 6 znaków",
+  "passwordsDoNotMatch": "Hasła nie są identyczne",
+  "updatePasswordButton": "Zaktualizuj hasło"
+}

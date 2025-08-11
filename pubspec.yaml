@@ -23,7 +23,7 @@ dependencies:
 
   # ───── Routing ─────
   uni_links: ^0.5.1
-  intl: ^0.19.0
+  intl: ^0.20.2
 
   # ───── Image Handling ─────
   image_picker: ^1.0.4
@@ -72,6 +72,14 @@ dependencies:
   purchases_flutter: ^8.10.5
   collection: ^1.19.1
 
+  # ───── Multi-language Support ─────
+  flutter_localizations:
+    sdk: flutter
+  # Once you create `lib/l10n/*.arb` files, run `flutter gen-l10n` and add:
+  # flutter_gen:
+  #   integrations:
+  #     l10n: true
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -83,6 +91,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
   assets:
     - assets/icon/recipe_vault_appLogo.png
     - assets/icon/recipe_vaultBG.png
@@ -102,3 +111,12 @@ flutter_native_splash:
   android: true
   ios: true
   fullscreen: true
+
+  # Localization config (optional, but tidy)
+  # l10n:
+  #   arb-dir: lib/l10n
+  #   template-arb-file: app_en_GB.arb
+  #   output-dir: lib/l10n/generated
+  #   output-localization-file: app_localizations.dart
+  #   preferred-supported-locales:
+  #     - en_GB

@@ -1,8 +1,7 @@
 // ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
-import 'package:recipe_vault/core/daily_message_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:recipe_vault/core/daily_message_service.dart';
 
 class DailyMessageBubble extends StatefulWidget {
   const DailyMessageBubble({super.key});
@@ -22,8 +21,7 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble> {
 
   Future<void> _checkDismissed() async {
     final prefs = await SharedPreferences.getInstance();
-    final todayKey = _todayKey();
-    final dismissed = prefs.getBool(todayKey) ?? false;
+    final dismissed = prefs.getBool(_todayKey()) ?? false;
     if (dismissed) {
       setState(() => _isVisible = false);
     }
@@ -44,13 +42,13 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble> {
   Widget build(BuildContext context) {
     if (!_isVisible) return const SizedBox.shrink();
 
-    final message = DailyMessageService.getTodayMessage();
+    final message = DailyMessageService.getTodayMessage(context);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     final background = isDark
-        ? const Color(0xFF2A2E39) // deep slate
-        : const Color(0xFFEAF6F2); // soft mint
+        ? const Color(0xFF2A2E39)
+        : const Color(0xFFEAF6F2);
     final border = isDark ? const Color(0xFF3E4453) : const Color(0xFFD3ECE5);
     final iconColour = isDark
         ? Colors.tealAccent.shade100

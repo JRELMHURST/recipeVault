@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -41,9 +42,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       await user.updatePassword(_newPasswordController.text);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password updated successfully')),
-        );
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.passwordUpdated)));
         Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
@@ -57,9 +59,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final user = FirebaseAuth.instance.currentUser;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Change Password'), centerTitle: true),
+      appBar: AppBar(title: Text(l10n.changePasswordTitle), centerTitle: true),
       body: ResponsiveWrapper(
         child: ListView(
           padding: const EdgeInsets.only(bottom: 24),
@@ -127,37 +130,37 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           ),
                         TextFormField(
                           controller: _currentPasswordController,
-                          decoration: const InputDecoration(
-                            labelText: 'Current Password',
+                          decoration: InputDecoration(
+                            labelText: l10n.currentPasswordLabel,
                           ),
                           obscureText: true,
                           validator: (value) => value == null || value.isEmpty
-                              ? 'Enter your current password'
+                              ? l10n.enterCurrentPassword
                               : null,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _newPasswordController,
-                          decoration: const InputDecoration(
-                            labelText: 'New Password',
+                          decoration: InputDecoration(
+                            labelText: l10n.newPasswordLabel,
                           ),
                           obscureText: true,
                           validator: (value) =>
                               value != null && value.length >= 6
                               ? null
-                              : 'Must be at least 6 characters',
+                              : l10n.passwordMinLength,
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _confirmPasswordController,
-                          decoration: const InputDecoration(
-                            labelText: 'Confirm New Password',
+                          decoration: InputDecoration(
+                            labelText: l10n.confirmPasswordLabel,
                           ),
                           obscureText: true,
                           validator: (value) =>
                               value == _newPasswordController.text
                               ? null
-                              : 'Passwords do not match',
+                              : l10n.passwordsDoNotMatch,
                         ),
                         const SizedBox(height: 30),
                         SizedBox(
@@ -181,7 +184,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                       ),
                                     ),
                                   )
-                                : const Text('Update Password'),
+                                : Text(l10n.updatePasswordButton),
                           ),
                         ),
                       ],

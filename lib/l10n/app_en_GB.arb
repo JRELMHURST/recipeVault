@@ -1,0 +1,127 @@
+{
+  "@@locale": "en_GB",
+  "loading": "Loading...",
+
+  "appTitle": "RecipeVault",
+  "welcomeMessage": "Welcome to RecipeVault",
+
+  "scanRecipe": "Scan Recipe",
+  "saveToVault": "Save to Vault",
+  "settings": "Settings",
+  "logout": "Log out",
+  "yes": "Yes",
+  "no": "No",
+  "cancel": "Cancel",
+  "close": "Close",
+  "save": "Save",
+  "delete": "Delete",
+  "edit": "Edit",
+  "confirm": "Confirm",
+
+  "myVault": "My Vault",
+  "favourites": "Favourites",
+  "categories": "Categories",
+  "searchRecipes": "Search recipes...",
+  "noRecipesFound": "No recipes found",
+  "addCategory": "Add Category",
+  "removeCategory": "Remove Category",
+  "assignCategory": "Assign Category",
+  "recipeDetails": "Recipe Details",
+  "ingredients": "Ingredients",
+  "instructions": "Instructions",
+  "notes": "Notes",
+
+  "dailyTipTitle": "Daily Tip",
+  "dismiss": "Dismiss",
+  "dailyMessagePlaceholder": "Your daily inspiration will appear here.",
+
+  "upgradeNow": "Upgrade Now",
+  "trialAvailable": "Free Trial Available",
+  "trialDaysRemaining": "{days} days remaining",
+  "@trialDaysRemaining": {
+    "description": "Shows the number of days left in a trial.",
+    "placeholders": { "days": { "type": "int" } }
+  },
+
+  "planTaster": "Taster",
+  "planHomeChef": "Home Chef",
+  "planMasterChef": "Master Chef",
+  "planFree": "Free Plan",
+  "featureUnlimitedRecipes": "Unlimited recipe scans",
+  "featureUnlimitedTranslations": "Unlimited translations",
+  "featureCloudBackup": "Cloud backup",
+  "featureCategories": "Custom categories",
+  "featureFavourites": "Mark favourites",
+  "featureVaultSync": "Sync across devices",
+
+  "onboardingScan": "Tap + to scan a recipe and save it instantly.",
+  "onboardingSwitchView": "Switch between grid and list views here.",
+  "onboardingLongPress": "Long-press a recipe to see more options.",
+
+  "deleteConfirmation": "Are you sure you want to delete this?",
+  "recipeSaved": "Recipe saved to vault!",
+  "recipeDeleted": "Recipe deleted.",
+  "translationUsed": "Translated from {language}",
+  "@translationUsed": {
+    "description": "Shown when a recipe was translated from a specific language.",
+    "placeholders": { "language": { "type": "String" } }
+  },
+
+  "error": "Error",
+  "networkError": "Network error, please try again.",
+  "unknownError": "Something went wrong. Please try again later.",
+
+  "tipScanPlus": "Tap + to scan a recipe. Even leftovers deserve a place in your vault!",
+  "tipFamilyClassic": "Got a family classic? Add it today and keep it safe forever.",
+  "tipLongPressSort": "Long-press a recipe to sort it like a pro. Tidy vault, happy chef.",
+  "tipFavouriteIt": "Don’t just save it—favourite it! Tap the heart on your top dishes.",
+  "tipNewCategory": "Try creating a new category today. 'Cosy Autumn Meals', anyone?",
+  "tipEachScanStep": "Each scan is a step closer to your own cookbook.",
+
+  "funButter": "Remember: the secret ingredient is usually butter... or confusion.",
+  "funPastaHeat": "If you can't stand the heat... you're probably overcooking pasta.",
+  "funPoachIdeas": "Poach ideas, not eggs. We've got a guide for that too.",
+  "funRusticMess": "Today's a great day to bake a mess and call it rustic.",
+  "funCheflebration": "Saving your 100th recipe? That’s called a *cheflebration* 🎉",
+  "funMoreThanGran": "That moment when your vault has more recipes than your gran.",
+
+  "factTomatoes": "Tomatoes were once thought to be poisonous. Joke’s on them: 🍝",
+  "factExpensivePizza": "The world’s most expensive pizza costs over £2,000. Yours: priceless.",
+  "factBananasBerries": "Bananas are berries. Strawberries are not. Vault that one!",
+  "factHoneyNeverSpoils": "Honey never spoils. Ever. Like your best recipes.",
+  "factOysters": "Oysters were once considered poor man's food. Now? Luxury.",
+  "factPuffLayers": "Puff pastry has over 700 layers. It also has a shortcut here.",
+
+  "vaultLikeFridge": "Your vault’s like a fridge: open it often and keep it fresh.",
+  "vaultBackUpTastebuds": "Back up your tastebuds. Add a new recipe today.",
+  "vaultYouOwnIt": "You own this vault. We just keep the door tidy.",
+  "vaultFewerWhatsForDinner": "Every recipe saved is one fewer 'What’s for dinner?'",
+  "vaultHungryIdeas": "Your vault called. It’s hungry for new ideas.",
+
+  "quoteLoveVisible": "Cooking is love made visible – save a dish that made you smile today.",
+  "quoteCuriousCook": "No one is born a great cook – just a curious one.",
+  "quoteStories": "Recipes are like stories. What’s yours telling today?",
+  "quoteBurntToast": "Even burnt toast is a lesson worth saving.",
+  "quoteSingleChop": "Every dish begins with a single chop.",
+
+  "riddleTinGrin": "🧠 Riddle: I start in a tin, end in a grin, and go great with beans. What am I?",
+  "quizPuffPastry": "💡 Quiz yourself: Can you name 3 dishes using puff pastry?",
+  "challengeFiveIngredients": "🥄 Vault challenge: Add a recipe today with just 5 ingredients.",
+  "triviaPoachBoil": "🍳 Trivia: What’s the difference between poaching and boiling? Hint: temperature!",
+  "rollOldestRecipe": "🎲 Roll the dice—try cooking the oldest recipe in your vault!",
+
+  "encouragementScribbledNote": "Today’s a great day to turn that scribbled note into a saved recipe.",
+  "encouragementDeliciousNotPerfect": "Don't aim for perfect—aim for delicious. Then save it!",
+  "encouragementStockedWithJoy": "Keep your vault like your kitchen: stocked with joy and ready to use.",
+  "encouragementLegacyCookbook": "Each recipe saved is one step closer to your own legacy cookbook.",
+
+  "changePasswordTitle": "Change Password",
+  "passwordUpdated": "Password updated successfully",
+  "currentPasswordLabel": "Current Password",
+  "newPasswordLabel": "New Password",
+  "confirmPasswordLabel": "Confirm New Password",
+  "enterCurrentPassword": "Enter your current password",
+  "passwordMinLength": "Must be at least 6 characters",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "updatePasswordButton": "Update Password"
+}

@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class LoadingOverlay extends StatelessWidget {
   final String? message;
@@ -10,6 +11,8 @@ class LoadingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    final displayMessage = message ?? AppLocalizations.of(context)!.loading;
 
     return Stack(
       children: [
@@ -32,16 +35,14 @@ class LoadingOverlay extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const CircularProgressIndicator(),
-                if (message != null) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    message!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
+                const SizedBox(height: 16),
+                Text(
+                  displayMessage,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
-                ],
+                  textAlign: TextAlign.center,
+                ),
               ],
             ),
           ),

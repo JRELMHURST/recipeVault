@@ -1,11 +1,11 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
-import 'dart:io' show Platform;
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,7 +18,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -30,12 +29,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _registerWithEmail() async {
     FocusScope.of(context).unfocus();
+    final loc = AppLocalizations.of(context)!;
+
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
     final confirm = confirmPasswordController.text.trim();
 
     if (password != confirm) {
-      _showError('Passwords do not match');
+      _showError(loc.passwordsDoNotMatch);
       return;
     }
 
@@ -47,7 +48,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
-      _showError('Registration failed: $e');
+      _showError('${loc.registrationFailed}: $e');
     } finally {
       LoadingOverlay.hide();
     }
@@ -55,43 +56,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _signUpWithGoogle() async {
     FocusScope.of(context).unfocus();
-    setState(() => _isLoading = true);
+    final loc = AppLocalizations.of(context)!;
+
+    LoadingOverlay.show(context);
     try {
       final credential = await AuthService().signInWithGoogle();
       if (credential == null) {
-        _showError('Google sign-up was cancelled.');
+        _showError(loc.googleSignupCancelled);
         return;
       }
-
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
-      _showError('Google sign-up failed: $e');
+      _showError('${loc.googleSignupFailed}: $e');
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      LoadingOverlay.hide();
     }
   }
 
   Future<void> _signUpWithApple() async {
     FocusScope.of(context).unfocus();
-    setState(() => _isLoading = true);
+    final loc = AppLocalizations.of(context)!;
+
+    LoadingOverlay.show(context);
     try {
       final credential = await AuthService().signInWithApple();
       if (credential == null) {
-        _showError('Apple sign-up was cancelled.');
+        _showError(loc.appleSignupCancelled);
         return;
       }
-
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
-      _showError('Apple sign-up failed: $e');
+      _showError('${loc.appleSignupFailed}: $e');
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      LoadingOverlay.hide();
     }
   }
 
@@ -109,6 +112,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
 
     return Stack(
       children: [
@@ -154,7 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
-                                    'Create your\nRecipeVault account',
+                                    loc.createAccountTitle,
                                     textAlign: TextAlign.center,
                                     style: theme.textTheme.headlineSmall
                                         ?.copyWith(
@@ -163,10 +167,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         ),
                                   ),
                                   const SizedBox(height: 12),
-                                  const Text(
-                                    'Enjoy a 7-day free trial – no card required.',
+                                  Text(
+                                    loc.trialLine,
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500,
                                       color: Colors.black54,
@@ -179,9 +183,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     textCapitalization: TextCapitalization.none,
                                     textInputAction: TextInputAction.next,
                                     autofillHints: const [AutofillHints.email],
-                                    decoration: const InputDecoration(
-                                      labelText: 'Email',
-                                      border: OutlineInputBorder(),
+                                    decoration: InputDecoration(
+                                      labelText: loc.emailLabel,
+                                      border: const OutlineInputBorder(),
                                     ),
                                   ),
                                   const SizedBox(height: 16),
@@ -192,9 +196,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     autofillHints: const [
                                       AutofillHints.newPassword,
                                     ],
-                                    decoration: const InputDecoration(
-                                      labelText: 'Password',
-                                      border: OutlineInputBorder(),
+                                    decoration: InputDecoration(
+                                      labelText: loc.passwordLabel,
+                                      border: const OutlineInputBorder(),
                                     ),
                                   ),
                                   const SizedBox(height: 16),
@@ -202,27 +206,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     controller: confirmPasswordController,
                                     obscureText: true,
                                     textInputAction: TextInputAction.done,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Confirm Password',
-                                      border: OutlineInputBorder(),
+                                    decoration: InputDecoration(
+                                      labelText: loc.confirmPasswordLabel,
+                                      border: const OutlineInputBorder(),
                                     ),
                                   ),
                                   const SizedBox(height: 20),
                                   SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton(
-                                      onPressed: _isLoading
-                                          ? null
-                                          : _registerWithEmail,
+                                      onPressed: _registerWithEmail,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.deepPurple,
                                         padding: const EdgeInsets.symmetric(
                                           vertical: 14,
                                         ),
                                       ),
-                                      child: const Text(
-                                        'Create Account',
-                                        style: TextStyle(
+                                      child: Text(
+                                        loc.createAccountButton,
+                                        style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -232,19 +234,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   const SizedBox(height: 12),
                                   OutlinedButton.icon(
                                     icon: const Icon(Icons.login),
-                                    label: const Text('Continue with Google'),
-                                    onPressed: _isLoading
-                                        ? null
-                                        : _signUpWithGoogle,
+                                    label: Text(loc.continueWithGoogle),
+                                    onPressed: _signUpWithGoogle,
                                   ),
                                   const SizedBox(height: 12),
-                                  if (Platform.isIOS)
+                                  if (Theme.of(context).platform ==
+                                      TargetPlatform.iOS)
                                     OutlinedButton.icon(
                                       icon: const Icon(
                                         Icons.apple,
                                         color: Colors.black,
                                       ),
-                                      label: const Text('Continue with Apple'),
+                                      label: Text(loc.continueWithApple),
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: Colors.black,
                                         backgroundColor: Colors.white,
@@ -256,9 +257,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           horizontal: 16,
                                         ),
                                       ),
-                                      onPressed: _isLoading
-                                          ? null
-                                          : _signUpWithApple,
+                                      onPressed: _signUpWithApple,
                                     ),
                                 ],
                               ),
@@ -266,9 +265,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             const SizedBox(height: 20),
                             TextButton(
                               onPressed: _goToLogin,
-                              child: const Text(
-                                'Already have an account? Log in',
-                              ),
+                              child: Text(loc.alreadyHaveAccountCta),
                             ),
                           ],
                         ),

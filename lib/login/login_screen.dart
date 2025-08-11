@@ -1,7 +1,8 @@
-// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
@@ -23,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     _emailFocus = FocusNode();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _emailFocus.requestFocus(); // ⌨️ Ensure keyboard shows on iPad
+      _emailFocus.requestFocus();
     });
   }
 
@@ -38,7 +39,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _signInWithEmail() async {
     FocusScope.of(context).unfocus();
     LoadingOverlay.show(context);
-
     try {
       final email = emailController.text.trim();
       final password = passwordController.text.trim();
@@ -50,10 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;
-      final message = _friendlyAuthError(e);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      _showError(_friendlyAuthError(e));
     } finally {
       LoadingOverlay.hide();
     }
@@ -62,28 +59,19 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _signInWithGoogle() async {
     FocusScope.of(context).unfocus();
     LoadingOverlay.show(context);
-
     try {
       final credential = await AuthService().signInWithGoogle();
       if (credential == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google sign-in was cancelled.')),
-        );
+        _showError(AppLocalizations.of(context)!.cancel);
         return;
       }
-
       await VaultRecipeService.loadAndMergeAllRecipes();
-
       if (!mounted) return;
       await Future.delayed(const Duration(milliseconds: 100));
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;
-      final message = _friendlyAuthError(e);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      _showError(_friendlyAuthError(e));
     } finally {
       LoadingOverlay.hide();
     }
@@ -92,51 +80,48 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _signInWithApple() async {
     FocusScope.of(context).unfocus();
     LoadingOverlay.show(context);
-
     try {
       final credential = await AuthService().signInWithApple();
       if (credential == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Apple sign-in was cancelled.')),
-        );
+        _showError(AppLocalizations.of(context)!.cancel);
         return;
       }
-
       await VaultRecipeService.loadAndMergeAllRecipes();
-
       if (!mounted) return;
       await Future.delayed(const Duration(milliseconds: 100));
       Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;
-      final message = _friendlyAuthError(e);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      _showError(_friendlyAuthError(e));
     } finally {
       LoadingOverlay.hide();
     }
   }
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   String _friendlyAuthError(Object e) {
     final message = e.toString().toLowerCase();
     if (message.contains('invalid-credential')) {
-      return 'The email or password is incorrect.';
+      return AppLocalizations.of(context)!.error;
     }
     if (message.contains('user-not-found')) {
-      return 'No account found with this email.';
+      return AppLocalizations.of(context)!.no;
     }
     if (message.contains('wrong-password')) {
-      return 'Incorrect password. Please try again.';
+      return AppLocalizations.of(context)!.networkError;
     }
     if (message.contains('too-many-requests')) {
-      return 'Too many attempts. Please try again later.';
+      return AppLocalizations.of(context)!.unknownError;
     }
     if (message.contains('network-request-failed')) {
-      return 'Network error. Check your connection.';
+      return AppLocalizations.of(context)!.networkError;
     }
-    return 'Login failed. Please try again.';
+    return AppLocalizations.of(context)!.unknownError;
   }
 
   void _goToRegister() {
@@ -146,6 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -182,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Welcome to\nRecipeVault',
+                            loc.welcomeMessage,
                             textAlign: TextAlign.center,
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
@@ -190,10 +176,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          const Text(
-                            'Free 7-day trial. No card needed. Full access.',
+                          Text(
+                            loc.trialAvailable,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                               color: Colors.black54,
@@ -205,9 +191,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             focusNode: _emailFocus,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              labelText: loc.emailLabel,
+                              border: const OutlineInputBorder(),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -215,9 +201,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: passwordController,
                             obscureText: true,
                             textInputAction: TextInputAction.done,
-                            decoration: const InputDecoration(
-                              labelText: 'Password',
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              labelText: loc.passwordLabel,
+                              border: const OutlineInputBorder(),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -231,9 +217,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   vertical: 14,
                                 ),
                               ),
-                              child: const Text(
-                                'Sign in with Email',
-                                style: TextStyle(
+                              child: Text(
+                                loc.signInWithEmail,
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -243,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 12),
                           OutlinedButton.icon(
                             icon: const Icon(Icons.login),
-                            label: const Text('Sign in with Google'),
+                            label: Text(loc.signInWithGoogle),
                             onPressed: _signInWithGoogle,
                           ),
                           const SizedBox(height: 12),
@@ -253,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Icons.apple,
                                 color: Colors.black,
                               ),
-                              label: const Text('Sign in with Apple'),
+                              label: Text(loc.signInWithApple),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.black,
                                 backgroundColor: Colors.white,
@@ -271,7 +257,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 20),
                     TextButton(
                       onPressed: _goToRegister,
-                      child: const Text("Don't have an account? Register"),
+                      child: Text(loc.registerCta),
                     ),
                   ],
                 ),

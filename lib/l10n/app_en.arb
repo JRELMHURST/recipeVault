@@ -123,5 +123,44 @@
   "enterCurrentPassword": "Enter your current password",
   "passwordMinLength": "Must be at least 6 characters",
   "passwordsDoNotMatch": "Passwords do not match",
-  "updatePasswordButton": "Update Password"
+  "updatePasswordButton": "Update Password",
+
+  "emailLabel": "Email",
+  "passwordLabel": "Password",
+  "signInWithEmail": "Sign in with Email",
+  "signInWithGoogle": "Sign in with Google",
+  "signInWithApple": "Sign in with Apple",
+  "registerCta": "Don't have an account? Register",
+
+  "createAccountTitle": "Create your\\nRecipeVault account",
+  "trialLine": "Enjoy a 7-day free trial – no card required.",
+  "createAccountButton": "Create Account",
+  "continueWithGoogle": "Continue with Google",
+  "continueWithApple": "Continue with Apple",
+  "alreadyHaveAccountCta": "Already have an account? Log in",
+  "registrationFailed": "Registration failed",
+  "googleSignupCancelled": "Google sign-up was cancelled.",
+  "googleSignupFailed": "Google sign-up failed",
+  "appleSignupCancelled": "Apple sign-up was cancelled.",
+  "appleSignupFailed": "Apple sign-up failed",
+
+  "purchaseSuccess": "Purchase successful!",
+  "purchaseCancelled": "Purchase cancelled.",
+  "purchaseFailed": "Purchase failed. Please try again.",
+  "unexpectedError": "An unexpected error occurred. Please try again.",
+
+  "chefModeTitle": "Chef Mode",
+  "paywallHeader": "Unlock your full culinary potential",
+  "badgeCurrentPlan": "Current Plan",
+  "badgeBestValue": "Best Value",
+  "badgeFreeTrial": "Free Trial",
+  "noPlans": "No subscription plans available at the moment.",
+
+  "legalAgreePrefix": "By continuing, you agree to our",
+  "legalTerms": "Terms of Service",
+  "legalAnd": "and",
+  "legalPrivacy": "Privacy Policy",
+  "legalAutoRenew": "Subscriptions auto-renew unless cancelled.",
+  "legalManageApple": "Manage your subscription in Apple Settings.",
+  "manageOrCancelCta": "Manage or cancel your subscription"
 }

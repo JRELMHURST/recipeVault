@@ -1,5 +1,4 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +9,7 @@ import 'package:recipe_vault/rev_cat/pricing_card.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -36,7 +36,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   Future<void> _loadSubscriptionData() async {
     await _subscriptionService.init();
-
     try {
       final offerings = await Purchases.getOfferings();
       final entitlementId = _subscriptionService.entitlementId;
@@ -47,9 +46,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       offerings.all.forEach((_, offering) {
         for (final pkg in offering.availablePackages) {
           final id = pkg.storeProduct.identifier;
-          if (seen.add(id)) {
-            packages.add(pkg);
-          }
+          if (seen.add(id)) packages.add(pkg);
         }
       });
 
@@ -75,10 +72,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
         int bIndex = priority.indexWhere(
           (id) => b.storeProduct.identifier.toLowerCase().contains(id),
         );
-
         if (aIndex == -1) aIndex = priority.length;
         if (bIndex == -1) bIndex = priority.length;
-
         return aIndex.compareTo(bIndex);
       });
 
@@ -91,6 +86,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _handlePurchase(Package package) async {
+    final loc = AppLocalizations.of(context)!;
     setState(() => _isPurchasing = true);
     LoadingOverlay.show(context);
 
@@ -103,8 +99,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
       LoadingOverlay.hide();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🎉 Subscription successful!'),
+        SnackBar(
+          content: Text(loc.purchaseSuccess),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -116,10 +112,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
       final isCancelled =
           e.code == '1' ||
-          e.message?.toLowerCase().contains('cancelled') == true;
+          (e.message?.toLowerCase().contains('cancelled') ?? false);
+
       final message = isCancelled
-          ? 'Purchase was cancelled. No changes were made.'
-          : 'Purchase failed: ${e.message ?? 'Unknown error'}';
+          ? loc.purchaseCancelled
+          : '${loc.purchaseFailed} ${e.message ?? loc.unknownError}';
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
@@ -130,7 +127,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unexpected error: $e'),
+          content: Text('${loc.unexpectedError} ${e.toString()}'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -142,6 +139,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
 
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -153,7 +151,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       children: [
         Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
-          appBar: AppBar(title: const Text('Chef Mode: ON')),
+          appBar: AppBar(title: Text(loc.chefModeTitle)),
           body: Column(
             children: [
               Container(
@@ -161,11 +159,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 margin: const EdgeInsets.fromLTRB(24, 12, 24, 0),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.05),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
-                  'Unlock AI-powered recipes, image uploads, translation, and more!',
+                  loc.paywallHeader,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontSize: 16,
                     height: 1.4,
@@ -190,6 +188,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                     pkg.identifier == entitlementId ||
                                     pkg.offeringIdentifier == entitlementId);
 
+                            final badge = isCurrent
+                                ? loc.badgeCurrentPlan
+                                : (pkg.storeProduct.subscriptionPeriod == 'P1Y'
+                                      ? loc.badgeBestValue
+                                      : loc.badgeFreeTrial);
+
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 16),
                               child: PricingCard(
@@ -200,22 +204,17 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                   }
                                 },
                                 isDisabled: isCurrent,
-                                badge: isCurrent
-                                    ? '✅ Current Plan'
-                                    : pkg.storeProduct.subscriptionPeriod ==
-                                          'P1Y'
-                                    ? 'Best Value'
-                                    : '7-Day Free Trial',
+                                badge: badge,
                               ),
                             );
                           }),
                           if (_availablePackages.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 24),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 24),
                               child: Text(
-                                'No subscription plans are currently available. Please try again later.',
+                                loc.noPlans,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(color: Colors.grey),
+                                style: const TextStyle(color: Colors.grey),
                               ),
                             ),
                           const SizedBox(height: 32),
@@ -235,6 +234,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   Widget _buildLegalNotice(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
+
     return Column(
       children: [
         RichText(
@@ -242,18 +243,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
           text: TextSpan(
             style: theme.textTheme.bodySmall,
             children: [
-              const TextSpan(text: 'By subscribing, you agree to our '),
+              TextSpan(text: loc.legalAgreePrefix),
               TextSpan(
-                text: 'Terms of Use',
+                text: loc.legalTerms,
                 style: const TextStyle(decoration: TextDecoration.underline),
                 recognizer: TapGestureRecognizer()
                   ..onTap = () => launchUrl(
                     Uri.parse('https://badger-creations.co.uk/terms'),
                   ),
               ),
-              const TextSpan(text: ' and '),
+              TextSpan(text: loc.legalAnd),
               TextSpan(
-                text: 'Privacy Policy',
+                text: loc.legalPrivacy,
                 style: const TextStyle(decoration: TextDecoration.underline),
                 recognizer: TapGestureRecognizer()
                   ..onTap = () => launchUrl(
@@ -266,7 +267,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ),
         const SizedBox(height: 12),
         Text(
-          'Subscriptions auto-renew unless cancelled 24h before the end of the period.',
+          loc.legalAutoRenew,
           style: theme.textTheme.bodySmall?.copyWith(
             fontStyle: FontStyle.italic,
             color: Colors.grey,
@@ -275,7 +276,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Manage or cancel anytime via your Apple ID settings.',
+          loc.legalManageApple,
           style: theme.textTheme.bodySmall?.copyWith(
             fontStyle: FontStyle.italic,
             color: Colors.grey,
@@ -294,7 +295,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             }
           },
           icon: const Icon(Icons.cancel_outlined),
-          label: const Text('Manage or Cancel Subscription'),
+          label: Text(loc.manageOrCancelCta),
         ),
       ],
     );

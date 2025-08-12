@@ -1,597 +1,884 @@
 {
   "@@locale": "en",
-
   "loading": "Loading...",
-  "@loading": { "description": "Shown while an operation is in progress." },
-
+  "@loading": {
+    "description": "Shown while an operation is in progress."
+  },
   "appTitle": "RecipeVault",
-  "@appTitle": { "description": "Main application title." },
-
+  "@appTitle": {
+    "description": "Main application title."
+  },
   "welcomeMessage": "Welcome to RecipeVault",
-  "@welcomeMessage": { "description": "Greeting shown on app launch/sign-in." },
-
+  "@welcomeMessage": {
+    "description": "Greeting shown on app launch/sign-in."
+  },
   "scanRecipe": "Scan Recipe",
-  "@scanRecipe": { "description": "CTA/button to start scanning a recipe." },
-
+  "@scanRecipe": {
+    "description": "CTA/button to start scanning a recipe."
+  },
   "saveToVault": "Save to Vault",
-  "@saveToVault": { "description": "CTA/button to save a recipe to the user’s vault." },
-
+  "@saveToVault": {
+    "description": "CTA/button to save a recipe to the user’s vault."
+  },
   "settings": "Settings",
-  "@settings": { "description": "Menu item to open settings." },
-
+  "@settings": {
+    "description": "Menu item to open settings."
+  },
   "logout": "Log out",
-  "@logout": { "description": "Action to sign out the current user." },
-
+  "@logout": {
+    "description": "Action to sign out the current user."
+  },
   "yes": "Yes",
-  "@yes": { "description": "Affirmative action label." },
-
+  "@yes": {
+    "description": "Affirmative action label."
+  },
   "no": "No",
-  "@no": { "description": "Negative action label." },
-
+  "@no": {
+    "description": "Negative action label."
+  },
   "cancel": "Cancel",
-  "@cancel": { "description": "Cancels the current action/dialog." },
-
+  "@cancel": {
+    "description": "Cancels the current action/dialog."
+  },
   "close": "Close",
-  "@close": { "description": "Closes a dialog/sheet." },
-
+  "@close": {
+    "description": "Closes a dialog/sheet."
+  },
   "save": "Save",
-  "@save": { "description": "Saves current changes." },
-
+  "@save": {
+    "description": "Saves current changes."
+  },
   "delete": "Delete",
-  "@delete": { "description": "Deletes the current item." },
-
+  "@delete": {
+    "description": "Deletes the current item."
+  },
   "edit": "Edit",
-  "@edit": { "description": "Begins editing the current item." },
-
+  "@edit": {
+    "description": "Begins editing the current item."
+  },
   "confirm": "Confirm",
-  "@confirm": { "description": "Confirms the current action." },
-
+  "@confirm": {
+    "description": "Confirms the current action."
+  },
   "myVault": "My Vault",
-  "@myVault": { "description": "Tab/section for user’s saved recipes." },
-
+  "@myVault": {
+    "description": "Tab/section for user’s saved recipes."
+  },
   "favourites": "Favourites",
-  "@favourites": { "description": "Tab/section for favourite recipes." },
-
+  "@favourites": {
+    "description": "Tab/section for favourite recipes."
+  },
   "categories": "Categories",
-  "@categories": { "description": "Tab/section for recipe categories." },
-
+  "@categories": {
+    "description": "Tab/section for recipe categories."
+  },
   "searchRecipes": "Search recipes...",
-  "@searchRecipes": { "description": "Placeholder text in recipe search input." },
-
+  "@searchRecipes": {
+    "description": "Placeholder text in recipe search input."
+  },
   "noRecipesFound": "No recipes found",
-  "@noRecipesFound": { "description": "Shown when a recipe search returns no results." },
-
+  "@noRecipesFound": {
+    "description": "Shown when a recipe search returns no results."
+  },
   "addCategory": "Add Category",
-  "@addCategory": { "description": "Action to create a new category." },
-
+  "@addCategory": {
+    "description": "Action to create a new category."
+  },
   "removeCategory": "Remove Category",
-  "@removeCategory": { "description": "Action to remove an existing category." },
-
+  "@removeCategory": {
+    "description": "Action to remove an existing category."
+  },
   "assignCategory": "Assign Category",
-  "@assignCategory": { "description": "Action to apply a category to a recipe." },
-
+  "@assignCategory": {
+    "description": "Action to apply a category to a recipe."
+  },
   "recipeDetails": "Recipe Details",
-  "@recipeDetails": { "description": "Header/title for the recipe details screen." },
-
+  "@recipeDetails": {
+    "description": "Header/title for the recipe details screen."
+  },
   "ingredients": "Ingredients",
-  "@ingredients": { "description": "Section header for ingredients list." },
-
+  "@ingredients": {
+    "description": "Section header for ingredients list."
+  },
   "instructions": "Instructions",
-  "@instructions": { "description": "Section header for cooking steps." },
-
+  "@instructions": {
+    "description": "Section header for cooking steps."
+  },
   "notes": "Notes",
-  "@notes": { "description": "Section header for extra notes." },
-
+  "@notes": {
+    "description": "Section header for extra notes."
+  },
   "dailyTipTitle": "Daily Tip",
-  "@dailyTipTitle": { "description": "Title above the daily tip/message card." },
-
+  "@dailyTipTitle": {
+    "description": "Title above the daily tip/message card."
+  },
   "dismiss": "Dismiss",
-  "@dismiss": { "description": "Button to hide a tip/notification." },
-
+  "@dismiss": {
+    "description": "Button to hide a tip/notification."
+  },
   "dailyMessagePlaceholder": "Your daily inspiration will appear here.",
-  "@dailyMessagePlaceholder": { "description": "Placeholder text when the daily message hasn’t loaded." },
-
+  "@dailyMessagePlaceholder": {
+    "description": "Placeholder text when the daily message hasn’t loaded."
+  },
   "upgradeNow": "Upgrade Now",
-  "@upgradeNow": { "description": "Primary CTA to upgrade subscription." },
-
+  "@upgradeNow": {
+    "description": "Primary CTA to upgrade subscription."
+  },
   "trialAvailable": "Free Trial Available",
-  "@trialAvailable": { "description": "Indicator that a free trial can be started." },
-
+  "@trialAvailable": {
+    "description": "Indicator that a free trial can be started."
+  },
   "upgradeBannerMessage": "Unlock more recipes, translations, and features – upgrade now!",
-  "@upgradeBannerMessage": { "description": "Promotional banner text encouraging upgrade." },
-
+  "@upgradeBannerMessage": {
+    "description": "Promotional banner text encouraging upgrade."
+  },
   "trialDaysRemaining": "{days} days remaining",
   "@trialDaysRemaining": {
     "description": "Shows the number of trial days remaining.",
-    "placeholders": { "days": { "type": "int" } }
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
   },
-
   "planTaster": "Taster",
-  "@planTaster": { "description": "Subscription tier: entry-level plan." },
-
+  "@planTaster": {
+    "description": "Subscription tier: entry-level plan."
+  },
   "planHomeChef": "Home Chef",
-  "@planHomeChef": { "description": "Subscription tier: mid-level plan." },
-
+  "@planHomeChef": {
+    "description": "Subscription tier: mid-level plan."
+  },
   "planMasterChef": "Master Chef",
-  "@planMasterChef": { "description": "Subscription tier: top-level plan." },
-
+  "@planMasterChef": {
+    "description": "Subscription tier: top-level plan."
+  },
   "planFree": "Free Plan",
-  "@planFree": { "description": "Subscription tier: free access plan." },
-
+  "@planFree": {
+    "description": "Subscription tier: free access plan."
+  },
   "unknownTier": "Unknown Tier",
-  "@unknownTier": { "description": "Shown when the user’s subscription tier cannot be determined." },
-
+  "@unknownTier": {
+    "description": "Shown when the user’s subscription tier cannot be determined."
+  },
   "specialAccessBadge": "⭐ {tierLabel}",
   "@specialAccessBadge": {
     "description": "Badge label for special access within a tier.",
-    "placeholders": { "tierLabel": { "type": "String" } }
+    "placeholders": {
+      "tierLabel": {
+        "type": "String"
+      }
+    }
   },
-
   "planHomeChefSubtitleAnnual": "Annual Plan",
-  "@planHomeChefSubtitleAnnual": { "description": "Subtitle for Home Chef annual plan." },
-
+  "@planHomeChefSubtitleAnnual": {
+    "description": "Subtitle for Home Chef annual plan."
+  },
   "planHomeChefSubtitleMonthly": "Monthly Plan",
-  "@planHomeChefSubtitleMonthly": { "description": "Subtitle for Home Chef monthly plan." },
-
+  "@planHomeChefSubtitleMonthly": {
+    "description": "Subtitle for Home Chef monthly plan."
+  },
   "planMasterChefSubtitleAnnual": "Annual Plan",
-  "@planMasterChefSubtitleAnnual": { "description": "Subtitle for Master Chef annual plan." },
-
+  "@planMasterChefSubtitleAnnual": {
+    "description": "Subtitle for Master Chef annual plan."
+  },
   "planMasterChefSubtitleMonthly": "Monthly Plan",
-  "@planMasterChefSubtitleMonthly": { "description": "Subtitle for Master Chef monthly plan." },
-
+  "@planMasterChefSubtitleMonthly": {
+    "description": "Subtitle for Master Chef monthly plan."
+  },
   "planHomeChefDescription": "A smart step up – perfect for regular home cooks who want a little more power.",
-  "@planHomeChefDescription": { "description": "Marketing description for the Home Chef tier." },
-
+  "@planHomeChefDescription": {
+    "description": "Marketing description for the Home Chef tier."
+  },
   "planMasterChefDescriptionAnnual": "The ultimate plan for serious foodies – best value if you’re all in.",
-  "@planMasterChefDescriptionAnnual": { "description": "Marketing description for Master Chef annual plan." },
-
+  "@planMasterChefDescriptionAnnual": {
+    "description": "Marketing description for Master Chef annual plan."
+  },
   "planMasterChefDescriptionMonthly": "For those who want it all – maximum access, every month.",
-  "@planMasterChefDescriptionMonthly": { "description": "Marketing description for Master Chef monthly plan." },
-
+  "@planMasterChefDescriptionMonthly": {
+    "description": "Marketing description for Master Chef monthly plan."
+  },
   "featureUnlimitedRecipes": "Unlimited recipe scans",
-  "@featureUnlimitedRecipes": { "description": "Plan feature label: unlimited AI recipe scanning." },
-
+  "@featureUnlimitedRecipes": {
+    "description": "Plan feature label: unlimited AI recipe scanning."
+  },
   "featureUnlimitedTranslations": "Unlimited translations",
-  "@featureUnlimitedTranslations": { "description": "Plan feature label: unlimited translations." },
-
+  "@featureUnlimitedTranslations": {
+    "description": "Plan feature label: unlimited translations."
+  },
   "featureCloudBackup": "Cloud backup",
-  "@featureCloudBackup": { "description": "Plan feature label: cloud backup of user data." },
-
+  "@featureCloudBackup": {
+    "description": "Plan feature label: cloud backup of user data."
+  },
   "featureCategories": "Custom categories",
-  "@featureCategories": { "description": "Plan feature label: create custom categories." },
-
+  "@featureCategories": {
+    "description": "Plan feature label: create custom categories."
+  },
   "featureFavourites": "Mark favourites",
-  "@featureFavourites": { "description": "Plan feature label: mark recipes as favourites." },
-
+  "@featureFavourites": {
+    "description": "Plan feature label: mark recipes as favourites."
+  },
   "featureVaultSync": "Sync across devices",
-  "@featureVaultSync": { "description": "Plan feature label: sync vault across devices." },
-
+  "@featureVaultSync": {
+    "description": "Plan feature label: sync vault across devices."
+  },
   "featureHomeChef1": "👨‍🍳 20 AI recipe cards/month – cook new ideas effortlessly",
-  "@featureHomeChef1": { "description": "Home Chef feature list item 1." },
-
+  "@featureHomeChef1": {
+    "description": "Home Chef feature list item 1."
+  },
   "featureHomeChef2": "🌍 5 translations/month – scan handwritten or foreign recipes",
-  "@featureHomeChef2": { "description": "Home Chef feature list item 2." },
-
+  "@featureHomeChef2": {
+    "description": "Home Chef feature list item 2."
+  },
   "featureHomeChef3": "📦 Save your favourite recipes to your personal vault",
-  "@featureHomeChef3": { "description": "Home Chef feature list item 3." },
-
+  "@featureHomeChef3": {
+    "description": "Home Chef feature list item 3."
+  },
   "featureHomeChef4": "🏷️ Create and manage up to 3 custom categories",
-  "@featureHomeChef4": { "description": "Home Chef feature list item 4." },
-
+  "@featureHomeChef4": {
+    "description": "Home Chef feature list item 4."
+  },
   "featureHomeChef5": "🔗 Share your recipes with friends and family",
-  "@featureHomeChef5": { "description": "Home Chef feature list item 5." },
-
+  "@featureHomeChef5": {
+    "description": "Home Chef feature list item 5."
+  },
   "featureMasterChef1": "🍽️ 100 AI recipe cards/month – no limits on creativity",
-  "@featureMasterChef1": { "description": "Master Chef feature list item 1." },
-
+  "@featureMasterChef1": {
+    "description": "Master Chef feature list item 1."
+  },
   "featureMasterChef2": "🈂️ 20 translations/month – perfect for international dishes",
-  "@featureMasterChef2": { "description": "Master Chef feature list item 2." },
-
+  "@featureMasterChef2": {
+    "description": "Master Chef feature list item 2."
+  },
   "featureMasterChef3": "📦 Unlimited recipe saving to your personal vault",
-  "@featureMasterChef3": { "description": "Master Chef feature list item 3." },
-
+  "@featureMasterChef3": {
+    "description": "Master Chef feature list item 3."
+  },
   "featureMasterChef4": "🏷️ Unlimited category creation & advanced sorting tools",
-  "@featureMasterChef4": { "description": "Master Chef feature list item 4." },
-
+  "@featureMasterChef4": {
+    "description": "Master Chef feature list item 4."
+  },
   "featureMasterChef5": "🔗 Share your recipes anywhere with public links",
-  "@featureMasterChef5": { "description": "Master Chef feature list item 5." },
-
+  "@featureMasterChef5": {
+    "description": "Master Chef feature list item 5."
+  },
   "featureMasterChef6": "⚡ Priority AI processing – faster and smarter every time",
-  "@featureMasterChef6": { "description": "Master Chef feature list item 6." },
-
+  "@featureMasterChef6": {
+    "description": "Master Chef feature list item 6."
+  },
   "onboardingScan": "Tap + to scan a recipe and save it instantly.",
-  "@onboardingScan": { "description": "Onboarding tip: how to scan a recipe." },
-
+  "@onboardingScan": {
+    "description": "Onboarding tip: how to scan a recipe."
+  },
   "onboardingSwitchView": "Switch between grid and list views here.",
-  "@onboardingSwitchView": { "description": "Onboarding tip: toggle layout views." },
-
+  "@onboardingSwitchView": {
+    "description": "Onboarding tip: toggle layout views."
+  },
   "onboardingLongPress": "Long-press a recipe to see more options.",
-  "@onboardingLongPress": { "description": "Onboarding tip: long-press interaction." },
-
+  "@onboardingLongPress": {
+    "description": "Onboarding tip: long-press interaction."
+  },
   "deleteConfirmation": "Are you sure you want to delete this?",
-  "@deleteConfirmation": { "description": "Confirmation text before deleting an item." },
-
+  "@deleteConfirmation": {
+    "description": "Confirmation text before deleting an item."
+  },
   "recipeSaved": "Recipe saved to vault!",
-  "@recipeSaved": { "description": "Toast/snackbar after saving a recipe." },
-
+  "@recipeSaved": {
+    "description": "Toast/snackbar after saving a recipe."
+  },
   "recipeDeleted": "Recipe deleted.",
-  "@recipeDeleted": { "description": "Toast/snackbar after deleting a recipe." },
-
+  "@recipeDeleted": {
+    "description": "Toast/snackbar after deleting a recipe."
+  },
   "translationUsed": "Translated from {language}",
   "@translationUsed": {
     "description": "Indicates which language the recipe was translated from.",
-    "placeholders": { "language": { "type": "String" } }
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
   },
-
   "usageThisMonthTitle": "📊 Usage this month",
-  "@usageThisMonthTitle": { "description": "Title above usage meters." },
-
+  "@usageThisMonthTitle": {
+    "description": "Title above usage meters."
+  },
   "labelAiRecipes": "AI Recipes",
-  "@labelAiRecipes": { "description": "Label for AI recipe usage count." },
-
+  "@labelAiRecipes": {
+    "description": "Label for AI recipe usage count."
+  },
   "labelTranslations": "Translations",
-  "@labelTranslations": { "description": "Label for translation usage count." },
-
+  "@labelTranslations": {
+    "description": "Label for translation usage count."
+  },
   "usageCount": "{used} / {max}",
   "@usageCount": {
     "description": "Usage count in the form 'used / max'.",
     "placeholders": {
-      "used": { "type": "int" },
-      "max": { "type": "int" }
+      "used": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
-
   "usageOutOfThisMonth": "out of {max} this month",
   "@usageOutOfThisMonth": {
     "description": "Subtitle under AI usage meter.",
-    "placeholders": { "max": { "type": "int" } }
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
   },
-
   "usageMonthlyLimit": "monthly limit of {max}",
   "@usageMonthlyLimit": {
     "description": "Subtitle under translations usage meter.",
-    "placeholders": { "max": { "type": "int" } }
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
   },
-
   "error": "Error",
-  "@error": { "description": "Generic error dialog title." },
-
+  "@error": {
+    "description": "Generic error dialog title."
+  },
   "networkError": "Network error, please try again.",
-  "@networkError": { "description": "Shown for connectivity-related failures." },
-
+  "@networkError": {
+    "description": "Shown for connectivity-related failures."
+  },
   "unknownError": "Something went wrong. Please try again later.",
-  "@unknownError": { "description": "Fallback error message for unknown issues." },
-
+  "@unknownError": {
+    "description": "Fallback error message for unknown issues."
+  },
   "tipScanPlus": "Tap + to scan a recipe. Even leftovers deserve a place in your vault!",
-  "@tipScanPlus": { "description": "Daily tip: encourages scanning recipes." },
-
+  "@tipScanPlus": {
+    "description": "Daily tip: encourages scanning recipes."
+  },
   "tipFamilyClassic": "Got a family classic? Add it today and keep it safe forever.",
-  "@tipFamilyClassic": { "description": "Daily tip: encourages adding family recipes." },
-
+  "@tipFamilyClassic": {
+    "description": "Daily tip: encourages adding family recipes."
+  },
   "tipLongPressSort": "Long-press a recipe to sort it like a pro. Tidy vault, happy chef.",
-  "@tipLongPressSort": { "description": "Daily tip: hints at long-press to organize." },
-
+  "@tipLongPressSort": {
+    "description": "Daily tip: hints at long-press to organize."
+  },
   "tipFavouriteIt": "Don’t just save it—favourite it! Tap the heart on your top dishes.",
-  "@tipFavouriteIt": { "description": "Daily tip: promotes using favourites." },
-
+  "@tipFavouriteIt": {
+    "description": "Daily tip: promotes using favourites."
+  },
   "tipNewCategory": "Try creating a new category today. 'Cosy Autumn Meals', anyone?",
-  "@tipNewCategory": { "description": "Daily tip: suggests creating a new category." },
-
+  "@tipNewCategory": {
+    "description": "Daily tip: suggests creating a new category."
+  },
   "tipEachScanStep": "Each scan is a step closer to your own cookbook.",
-  "@tipEachScanStep": { "description": "Daily tip: motivational scanning message." },
-
+  "@tipEachScanStep": {
+    "description": "Daily tip: motivational scanning message."
+  },
   "funButter": "Remember: the secret ingredient is usually butter... or confusion.",
-  "@funButter": { "description": "Light-hearted/funny daily message." },
-
+  "@funButter": {
+    "description": "Light-hearted/funny daily message."
+  },
   "funPastaHeat": "If you can't stand the heat... you're probably overcooking pasta.",
-  "@funPastaHeat": { "description": "Light-hearted/funny daily message." },
-
+  "@funPastaHeat": {
+    "description": "Light-hearted/funny daily message."
+  },
   "funPoachIdeas": "Poach ideas, not eggs. We've got a guide for that too.",
-  "@funPoachIdeas": { "description": "Light-hearted/funny daily message." },
-
+  "@funPoachIdeas": {
+    "description": "Light-hearted/funny daily message."
+  },
   "funRusticMess": "Today's a great day to bake a mess and call it rustic.",
-  "@funRusticMess": { "description": "Light-hearted/funny daily message." },
-
+  "@funRusticMess": {
+    "description": "Light-hearted/funny daily message."
+  },
   "funCheflebration": "Saving your 100th recipe? That’s called a *cheflebration* 🎉",
-  "@funCheflebration": { "description": "Light-hearted/funny daily message with pun." },
-
+  "@funCheflebration": {
+    "description": "Light-hearted/funny daily message with pun."
+  },
   "funMoreThanGran": "That moment when your vault has more recipes than your gran.",
-  "@funMoreThanGran": { "description": "Light-hearted/funny daily message." },
-
+  "@funMoreThanGran": {
+    "description": "Light-hearted/funny daily message."
+  },
   "factTomatoes": "Tomatoes were once thought to be poisonous. Joke’s on them: 🍝",
-  "@factTomatoes": { "description": "Food fact: trivia-style daily message." },
-
+  "@factTomatoes": {
+    "description": "Food fact: trivia-style daily message."
+  },
   "factExpensivePizza": "The world’s most expensive pizza costs over £2,000. Yours: priceless.",
-  "@factExpensivePizza": { "description": "Food fact: trivia-style daily message." },
-
+  "@factExpensivePizza": {
+    "description": "Food fact: trivia-style daily message."
+  },
   "factBananasBerries": "Bananas are berries. Strawberries are not. Vault that one!",
-  "@factBananasBerries": { "description": "Food fact: trivia-style daily message." },
-
+  "@factBananasBerries": {
+    "description": "Food fact: trivia-style daily message."
+  },
   "factHoneyNeverSpoils": "Honey never spoils. Ever. Like your best recipes.",
-  "@factHoneyNeverSpoils": { "description": "Food fact: trivia-style daily message." },
-
+  "@factHoneyNeverSpoils": {
+    "description": "Food fact: trivia-style daily message."
+  },
   "factOysters": "Oysters were once considered poor man's food. Now? Luxury.",
-  "@factOysters": { "description": "Food fact: trivia-style daily message." },
-
+  "@factOysters": {
+    "description": "Food fact: trivia-style daily message."
+  },
   "factPuffLayers": "Puff pastry has over 700 layers. It also has a shortcut here.",
-  "@factPuffLayers": { "description": "Food fact: trivia-style daily message." },
-
+  "@factPuffLayers": {
+    "description": "Food fact: trivia-style daily message."
+  },
   "vaultLikeFridge": "Your vault’s like a fridge: open it often and keep it fresh.",
-  "@vaultLikeFridge": { "description": "Vault-themed motivational message." },
-
+  "@vaultLikeFridge": {
+    "description": "Vault-themed motivational message."
+  },
   "vaultBackUpTastebuds": "Back up your tastebuds. Add a new recipe today.",
-  "@vaultBackUpTastebuds": { "description": "Vault-themed motivational message." },
-
+  "@vaultBackUpTastebuds": {
+    "description": "Vault-themed motivational message."
+  },
   "vaultYouOwnIt": "You own this vault. We just keep the door tidy.",
-  "@vaultYouOwnIt": { "description": "Vault-themed motivational message." },
-
+  "@vaultYouOwnIt": {
+    "description": "Vault-themed motivational message."
+  },
   "vaultFewerWhatsForDinner": "Every recipe saved is one fewer 'What’s for dinner?'",
-  "@vaultFewerWhatsForDinner": { "description": "Vault-themed motivational message." },
-
+  "@vaultFewerWhatsForDinner": {
+    "description": "Vault-themed motivational message."
+  },
   "vaultHungryIdeas": "Your vault called. It’s hungry for new ideas.",
-  "@vaultHungryIdeas": { "description": "Vault-themed motivational message." },
-
+  "@vaultHungryIdeas": {
+    "description": "Vault-themed motivational message."
+  },
   "quoteLoveVisible": "Cooking is love made visible – save a dish that made you smile today.",
-  "@quoteLoveVisible": { "description": "Inspirational quote." },
-
+  "@quoteLoveVisible": {
+    "description": "Inspirational quote."
+  },
   "quoteCuriousCook": "No one is born a great cook – just a curious one.",
-  "@quoteCuriousCook": { "description": "Inspirational quote." },
-
+  "@quoteCuriousCook": {
+    "description": "Inspirational quote."
+  },
   "quoteStories": "Recipes are like stories. What’s yours telling today?",
-  "@quoteStories": { "description": "Inspirational quote." },
-
+  "@quoteStories": {
+    "description": "Inspirational quote."
+  },
   "quoteBurntToast": "Even burnt toast is a lesson worth saving.",
-  "@quoteBurntToast": { "description": "Inspirational quote." },
-
+  "@quoteBurntToast": {
+    "description": "Inspirational quote."
+  },
   "quoteSingleChop": "Every dish begins with a single chop.",
-  "@quoteSingleChop": { "description": "Inspirational quote." },
-
+  "@quoteSingleChop": {
+    "description": "Inspirational quote."
+  },
   "riddleTinGrin": "🧠 Riddle: I start in a tin, end in a grin, and go great with beans. What am I?",
-  "@riddleTinGrin": { "description": "Riddle-style daily engagement message." },
-
+  "@riddleTinGrin": {
+    "description": "Riddle-style daily engagement message."
+  },
   "quizPuffPastry": "💡 Quiz yourself: Can you name 3 dishes using puff pastry?",
-  "@quizPuffPastry": { "description": "Quiz-style daily engagement message." },
-
+  "@quizPuffPastry": {
+    "description": "Quiz-style daily engagement message."
+  },
   "challengeFiveIngredients": "🥄 Vault challenge: Add a recipe today with just 5 ingredients.",
-  "@challengeFiveIngredients": { "description": "Challenge-style daily engagement message." },
-
+  "@challengeFiveIngredients": {
+    "description": "Challenge-style daily engagement message."
+  },
   "triviaPoachBoil": "🍳 Trivia: What’s the difference between poaching and boiling? Hint: temperature!",
-  "@triviaPoachBoil": { "description": "Trivia-style daily engagement message." },
-
+  "@triviaPoachBoil": {
+    "description": "Trivia-style daily engagement message."
+  },
   "rollOldestRecipe": "🎲 Roll the dice—try cooking the oldest recipe in your vault!",
-  "@rollOldestRecipe": { "description": "Challenge-style daily engagement message." },
-
+  "@rollOldestRecipe": {
+    "description": "Challenge-style daily engagement message."
+  },
   "encouragementScribbledNote": "Today’s a great day to turn that scribbled note into a saved recipe.",
-  "@encouragementScribbledNote": { "description": "Encouragement message to capture a loose recipe." },
-
+  "@encouragementScribbledNote": {
+    "description": "Encouragement message to capture a loose recipe."
+  },
   "encouragementDeliciousNotPerfect": "Don't aim for perfect—aim for delicious. Then save it!",
-  "@encouragementDeliciousNotPerfect": { "description": "Encouragement message about imperfection." },
-
+  "@encouragementDeliciousNotPerfect": {
+    "description": "Encouragement message about imperfection."
+  },
   "encouragementStockedWithJoy": "Keep your vault like your kitchen: stocked with joy and ready to use.",
-  "@encouragementStockedWithJoy": { "description": "Encouragement message about maintaining the vault." },
-
+  "@encouragementStockedWithJoy": {
+    "description": "Encouragement message about maintaining the vault."
+  },
   "encouragementLegacyCookbook": "Each recipe saved is one step closer to your own legacy cookbook.",
-  "@encouragementLegacyCookbook": { "description": "Encouragement message about long-term collection." },
-
+  "@encouragementLegacyCookbook": {
+    "description": "Encouragement message about long-term collection."
+  },
   "changePasswordTitle": "Change Password",
-  "@changePasswordTitle": { "description": "Title for the change password screen." },
-
+  "@changePasswordTitle": {
+    "description": "Title for the change password screen."
+  },
   "passwordUpdated": "Password updated successfully",
-  "@passwordUpdated": { "description": "Toast/snackbar after a successful password change." },
-
+  "@passwordUpdated": {
+    "description": "Toast/snackbar after a successful password change."
+  },
   "currentPasswordLabel": "Current Password",
-  "@currentPasswordLabel": { "description": "Label for current password input field." },
-
+  "@currentPasswordLabel": {
+    "description": "Label for current password input field."
+  },
   "newPasswordLabel": "New Password",
-  "@newPasswordLabel": { "description": "Label for new password input field." },
-
+  "@newPasswordLabel": {
+    "description": "Label for new password input field."
+  },
   "confirmPasswordLabel": "Confirm New Password",
-  "@confirmPasswordLabel": { "description": "Label for confirm password input field." },
-
+  "@confirmPasswordLabel": {
+    "description": "Label for confirm password input field."
+  },
   "enterCurrentPassword": "Enter your current password",
-  "@enterCurrentPassword": { "description": "Helper text for current password input." },
-
+  "@enterCurrentPassword": {
+    "description": "Helper text for current password input."
+  },
   "passwordMinLength": "Must be at least 6 characters",
-  "@passwordMinLength": { "description": "Validation message for minimum password length." },
-
+  "@passwordMinLength": {
+    "description": "Validation message for minimum password length."
+  },
   "passwordsDoNotMatch": "Passwords do not match",
-  "@passwordsDoNotMatch": { "description": "Validation message when password confirmation fails." },
-
+  "@passwordsDoNotMatch": {
+    "description": "Validation message when password confirmation fails."
+  },
   "updatePasswordButton": "Update Password",
-  "@updatePasswordButton": { "description": "CTA to submit password change." },
-
+  "@updatePasswordButton": {
+    "description": "CTA to submit password change."
+  },
   "emailLabel": "Email",
-  "@emailLabel": { "description": "Label for email input field." },
-
+  "@emailLabel": {
+    "description": "Label for email input field."
+  },
   "passwordLabel": "Password",
-  "@passwordLabel": { "description": "Label for password input field." },
-
+  "@passwordLabel": {
+    "description": "Label for password input field."
+  },
   "signInWithEmail": "Sign in with Email",
-  "@signInWithEmail": { "description": "CTA to sign in using email/password." },
-
+  "@signInWithEmail": {
+    "description": "CTA to sign in using email/password."
+  },
   "signInWithGoogle": "Sign in with Google",
-  "@signInWithGoogle": { "description": "CTA to sign in using Google account." },
-
+  "@signInWithGoogle": {
+    "description": "CTA to sign in using Google account."
+  },
   "signInWithApple": "Sign in with Apple",
-  "@signInWithApple": { "description": "CTA to sign in using Apple account." },
-
+  "@signInWithApple": {
+    "description": "CTA to sign in using Apple account."
+  },
   "registerCta": "Don't have an account? Register",
-  "@registerCta": { "description": "Prompt/CTA to navigate to registration." },
-
+  "@registerCta": {
+    "description": "Prompt/CTA to navigate to registration."
+  },
   "signInCancelled": "Sign-in was cancelled.",
-  "@signInCancelled": { "description": "Shown when a third-party sign-in flow is cancelled by the user." },
-
+  "@signInCancelled": {
+    "description": "Shown when a third-party sign-in flow is cancelled by the user."
+  },
   "authInvalidCredential": "Invalid email or password.",
-  "@authInvalidCredential": { "description": "Auth error for invalid credentials." },
-
+  "@authInvalidCredential": {
+    "description": "Auth error for invalid credentials."
+  },
   "authUserNotFound": "No account found with that email.",
-  "@authUserNotFound": { "description": "Auth error when no user exists for the provided email." },
-
+  "@authUserNotFound": {
+    "description": "Auth error when no user exists for the provided email."
+  },
   "authWrongPassword": "Incorrect password.",
-  "@authWrongPassword": { "description": "Auth error when password is incorrect." },
-
+  "@authWrongPassword": {
+    "description": "Auth error when password is incorrect."
+  },
   "authTooManyRequests": "Too many attempts. Please try again later.",
-  "@authTooManyRequests": { "description": "Rate-limiting/lockout auth error message." },
-
+  "@authTooManyRequests": {
+    "description": "Rate-limiting/lockout auth error message."
+  },
   "createAccountTitle": "Create your\\nRecipeVault account",
-  "@createAccountTitle": { "description": "Title on the registration screen (with forced line break)." },
-
+  "@createAccountTitle": {
+    "description": "Title on the registration screen (with forced line break)."
+  },
   "trialLine": "Enjoy a 7-day free trial – no card required.",
-  "@trialLine": { "description": "Subheading explaining registration includes a free trial." },
-
+  "@trialLine": {
+    "description": "Subheading explaining registration includes a free trial."
+  },
   "createAccountButton": "Create Account",
-  "@createAccountButton": { "description": "CTA to complete registration." },
-
+  "@createAccountButton": {
+    "description": "CTA to complete registration."
+  },
   "continueWithGoogle": "Continue with Google",
-  "@continueWithGoogle": { "description": "Alternate registration CTA with Google." },
-
+  "@continueWithGoogle": {
+    "description": "Alternate registration CTA with Google."
+  },
   "continueWithApple": "Continue with Apple",
-  "@continueWithApple": { "description": "Alternate registration CTA with Apple." },
-
+  "@continueWithApple": {
+    "description": "Alternate registration CTA with Apple."
+  },
   "alreadyHaveAccountCta": "Already have an account? Log in",
-  "@alreadyHaveAccountCta": { "description": "Link/CTA to go to login screen." },
-
+  "@alreadyHaveAccountCta": {
+    "description": "Link/CTA to go to login screen."
+  },
   "registrationFailed": "Registration failed",
-  "@registrationFailed": { "description": "Generic error title when registration fails." },
-
+  "@registrationFailed": {
+    "description": "Generic error title when registration fails."
+  },
   "googleSignupCancelled": "Google sign-up was cancelled.",
-  "@googleSignupCancelled": { "description": "Shown when Google sign-up flow is cancelled." },
-
+  "@googleSignupCancelled": {
+    "description": "Shown when Google sign-up flow is cancelled."
+  },
   "googleSignupFailed": "Google sign-up failed",
-  "@googleSignupFailed": { "description": "Shown when Google sign-up flow fails." },
-
+  "@googleSignupFailed": {
+    "description": "Shown when Google sign-up flow fails."
+  },
   "appleSignupCancelled": "Apple sign-up was cancelled.",
-  "@appleSignupCancelled": { "description": "Shown when Apple sign-up flow is cancelled." },
-
+  "@appleSignupCancelled": {
+    "description": "Shown when Apple sign-up flow is cancelled."
+  },
   "appleSignupFailed": "Apple sign-up failed",
-  "@appleSignupFailed": { "description": "Shown when Apple sign-up flow fails." },
-
+  "@appleSignupFailed": {
+    "description": "Shown when Apple sign-up flow fails."
+  },
   "purchaseSuccess": "Purchase successful!",
-  "@purchaseSuccess": { "description": "Toast/snackbar after a successful purchase." },
-
+  "@purchaseSuccess": {
+    "description": "Toast/snackbar after a successful purchase."
+  },
   "purchaseCancelled": "Purchase cancelled.",
-  "@purchaseCancelled": { "description": "Toast/snackbar when user cancels a purchase flow." },
-
+  "@purchaseCancelled": {
+    "description": "Toast/snackbar when user cancels a purchase flow."
+  },
   "purchaseFailed": "Purchase failed. Please try again.",
-  "@purchaseFailed": { "description": "Toast/snackbar when purchase fails." },
-
+  "@purchaseFailed": {
+    "description": "Toast/snackbar when purchase fails."
+  },
   "unexpectedError": "An unexpected error occurred. Please try again.",
-  "@unexpectedError": { "description": "Generic unexpected error message." },
-
+  "@unexpectedError": {
+    "description": "Generic unexpected error message."
+  },
   "chefModeTitle": "Chef Mode",
-  "@chefModeTitle": { "description": "Title for Chef Mode feature/screen." },
-
+  "@chefModeTitle": {
+    "description": "Title for Chef Mode feature/screen."
+  },
   "paywallHeader": "Unlock your full culinary potential",
-  "@paywallHeader": { "description": "Header text at the top of the paywall screen." },
-
+  "@paywallHeader": {
+    "description": "Header text at the top of the paywall screen."
+  },
   "badgeCurrentPlan": "Current Plan",
-  "@badgeCurrentPlan": { "description": "Badge label marking the user’s current plan." },
-
+  "@badgeCurrentPlan": {
+    "description": "Badge label marking the user’s current plan."
+  },
   "badgeBestValue": "Best Value",
-  "@badgeBestValue": { "description": "Badge label highlighting best-value plan." },
-
+  "@badgeBestValue": {
+    "description": "Badge label highlighting best-value plan."
+  },
   "badgeFreeTrial": "Free Trial",
-  "@badgeFreeTrial": { "description": "Badge label highlighting a free trial." },
-
+  "@badgeFreeTrial": {
+    "description": "Badge label highlighting a free trial."
+  },
   "noPlans": "No subscription plans available at the moment.",
-  "@noPlans": { "description": "Shown when the app cannot load any subscription plans." },
-
+  "@noPlans": {
+    "description": "Shown when the app cannot load any subscription plans."
+  },
   "legalAgreePrefix": "By continuing, you agree to our",
-  "@legalAgreePrefix": { "description": "Lead-in text before terms/privacy links." },
-
+  "@legalAgreePrefix": {
+    "description": "Lead-in text before terms/privacy links."
+  },
   "legalTerms": "Terms of Service",
-  "@legalTerms": { "description": "Link label to Terms of Service." },
-
+  "@legalTerms": {
+    "description": "Link label to Terms of Service."
+  },
   "legalAnd": "and",
-  "@legalAnd": { "description": "Conjunction between terms/privacy links." },
-
+  "@legalAnd": {
+    "description": "Conjunction between terms/privacy links."
+  },
   "legalPrivacy": "Privacy Policy",
-  "@legalPrivacy": { "description": "Link label to Privacy Policy." },
-
+  "@legalPrivacy": {
+    "description": "Link label to Privacy Policy."
+  },
   "legalAutoRenew": "Subscriptions auto-renew unless cancelled.",
-  "@legalAutoRenew": { "description": "Disclosure about auto-renewal." },
-
+  "@legalAutoRenew": {
+    "description": "Disclosure about auto-renewal."
+  },
   "legalManageApple": "Manage your subscription in Apple Settings.",
-  "@legalManageApple": { "description": "Apple-specific subscription management guidance." },
-
+  "@legalManageApple": {
+    "description": "Apple-specific subscription management guidance."
+  },
   "manageOrCancelCta": "Manage or cancel your subscription",
-  "@manageOrCancelCta": { "description": "CTA to manage or cancel a subscription." },
-
+  "@manageOrCancelCta": {
+    "description": "CTA to manage or cancel a subscription."
+  },
   "planDefaultDescription": "Enjoy full access to RecipeVault features and AI-powered tools.",
-  "@planDefaultDescription": { "description": "Fallback description for plans when a specific one is not provided." },
-
+  "@planDefaultDescription": {
+    "description": "Fallback description for plans when a specific one is not provided."
+  },
   "trialEndedTitle": "Trial Ended",
-  "@trialEndedTitle": { "description": "Title shown when the free trial has ended." },
-
+  "@trialEndedTitle": {
+    "description": "Title shown when the free trial has ended."
+  },
   "trialEndedHeadline": "Your free trial has ended",
-  "@trialEndedHeadline": { "description": "Headline shown on the trial-ended screen." },
-
+  "@trialEndedHeadline": {
+    "description": "Headline shown on the trial-ended screen."
+  },
   "trialEndedDescription": "To continue using RecipeVault AI features like scanning, translation, and image uploads, please choose a plan below.",
-  "@trialEndedDescription": { "description": "Body copy explaining next steps after trial ends." },
-
+  "@trialEndedDescription": {
+    "description": "Body copy explaining next steps after trial ends."
+  },
   "seePlanOptions": "See all plan options",
-  "@seePlanOptions": { "description": "CTA to view all available subscription plans." },
-
+  "@seePlanOptions": {
+    "description": "CTA to view all available subscription plans."
+  },
   "appBarToggleViewMode": "Toggle view mode",
-  "@appBarToggleViewMode": { "description": "Tooltip for switching between grid and list layouts." },
-
+  "@appBarToggleViewMode": {
+    "description": "Tooltip for switching between grid and list layouts."
+  },
   "appBarRefreshSubscription": "Refresh your subscription plan",
-  "@appBarRefreshSubscription": { "description": "Tooltip for button that refreshes subscription status." },
-
+  "@appBarRefreshSubscription": {
+    "description": "Tooltip for button that refreshes subscription status."
+  },
   "subscriptionRefreshed": "Subscription plan refreshed.",
-  "@subscriptionRefreshed": { "description": "Snackbar after subscription refresh completes." },
-
+  "@subscriptionRefreshed": {
+    "description": "Snackbar after subscription refresh completes."
+  },
   "upgradeToUnlockTitle": "Upgrade to Unlock",
-  "@upgradeToUnlockTitle": { "description": "Dialog title when a feature is locked behind a paid plan." },
-
+  "@upgradeToUnlockTitle": {
+    "description": "Dialog title when a feature is locked behind a paid plan."
+  },
   "imageUploadLockedMessage": "Creating recipes from images is available on paid plans.",
-  "@imageUploadLockedMessage": { "description": "Dialog body explaining image-based creation is paid-only." },
-
+  "@imageUploadLockedMessage": {
+    "description": "Dialog body explaining image-based creation is paid-only."
+  },
   "upgradeToUnlockFeature": "Upgrade to unlock this feature.",
-  "@upgradeToUnlockFeature": { "description": "Secondary message encouraging upgrade from the lock dialog." },
-
+  "@upgradeToUnlockFeature": {
+    "description": "Secondary message encouraging upgrade from the lock dialog."
+  },
   "createFromImagesPaid": "Creating recipes from images is available on paid plans.",
-  "@createFromImagesPaid": { "description": "Inline warning when free users attempt image creation." },
-
+  "@createFromImagesPaid": {
+    "description": "Inline warning when free users attempt image creation."
+  },
   "upgradeToUnlockBody": "Upgrade to unlock this feature.",
-  "@upgradeToUnlockBody": { "description": "Secondary message for locked feature dialog (duplicate-friendly)." },
-
+  "@upgradeToUnlockBody": {
+    "description": "Secondary message for locked feature dialog (duplicate-friendly)."
+  },
   "tabCreate": "Create",
-  "@tabCreate": { "description": "Bottom navigation label for the Create tab." },
-
+  "@tabCreate": {
+    "description": "Bottom navigation label for the Create tab."
+  },
   "tabVault": "Vault",
-  "@tabVault": { "description": "Bottom navigation label for the Vault tab." },
-
+  "@tabVault": {
+    "description": "Bottom navigation label for the Vault tab."
+  },
   "tabProfile": "Profile",
-  "@tabProfile": { "description": "Bottom navigation label for the Profile tab." },
-
+  "@tabProfile": {
+    "description": "Bottom navigation label for the Profile tab."
+  },
   "viewPlans": "View Plans",
-  "@viewPlans": { "description": "Button text to navigate to the paywall/plans screen." },
-
+  "@viewPlans": {
+    "description": "Button text to navigate to the paywall/plans screen."
+  },
   "addCategoryTitle": "Add New Category",
-  "@addCategoryTitle": { "description": "Dialog title for creating a new category." },
-
+  "@addCategoryTitle": {
+    "description": "Dialog title for creating a new category."
+  },
   "addCategoryHint": "e.g. Snacks",
-  "@addCategoryHint": { "description": "Hint text inside the new category name input." },
-
+  "@addCategoryHint": {
+    "description": "Hint text inside the new category name input."
+  },
   "add": "Add",
-  "@add": { "description": "Generic Add action label used in buttons/menus." },
-
+  "@add": {
+    "description": "Generic Add action label used in buttons/menus."
+  },
   "usage": "Usage",
-  "@usage": { "description": "Label for usage metrics button or section." },
-
+  "@usage": {
+    "description": "Label for usage metrics button or section."
+  },
   "createRecipe": "Create Recipe",
-  "@createRecipe": { "description": "Speed-dial/action label to start recipe creation." },
-
+  "@createRecipe": {
+    "description": "Speed-dial/action label to start recipe creation."
+  },
   "upgradeToCreateRecipe": "Upgrade to Create Recipe",
-  "@upgradeToCreateRecipe": { "description": "Locked label shown when user’s plan cannot create recipes." },
-
+  "@upgradeToCreateRecipe": {
+    "description": "Locked label shown when user’s plan cannot create recipes."
+  },
   "upgradeToAddCategory": "Upgrade to Add Category",
-  "@upgradeToAddCategory": { "description": "Locked label shown when user’s plan cannot add categories." },
-
+  "@upgradeToAddCategory": {
+    "description": "Locked label shown when user’s plan cannot add categories."
+  },
   "recipeCreationLimited": "🔒 Recipe creation is limited to Home Chef and Master Chef plans.",
-  "@recipeCreationLimited": { "description": "SnackBar text when recipe creation is restricted by plan." },
-
+  "@recipeCreationLimited": {
+    "description": "SnackBar text when recipe creation is restricted by plan."
+  },
   "categoryCreationLimited": "🔒 Category creation is limited to Home Chef and Master Chef plans.",
-  "@categoryCreationLimited": { "description": "SnackBar text when category creation is restricted by plan." }
+  "@categoryCreationLimited": {
+    "description": "SnackBar text when category creation is restricted by plan."
+  },
+  "gotIt": "Got it",
+  "@gotIt": {
+    "description": "Button text for dismissing onboarding/info bubbles"
+  },
+  "editRecipeTitle": "Edit Recipe",
+  "@editRecipeTitle": {
+    "description": "Title of the edit recipe screen"
+  },
+  "editRecipeFieldTitle": "Title",
+  "@editRecipeFieldTitle": {
+    "description": "Label for recipe title field"
+  },
+  "editRecipeFieldIngredients": "Ingredients (one per line)",
+  "@editRecipeFieldIngredients": {
+    "description": "Label for ingredients field"
+  },
+  "editRecipeFieldSteps": "Steps",
+  "@editRecipeFieldSteps": {
+    "description": "Label for recipe steps field"
+  },
+  "editRecipeSaving": "Saving...",
+  "@editRecipeSaving": {
+    "description": "Label shown while recipe is being saved"
+  },
+  "editRecipeSaveChanges": "Save Changes",
+  "@editRecipeSaveChanges": {
+    "description": "Label for button to save changes"
+  },
+  "menuFavourite": "Favourite",
+  "@menuFavourite": {
+    "description": "Popup menu item to mark a recipe as favourite"
+  },
+  "menuUnfavourite": "Unfavourite",
+  "@menuUnfavourite": {
+    "description": "Popup menu item to remove a recipe from favourites"
+  },
+  "menuAssignCategories": "Assign categories",
+  "@menuAssignCategories": {
+    "description": "Popup menu item to assign categories to a recipe"
+  },
+  "menuMoreOptions": "More options",
+  "@menuMoreOptions": {
+    "description": "Tooltip/accessible label for the overflow menu button on recipe cards"
+  },
+  "systemAll": "All",
+  "@systemAll": {
+    "description": "System category: show all recipes"
+  },
+  "systemTranslated": "Translated",
+  "@systemTranslated": {
+    "description": "System category: recipes created via translation"
+  },
+  "defaultBreakfast": "Breakfast",
+  "@defaultBreakfast": {
+    "description": "Default category name"
+  },
+  "defaultMain": "Main",
+  "@defaultMain": {
+    "description": "Default category name for main course"
+  },
+  "defaultDessert": "Dessert",
+  "@defaultDessert": {
+    "description": "Default category name for desserts"
+  },
+  "chipDeleteCategoryTooltip": "Remove category",
+  "@chipDeleteCategoryTooltip": {
+    "description": "Tooltip for the delete icon on a category chip"
+  },
+  "addToFavourites": "Add to favourites",
+  "@addToFavourites": {
+    "description": "Tooltip/action for marking an item as favourite"
+  },
+  "removeFromFavourites": "Remove from favourites",
+  "@removeFromFavourites": {
+    "description": "Tooltip/action for unmarking an item as favourite"
+  },
+  "shareAsPdf": "Share as PDF",
+  "@shareAsPdf": {
+    "description": "Tooltip / action to export and share the recipe as a PDF"
+  },
+  "tapToViewRecipe": "Tap to view recipe",
+  "@tapToViewRecipe": {
+    "description": "Small hint shown under a recipe title in list view."
+  }
 }

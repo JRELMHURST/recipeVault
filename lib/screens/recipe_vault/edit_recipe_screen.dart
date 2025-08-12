@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
 
@@ -105,10 +106,11 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Recipe')),
+      appBar: AppBar(title: Text(l10n.editRecipeTitle)),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
@@ -119,20 +121,20 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildTextField(
-                  label: 'Title',
+                  label: l10n.editRecipeFieldTitle,
                   controller: _titleController,
                   maxLines: 1,
                   action: TextInputAction.next,
                 ),
                 const SizedBox(height: 24),
                 _buildTextField(
-                  label: 'Ingredients (one per line)',
+                  label: l10n.editRecipeFieldIngredients,
                   controller: _ingredientsController,
                   maxLines: 6,
                 ),
                 const SizedBox(height: 24),
                 _buildTextField(
-                  label: 'Steps',
+                  label: l10n.editRecipeFieldSteps,
                   controller: _instructionsController,
                   maxLines: 10,
                 ),
@@ -143,7 +145,9 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isSaving ? null : _saveChanges,
-        label: _isSaving ? const Text('Saving...') : const Text('Save Changes'),
+        label: Text(
+          _isSaving ? l10n.editRecipeSaving : l10n.editRecipeSaveChanges,
+        ),
         icon: const Icon(Icons.save),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_long_press_menu.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class RecipeCompactView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
@@ -36,6 +37,8 @@ class RecipeCompactView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return GridView.builder(
       padding: const EdgeInsets.all(8),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -48,50 +51,66 @@ class RecipeCompactView extends StatelessWidget {
       itemBuilder: (context, index) {
         final recipe = recipes[index];
 
-        return GestureDetector(
-          onTap: () => onTap(recipe),
-          onLongPress: () => _showActionMenu(context, recipe),
-          child: Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
-                    ? Image.network(
-                        recipe.imageUrl!,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _fallbackIcon(),
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return Container(
-                            color: Colors.deepPurple.shade50,
-                            alignment: Alignment.center,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
-                          );
-                        },
-                      )
-                    : _fallbackIcon(),
-              ),
-              Positioned(
-                top: 4,
-                right: 4,
-                child: IconButton(
-                  icon: Icon(
-                    recipe.isFavourite ? Icons.favorite : Icons.favorite_border,
-                    color: recipe.isFavourite ? Colors.redAccent : Colors.white,
-                    size: 26,
-                  ),
-                  onPressed: () => onToggleFavourite(recipe),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  splashRadius: 20,
+        return Semantics(
+          label: '${l10n.appTitle}: ${recipe.title}',
+          button: true,
+          child: GestureDetector(
+            onTap: () => onTap(recipe),
+            onLongPress: () => _showActionMenu(context, recipe),
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
+                      ? Image.network(
+                          recipe.imageUrl!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _fallbackIcon(),
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return Semantics(
+                              label: l10n.loading,
+                              child: Container(
+                                color: Colors.deepPurple.shade50,
+                                alignment: Alignment.center,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : _fallbackIcon(),
                 ),
-              ),
-            ],
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Tooltip(
+                    message: recipe.isFavourite
+                        ? l10n.removeFromFavourites
+                        : l10n.addToFavourites,
+                    child: IconButton(
+                      icon: Icon(
+                        recipe.isFavourite
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: recipe.isFavourite
+                            ? Colors.redAccent
+                            : Colors.white,
+                        size: 26,
+                      ),
+                      onPressed: () => onToggleFavourite(recipe),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      splashRadius: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

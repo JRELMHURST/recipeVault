@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_long_press_menu.dart';
 
@@ -27,6 +28,8 @@ class RecipeGridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+
     return GridView.builder(
       padding: const EdgeInsets.all(12),
       itemCount: recipes.length,
@@ -65,6 +68,7 @@ class RecipeGridView extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               child: Stack(
                 children: [
+                  // Image (with loader + fallback)
                   recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
                       ? Image.network(
                           recipe.imageUrl!,
@@ -76,18 +80,20 @@ class RecipeGridView extends StatelessWidget {
                             return Container(
                               color: Colors.deepPurple.shade50,
                               alignment: Alignment.center,
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 2,
+                              child: Semantics(
+                                label: l.loading,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             );
                           },
-                          errorBuilder: (context, error, stackTrace) {
-                            return _fallbackIcon();
-                          },
+                          errorBuilder: (context, error, stackTrace) =>
+                              _fallbackIcon(),
                         )
                       : _fallbackIcon(),
 
-                  // 🌙 Title overlay
+                  // Title overlay
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -117,13 +123,13 @@ class RecipeGridView extends StatelessWidget {
                     ),
                   ),
 
-                  // ❤️ Favourite icon
+                  // Favourite icon button
                   Positioned(
-                    top: 10,
-                    right: 10,
-                    child: GestureDetector(
-                      onTap: () => onToggleFavourite(recipe),
-                      child: Icon(
+                    top: 6,
+                    right: 6,
+                    child: IconButton(
+                      onPressed: () => onToggleFavourite(recipe),
+                      icon: Icon(
                         recipe.isFavourite
                             ? Icons.favorite
                             : Icons.favorite_border,
@@ -139,6 +145,10 @@ class RecipeGridView extends StatelessWidget {
                           ),
                         ],
                       ),
+                      tooltip: l.favourites, // neutral, no new ARB keys needed
+                      splashRadius: 22,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
                   ),
                 ],

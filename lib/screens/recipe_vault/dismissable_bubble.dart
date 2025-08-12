@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class DismissibleBubble extends StatefulWidget {
   final String message;
@@ -58,6 +59,8 @@ class _DismissibleBubbleState extends State<DismissibleBubble>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Positioned(
       top: widget.position.dy,
       left: widget.position.dx,
@@ -76,7 +79,7 @@ class _DismissibleBubbleState extends State<DismissibleBubble>
                   topLeft: Radius.circular(12),
                   topRight: Radius.circular(12),
                   bottomLeft: Radius.circular(12),
-                  bottomRight: Radius.circular(4), // Less rounded corner
+                  bottomRight: Radius.circular(4),
                 ),
                 boxShadow: const [
                   BoxShadow(
@@ -119,7 +122,7 @@ class _DismissibleBubbleState extends State<DismissibleBubble>
                             fontSize: 12,
                           ),
                         ),
-                        child: const Text('Got it'),
+                        child: Text(l10n.gotIt),
                       ),
                     ),
                   ],

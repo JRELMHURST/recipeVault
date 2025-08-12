@@ -6,6 +6,7 @@ import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_utils.dart';
 import 'package:recipe_vault/utils/recipe_pdf_generator.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 void showRecipeDialog(BuildContext context, RecipeCardModel recipe) {
   final markdown = formatRecipeMarkdown(recipe);
@@ -74,16 +75,13 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
 
   Future<void> _loadAndUpdateIconColor() async {
     if (widget.imageUrl == null || widget.imageUrl!.isEmpty) return;
-
     try {
       final palette = await PaletteGenerator.fromImageProvider(
         NetworkImage(widget.imageUrl!),
         size: const Size(100, 100),
       );
-
       final dominant = palette.dominantColor?.color;
       final brightness = dominant?.computeLuminance();
-
       setState(() {
         iconColor = (brightness != null && brightness > 0.5)
             ? Colors.black
@@ -108,12 +106,13 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
       imageUrl: widget.imageUrl,
       createdAt: DateTime.now(),
     );
-
     await RecipePdfGenerator.sharePdf(recipe);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Stack(
       children: [
         SingleChildScrollView(
@@ -137,11 +136,16 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
                         });
                         return child;
                       }
-                      return Container(
-                        height: 200,
-                        color: Colors.deepPurple.shade50,
-                        alignment: Alignment.center,
-                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      return Semantics(
+                        label: l10n.loading,
+                        child: Container(
+                          height: 200,
+                          color: Colors.deepPurple.shade50,
+                          alignment: Alignment.center,
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        ),
                       );
                     },
                     errorBuilder: (_, __, ___) => Container(
@@ -150,6 +154,7 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
                       alignment: Alignment.center,
                       child: const Icon(Icons.broken_image, size: 40),
                     ),
+                    semanticLabel: widget.title, // a11y: describe the image
                   ),
                 ),
               Padding(
@@ -183,7 +188,7 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
                         ),
                       ],
                     ),
-                    tooltip: 'Share as PDF',
+                    tooltip: l10n.shareAsPdf,
                     onPressed: () => _shareAsPdf(context),
                   ),
                 ),
@@ -205,7 +210,7 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
                         ),
                       ],
                     ),
-                    tooltip: 'Close',
+                    tooltip: l10n.close, // already in your ARB
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),

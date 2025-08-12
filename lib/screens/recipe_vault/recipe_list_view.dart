@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_long_press_menu.dart';
 import 'package:recipe_vault/widgets/network_recipe_image.dart';
@@ -31,6 +32,7 @@ class RecipeListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
 
     return ListView.builder(
       padding: const EdgeInsets.all(12),
@@ -40,6 +42,36 @@ class RecipeListView extends StatelessWidget {
 
         return Dismissible(
           key: Key(recipe.id),
+
+          // Ask BEFORE dismissing
+          confirmDismiss: (direction) async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: Text(l.delete), // keep it short; localized
+                content: Text(l.deleteConfirmation),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: Text(l.cancel),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: Text(l.delete),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed == true) {
+              onDelete(recipe);
+              return true;
+            }
+            return false;
+          },
+
           background: Container(
             color: Colors.red,
             alignment: Alignment.centerRight,
@@ -47,34 +79,7 @@ class RecipeListView extends StatelessWidget {
             child: const Icon(Icons.delete, color: Colors.white),
           ),
           direction: DismissDirection.endToStart,
-          onDismissed: (_) async {
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text("Delete Recipe?"),
-                content: const Text(
-                  "Are you sure you want to delete this recipe? This cannot be undone.",
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    child: const Text("Cancel"),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                    ),
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    child: const Text("Delete"),
-                  ),
-                ],
-              ),
-            );
 
-            if (confirmed == true) {
-              onDelete(recipe);
-            }
-          },
           child: GestureDetector(
             onTap: () => onTap(recipe),
             onLongPress: () => RecipeLongPressMenu.show(
@@ -123,8 +128,9 @@ class RecipeListView extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
+                          // Add a small localized hint
                           Text(
-                            'Tap to view recipe',
+                            l.tapToViewRecipe, // <-- add this key to ARB
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: Colors.grey,
                             ),
@@ -133,22 +139,19 @@ class RecipeListView extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            recipe.isFavourite
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            color: recipe.isFavourite
-                                ? Colors.redAccent
-                                : Colors.grey,
-                            size: 20,
-                          ),
-                          onPressed: () => onToggleFavourite(recipe),
-                        ),
-                      ],
+                    IconButton(
+                      onPressed: () => onToggleFavourite(recipe),
+                      tooltip: l.favourites, // neutral tooltip
+                      icon: Icon(
+                        recipe.isFavourite
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: recipe.isFavourite
+                            ? Colors.redAccent
+                            : Colors.grey,
+                        size: 20,
+                      ),
+                      splashRadius: 22,
                     ),
                   ],
                 ),

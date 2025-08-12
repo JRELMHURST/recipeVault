@@ -97,14 +97,14 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    t.dailyTipTitle,
+                    t.dailyTipTitle, // Localised tip title
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    message,
+                    message, // Localised or fallback daily message
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w500,
@@ -117,7 +117,7 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble> {
               ),
             ),
             IconButton(
-              tooltip: t.dismiss,
+              tooltip: t.dismiss, // Localised dismiss tooltip
               icon: const Icon(Icons.close_rounded, size: 18),
               color: iconColour,
               onPressed: _dismissBubble,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-// NOTE: your file is spelled "dismissable_bubble.dart" in the project notes.
-// If it's actually "dismissible_bubble.dart", change the import accordingly.
+import 'package:recipe_vault/l10n/app_localizations.dart';
+// If your file is actually named "dismissible_bubble.dart", update this import.
 import 'package:recipe_vault/screens/recipe_vault/dismissable_bubble.dart';
 
 class RecipeVaultBubbles extends StatelessWidget {
@@ -23,22 +23,23 @@ class RecipeVaultBubbles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Must be a child of a Stack (you already are).
+    final t = AppLocalizations.of(context);
+
+    // Must be placed inside a Stack in the parent.
     return IgnorePointer(
-      // still lets Dismissible/InkWell receive taps
-      ignoring: false,
+      ignoring: false, // allow taps to reach Dismissible/InkWell
       child: Stack(
         children: [
           if (showViewToggle)
             DismissibleBubble(
-              message: 'Switch views here',
+              message: t.vaultBubbleSwitchViews,
               // near the AppBar/right side
               position: _posFrom(context, top: 56, right: 16),
               onDismiss: onDismissViewToggle,
             ),
           if (showLongPress)
             DismissibleBubble(
-              message: 'Long‑press a recipe for options',
+              message: t.vaultBubbleLongPress,
               // roughly centre; nudged up a bit
               position: _posFrom(
                 context,
@@ -49,7 +50,7 @@ class RecipeVaultBubbles extends StatelessWidget {
             ),
           if (showScan)
             DismissibleBubble(
-              message: 'Scan recipes with the + button',
+              message: t.vaultBubbleScan,
               // above FAB area (bottom‑right)
               position: _posFrom(context, bottom: 96, right: 16),
               onDismiss: onDismissScan,

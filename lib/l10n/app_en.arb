@@ -936,5 +936,17 @@
   "bubbleLongPress": "📌 Long-press a recipe\nTap and hold to favourite or assign a category.",
   "@bubbleLongPress": {
     "description": "Onboarding bubble message explaining how to long-press a recipe card to favourite or assign a category."
+  },
+  "vaultBubbleSwitchViews": "Switch views here",
+  "@vaultBubbleSwitchViews": {
+    "description": "Onboarding bubble prompting the user to change between grid/list views."
+  },
+  "vaultBubbleLongPress": "Long‑press a recipe for options",
+  "@vaultBubbleLongPress": {
+    "description": "Onboarding bubble explaining long-press on a recipe card."
+  },
+  "vaultBubbleScan": "Scan recipes with the + button",
+  "@vaultBubbleScan": {
+    "description": "Onboarding bubble pointing to the create/+ scan entry point."
   }
 }

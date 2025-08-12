@@ -5,8 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'package:recipe_vault/core/daily_message_bubble.dart.dart';
+
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
@@ -39,18 +40,26 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
   _recipeStreamSubscription;
 
-  String _selectedCategory = 'All';
+  // IMPORTANT: these are the internal keys used in storage/filters
+  static const String kAll = 'All';
+  static const String kFav = 'Favourites';
+  static const String kTranslated = 'Translated';
+  static const String kBreakfast = 'Breakfast';
+  static const String kMain = 'Main';
+  static const String kDessert = 'Dessert';
+
+  String _selectedCategory = kAll;
   String _searchQuery = '';
 
   static const List<String> _defaultCategories = [
-    'Favourites',
-    'Translated',
-    'Breakfast',
-    'Main',
-    'Dessert',
+    kFav,
+    kTranslated,
+    kBreakfast,
+    kMain,
+    kDessert,
   ];
 
-  List<String> _allCategories = const ['All', 'Favourites', 'Translated'];
+  List<String> _allCategories = const [kAll, kFav, kTranslated];
   List<RecipeCardModel> _allRecipes = [];
 
   bool _showViewModeBubble = false;
@@ -62,8 +71,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     return _allRecipes.where((recipe) {
       final categories = recipe.categories;
       final matchesCategory =
-          _selectedCategory == 'All' ||
-          (_selectedCategory == 'Favourites' && recipe.isFavourite) ||
+          _selectedCategory == kAll ||
+          (_selectedCategory == kFav && recipe.isFavourite) ||
           categories.contains(_selectedCategory);
 
       final matchesSearch =
@@ -72,6 +81,37 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
       return matchesCategory && matchesSearch;
     }).toList();
+  }
+
+  // --- Localisation mapping helpers (keys <-> labels) ---
+  String _labelFor(String key, AppLocalizations t) {
+    switch (key) {
+      case kAll:
+        return t.systemAll;
+      case kFav:
+        return t.favourites;
+      case kTranslated:
+        return t.translated;
+      case kBreakfast:
+        return t.defaultBreakfast;
+      case kMain:
+        return t.defaultMain;
+      case kDessert:
+        return t.defaultDessert;
+      default:
+        return key; // custom categories unchanged
+    }
+  }
+
+  String _keyFor(String label, AppLocalizations t) {
+    // Map localised labels back to internal keys
+    if (label == t.systemAll) return kAll;
+    if (label == t.favourites) return kFav;
+    if (label == t.translated) return kTranslated;
+    if (label == t.defaultBreakfast) return kBreakfast;
+    if (label == t.defaultMain) return kMain;
+    if (label == t.defaultDessert) return kDessert;
+    return label; // custom categories pass-through
   }
 
   @override
@@ -143,8 +183,10 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     });
   }
 
-  void _removeCategory(String category) async {
-    await CategoryService.hideDefaultCategory(category);
+  void _removeCategory(String label) async {
+    final t = AppLocalizations.of(context);
+    final key = _keyFor(label, t);
+    await CategoryService.hideDefaultCategory(key);
     await _loadCustomCategories();
   }
 
@@ -186,8 +228,9 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     final subService = Provider.of<SubscriptionService>(context, listen: false);
     final tier = subService.tier;
 
-    // Small delay to ensure context/layout is ready
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(
+      const Duration(milliseconds: 100),
+    ); // ensure layout ready
 
     await Future.wait([
       _initializeDefaultCategories(),
@@ -289,7 +332,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
     setState(() {
       _allCategories = [
-        'All',
+        kAll,
         ..._defaultCategories.where((c) => !hiddenNames.contains(c)),
         ...savedNames.where((c) => !_defaultCategories.contains(c)),
       ];
@@ -300,6 +343,13 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   Widget build(BuildContext context) {
     final view = widget.viewMode;
     final scale = Provider.of<TextScaleNotifier>(context).scaleFactor;
+    final t = AppLocalizations.of(context);
+
+    // Localised list for display; internal keys remain unchanged elsewhere
+    final displayedCategories = _allCategories
+        .map((c) => _labelFor(c, t))
+        .toList();
+    final displayedSelected = _labelFor(_selectedCategory, t);
 
     return Scaffold(
       body: MediaQuery(
@@ -329,11 +379,12 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: RecipeChipFilterBar(
-                        categories: _allCategories,
-                        selectedCategory: _selectedCategory,
-                        onCategorySelected: (cat) =>
-                            setState(() => _selectedCategory = cat),
-                        onCategoryDeleted: _removeCategory,
+                        categories: displayedCategories,
+                        selectedCategory: displayedSelected,
+                        onCategorySelected: (label) => setState(() {
+                          _selectedCategory = _keyFor(label, t);
+                        }),
+                        onCategoryDeleted: (label) => _removeCategory(label),
                         allRecipes: _allRecipes,
                       ),
                     ),
@@ -347,7 +398,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                   ),
                   Expanded(
                     child: _filteredRecipes.isEmpty
-                        ? const Center(child: Text('No recipes found'))
+                        ? Center(child: Text(t.noRecipesFound))
                         : AnimatedSwitcher(
                             duration: const Duration(milliseconds: 300),
                             child: ResponsiveWrapper(
@@ -401,7 +452,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         builder: (context) {
           final subService = Provider.of<SubscriptionService>(context);
           final count = _allCategories
-              .where((c) => !_defaultCategories.contains(c) && c != 'All')
+              .where((c) => !_defaultCategories.contains(c) && c != kAll)
               .length;
           final allow =
               subService.allowCategoryCreation ||

@@ -96,7 +96,7 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
   @override
   Widget build(BuildContext context) {
     final subscription = context.watch<SubscriptionService>();
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
 
     if ((!subscription.trackUsage && !subscription.showUsageWidget) ||
         loading) {
@@ -172,7 +172,7 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
     required double percent,
     required String subtitle,
   }) {
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
 
     return Column(
       children: [

@@ -43,7 +43,7 @@ class _UpgradeBannerState extends State<UpgradeBanner> {
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
     final text = widget.message ?? loc.upgradeNow; // localized fallback
 
     return Padding(

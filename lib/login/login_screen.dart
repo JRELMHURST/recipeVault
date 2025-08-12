@@ -62,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final credential = await AuthService().signInWithGoogle();
       if (credential == null) {
-        _showError(AppLocalizations.of(context)!.cancel);
+        _showError(AppLocalizations.of(context).cancel);
         return;
       }
       await VaultRecipeService.loadAndMergeAllRecipes();
@@ -83,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final credential = await AuthService().signInWithApple();
       if (credential == null) {
-        _showError(AppLocalizations.of(context)!.cancel);
+        _showError(AppLocalizations.of(context).cancel);
         return;
       }
       await VaultRecipeService.loadAndMergeAllRecipes();
@@ -107,21 +107,21 @@ class _LoginScreenState extends State<LoginScreen> {
   String _friendlyAuthError(Object e) {
     final message = e.toString().toLowerCase();
     if (message.contains('invalid-credential')) {
-      return AppLocalizations.of(context)!.error;
+      return AppLocalizations.of(context).error;
     }
     if (message.contains('user-not-found')) {
-      return AppLocalizations.of(context)!.no;
+      return AppLocalizations.of(context).no;
     }
     if (message.contains('wrong-password')) {
-      return AppLocalizations.of(context)!.networkError;
+      return AppLocalizations.of(context).networkError;
     }
     if (message.contains('too-many-requests')) {
-      return AppLocalizations.of(context)!.unknownError;
+      return AppLocalizations.of(context).unknownError;
     }
     if (message.contains('network-request-failed')) {
-      return AppLocalizations.of(context)!.networkError;
+      return AppLocalizations.of(context).networkError;
     }
-    return AppLocalizations.of(context)!.unknownError;
+    return AppLocalizations.of(context).unknownError;
   }
 
   void _goToRegister() {
@@ -131,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),

@@ -32,7 +32,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F7FE),

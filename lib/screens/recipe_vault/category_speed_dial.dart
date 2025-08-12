@@ -26,7 +26,7 @@ class CategorySpeedDial extends StatefulWidget {
 
 class _CategorySpeedDialState extends State<CategorySpeedDial> {
   void _showAddCategoryDialog(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context);
     final controller = TextEditingController();
 
     showDialog(
@@ -64,7 +64,7 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
   }
 
   Future<void> _startCreateFlow(BuildContext context) async {
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context);
 
     if (!widget.allowCreation) {
       ScaffoldMessenger.of(
@@ -103,7 +103,7 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final subscription = Provider.of<SubscriptionService>(context);
-    final l = AppLocalizations.of(context)!;
+    final l = AppLocalizations.of(context);
 
     return SpeedDial(
       icon: Icons.add,

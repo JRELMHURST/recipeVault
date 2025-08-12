@@ -29,7 +29,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _registerWithEmail() async {
     FocusScope.of(context).unfocus();
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
 
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
@@ -56,7 +56,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _signUpWithGoogle() async {
     FocusScope.of(context).unfocus();
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
 
     LoadingOverlay.show(context);
     try {
@@ -78,7 +78,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _signUpWithApple() async {
     FocusScope.of(context).unfocus();
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
 
     LoadingOverlay.show(context);
     try {
@@ -112,7 +112,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
 
     return Stack(
       children: [

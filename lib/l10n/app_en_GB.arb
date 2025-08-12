@@ -1,5 +1,5 @@
 {
-  "@@locale": "en",
+  "@@locale": "en_GB",
 
   "loading": "Loading...",
   "@loading": { "description": "Shown while an operation is in progress." },

@@ -21,7 +21,7 @@ class PricingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
     final product = package.storeProduct;
     final price = product.priceString;
 

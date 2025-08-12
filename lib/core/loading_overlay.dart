@@ -12,7 +12,7 @@ class LoadingOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final displayMessage = message ?? AppLocalizations.of(context)!.loading;
+    final displayMessage = message ?? AppLocalizations.of(context).loading;
 
     return Stack(
       children: [

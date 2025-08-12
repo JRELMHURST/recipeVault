@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 
 class PlanCard extends StatelessWidget {
@@ -9,6 +10,7 @@ class PlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
 
     return FutureBuilder<String>(
       future: subscriptionService.getResolvedTier(),
@@ -18,59 +20,60 @@ class PlanCard extends StatelessWidget {
         }
 
         if (snapshot.hasError || !snapshot.hasData) {
-          return const Text('Unable to load plan info');
+          return Text(t.unknownError);
         }
 
         final actualTier = snapshot.data ?? 'free';
         final entitlementId = subscriptionService.entitlementId;
 
-        final suffix = switch (entitlementId) {
-          'master_chef_yearly' => ' (Yearly)',
-          'master_chef_monthly' => ' (Monthly)',
-          _ => '',
-        };
+        // Subtitle for Master Chef (Yearly/Monthly)
+        String masterChefSubtitle = '';
+        if (entitlementId == 'master_chef_yearly') {
+          masterChefSubtitle = ' (${t.planMasterChefSubtitleAnnual})';
+        } else if (entitlementId == 'master_chef_monthly') {
+          masterChefSubtitle = ' (${t.planMasterChefSubtitleMonthly})';
+        }
 
+        // Plan label
         final label = switch (actualTier) {
-          'master_chef' => '👑 Master Chef Plan$suffix',
-          'home_chef' => '👨‍🍳 Home Chef Plan',
-          'free' => '🔓 Free Plan',
-          _ => '🔓 Free Plan',
+          'master_chef' => '👑 ${t.planMasterChef}$masterChefSubtitle',
+          'home_chef' => '👨‍🍳 ${t.planHomeChef}',
+          'free' => '🔓 ${t.planFree}',
+          _ => '🔓 ${t.planFree}',
         };
 
+        // Description
         final description = switch (actualTier) {
-          'master_chef' => 'Unlimited access to everything RecipeVault offers.',
-          'home_chef' => 'All core features unlocked, with light limits.',
-          'free' =>
-            'Limited access — upgrade to unlock more AI and storage features.',
-          _ =>
-            'You’re currently on the Free Plan — upgrade to unlock more features!',
+          'master_chef' =>
+            entitlementId == 'master_chef_yearly'
+                ? t.planMasterChefDescriptionAnnual
+                : t.planMasterChefDescriptionMonthly,
+          'home_chef' => t.planHomeChefDescription,
+          'free' => t.planDefaultDescription,
+          _ => t.planDefaultDescription,
         };
 
         final isTrial = subscriptionService.trialEndDate != null;
         final trialEnd = subscriptionService.trialEndDateFormatted;
 
-        final benefits = switch (actualTier) {
+        // Benefits
+        final List<String> benefits = switch (actualTier) {
           'master_chef' => [
-            '🧠 Unlimited AI recipe cards',
-            '🌐 Unlimited translations',
-            '📷 Unlimited image uploads',
-            '📤 Save and share recipes to your vault',
-            '📁 Unlimited category creation',
+            t.featureMasterChef1,
+            t.featureMasterChef2,
+            t.featureMasterChef3,
+            t.featureMasterChef4,
+            t.featureMasterChef5,
+            t.featureMasterChef6,
           ],
           'home_chef' => [
-            '🧠 20 AI recipe cards per month',
-            '🌐 5 translations per month',
-            '📷 20 image uploads per month',
-            '📤 Vault saving and cloud storage',
-            '📁 Up to 3 custom categories',
+            t.featureHomeChef1,
+            t.featureHomeChef2,
+            t.featureHomeChef3,
+            t.featureHomeChef4,
+            t.featureHomeChef5,
           ],
-          'free' => [
-            '🧠 Limited AI recipe cards (trial opt-in required)',
-            '🌐 No translation access',
-            '📷 No image uploads',
-            '📤 Vault saving (local only)',
-            '📁 No category creation',
-          ],
+          // No specific free-plan list defined in ARB; omit benefits section.
           _ => [],
         };
 
@@ -92,14 +95,14 @@ class PlanCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(description, style: theme.textTheme.bodyMedium),
-                if (isTrial) ...[
+                if (isTrial && trialEnd.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Row(
                     children: [
                       const Icon(Icons.access_time, size: 18),
                       const SizedBox(width: 8),
                       Text(
-                        'Trial ends: $trialEnd',
+                        t.trialEnds(trialEnd),
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
@@ -108,7 +111,7 @@ class PlanCard extends StatelessWidget {
                 if (benefits.isNotEmpty) ...[
                   const SizedBox(height: 20),
                   Text(
-                    'Included in your plan:',
+                    t.planIncludedHeader,
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -120,11 +123,7 @@ class PlanCard extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
-                            Icons.check_circle_outline,
-                            size: 18,
-                            color: Colors.green,
-                          ),
+                          const Icon(Icons.check_circle_outline, size: 18),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(item, style: theme.textTheme.bodySmall),

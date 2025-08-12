@@ -1,9 +1,12 @@
+// ignore_for_file: unnecessary_null_checks
+
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 
 class SharedRecipeScreen extends StatefulWidget {
@@ -36,7 +39,7 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
       final data = doc.data();
       if (!doc.exists || data == null) {
         setState(() {
-          _error = 'This shared recipe could not be found.';
+          _error = AppLocalizations.of(context).sharedRecipeNotFound;
           _loading = false;
         });
         return;
@@ -49,7 +52,7 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = 'An error occurred while loading the recipe.';
+        _error = AppLocalizations.of(context).sharedRecipeLoadError;
         _loading = false;
       });
     }
@@ -94,13 +97,15 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Shared Recipe')),
+        appBar: AppBar(title: Text(t.sharedRecipeTitle)),
         body: Center(child: Text(_error!)),
       );
     }

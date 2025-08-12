@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/services/notification_service.dart';
@@ -51,7 +52,7 @@ class _NotificationsSettingsScreenState
     }
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _sectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
@@ -66,7 +67,7 @@ class _NotificationsSettingsScreenState
     );
   }
 
-  Widget _buildCard({
+  Widget _prefTile({
     required String title,
     required String subtitle,
     required bool value,
@@ -91,19 +92,19 @@ class _NotificationsSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
+    final t = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
+      appBar: AppBar(title: Text(t.notificationsTitle)),
       body: ResponsiveWrapper(
         maxWidth: 520,
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            _buildSectionHeader('REMINDERS'),
-            _buildCard(
-              title: 'Weekly Recipe Reminder',
-              subtitle: 'Get nudged weekly to add recipes to your vault.',
+            _sectionHeader(context, t.notificationsSectionReminders),
+            _prefTile(
+              title: t.notificationsWeeklyTitle,
+              subtitle: t.notificationsWeeklySubtitle,
               icon: Icons.calendar_today_outlined,
               value: _reminderNotifications,
               onChanged: (val) {
@@ -111,10 +112,10 @@ class _NotificationsSettingsScreenState
                 _updateSetting('reminderNotifications', val);
               },
             ),
-            _buildSectionHeader('UPDATES'),
-            _buildCard(
-              title: 'New Feature Alerts',
-              subtitle: 'Be the first to hear when something tasty is added!',
+            _sectionHeader(context, t.notificationsSectionUpdates),
+            _prefTile(
+              title: t.notificationsFeatureAlertsTitle,
+              subtitle: t.notificationsFeatureAlertsSubtitle,
               icon: Icons.auto_awesome,
               value: _newFeatureAlerts,
               onChanged: (val) {

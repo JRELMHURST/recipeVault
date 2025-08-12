@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 
@@ -11,7 +12,7 @@ class AboutSettingsScreen extends StatefulWidget {
 }
 
 class _AboutSettingsScreenState extends State<AboutSettingsScreen> {
-  String _appVersion = 'Loading...';
+  String? _appVersion; // null = loading
 
   @override
   void initState() {
@@ -21,12 +22,13 @@ class _AboutSettingsScreenState extends State<AboutSettingsScreen> {
 
   Future<void> _loadAppVersion() async {
     final info = await PackageInfo.fromPlatform();
+    if (!mounted) return;
     setState(() {
       _appVersion = '${info.version} (${info.buildNumber})';
     });
   }
 
-  void _launchURL(String url) async {
+  Future<void> _launchURL(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -76,42 +78,44 @@ class _AboutSettingsScreenState extends State<AboutSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('About & Legal')),
+      appBar: AppBar(title: Text(t.aboutLegalTitle)),
       body: ResponsiveWrapper(
         maxWidth: 520,
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: ListView(
           children: [
-            _buildSection('App Info', [
+            _buildSection(t.appInfoSectionTitle, [
               _buildCard(
                 icon: Icons.info_outline,
-                title: 'Version',
-                subtitle: _appVersion,
+                title: t.versionLabel,
+                subtitle: _appVersion ?? t.loading,
               ),
             ]),
-            _buildSection('Legal', [
+            _buildSection(t.legalSectionTitle, [
               _buildCard(
                 icon: Icons.privacy_tip_outlined,
-                title: 'Privacy Policy',
+                title: t.legalPrivacy, // already exists in your ARB
                 onTap: () =>
                     _launchURL('https://badger-creations.co.uk/privacy'),
               ),
               _buildCard(
                 icon: Icons.description_outlined,
-                title: 'Terms of Service',
+                title: t.legalTerms, // already exists in your ARB
                 onTap: () => _launchURL('https://badger-creations.co.uk/terms'),
               ),
             ]),
-            _buildSection('Support', [
+            _buildSection(t.supportSectionTitle, [
               _buildCard(
                 icon: Icons.link,
-                title: 'Visit Website',
+                title: t.visitWebsite,
                 onTap: () => _launchURL('https://badger-creations.co.uk'),
               ),
               _buildCard(
                 icon: Icons.mail_outline,
-                title: 'Contact Support',
+                title: t.contactSupport,
                 onTap: () =>
                     _launchURL('https://badger-creations.co.uk/support'),
               ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 
 class StorageSyncScreen extends StatefulWidget {
@@ -30,6 +31,7 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
   }
 
   Future<void> _clearCache() async {
+    final t = AppLocalizations.of(context);
     final confirm = await _showClearCacheDialog(context);
     if (confirm == true) {
       final recipeBox = await HiveRecipeService.getBox();
@@ -49,13 +51,14 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('✅ Local cache cleared')));
+        ).showSnackBar(SnackBar(content: Text(t.localCacheCleared)));
       }
     }
   }
 
   Future<bool?> _showClearCacheDialog(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
 
     return showDialog<bool>(
       context: context,
@@ -74,14 +77,14 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
               ),
               const SizedBox(height: 20),
               Text(
-                'Clear Cache?',
+                t.clearCacheDialogTitle,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
-                'This will delete all locally stored recipes, categories, and tutorial flags.\nYour cloud data will remain safe.',
+                t.clearCacheDialogBody,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.8),
                 ),
@@ -93,7 +96,7 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Cancel'),
+                    child: Text(t.cancel),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -107,7 +110,7 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Clear Now'),
+                    child: Text(t.clearNow),
                   ),
                 ],
               ),
@@ -121,9 +124,10 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Local Storage')),
+      appBar: AppBar(title: Text(t.localStorageTitle)),
       body: ResponsiveWrapper(
         maxWidth: 520,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
@@ -137,7 +141,7 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Clear Local Cache',
+              t.clearLocalCacheTitle,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -145,7 +149,7 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Delete all recipes, categories and tutorial flags stored on this device.\nYour cloud data will not be affected.',
+              t.clearLocalCacheDescription,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.hintColor,
               ),
@@ -154,7 +158,7 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
             const SizedBox(height: 40),
             ElevatedButton.icon(
               icon: const Icon(Icons.delete_outline),
-              label: const Text('Clear Local Cache'),
+              label: Text(t.clearLocalCacheButton),
               onPressed: _clearCache,
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.error,

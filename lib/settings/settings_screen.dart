@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -15,16 +16,17 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
 
     if (user == null) {
-      return const Scaffold(body: Center(child: Text("No user signed in")));
+      return Scaffold(body: Center(child: Text(t.authUserNotFound)));
     }
 
     final tier = context.watch<SubscriptionService>().tier;
     final planLabel = switch (tier) {
-      'home_chef' => '👨‍🍳 Home Chef Plan',
-      'master_chef' => '👑 Master Chef Plan',
-      _ => '🆓 Free Plan',
+      'home_chef' => '👨‍🍳 ${t.planHomeChef}',
+      'master_chef' => '👑 ${t.planMasterChef}',
+      _ => '🆓 ${t.planFree}',
     };
 
     return Scaffold(
@@ -33,7 +35,7 @@ class SettingsScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.only(bottom: 24),
             children: [
-              // 🔮 Gradient Header
+              // Header
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 24),
@@ -64,72 +66,72 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 24),
               _buildSettingsCard(
                 context,
-                title: 'Account',
+                title: 'Account', // consider localizing
                 items: [
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.manage_accounts_outlined,
-                    label: 'Account Settings',
+                    label: 'Account Settings', // consider localizing
                     route: '/settings/account',
                   ),
                 ],
               ),
               _buildSettingsCard(
                 context,
-                title: 'Preferences',
+                title: 'Preferences', // consider localizing
                 items: [
                   _buildSettingsTile(
                     context: context,
                     icon: CupertinoIcons.brightness,
-                    label: 'Appearance',
+                    label: 'Appearance', // consider localizing
                     route: '/settings/appearance',
                   ),
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.notifications_outlined,
-                    label: 'Notifications',
+                    label: 'Notifications', // consider localizing
                     route: '/settings/notifications',
                   ),
                 ],
               ),
               _buildSettingsCard(
                 context,
-                title: 'Local Storage',
+                title: 'Local Storage', // consider localizing
                 items: [
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.cloud_done_outlined,
-                    label: 'Cache Clear',
+                    label: 'Cache Clear', // consider localizing
                     route: '/settings/storage',
                   ),
                 ],
               ),
               _buildSettingsCard(
                 context,
-                title: 'Subscription',
+                title: 'Subscription', // consider localizing
                 items: [
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.card_membership_outlined,
-                    label: 'Manage Subscription',
+                    label: t.manageOrCancelCta, // existing ARB key
                     route: '/paywall',
                   ),
                 ],
               ),
               _buildSettingsCard(
                 context,
-                title: 'Support',
+                title: 'Support', // consider localizing
                 items: [
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.help_outline,
-                    label: 'Help & FAQs',
+                    label: 'Help & FAQs', // consider localizing
                     route: '/settings/faqs',
                   ),
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.info_outline,
-                    label: 'About & Legal',
+                    label: 'About & Legal', // consider localizing
                     route: '/settings/about',
                   ),
                 ],
@@ -143,7 +145,7 @@ class SettingsScreen extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Cheeky Badger Creations',
+                          'Cheeky Badger Creations', // consider localizing
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: Colors.grey,
                           ),
@@ -166,7 +168,7 @@ class SettingsScreen extends StatelessWidget {
                             'https://badger-creations.co.uk/privacy',
                           ),
                           child: Text(
-                            'Privacy Policy',
+                            t.legalPrivacy, // ARB
                             style: theme.textTheme.labelSmall?.copyWith(
                               decoration: TextDecoration.underline,
                               color: Colors.blueAccent,
@@ -178,7 +180,7 @@ class SettingsScreen extends StatelessWidget {
                             'https://badger-creations.co.uk/terms',
                           ),
                           child: Text(
-                            'Terms of Use',
+                            t.legalTerms, // ARB
                             style: theme.textTheme.labelSmall?.copyWith(
                               decoration: TextDecoration.underline,
                               color: Colors.blueAccent,

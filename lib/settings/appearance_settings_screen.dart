@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class AppearanceSettingsScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -67,10 +68,10 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
+    final t = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Appearance'), centerTitle: true),
+      appBar: AppBar(title: Text(t.appearanceTitle), centerTitle: true),
       body: ResponsiveWrapper(
         maxWidth: 520,
         padding: const EdgeInsets.only(bottom: 24),
@@ -92,11 +93,15 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(left: 8, top: 8, bottom: 4),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          left: 8,
+                          top: 8,
+                          bottom: 4,
+                        ),
                         child: Text(
-                          'APP THEME',
-                          style: TextStyle(
+                          t.appThemeSectionTitle.toUpperCase(),
+                          style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                             color: Colors.grey,
@@ -104,13 +109,13 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
                         ),
                       ),
                       _buildOptionTile(
-                        title: 'Light Mode',
+                        title: t.lightMode,
                         icon: Icons.light_mode_outlined,
                         selected: _themeMode == AppThemeMode.light,
                         onTap: () => _updateTheme(AppThemeMode.light),
                       ),
                       _buildOptionTile(
-                        title: 'Dark Mode',
+                        title: t.darkMode,
                         icon: Icons.dark_mode_outlined,
                         selected: _themeMode == AppThemeMode.dark,
                         onTap: () => _updateTheme(AppThemeMode.dark),
@@ -137,11 +142,15 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.only(left: 8, top: 8, bottom: 4),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          left: 8,
+                          top: 8,
+                          bottom: 4,
+                        ),
                         child: Text(
-                          'TEXT SIZE',
-                          style: TextStyle(
+                          t.textSizeSectionTitle.toUpperCase(),
+                          style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                             color: Colors.grey,
@@ -149,19 +158,19 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
                         ),
                       ),
                       _buildOptionTile(
-                        title: 'Small',
+                        title: t.textSizeSmall,
                         icon: Icons.text_decrease,
                         selected: (_textScale - 0.85).abs() < 0.01,
                         onTap: () => _updateTextScale(0.85),
                       ),
                       _buildOptionTile(
-                        title: 'Medium',
+                        title: t.textSizeMedium,
                         icon: Icons.text_fields,
                         selected: (_textScale - 1.0).abs() < 0.01,
                         onTap: () => _updateTextScale(1.0),
                       ),
                       _buildOptionTile(
-                        title: 'Large',
+                        title: t.textSizeLarge,
                         icon: Icons.text_increase,
                         selected: (_textScale - 1.25).abs() < 0.01,
                         onTap: () => _updateTextScale(1.25),

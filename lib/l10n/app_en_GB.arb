@@ -948,5 +948,403 @@
   "vaultBubbleScan": "Scan recipes with the + button",
   "@vaultBubbleScan": {
     "description": "Onboarding bubble pointing to the create/+ scan entry point."
+  },
+  "sharedRecipeTitle": "Shared Recipe",
+  "@sharedRecipeTitle": {
+    "description": "AppBar title for the shared recipe screen."
+  },
+  "sharedRecipeNotFound": "This shared recipe could not be found.",
+  "@sharedRecipeNotFound": {
+    "description": "Shown when a shared recipe document is missing."
+  },
+  "sharedRecipeLoadError": "An error occurred while loading the recipe.",
+  "@sharedRecipeLoadError": {
+    "description": "Shown when the shared recipe fetch fails."
+  },
+  "noRecipeDataFound": "No recipe data found.",
+  "@noRecipeDataFound": {
+    "description": "Shown when ResultsScreen gets no data in navigation."
+  },
+  "copyToClipboard": "Copy to clipboard",
+  "@copyToClipboard": {
+    "description": "Tooltip for copy button on ResultsScreen."
+  },
+  "copiedToClipboard": "📋 Recipe copied to clipboard",
+  "@copiedToClipboard": {
+    "description": "Snackbar after copying recipe text."
+  },
+  "languageLabel": "Language: {language}",
+  "@languageLabel": {
+    "description": "Label when simply displaying detected language.",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "notSignedIn": "Not signed in",
+  "@notSignedIn": {
+    "description": "Error when an action requires a signed-in user."
+  },
+  "imageCropCancelled": "Image crop cancelled",
+  "@imageCropCancelled": {
+    "description": "Shown when the user cancels image crop."
+  },
+  "uploadFailed": "Upload failed: {error}",
+  "@uploadFailed": {
+    "description": "Shown when image upload fails.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "showOcr": "Show OCR",
+  "@showOcr": {
+    "description": "Debug toggle to show OCR text."
+  },
+  "hideOcr": "Hide OCR",
+  "@hideOcr": {
+    "description": "Debug toggle to hide OCR text."
+  },
+  "formattingError": "Whoops! Something went wrong with formatting.\nPlease try again.",
+  "@formattingError": {
+    "description": "Error card message when the recipe formatter failed."
+  },
+  "aboutLegalTitle": "About & Legal",
+  "@aboutLegalTitle": {
+    "description": "App bar title for About screen."
+  },
+  "appInfoSectionTitle": "App Info",
+  "@appInfoSectionTitle": {
+    "description": "Section heading for app information."
+  },
+  "versionLabel": "Version",
+  "@versionLabel": {
+    "description": "Label for the app version row."
+  },
+  "legalSectionTitle": "Legal",
+  "@legalSectionTitle": {
+    "description": "Section heading for legal links."
+  },
+  "supportSectionTitle": "Support",
+  "@supportSectionTitle": {
+    "description": "Section heading for support links."
+  },
+  "visitWebsite": "Visit Website",
+  "@visitWebsite": {
+    "description": "Button/link to open the website."
+  },
+  "contactSupport": "Contact Support",
+  "@contactSupport": {
+    "description": "Button/link to contact support."
+  },
+  "accountSettingsTitle": "Account Settings",
+  "@accountSettingsTitle": {
+    "description": "App bar title for account settings screen."
+  },
+  "noUserSignedIn": "No user signed in",
+  "@noUserSignedIn": {
+    "description": "Shown when account screen is opened without an authenticated user."
+  },
+  "noName": "No name",
+  "@noName": {
+    "description": "Fallback display name when user.displayName is null."
+  },
+  "securitySectionTitle": "Security",
+  "@securitySectionTitle": {
+    "description": "Section header for security items."
+  },
+  "signOut": "Sign Out",
+  "@signOut": {
+    "description": "Menu/button text to sign out."
+  },
+  "signedOut": "Signed out",
+  "@signedOut": {
+    "description": "Snackbar text after successful sign out."
+  },
+  "signOutQuestion": "Sign Out?",
+  "@signOutQuestion": {
+    "description": "Dialog title asking to confirm sign out."
+  },
+  "signOutConfirmBody": "Are you sure you want to sign out?",
+  "@signOutConfirmBody": {
+    "description": "Dialog body confirming sign out."
+  },
+  "signOutFailed": "Sign out failed: {error}",
+  "@signOutFailed": {
+    "description": "Snackbar when sign out fails.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccount": "Delete Account",
+  "@deleteAccount": {
+    "description": "Menu/button text to delete the account."
+  },
+  "deleteAccountQuestion": "Delete Your Account?",
+  "@deleteAccountQuestion": {
+    "description": "Dialog title asking to confirm account deletion."
+  },
+  "deleteAccountBody": "This will permanently delete your account and all associated data including recipes, images, and preferences.\n\nThis action is irreversible.",
+  "@deleteAccountBody": {
+    "description": "Dialog body warning about account deletion."
+  },
+  "deleteAccountSuccess": "Account deleted successfully.",
+  "@deleteAccountSuccess": {
+    "description": "Snackbar after successful account deletion."
+  },
+  "deleteAccountFailed": "Failed to delete account: {error}",
+  "@deleteAccountFailed": {
+    "description": "Snackbar when account deletion fails.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "appearanceTitle": "Appearance",
+  "@appearanceTitle": {
+    "description": "App bar title for the Appearance settings screen."
+  },
+  "appThemeSectionTitle": "App Theme",
+  "@appThemeSectionTitle": {
+    "description": "Section header for theme options."
+  },
+  "lightMode": "Light Mode",
+  "@lightMode": {
+    "description": "Option label for light theme."
+  },
+  "darkMode": "Dark Mode",
+  "@darkMode": {
+    "description": "Option label for dark theme."
+  },
+  "textSizeSectionTitle": "Text Size",
+  "@textSizeSectionTitle": {
+    "description": "Section header for text size options."
+  },
+  "textSizeSmall": "Small",
+  "@textSizeSmall": {
+    "description": "Option label for small text size."
+  },
+  "textSizeMedium": "Medium",
+  "@textSizeMedium": {
+    "description": "Option label for medium text size."
+  },
+  "textSizeLarge": "Large",
+  "@textSizeLarge": {
+    "description": "Option label for large text size."
+  },
+  "faqsTitle": "FAQs",
+  "@faqsTitle": {
+    "description": "App bar title for the FAQs screen."
+  },
+  "faqsSectionScanSave": "Scanning & Saving",
+  "@faqsSectionScanSave": {
+    "description": "Section header for scanning/saving FAQs."
+  },
+  "faqsQHowScan": "How do I scan a recipe?",
+  "@faqsQHowScan": {
+    "description": "Question: scanning a recipe."
+  },
+  "faqsAHowScan": "From the Home screen, tap the \"+\" button and upload one or more images of your recipe.",
+  "@faqsAHowScan": {
+    "description": "Answer: scanning a recipe."
+  },
+  "faqsQAddImage": "How do I add a recipe image?",
+  "@faqsQAddImage": {
+    "description": "Question: add recipe image."
+  },
+  "faqsAAddImage": "After scanning, tap \"Add Image\" to crop and upload a photo for your recipe card header.",
+  "@faqsAAddImage": {
+    "description": "Answer: add recipe image."
+  },
+  "faqsQSaveRecipe": "How do I save a recipe?",
+  "@faqsQSaveRecipe": {
+    "description": "Question: save recipe."
+  },
+  "faqsASaveRecipe": "Once you’ve reviewed the formatted result, tap \"Save to Vault\" to store it permanently.",
+  "@faqsASaveRecipe": {
+    "description": "Answer: save recipe."
+  },
+  "faqsSectionAccessUse": "App Access & Use",
+  "@faqsSectionAccessUse": {
+    "description": "Section header for access/use FAQs."
+  },
+  "faqsQOffline": "Can I use the app offline?",
+  "@faqsQOffline": {
+    "description": "Question: offline usage."
+  },
+  "faqsAOffline": "You can view any recipes already saved to your Vault, even without an internet connection.",
+  "@faqsAOffline": {
+    "description": "Answer: offline usage."
+  },
+  "faqsSectionSubSupport": "Subscription & Support",
+  "@faqsSectionSubSupport": {
+    "description": "Section header for subscription/support FAQs."
+  },
+  "faqsQWhySub": "Why do I need a subscription?",
+  "@faqsQWhySub": {
+    "description": "Question: why subscription."
+  },
+  "faqsAWhySub": "Subscriptions unlock cloud sync, image uploads, translation, and AI-powered formatting.",
+  "@faqsAWhySub": {
+    "description": "Answer: why subscription."
+  },
+  "faqsQCancel": "How can I cancel my subscription?",
+  "@faqsQCancel": {
+    "description": "Question: cancel subscription."
+  },
+  "faqsACancel": "Manage or cancel your plan anytime through your App Store or Google Play account settings.",
+  "@faqsACancel": {
+    "description": "Answer: cancel subscription."
+  },
+  "notificationsTitle": "Notifications",
+  "@notificationsTitle": {
+    "description": "App bar title for notifications settings."
+  },
+  "notificationsSectionReminders": "Reminders",
+  "@notificationsSectionReminders": {
+    "description": "Section header for reminder notifications."
+  },
+  "notificationsWeeklyTitle": "Weekly Recipe Reminder",
+  "@notificationsWeeklyTitle": {
+    "description": "Title of weekly reminder toggle."
+  },
+  "notificationsWeeklySubtitle": "Get nudged weekly to add recipes to your vault.",
+  "@notificationsWeeklySubtitle": {
+    "description": "Subtitle explaining weekly reminder."
+  },
+  "notificationsSectionUpdates": "Updates",
+  "@notificationsSectionUpdates": {
+    "description": "Section header for updates/announcements."
+  },
+  "notificationsFeatureAlertsTitle": "New Feature Alerts",
+  "@notificationsFeatureAlertsTitle": {
+    "description": "Title of feature announcements toggle."
+  },
+  "notificationsFeatureAlertsSubtitle": "Be the first to hear when something tasty is added!",
+  "@notificationsFeatureAlertsSubtitle": {
+    "description": "Subtitle for feature announcements toggle."
+  },
+  "planIncludedHeader": "Included in your plan:",
+  "@planIncludedHeader": {
+    "description": "Header shown above the list of plan benefits on the plan card."
+  },
+  "trialEnds": "Trial ends: {date}",
+  "@trialEnds": {
+    "description": "Shown on plan card if user is on a trial.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsSectionAccount": "Account",
+  "@settingsSectionAccount": {
+    "description": "Header label for account-related settings section in Settings screen.",
+    "type": "text"
+  },
+  "settingsSectionPreferences": "Preferences",
+  "@settingsSectionPreferences": {
+    "description": "Header label for preferences-related settings section in Settings screen.",
+    "type": "text"
+  },
+  "settingsSectionStorage": "Local Storage",
+  "@settingsSectionStorage": {
+    "description": "Header label for local storage management settings section in Settings screen.",
+    "type": "text"
+  },
+  "settingsSectionSubscription": "Subscription",
+  "@settingsSectionSubscription": {
+    "description": "Header label for subscription management settings section in Settings screen.",
+    "type": "text"
+  },
+  "settingsSectionSupport": "Support",
+  "@settingsSectionSupport": {
+    "description": "Header label for support and help-related settings section in Settings screen.",
+    "type": "text"
+  },
+  "settingsTileAccountSettings": "Account Settings",
+  "@settingsTileAccountSettings": {
+    "description": "Settings tile label for navigating to account settings.",
+    "type": "text"
+  },
+  "settingsTileAppearance": "Appearance",
+  "@settingsTileAppearance": {
+    "description": "Settings tile label for navigating to appearance/theme settings.",
+    "type": "text"
+  },
+  "settingsTileNotifications": "Notifications",
+  "@settingsTileNotifications": {
+    "description": "Settings tile label for navigating to notifications settings.",
+    "type": "text"
+  },
+  "settingsTileCacheClear": "Cache Clear",
+  "@settingsTileCacheClear": {
+    "description": "Settings tile label for clearing cached data from the app.",
+    "type": "text"
+  },
+  "settingsTileManageSubscription": "Manage Subscription",
+  "@settingsTileManageSubscription": {
+    "description": "Settings tile label for navigating to the subscription management screen.",
+    "type": "text"
+  },
+  "settingsTileHelpFaqs": "Help & FAQs",
+  "@settingsTileHelpFaqs": {
+    "description": "Settings tile label for navigating to the help and FAQs screen.",
+    "type": "text"
+  },
+  "settingsTileAboutLegal": "About & Legal",
+  "@settingsTileAboutLegal": {
+    "description": "Settings tile label for navigating to the about and legal information screen.",
+    "type": "text"
+  },
+  "footerCompanyName": "Cheeky Badger Creations",
+  "@footerCompanyName": {
+    "description": "The name of the company shown at the bottom of the settings screen.",
+    "type": "text"
+  },
+  "localStorageTitle": "Local Storage",
+  "@localStorageTitle": {
+    "description": "App bar title for the screen that manages local storage and cache.",
+    "type": "text"
+  },
+  "clearLocalCacheTitle": "Clear Local Cache",
+  "@clearLocalCacheTitle": {
+    "description": "Headline on the Local Storage screen above the action to clear cache.",
+    "type": "text"
+  },
+  "clearLocalCacheDescription": "Delete all recipes, categories and tutorial flags stored on this device.\nYour cloud data will not be affected.",
+  "@clearLocalCacheDescription": {
+    "description": "Body text describing what clearing the local cache will do.",
+    "type": "text"
+  },
+  "clearLocalCacheButton": "Clear Local Cache",
+  "@clearLocalCacheButton": {
+    "description": "Primary button label to start clearing local cache.",
+    "type": "text"
+  },
+  "clearCacheDialogTitle": "Clear Cache?",
+  "@clearCacheDialogTitle": {
+    "description": "Title of the confirmation dialog shown before clearing cache.",
+    "type": "text"
+  },
+  "clearCacheDialogBody": "This will delete all locally stored recipes, categories, and tutorial flags.\nYour cloud data will remain safe.",
+  "@clearCacheDialogBody": {
+    "description": "Body of the confirmation dialog explaining the effects of clearing cache.",
+    "type": "text"
+  },
+  "clearNow": "Clear Now",
+  "@clearNow": {
+    "description": "Confirm action button in the clear cache dialog.",
+    "type": "text"
+  },
+  "localCacheCleared": "Local cache cleared",
+  "@localCacheCleared": {
+    "description": "Snackbar/toast text shown after local cache is successfully cleared.",
+    "type": "text"
   }
 }

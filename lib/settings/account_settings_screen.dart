@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/services/user_session_service.dart';
 import 'package:hive/hive.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
@@ -13,18 +14,19 @@ class AccountSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     final user = FirebaseAuth.instance.currentUser;
     final theme = Theme.of(context);
 
     if (user == null) {
-      return const Scaffold(body: Center(child: Text("No user signed in")));
+      return Scaffold(body: Center(child: Text(t.noUserSignedIn)));
     }
 
     final email = user.email ?? '';
-    final displayName = user.displayName ?? 'No name';
+    final displayName = user.displayName ?? t.noName;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Account Settings'), centerTitle: true),
+      appBar: AppBar(title: Text(t.accountSettingsTitle), centerTitle: true),
       body: SafeArea(
         child: ResponsiveWrapper(
           child: ListView(
@@ -76,11 +78,11 @@ class AccountSettingsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8, bottom: 4),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8, bottom: 4),
                       child: Text(
-                        'SECURITY',
-                        style: TextStyle(
+                        t.securitySectionTitle.toUpperCase(),
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: Colors.grey,
@@ -96,7 +98,7 @@ class AccountSettingsScreen extends StatelessWidget {
                         children: [
                           ListTile(
                             leading: const Icon(Icons.lock_outline),
-                            title: const Text('Change Password'),
+                            title: Text(t.changePasswordTitle),
                             trailing: const Icon(
                               Icons.arrow_forward_ios_rounded,
                               size: 16,
@@ -108,7 +110,7 @@ class AccountSettingsScreen extends StatelessWidget {
                           ),
                           ListTile(
                             leading: const Icon(Icons.logout),
-                            title: const Text('Sign Out'),
+                            title: Text(t.signOut),
                             trailing: const Icon(
                               Icons.arrow_forward_ios_rounded,
                               size: 16,
@@ -117,7 +119,7 @@ class AccountSettingsScreen extends StatelessWidget {
                           ),
                           ListTile(
                             leading: const Icon(Icons.delete_forever),
-                            title: const Text('Delete Account'),
+                            title: Text(t.deleteAccount),
                             trailing: const Icon(
                               Icons.arrow_forward_ios_rounded,
                               size: 16,
@@ -140,22 +142,23 @@ class AccountSettingsScreen extends StatelessWidget {
   }
 
   Future<void> _confirmSignOut(BuildContext context) async {
+    final t = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Sign Out?'),
-        content: const Text('Are you sure you want to sign out?'),
+        title: Text(t.signOutQuestion),
+        content: Text(t.signOutConfirmBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Sign Out'),
+            child: Text(t.signOut),
           ),
         ],
       ),
@@ -169,14 +172,14 @@ class AccountSettingsScreen extends StatelessWidget {
       );
 
       try {
-        await UserSessionService.logoutReset(); // ✅ handles Purchases.logOut + cleanup
+        await UserSessionService.logoutReset();
         await FirebaseAuth.instance.signOut();
 
         if (context.mounted) {
           Navigator.pop(context); // dismiss loading
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Signed out')));
+          ).showSnackBar(SnackBar(content: Text(t.signedOut)));
           Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
         }
       } catch (e) {
@@ -184,31 +187,30 @@ class AccountSettingsScreen extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('Sign out failed: $e')));
+          ).showSnackBar(SnackBar(content: Text(t.signOutFailed('$e'))));
         }
       }
     }
   }
 
   Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final t = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Delete Your Account?'),
-        content: const Text(
-          'This will permanently delete your account and all associated data including recipes, images, and preferences.\n\nThis action is irreversible.',
-        ),
+        title: Text(t.deleteAccountQuestion),
+        content: Text(t.deleteAccountBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete Account'),
+            child: Text(t.deleteAccount),
           ),
         ],
       ),
@@ -229,13 +231,11 @@ class AccountSettingsScreen extends StatelessWidget {
           region: 'europe-west2',
         ).httpsCallable('deleteAccount').call();
 
-        await UserSessionService.logoutReset(); // ✅ handles Purchases.logOut + local cleanup
+        await UserSessionService.logoutReset();
         await FirebaseAuth.instance.signOut();
 
-        // Redundant box deletion is already handled inside logoutReset() too, but kept here in case of async edge case:
         final uid = user.uid;
         final boxName = 'recipes_$uid';
-
         if (Hive.isBoxOpen(boxName)) {
           final box = Hive.box<RecipeCardModel>(boxName);
           await box.clear();
@@ -246,17 +246,17 @@ class AccountSettingsScreen extends StatelessWidget {
 
         if (context.mounted) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Account deleted successfully.')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(t.deleteAccountSuccess)));
           Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
         }
       } catch (e) {
         Navigator.pop(context);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete account: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(t.deleteAccountFailed('$e'))));
         }
       }
     }

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/rev_cat/trial_prompt_helper.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
@@ -59,11 +60,12 @@ class _ResultsScreenState extends State<ResultsScreen> {
     String formattedRecipe,
     ProcessedRecipeResult result,
   ) async {
+    final t = AppLocalizations.of(context);
     setState(() => _isSaving = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception("Not signed in");
+      if (user == null) throw Exception(t.notSignedIn); // NEW KEY
 
       final lines = formattedRecipe.trim().split('\n');
       String title = 'Untitled';
@@ -126,27 +128,22 @@ class _ResultsScreenState extends State<ResultsScreen> {
         translationUsed: result.translationUsed,
       );
 
-      debugPrint('📄 Saving recipe "$title" at ${recipe.createdAt}');
-      debugPrint('📸 Final image URL saved: $_recipeImageUrl');
-
       final serverTimestamp = FieldValue.serverTimestamp();
       await docRef.set({...recipe.toJson(), 'createdAt': serverTimestamp});
       await HiveRecipeService.save(recipe);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Recipe saved! Taking you to your Vault...'),
-        ),
+        SnackBar(content: Text(t.recipeSaved)), // ✅ existing key
       );
 
       await Future.delayed(const Duration(milliseconds: 1500));
       if (mounted) Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('❌ Failed to save recipe: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t.unexpectedError)), // ✅ existing key
+      );
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -154,14 +151,15 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     final result =
         ModalRoute.of(context)?.settings.arguments as ProcessedRecipeResult?;
-    // final result = GoRouterState.of(context).extra as ProcessedRecipeResult?; // use if routing via GoRouter
 
     if (result == null || result.formattedRecipe.trim().isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Your Recipe')),
-        body: const Center(child: Text('No recipe data found.')),
+        appBar: AppBar(title: Text(t.recipeDetails)), // reuse existing
+        body: Center(child: Text(t.noRecipeDataFound)), // NEW KEY
       );
     }
 
@@ -172,9 +170,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
       appBar: AppBar(
         backgroundColor: AppTheme.primaryColor,
         elevation: 0,
-        title: const Text(
-          'Your Recipe',
-          style: TextStyle(
+        title: Text(
+          t.recipeDetails, // reuse
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 22,
@@ -185,13 +183,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
           if (hasValidContent)
             IconButton(
               icon: const Icon(Icons.copy),
-              tooltip: 'Copy to clipboard',
+              tooltip: t.copyToClipboard, // NEW KEY
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: formattedRecipe));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('📋 Recipe copied to clipboard'),
-                  ),
+                  SnackBar(content: Text(t.copiedToClipboard)), // NEW KEY
                 );
               },
             ),
@@ -203,9 +199,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   ? null
                   : () => _saveRecipe(formattedRecipe, result),
               icon: const Icon(Icons.save_alt_rounded),
-              label: _isSaving
-                  ? const Text("Saving...")
-                  : const Text("Save to Vault"),
+              label: Text(
+                _isSaving ? t.editRecipeSaving : t.saveToVault,
+              ), // reuse existing keys
               backgroundColor: AppTheme.primaryColor,
             )
           : null,
@@ -225,8 +221,12 @@ class _ResultsScreenState extends State<ResultsScreen> {
                             const SizedBox(width: 6),
                             Text(
                               result.translationUsed
-                                  ? 'Translated from ${_mapLanguageCodeToLabel(result.language)}'
-                                  : 'Language: ${_mapLanguageCodeToLabel(result.language)}',
+                                  ? t.translationUsed(
+                                      _mapLanguageCodeToLabel(result.language),
+                                    )
+                                  : t.languageLabel(
+                                      _mapLanguageCodeToLabel(result.language),
+                                    ), // NEW KEY
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const Spacer(),
@@ -236,7 +236,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                   () => _showOriginalText = !_showOriginalText,
                                 ),
                                 child: Text(
-                                  _showOriginalText ? 'Hide OCR' : 'Show OCR',
+                                  _showOriginalText
+                                      ? t
+                                            .hideOcr // NEW KEY
+                                      : t.showOcr, // NEW KEY
                                   style: const TextStyle(fontSize: 12),
                                 ),
                               ),
@@ -279,7 +282,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           if (user == null) {
                             ImageProcessingService.showError(
                               context,
-                              "❌ Not signed in",
+                              t.notSignedIn, // NEW KEY
                             );
                             return '';
                           }
@@ -292,7 +295,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           if (croppedFile == null) {
                             ImageProcessingService.showError(
                               context,
-                              "❌ Image crop cancelled",
+                              t.imageCropCancelled, // NEW KEY
                             );
                             return '';
                           }
@@ -314,7 +317,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           } catch (e) {
                             ImageProcessingService.showError(
                               context,
-                              '❌ Upload failed: $e',
+                              t.uploadFailed(e.toString()), // NEW KEY
                             );
                             return '';
                           }
@@ -346,7 +349,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Whoops! Something went wrong with formatting.\nPlease try again.',
+                          t.formattingError, // NEW KEY
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 color: Colors.red[700],

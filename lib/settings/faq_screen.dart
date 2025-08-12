@@ -2,12 +2,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class FaqsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('FAQs')),
+      appBar: AppBar(title: Text(t.faqsTitle)),
       body: SafeArea(
         child: ResponsiveWrapper(
           child: ListView(
@@ -15,50 +18,29 @@ class FaqsScreen extends StatelessWidget {
             children: [
               _buildFaqCard(
                 context,
-                title: 'Scanning & Saving',
-                items: const [
+                title: t.faqsSectionScanSave,
+                items: [
+                  _FaqItem(question: t.faqsQHowScan, answer: t.faqsAHowScan),
+                  _FaqItem(question: t.faqsQAddImage, answer: t.faqsAAddImage),
                   _FaqItem(
-                    question: 'How do I scan a recipe?',
-                    answer:
-                        'From the Home screen, tap the "+" button and upload one or more images of your recipe.',
-                  ),
-                  _FaqItem(
-                    question: 'How do I add a recipe image?',
-                    answer:
-                        'After scanning, tap "Add Image" to crop and upload a photo for your recipe card header.',
-                  ),
-                  _FaqItem(
-                    question: 'How do I save a recipe?',
-                    answer:
-                        'Once you’ve reviewed the formatted result, tap "Save to Vault" to store it permanently.',
+                    question: t.faqsQSaveRecipe,
+                    answer: t.faqsASaveRecipe,
                   ),
                 ],
               ),
               _buildFaqCard(
                 context,
-                title: 'App Access & Use',
-                items: const [
-                  _FaqItem(
-                    question: 'Can I use the app offline?',
-                    answer:
-                        'You can view any recipes already saved to your Vault, even without an internet connection.',
-                  ),
+                title: t.faqsSectionAccessUse,
+                items: [
+                  _FaqItem(question: t.faqsQOffline, answer: t.faqsAOffline),
                 ],
               ),
               _buildFaqCard(
                 context,
-                title: 'Subscription & Support',
-                items: const [
-                  _FaqItem(
-                    question: 'Why do I need a subscription?',
-                    answer:
-                        'Subscriptions unlock cloud sync, image uploads, translation, and AI-powered formatting.',
-                  ),
-                  _FaqItem(
-                    question: 'How can I cancel my subscription?',
-                    answer:
-                        'Manage or cancel your plan anytime through your App Store or Google Play account settings.',
-                  ),
+                title: t.faqsSectionSubSupport,
+                items: [
+                  _FaqItem(question: t.faqsQWhySub, answer: t.faqsAWhySub),
+                  _FaqItem(question: t.faqsQCancel, answer: t.faqsACancel),
                 ],
               ),
             ],

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class TrialEndedScreen extends StatefulWidget {
   const TrialEndedScreen({super.key});
@@ -31,6 +32,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F7FE),
@@ -53,7 +55,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                       children: [
                         const SizedBox(height: 16),
                         Text(
-                          'Trial Ended',
+                          loc.trialEndedTitle, // "Trial Ended"
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
@@ -88,7 +90,7 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                                       ),
                                       const SizedBox(height: 20),
                                       Text(
-                                        'Your free trial has ended',
+                                        loc.trialEndedHeadline, // "Your free trial has ended"
                                         style: theme.textTheme.headlineSmall
                                             ?.copyWith(
                                               fontWeight: FontWeight.bold,
@@ -99,7 +101,8 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                                       ),
                                       const SizedBox(height: 12),
                                       Text(
-                                        'To continue using RecipeVault AI features like scanning, translation, and image uploads, please choose a plan below.',
+                                        loc.trialEndedDescription,
+                                        // "To continue using RecipeVault AI features..."
                                         style: theme.textTheme.bodyMedium
                                             ?.copyWith(
                                               color: theme.colorScheme.onSurface
@@ -136,9 +139,9 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
                                           Icons.arrow_forward_ios,
                                           size: 16,
                                         ),
-                                        label: const Text(
-                                          'See all plan options',
-                                        ),
+                                        label: Text(
+                                          loc.seePlanOptions,
+                                        ), // "See all plan options"
                                       ),
                                     ],
                                   ),

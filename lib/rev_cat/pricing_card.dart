@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class PricingCard extends StatelessWidget {
   final Package package;
@@ -20,13 +21,14 @@ class PricingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
     final product = package.storeProduct;
     final price = product.priceString;
 
-    final title = _getTitle(package);
-    final subtitle = _getSubtitle(package);
-    final description = _getDescription(package);
-    final features = _getFeatures(package);
+    final title = _getTitle(loc, package);
+    final subtitle = _getSubtitle(loc, package);
+    final description = _getDescription(loc, package);
+    final features = _getFeatures(loc, package);
 
     final isAnnual = _isAnnual(package);
     final isMonthly =
@@ -90,7 +92,7 @@ class PricingCard extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
-                              '🏷️ Best Value – Save £34/year vs monthly & equivalent to £4.17/mo',
+                              '🏷️ ${loc.badgeBestValue}',
                               style: theme.textTheme.labelSmall?.copyWith(
                                 fontWeight: FontWeight.w500,
                                 color: theme.colorScheme.primary,
@@ -127,14 +129,14 @@ class PricingCard extends StatelessWidget {
                               ? OutlinedButton.icon(
                                   onPressed: null,
                                   icon: const Icon(Icons.check_circle_outline),
-                                  label: const Text('Current Plan'),
+                                  label: Text(loc.badgeCurrentPlan),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.grey.shade600,
                                   ),
                                 )
                               : ElevatedButton(
                                   onPressed: onTap,
-                                  child: const Text('Subscribe'),
+                                  child: Text(loc.upgradeNow),
                                 ),
                         ),
                       ],
@@ -166,7 +168,7 @@ class PricingCard extends StatelessWidget {
                           ],
                         ),
                         child: Text(
-                          badge ?? '7-Day Free Trial',
+                          badge ?? loc.badgeFreeTrial,
                           style: theme.textTheme.labelSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -189,56 +191,71 @@ class PricingCard extends StatelessWidget {
         period.contains('y');
   }
 
-  String _getTitle(Package package) {
-    return switch (package.offeringIdentifier) {
-      'home_chef_plan' => 'Home Chef Plan',
-      'master_chef_plan' => 'Master Chef',
-      _ => package.storeProduct.title,
-    };
+  String _getTitle(AppLocalizations loc, Package package) {
+    switch (package.offeringIdentifier) {
+      case 'home_chef_plan':
+        return loc.planHomeChef;
+      case 'master_chef_plan':
+        return loc.planMasterChef;
+      default:
+        return package.storeProduct.title;
+    }
   }
 
-  String? _getSubtitle(Package package) {
+  String? _getSubtitle(AppLocalizations loc, Package package) {
     final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
     if (package.offeringIdentifier == 'master_chef_plan') {
-      return period.contains('y') ? 'Annual Plan' : 'Monthly Plan';
+      return period.contains('y')
+          ? loc.planMasterChefSubtitleAnnual
+          : loc.planMasterChefSubtitleMonthly;
+    }
+    if (package.offeringIdentifier == 'home_chef_plan') {
+      // If Home Chef can be annual/monthly, localize accordingly; else return null.
+      return period.contains('y')
+          ? loc.planHomeChefSubtitleAnnual
+          : loc.planHomeChefSubtitleMonthly;
     }
     return null;
   }
 
-  String _getDescription(Package package) {
+  String _getDescription(AppLocalizations loc, Package package) {
     final offering = package.offeringIdentifier;
     final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
 
-    return switch (offering) {
-      'home_chef_plan' =>
-        'A smart step up – perfect for regular home cooks who want a little more power.',
-      'master_chef_plan' =>
-        period.contains('y')
-            ? 'The ultimate plan for serious foodies – best value if you’re all in.'
-            : 'For those who want it all – maximum access, every month.',
-      _ => 'Enjoy full access to RecipeVault features and AI-powered tools.',
-    };
+    switch (offering) {
+      case 'home_chef_plan':
+        return loc.planHomeChefDescription;
+      case 'master_chef_plan':
+        return period.contains('y')
+            ? loc.planMasterChefDescriptionAnnual
+            : loc.planMasterChefDescriptionMonthly;
+      default:
+        // Optional: add a generic key if you want to localize this too.
+        return 'Enjoy full access to RecipeVault features and AI-powered tools.';
+    }
   }
 
-  List<String> _getFeatures(Package package) {
-    return switch (package.offeringIdentifier) {
-      'home_chef_plan' => [
-        '👨‍🍳 20 AI recipe cards/month – cook new ideas effortlessly',
-        '🌍 5 translations/month – scan handwritten or foreign recipes',
-        '📦 Save your favourite recipes to your personal vault',
-        '🏷️ Create and manage up to 3 custom categories',
-        '🔗 Share your recipes with friends and family',
-      ],
-
-      'master_chef_plan' => [
-        '🍽️ 100 AI recipe cards/month – no limits on creativity',
-        '🈂️ 20 translations/month – perfect for international dishes',
-        '📦 Unlimited recipe saving to your personal vault',
-        '🏷️ Unlimited category creation & advanced sorting tools',
-        '🔗 Share your recipes anywhere with public links',
-        '⚡ Priority AI processing – faster and smarter every time',
-      ],
-      _ => ['AI recipe formatting', 'Save recipes to your vault'],
-    };
+  List<String> _getFeatures(AppLocalizations loc, Package package) {
+    switch (package.offeringIdentifier) {
+      case 'home_chef_plan':
+        return [
+          loc.featureHomeChef1,
+          loc.featureHomeChef2,
+          loc.featureHomeChef3,
+          loc.featureHomeChef4,
+          loc.featureHomeChef5,
+        ];
+      case 'master_chef_plan':
+        return [
+          loc.featureMasterChef1,
+          loc.featureMasterChef2,
+          loc.featureMasterChef3,
+          loc.featureMasterChef4,
+          loc.featureMasterChef5,
+          loc.featureMasterChef6,
+        ];
+      default:
+        return [loc.featureUnlimitedRecipes, loc.featureCloudBackup];
+    }
   }
 }

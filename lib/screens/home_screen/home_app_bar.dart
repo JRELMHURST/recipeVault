@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final int selectedIndex;
@@ -19,6 +20,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
     final tier = context.watch<SubscriptionService>().tier;
 
     final isFreeTier = tier.isEmpty || tier == 'none' || tier == 'free';
@@ -31,7 +33,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         alignment: Alignment.center,
         children: [
           Text(
-            _getAppBarTitle(selectedIndex, tier),
+            _getAppBarTitle(loc, selectedIndex, tier),
             style: theme.textTheme.titleLarge?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w800,
@@ -53,7 +55,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       // 🔁 Show either toggle or refresh on the leading side
       leading: switch (selectedIndex) {
         1 when viewModeIcon != null && onToggleViewMode != null => Tooltip(
-          message: 'Toggle view mode',
+          message: loc.appBarToggleViewMode, // NEW KEY
           waitDuration: const Duration(milliseconds: 300),
           child: IconButton(
             icon: Icon(viewModeIcon, color: theme.appBarTheme.iconTheme?.color),
@@ -61,7 +63,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
         2 => Tooltip(
-          message: 'Refresh your subscription plan',
+          message: loc.appBarRefreshSubscription, // NEW KEY
           waitDuration: const Duration(milliseconds: 300),
           child: IconButton(
             icon: const Icon(Icons.refresh),
@@ -70,9 +72,9 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
               await subService.syncRevenueCatEntitlement();
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Subscription plan refreshed.'),
-                    duration: Duration(seconds: 2),
+                  SnackBar(
+                    content: Text(loc.subscriptionRefreshed), // NEW KEY
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               }
@@ -97,9 +99,9 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 shape: const StadiumBorder(),
               ),
-              child: const Text(
-                'Upgrade',
-                style: TextStyle(
+              child: Text(
+                loc.upgradeNow,
+                style: const TextStyle(
                   color: Colors.amber,
                   fontWeight: FontWeight.bold,
                 ),
@@ -110,19 +112,20 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  String _getAppBarTitle(int index, String tier) {
+  String _getAppBarTitle(AppLocalizations loc, int index, String tier) {
     if (index != 1) {
       return switch (index) {
-        0 => 'Create',
-        2 => 'Settings',
-        _ => 'RecipeVault',
+        // Using existing keys to avoid new strings:
+        0 => loc.scanRecipe,
+        2 => loc.settings,
+        _ => loc.appTitle,
       };
     }
 
     return switch (tier) {
-      'home_chef' => '👨‍🍳 Home Chef',
-      'master_chef' => '👑 Master Chef',
-      _ => 'RecipeVault',
+      'home_chef' => '👨‍🍳 ${loc.planHomeChef}',
+      'master_chef' => '👑 ${loc.planMasterChef}',
+      _ => loc.appTitle,
     };
   }
 

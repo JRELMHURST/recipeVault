@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
@@ -25,32 +26,37 @@ class CategorySpeedDial extends StatefulWidget {
 
 class _CategorySpeedDialState extends State<CategorySpeedDial> {
   void _showAddCategoryDialog(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final controller = TextEditingController();
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Add New Category"),
+        title: Text(l.addCategoryTitle), // “Add New Category”
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(hintText: "e.g. Snacks"),
+          decoration: InputDecoration(
+            hintText: l.addCategoryHint,
+          ), // “e.g. Snacks”
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: Text(l.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
               final newCategory = controller.text.trim();
               if (newCategory.isNotEmpty) {
                 await CategoryService.saveCategory(newCategory);
+                if (!mounted) return;
                 widget.onCategoryChanged(); // Trigger UI update
               }
+              if (!mounted) return;
               Navigator.pop(context);
             },
-            child: const Text("Add"),
+            child: Text(l.add),
           ),
         ],
       ),
@@ -58,18 +64,17 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
   }
 
   Future<void> _startCreateFlow(BuildContext context) async {
+    final l = AppLocalizations.of(context)!;
+
     if (!widget.allowCreation) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            '🔒 Recipe creation is limited to Home Chef and Master Chef plans.',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l.recipeCreationLimited)));
       return;
     }
 
     final files = await ImageProcessingService.pickAndCompressImages();
+    if (!mounted) return;
     if (files.isNotEmpty) {
       ProcessingOverlay.show(context, files);
     }
@@ -98,6 +103,7 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final subscription = Provider.of<SubscriptionService>(context);
+    final l = AppLocalizations.of(context)!;
 
     return SpeedDial(
       icon: Icons.add,
@@ -108,31 +114,25 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
         if (subscription.showUsageWidget)
           SpeedDialChild(
             child: const Icon(Icons.bar_chart_rounded),
-            label: 'Usage',
+            label: l.usage,
             onTap: () => _showUsageDialog(context),
           ),
         SpeedDialChild(
           child: const Icon(Icons.category),
-          label: widget.allowCreation
-              ? 'New Category'
-              : 'Upgrade to Add Category',
+          label: widget.allowCreation ? l.addCategory : l.upgradeToAddCategory,
           onTap: widget.allowCreation
               ? () => _showAddCategoryDialog(context)
               : () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        '🔒 Category creation is limited to Home Chef and Master Chef plans.',
-                      ),
-                    ),
+                    SnackBar(content: Text(l.categoryCreationLimited)),
                   );
                 },
         ),
         SpeedDialChild(
           child: const Icon(Icons.receipt_long_rounded),
           label: widget.allowCreation
-              ? 'Create Recipe'
-              : 'Upgrade to Create Recipe',
+              ? l.createRecipe
+              : l.upgradeToCreateRecipe,
           onTap: () => _startCreateFlow(context),
         ),
       ],

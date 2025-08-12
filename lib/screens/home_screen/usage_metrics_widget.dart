@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/core/theme.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class UsageMetricsWidget extends StatefulWidget {
   const UsageMetricsWidget({super.key});
@@ -95,6 +96,7 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
   @override
   Widget build(BuildContext context) {
     final subscription = context.watch<SubscriptionService>();
+    final loc = AppLocalizations.of(context)!;
 
     if ((!subscription.trackUsage && !subscription.showUsageWidget) ||
         loading) {
@@ -121,7 +123,7 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '📊 Usage this month',
+            loc.usageThisMonthTitle,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
               fontSize: 15,
@@ -136,21 +138,21 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
                 children: [
                   _usageMetric(
                     icon: Icons.auto_awesome,
-                    label: 'AI Recipes',
+                    label: loc.labelAiRecipes,
                     used: recipesUsed,
                     max: maxRecipes,
                     colour: AppColours.turquoise,
                     percent: _recipeAnimation.value,
-                    subtitle: 'out of $maxRecipes this month',
+                    subtitle: loc.usageOutOfThisMonth(maxRecipes),
                   ),
                   _usageMetric(
                     icon: Icons.translate,
-                    label: 'Translations',
+                    label: loc.labelTranslations,
                     used: translationsUsed,
                     max: maxTranslations,
                     colour: AppColours.lavender,
                     percent: _translationAnimation.value,
-                    subtitle: 'monthly limit of $maxTranslations',
+                    subtitle: loc.usageMonthlyLimit(maxTranslations),
                   ),
                 ],
               );
@@ -170,12 +172,14 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
     required double percent,
     required String subtitle,
   }) {
+    final loc = AppLocalizations.of(context)!;
+
     return Column(
       children: [
         Icon(icon, size: 20, color: colour),
         const SizedBox(height: 4),
         Text(
-          '$used / $max',
+          loc.usageCount(used, max),
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.bold,
             fontSize: 13,

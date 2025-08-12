@@ -37,6 +37,8 @@
 
   "upgradeNow": "Upgrade Now",
   "trialAvailable": "Free Trial Available",
+  "upgradeBannerMessage": "Unlock more recipes, translations, and features – upgrade now!",
+
   "trialDaysRemaining": "{days} days remaining",
   "@trialDaysRemaining": {
     "description": "Shows the number of days left in a trial.",
@@ -47,12 +49,45 @@
   "planHomeChef": "Home Chef",
   "planMasterChef": "Master Chef",
   "planFree": "Free Plan",
+  "unknownTier": "Unknown Tier",
+  "@unknownTier": {
+    "description": "Shown when the app cannot identify the user's subscription tier"
+  },
+
+  "specialAccessBadge": "⭐ {tierLabel}",
+  "@specialAccessBadge": {
+    "description": "Shown when a user has special access for their tier",
+    "placeholders": { "tierLabel": { "type": "String" } }
+  },
+
+  "planHomeChefSubtitleAnnual": "Annual Plan",
+  "planHomeChefSubtitleMonthly": "Monthly Plan",
+  "planMasterChefSubtitleAnnual": "Annual Plan",
+  "planMasterChefSubtitleMonthly": "Monthly Plan",
+
+  "planHomeChefDescription": "A smart step up – perfect for regular home cooks who want a little more power.",
+  "planMasterChefDescriptionAnnual": "The ultimate plan for serious foodies – best value if you’re all in.",
+  "planMasterChefDescriptionMonthly": "For those who want it all – maximum access, every month.",
+
   "featureUnlimitedRecipes": "Unlimited recipe scans",
   "featureUnlimitedTranslations": "Unlimited translations",
   "featureCloudBackup": "Cloud backup",
   "featureCategories": "Custom categories",
   "featureFavourites": "Mark favourites",
   "featureVaultSync": "Sync across devices",
+
+  "featureHomeChef1": "👨‍🍳 20 AI recipe cards/month – cook new ideas effortlessly",
+  "featureHomeChef2": "🌍 5 translations/month – scan handwritten or foreign recipes",
+  "featureHomeChef3": "📦 Save your favourite recipes to your personal vault",
+  "featureHomeChef4": "🏷️ Create and manage up to 3 custom categories",
+  "featureHomeChef5": "🔗 Share your recipes with friends and family",
+
+  "featureMasterChef1": "🍽️ 100 AI recipe cards/month – no limits on creativity",
+  "featureMasterChef2": "🈂️ 20 translations/month – perfect for international dishes",
+  "featureMasterChef3": "📦 Unlimited recipe saving to your personal vault",
+  "featureMasterChef4": "🏷️ Unlimited category creation & advanced sorting tools",
+  "featureMasterChef5": "🔗 Share your recipes anywhere with public links",
+  "featureMasterChef6": "⚡ Priority AI processing – faster and smarter every time",
 
   "onboardingScan": "Tap + to scan a recipe and save it instantly.",
   "onboardingSwitchView": "Switch between grid and list views here.",
@@ -65,6 +100,31 @@
   "@translationUsed": {
     "description": "Shown when a recipe was translated from a specific language.",
     "placeholders": { "language": { "type": "String" } }
+  },
+
+  "usageThisMonthTitle": "📊 Usage this month",
+  "@usageThisMonthTitle": { "description": "Title above the usage meters" },
+  "labelAiRecipes": "AI Recipes",
+  "@labelAiRecipes": { "description": "Label for AI recipe usage" },
+  "labelTranslations": "Translations",
+  "@labelTranslations": { "description": "Label for translations usage" },
+  "usageCount": "{used} / {max}",
+  "@usageCount": {
+    "description": "Shows usage count like '3 / 20'",
+    "placeholders": {
+      "used": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "usageOutOfThisMonth": "out of {max} this month",
+  "@usageOutOfThisMonth": {
+    "description": "Subtitle under AI usage",
+    "placeholders": { "max": { "type": "int" } }
+  },
+  "usageMonthlyLimit": "monthly limit of {max}",
+  "@usageMonthlyLimit": {
+    "description": "Subtitle under translations usage",
+    "placeholders": { "max": { "type": "int" } }
   },
 
   "error": "Error",
@@ -132,6 +192,17 @@
   "signInWithApple": "Sign in with Apple",
   "registerCta": "Don't have an account? Register",
 
+  "signInCancelled": "Sign-in was cancelled.",
+  "@signInCancelled": { "description": "Shown when Google/Apple sign-in flow is cancelled by the user" },
+  "authInvalidCredential": "Invalid email or password.",
+  "@authInvalidCredential": { "description": "Auth error: invalid-credential" },
+  "authUserNotFound": "No account found with that email.",
+  "@authUserNotFound": { "description": "Auth error: user-not-found" },
+  "authWrongPassword": "Incorrect password.",
+  "@authWrongPassword": { "description": "Auth error: wrong-password" },
+  "authTooManyRequests": "Too many attempts. Please try again later.",
+  "@authTooManyRequests": { "description": "Auth error: too-many-requests" },
+
   "createAccountTitle": "Create your\\nRecipeVault account",
   "trialLine": "Enjoy a 7-day free trial – no card required.",
   "createAccountButton": "Create Account",
@@ -162,5 +233,59 @@
   "legalPrivacy": "Privacy Policy",
   "legalAutoRenew": "Subscriptions auto-renew unless cancelled.",
   "legalManageApple": "Manage your subscription in Apple Settings.",
-  "manageOrCancelCta": "Manage or cancel your subscription"
+  "manageOrCancelCta": "Manage or cancel your subscription",
+
+  "planDefaultDescription": "Enjoy full access to RecipeVault features and AI-powered tools.",
+
+  "trialEndedTitle": "Trial Ended",
+  "trialEndedHeadline": "Your free trial has ended",
+  "trialEndedDescription": "To continue using RecipeVault AI features like scanning, translation, and image uploads, please choose a plan below.",
+  "seePlanOptions": "See all plan options",
+
+  "appBarToggleViewMode": "Toggle view mode",
+  "@appBarToggleViewMode": { "description": "Tooltip for toggling between grid and list views" },
+  "appBarRefreshSubscription": "Refresh your subscription plan",
+  "@appBarRefreshSubscription": { "description": "Tooltip for the refresh subscription button" },
+  "subscriptionRefreshed": "Subscription plan refreshed.",
+  "@subscriptionRefreshed": { "description": "Snackbar message after refreshing subscription" },
+
+  "upgradeToUnlockTitle": "Upgrade to Unlock",
+  "@upgradeToUnlockTitle": { "description": "Title for the dialog shown when trying to use a locked feature" },
+  "imageUploadLockedMessage": "Creating recipes from images is available on paid plans.",
+  "@imageUploadLockedMessage": { "description": "Main message in dialog when image upload feature is locked" },
+  "upgradeToUnlockFeature": "Upgrade to unlock this feature.",
+  "@upgradeToUnlockFeature": { "description": "Secondary message in locked feature dialog" },
+
+  "createFromImagesPaid": "Creating recipes from images is available on paid plans.",
+  "@createFromImagesPaid": { "description": "Shown when user tries to create from images on free tier" },
+  "upgradeToUnlockBody": "Upgrade to unlock this feature.",
+  "@upgradeToUnlockBody": { "description": "Secondary message in locked feature dialog" },
+  "tabCreate": "Create",
+  "@tabCreate": { "description": "Bottom nav label for create tab" },
+  "tabVault": "Vault",
+  "@tabVault": { "description": "Bottom nav label for vault tab" },
+  "tabProfile": "Profile",
+  "@tabProfile": { "description": "Bottom nav label for profile tab" },
+
+  "viewPlans": "View Plans",
+  "@viewPlans": { "description": "Button text to navigate to paywall" },
+
+  "addCategoryTitle": "Add New Category",
+  "@addCategoryTitle": { "description": "Dialog title for creating a category" },
+  "addCategoryHint": "e.g. Snacks",
+  "@addCategoryHint": { "description": "Hint text in the new category text field" },
+  "add": "Add",
+  "@add": { "description": "Generic Add action label" },
+  "usage": "Usage",
+  "@usage": { "description": "Label for usage metrics button" },
+  "createRecipe": "Create Recipe",
+  "@createRecipe": { "description": "Speed dial label to start recipe creation" },
+  "upgradeToCreateRecipe": "Upgrade to Create Recipe",
+  "@upgradeToCreateRecipe": { "description": "Locked label for create recipe when plan disallows" },
+  "upgradeToAddCategory": "Upgrade to Add Category",
+  "@upgradeToAddCategory": { "description": "Locked label for add category when plan disallows" },
+  "recipeCreationLimited": "🔒 Recipe creation is limited to Home Chef and Master Chef plans.",
+  "@recipeCreationLimited": { "description": "SnackBar text when user cannot create recipes on current plan" },
+  "categoryCreationLimited": "🔒 Category creation is limited to Home Chef and Master Chef plans.",
+  "@categoryCreationLimited": { "description": "SnackBar text when user cannot create categories on current plan" }
 }

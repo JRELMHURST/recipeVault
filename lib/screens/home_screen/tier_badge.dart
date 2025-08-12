@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 
 class TierBadge extends StatelessWidget {
@@ -13,6 +14,7 @@ class TierBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
     final subscriptionService = Provider.of<SubscriptionService>(
       context,
       listen: false,
@@ -27,7 +29,7 @@ class TierBadge extends StatelessWidget {
         if (isFreeTier) {
           return showAsTitle
               ? Text(
-                  'RecipeVault',
+                  loc.appTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: overrideColor ?? Colors.white,
@@ -37,14 +39,14 @@ class TierBadge extends StatelessWidget {
               : const SizedBox.shrink();
         }
 
-        // Known entitlements
+        // Known entitlements mapped to localized labels
         final tierStyles = {
-          'home_chef': ('Home Chef', Colors.teal),
-          'master_chef': ('Master Chef', Colors.amber),
+          'home_chef': (loc.planHomeChef, Colors.teal),
+          'master_chef': (loc.planMasterChef, Colors.amber),
         };
 
         final style = tierStyles[tier];
-        String label = style?.$1 ?? '❓ Unknown';
+        String label = style?.$1 ?? '❓ ${loc.unknownError}';
         final baseColour = overrideColor ?? style?.$2 ?? Colors.grey;
 
         if (tier == 'home_chef' && isSpecial) {

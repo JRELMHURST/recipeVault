@@ -10,6 +10,7 @@ import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/settings/settings_screen.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart'; // ⬅️ add this
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -55,6 +56,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onNavTap(int index) async {
+    final loc = AppLocalizations.of(context)!;
+
     if (index == 0 && !_isProcessing) {
       _isProcessing = true;
 
@@ -86,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Upgrade to Unlock',
+                    loc.upgradeToUnlockTitle, // "Upgrade to Unlock"
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.deepPurple,
@@ -94,15 +97,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Creating recipes from images is available on paid plans.',
-                    style: TextStyle(fontSize: 15, color: Colors.black87),
+                  Text(
+                    loc.createFromImagesPaid, // "Creating recipes from images…"
+                    style: const TextStyle(fontSize: 15, color: Colors.black87),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Upgrade to unlock this feature.',
-                    style: TextStyle(fontSize: 14, color: Colors.black54),
+                  Text(
+                    loc.upgradeToUnlockBody, // "Upgrade to unlock this feature."
+                    style: const TextStyle(fontSize: 14, color: Colors.black54),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -120,9 +123,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'View Plans',
-                        style: TextStyle(
+                      child: Text(
+                        loc.seePlanOptions, // reuse
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -131,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                    child: Text(loc.cancel),
                   ),
                 ],
               ),
@@ -166,6 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: HomeAppBar(
@@ -201,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? theme.colorScheme.primary
                   : theme.iconTheme.color?.withOpacity(0.5) ?? Colors.grey,
             ),
-            label: "Create",
+            label: loc.tabCreate, // "Create"
           ),
           NavigationDestination(
             icon: Icon(
@@ -210,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? theme.colorScheme.primary
                   : theme.iconTheme.color?.withOpacity(0.5) ?? Colors.grey,
             ),
-            label: "Vault",
+            label: loc.tabVault, // "Vault"
           ),
           NavigationDestination(
             icon: Icon(
@@ -219,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? theme.colorScheme.primary
                   : theme.iconTheme.color?.withOpacity(0.5) ?? Colors.grey,
             ),
-            label: "Profile",
+            label: loc.tabProfile, // "Profile"
           ),
         ],
       ),

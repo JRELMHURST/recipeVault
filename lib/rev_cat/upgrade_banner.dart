@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class UpgradeBanner extends StatefulWidget {
-  final String message;
+  /// If null, a localized fallback is used (e.g. AppLocalizations.upgradeNow).
+  final String? message;
 
-  const UpgradeBanner({super.key, required this.message});
+  const UpgradeBanner({super.key, this.message});
 
   @override
   State<UpgradeBanner> createState() => _UpgradeBannerState();
@@ -20,7 +22,7 @@ class _UpgradeBannerState extends State<UpgradeBanner> {
   @override
   void initState() {
     super.initState();
-    // Optional: Auto-dismiss after 10 seconds
+    // Optional: auto-dismiss after 10 seconds
     Future.delayed(const Duration(seconds: 10), () {
       if (mounted && _visible) _dismiss();
     });
@@ -41,6 +43,8 @@ class _UpgradeBannerState extends State<UpgradeBanner> {
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final loc = AppLocalizations.of(context)!;
+    final text = widget.message ?? loc.upgradeNow; // localized fallback
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -72,7 +76,7 @@ class _UpgradeBannerState extends State<UpgradeBanner> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    widget.message,
+                    text,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w500,
                       color: isDark ? Colors.white70 : Colors.black87,

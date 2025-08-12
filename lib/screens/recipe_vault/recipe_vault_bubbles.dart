@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+// NOTE: your file is spelled "dismissable_bubble.dart" in the project notes.
+// If it's actually "dismissible_bubble.dart", change the import accordingly.
 import 'package:recipe_vault/screens/recipe_vault/dismissable_bubble.dart';
 
 class RecipeVaultBubbles extends StatelessWidget {
@@ -21,46 +23,71 @@ class RecipeVaultBubbles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final screenHeight = mediaQuery.size.height;
-    final bottomInset = mediaQuery.padding.bottom;
-
-    final scanOffset = Offset(54, screenHeight - bottomInset - 350);
-    const viewToggleOffset = Offset(20, kToolbarHeight - 50);
-    const longPressOffset = Offset(40, 200);
-
-    assert(
-      [showScan, showViewToggle, showLongPress].where((x) => x).length <= 1,
-      'Only one bubble should be visible at a time.',
+    // Must be a child of a Stack (you already are).
+    return IgnorePointer(
+      // still lets Dismissible/InkWell receive taps
+      ignoring: false,
+      child: Stack(
+        children: [
+          if (showViewToggle)
+            DismissibleBubble(
+              message: 'Switch views here',
+              // near the AppBar/right side
+              position: _posFrom(context, top: 56, right: 16),
+              onDismiss: onDismissViewToggle,
+            ),
+          if (showLongPress)
+            DismissibleBubble(
+              message: 'Long‑press a recipe for options',
+              // roughly centre; nudged up a bit
+              position: _posFrom(
+                context,
+                topFraction: 0.40,
+                leftFraction: 0.10,
+              ),
+              onDismiss: onDismissLongPress,
+            ),
+          if (showScan)
+            DismissibleBubble(
+              message: 'Scan recipes with the + button',
+              // above FAB area (bottom‑right)
+              position: _posFrom(context, bottom: 96, right: 16),
+              onDismiss: onDismissScan,
+            ),
+        ],
+      ),
     );
+  }
 
-    return Stack(
-      children: [
-        if (showScan)
-          DismissibleBubble(
-            key: const ValueKey('bubble_scan'),
-            message:
-                '📸 Scan Recipes\nTap “Create” or + to upload and scan recipe images.',
-            position: scanOffset,
-            onDismiss: onDismissScan,
-          ),
-        if (showViewToggle)
-          DismissibleBubble(
-            key: const ValueKey('bubble_view_toggle'),
-            message:
-                '👁️ Switch Views\nTap to change how recipes are displayed.',
-            position: viewToggleOffset,
-            onDismiss: onDismissViewToggle,
-          ),
-        if (showLongPress)
-          DismissibleBubble(
-            key: const ValueKey('bubble_long_press'),
-            message:
-                '📌 Long-press a recipe\nTap and hold to favourite or assign a category.',
-            position: longPressOffset,
-            onDismiss: onDismissLongPress,
-          ),
-      ],
-    );
+  /// Helper to place bubbles using either absolute (top/left/right/bottom)
+  /// or screen‑fraction positions.
+  Offset _posFrom(
+    BuildContext context, {
+    double? top,
+    double? left,
+    double? right,
+    double? bottom,
+    double? topFraction,
+    double? leftFraction,
+  }) {
+    final size = MediaQuery.of(context).size;
+
+    // If right/bottom provided, convert to left/top using screen size
+    final resolvedLeft =
+        left ??
+        (right != null
+            ? (size.width - right - 280)
+            : (leftFraction != null ? size.width * leftFraction : 16));
+    final resolvedTop =
+        top ??
+        (bottom != null
+            ? (size.height - bottom - 80)
+            : (topFraction != null ? size.height * topFraction : 80));
+
+    // Clamp so it stays on‑screen
+    final clampedLeft = resolvedLeft.clamp(8.0, size.width - 288.0);
+    final clampedTop = resolvedTop.clamp(8.0, size.height - 120.0);
+
+    return Offset(clampedLeft.toDouble(), clampedTop.toDouble());
   }
 }

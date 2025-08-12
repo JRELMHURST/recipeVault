@@ -9,7 +9,7 @@ import 'package:recipe_vault/utils/recipe_pdf_generator.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 void showRecipeDialog(BuildContext context, RecipeCardModel recipe) {
-  final markdown = formatRecipeMarkdown(recipe);
+  final markdown = formatRecipeMarkdown(context, recipe);
 
   showDialog(
     context: context,

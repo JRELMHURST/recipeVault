@@ -1,7 +1,11 @@
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
+import 'package:flutter/widgets.dart';
 
 /// Converts a [RecipeCardModel] into formatted markdown text.
-String formatRecipeMarkdown(RecipeCardModel recipe) {
+String formatRecipeMarkdown(BuildContext context, RecipeCardModel recipe) {
+  final l = AppLocalizations.of(context);
+
   final ingredients = recipe.ingredients.map((i) => "- $i").join("\n");
 
   // Strip any leading numbers or bullets from original instructions
@@ -23,19 +27,19 @@ String formatRecipeMarkdown(RecipeCardModel recipe) {
   final hintsList = recipe.hints;
   final hints = hintsList.isNotEmpty
       ? hintsList.map((h) => "- $h").join("\n")
-      : "- No additional tips provided.";
+      : "- ${l.noAdditionalTips}";
 
   return '''
 ---
-Title: ${recipe.title}
+${l.title}: ${recipe.title}
 
-Ingredients:
+${l.ingredients}:
 $ingredients
 
-Instructions:
+${l.instructions}:
 $instructions
 
-Hints & Tips:
+${l.hintsAndTips}:
 $hints
 ---
 ''';

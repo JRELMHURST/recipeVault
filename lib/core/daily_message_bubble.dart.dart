@@ -1,5 +1,7 @@
 // ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:recipe_vault/core/daily_message_service.dart';
 
@@ -16,15 +18,14 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble> {
   @override
   void initState() {
     super.initState();
-    _checkDismissed();
+    _restoreDismissState();
   }
 
-  Future<void> _checkDismissed() async {
+  Future<void> _restoreDismissState() async {
     final prefs = await SharedPreferences.getInstance();
     final dismissed = prefs.getBool(_todayKey()) ?? false;
-    if (dismissed) {
-      setState(() => _isVisible = false);
-    }
+    if (!mounted) return;
+    if (dismissed) setState(() => _isVisible = false);
   }
 
   String _todayKey() {
@@ -35,6 +36,7 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble> {
   Future<void> _dismissBubble() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_todayKey(), true);
+    if (!mounted) return;
     setState(() => _isVisible = false);
   }
 
@@ -42,9 +44,14 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble> {
   Widget build(BuildContext context) {
     if (!_isVisible) return const SizedBox.shrink();
 
-    final message = DailyMessageService.getTodayMessage(context);
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    final rawMessage = DailyMessageService.getTodayMessage(context);
+    final message = (rawMessage.isEmpty)
+        ? t.dailyMessagePlaceholder
+        : rawMessage;
 
     final background = isDark
         ? const Color(0xFF2A2E39)
@@ -55,7 +62,7 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble> {
         : Colors.teal.shade700;
 
     return Dismissible(
-      key: const Key('daily_message_bubble'),
+      key: const ValueKey('daily_message_bubble'),
       direction: DismissDirection.endToStart,
       onDismissed: (_) => _dismissBubble(),
       background: Container(
@@ -82,21 +89,38 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble> {
           ],
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(Icons.emoji_objects_rounded, size: 22, color: iconColour),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                message,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w500,
-                  fontStyle: FontStyle.italic,
-                  color: isDark ? Colors.white70 : Colors.black87,
-                  height: 1.4,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t.dailyTipTitle,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    message,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
+                      fontStyle: FontStyle.italic,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
+            ),
+            IconButton(
+              tooltip: t.dismiss,
+              icon: const Icon(Icons.close_rounded, size: 18),
+              color: iconColour,
+              onPressed: _dismissBubble,
             ),
           ],
         ),

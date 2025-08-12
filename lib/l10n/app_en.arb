@@ -266,15 +266,15 @@
   "@featureMasterChef6": {
     "description": "Master Chef feature list item 6."
   },
-  "onboardingScan": "Tap + to scan a recipe and save it instantly.",
+  "onboardingScan": "Tap “Create” or + to upload and scan recipe images.",
   "@onboardingScan": {
     "description": "Onboarding tip: how to scan a recipe."
   },
-  "onboardingSwitchView": "Switch between grid and list views here.",
+  "onboardingSwitchView": "Tap to change how recipes are displayed.",
   "@onboardingSwitchView": {
     "description": "Onboarding tip: toggle layout views."
   },
-  "onboardingLongPress": "Long-press a recipe to see more options.",
+  "onboardingLongPress": "Long-press a recipe\nTap and hold to favourite or assign a category.",
   "@onboardingLongPress": {
     "description": "Onboarding tip: long-press interaction."
   },
@@ -880,5 +880,61 @@
   "tapToViewRecipe": "Tap to view recipe",
   "@tapToViewRecipe": {
     "description": "Small hint shown under a recipe title in list view."
+  },
+  "recipeOptions": "Recipe Options",
+  "@recipeOptions": {
+    "description": "Title for the bottom sheet that shows actions for a recipe"
+  },
+  "updateImage": "Update Image",
+  "@updateImage": {
+    "description": "Button label to add or update the recipe image"
+  },
+  "all": "All",
+  "@all": {
+    "description": "System category label representing all recipes"
+  },
+  "translated": "Translated",
+  "@translated": {
+    "description": "System category label for recipes that were translated"
+  },
+  "clearSearch": "Clear search",
+  "@clearSearch": {
+    "description": "Tooltip text for the clear search (X) button in the search bar."
+  },
+  "searchRecipesAndIngredients": "Search recipes or ingredients...",
+  "@searchRecipesAndIngredients": {
+    "description": "Hint when searching across recipe titles and ingredients."
+  },
+  "searchScopeTitles": "Search titles only",
+  "@searchScopeTitles": {
+    "description": "Tooltip for toggling the search scope to titles only."
+  },
+  "searchScopeTitlesIngredients": "Search titles + ingredients",
+  "@searchScopeTitlesIngredients": {
+    "description": "Tooltip for toggling the search scope to titles and ingredients."
+  },
+  "title": "Title",
+  "@title": {
+    "description": "Generic label for a recipe title (used in markdown export)."
+  },
+  "hintsAndTips": "Hints & Tips",
+  "@hintsAndTips": {
+    "description": "Label for the hints & tips section of a recipe (used in markdown export)."
+  },
+  "noAdditionalTips": "No additional tips provided.",
+  "@noAdditionalTips": {
+    "description": "Fallback text when there are no hints or tips for a recipe (used in markdown export)."
+  },
+  "bubbleScan": "📸 Scan Recipes\nTap “Create” or + to upload and scan recipe images.",
+  "@bubbleScan": {
+    "description": "Onboarding bubble message explaining how to scan recipes by uploading images."
+  },
+  "bubbleViewToggle": "👁️ Switch Views\nTap to change how recipes are displayed.",
+  "@bubbleViewToggle": {
+    "description": "Onboarding bubble message explaining how to toggle between different recipe view modes."
+  },
+  "bubbleLongPress": "📌 Long-press a recipe\nTap and hold to favourite or assign a category.",
+  "@bubbleLongPress": {
+    "description": "Onboarding bubble message explaining how to long-press a recipe card to favourite or assign a category."
   }
 }

@@ -1,9 +1,11 @@
 import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:recipe_vault/core/daily_message_bubble.dart.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
@@ -34,7 +36,9 @@ class RecipeVaultScreen extends StatefulWidget {
 class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   String? userId;
   late final CollectionReference<Map<String, dynamic>> recipeCollection;
-  StreamSubscription<QuerySnapshot>? _recipeStreamSubscription;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+  _recipeStreamSubscription;
+
   String _selectedCategory = 'All';
   String _searchQuery = '';
 
@@ -46,7 +50,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     'Dessert',
   ];
 
-  List<String> _allCategories = ['All', 'Favourites', 'Translated'];
+  List<String> _allCategories = const ['All', 'Favourites', 'Translated'];
   List<RecipeCardModel> _allRecipes = [];
 
   bool _showViewModeBubble = false;
@@ -61,11 +65,19 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           _selectedCategory == 'All' ||
           (_selectedCategory == 'Favourites' && recipe.isFavourite) ||
           categories.contains(_selectedCategory);
+
       final matchesSearch =
           _searchQuery.isEmpty ||
           recipe.title.toLowerCase().contains(_searchQuery.toLowerCase());
+
       return matchesCategory && matchesSearch;
     }).toList();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initVault());
   }
 
   @override
@@ -157,15 +169,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initVault());
-  }
-
   Future<void> _initVault() async {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user == null || user.isAnonymous) {
       debugPrint('⚠️ Skipped vault init – no signed-in user');
       return;
@@ -181,6 +186,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     final subService = Provider.of<SubscriptionService>(context, listen: false);
     final tier = subService.tier;
 
+    // Small delay to ensure context/layout is ready
     await Future.delayed(const Duration(milliseconds: 100));
 
     await Future.wait([
@@ -216,6 +222,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                   .doc(userId)
                   .collection('hiddenGlobalRecipes')
                   .get();
+
               final hiddenGlobalIds = hiddenSnapshot.docs
                   .map((doc) => doc.id)
                   .toSet();
@@ -224,6 +231,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                   .collection('global_recipes')
                   .orderBy('createdAt', descending: true)
                   .get();
+
               final globalRecipes = globalSnapshot.docs
                   .where((doc) => !hiddenGlobalIds.contains(doc.id))
                   .map((doc) => RecipeCardModel.fromJson(doc.data()))
@@ -251,9 +259,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                 return mergedRecipe;
               }).toList();
 
-              setState(() {
-                _allRecipes = merged;
-              });
+              if (!mounted) return;
+              setState(() => _allRecipes = merged);
             } catch (e) {
               debugPrint("⚠️ Live recipe sync failed: $e");
             }
@@ -309,7 +316,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  DailyMessageBubble(),
+                  const DailyMessageBubble(),
                   const SizedBox(height: 8),
                   RecipeSearchBar(
                     initialValue: _searchQuery,
@@ -340,7 +347,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                   ),
                   Expanded(
                     child: _filteredRecipes.isEmpty
-                        ? const Center(child: Text("No recipes found"))
+                        ? const Center(child: Text('No recipes found'))
                         : AnimatedSwitcher(
                             duration: const Duration(milliseconds: 300),
                             child: ResponsiveWrapper(

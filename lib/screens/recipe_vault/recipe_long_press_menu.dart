@@ -2,6 +2,7 @@
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/screens/recipe_vault/edit_recipe_screen.dart';
 
@@ -14,8 +15,17 @@ class RecipeLongPressMenu {
     required List<String> categories,
     required void Function(List<String>) onAssignCategory,
   }) async {
+    final l = AppLocalizations.of(context);
+
+    // Filter out system categories (supports localized "Favourites")
     final filteredCategories = categories
-        .where((c) => c != 'Favourites' && c != 'Translated' && c != 'All')
+        .where(
+          (c) =>
+              c != 'Favourites' && // English fallback
+              c != 'Translated' && // still literal (no l10n key yet)
+              c != 'All' && // still literal (no l10n key yet)
+              (c != l.favourites),
+        )
         .toList();
 
     final selectedCategories = List<String>.from(recipe.categories);
@@ -50,7 +60,7 @@ class RecipeLongPressMenu {
                           ),
                         ),
                         Text(
-                          'Recipe Options',
+                          'Recipe Options', // no key yet; keep literal
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
@@ -62,7 +72,9 @@ class RecipeLongPressMenu {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(10),
-                              child: recipe.imageUrl?.isNotEmpty == true
+                              child:
+                                  recipe.imageUrl != null &&
+                                      recipe.imageUrl!.isNotEmpty
                                   ? Image.network(
                                       recipe.imageUrl!,
                                       width: 48,
@@ -139,6 +151,7 @@ class RecipeLongPressMenu {
                           ],
                         ),
                         const SizedBox(height: 24),
+
                         if (filteredCategories.isNotEmpty)
                           Theme(
                             data: Theme.of(
@@ -147,7 +160,7 @@ class RecipeLongPressMenu {
                             child: ExpansionTile(
                               tilePadding: EdgeInsets.zero,
                               title: Text(
-                                'Assign Categories',
+                                l.assignCategory,
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                               childrenPadding: EdgeInsets.zero,
@@ -181,13 +194,14 @@ class RecipeLongPressMenu {
                           ),
                         if (filteredCategories.isNotEmpty)
                           const SizedBox(height: 24),
+
                         Row(
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
                                 icon: const Icon(Icons.image_rounded, size: 18),
                                 label: const Text(
-                                  'Update Image',
+                                  'Update Image', // no key yet
                                   style: TextStyle(fontSize: 13),
                                 ),
                                 onPressed: () {
@@ -216,9 +230,9 @@ class RecipeLongPressMenu {
                             Expanded(
                               child: ElevatedButton.icon(
                                 icon: const Icon(Icons.edit_rounded, size: 18),
-                                label: const Text(
-                                  'Edit',
-                                  style: TextStyle(fontSize: 13),
+                                label: Text(
+                                  l.edit,
+                                  style: const TextStyle(fontSize: 13),
                                 ),
                                 onPressed: () async {
                                   Navigator.pop(context);
@@ -250,13 +264,14 @@ class RecipeLongPressMenu {
                           ],
                         ),
                         const SizedBox(height: 16),
+
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             icon: const Icon(Icons.delete_rounded, size: 18),
-                            label: const Text(
-                              'Delete',
-                              style: TextStyle(fontSize: 13),
+                            label: Text(
+                              l.delete,
+                              style: const TextStyle(fontSize: 13),
                             ),
                             onPressed: () async {
                               final confirmed = await showDialog<bool>(
@@ -280,7 +295,7 @@ class RecipeLongPressMenu {
                                         ),
                                         const SizedBox(height: 12),
                                         Text(
-                                          'Delete Recipe?',
+                                          'Delete Recipe?', // keep literal
                                           style: Theme.of(context)
                                               .textTheme
                                               .titleMedium
@@ -290,7 +305,7 @@ class RecipeLongPressMenu {
                                         ),
                                         const SizedBox(height: 12),
                                         Text(
-                                          'This action cannot be undone. Are you sure you want to delete this recipe?',
+                                          l.deleteConfirmation,
                                           style: Theme.of(context)
                                               .textTheme
                                               .bodyMedium
@@ -321,7 +336,7 @@ class RecipeLongPressMenu {
                                                         ),
                                                   ),
                                                 ),
-                                                child: const Text('Cancel'),
+                                                child: Text(l.cancel),
                                               ),
                                             ),
                                             const SizedBox(width: 12),
@@ -340,7 +355,7 @@ class RecipeLongPressMenu {
                                                         ),
                                                   ),
                                                 ),
-                                                child: const Text('Delete'),
+                                                child: Text(l.delete),
                                               ),
                                             ),
                                           ],

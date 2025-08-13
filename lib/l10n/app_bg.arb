@@ -1,0 +1,987 @@
+{
+  "@@locale": "bg",
+
+  "loading": "Зареждане...",
+  "@loading": { "description": "Shown while an operation is in progress." },
+
+  "appTitle": "RecipeVault",
+  "@appTitle": { "description": "Main application title." },
+
+  "welcomeMessage": "Добре дошли в RecipeVault",
+  "@welcomeMessage": { "description": "Greeting shown on app launch/sign-in." },
+
+  "scanRecipe": "Сканирай рецепта",
+  "@scanRecipe": { "description": "CTA/button to start scanning a recipe." },
+
+  "saveToVault": "Запази в трезора",
+  "@saveToVault": { "description": "CTA/button to save a recipe to the user’s vault." },
+
+  "settings": "Настройки",
+  "@settings": { "description": "Menu item to open settings." },
+
+  "logout": "Изход",
+  "@logout": { "description": "Action to sign out the current user." },
+
+  "yes": "Да",
+  "@yes": { "description": "Affirmative action label." },
+
+  "no": "Не",
+  "@no": { "description": "Negative action label." },
+
+  "cancel": "Отказ",
+  "@cancel": { "description": "Cancels the current action/dialog." },
+
+  "close": "Затвори",
+  "@close": { "description": "Closes a dialog/sheet." },
+
+  "save": "Запази",
+  "@save": { "description": "Saves current changes." },
+
+  "delete": "Изтрий",
+  "@delete": { "description": "Deletes the current item." },
+
+  "edit": "Редактирай",
+  "@edit": { "description": "Begins editing the current item." },
+
+  "confirm": "Потвърди",
+  "@confirm": { "description": "Confirms the current action." },
+
+  "myVault": "Моят трезор",
+  "@myVault": { "description": "Tab/section for user’s saved recipes." },
+
+  "favourites": "Любими",
+  "@favourites": { "description": "Tab/section for favourite recipes." },
+
+  "categories": "Категории",
+  "@categories": { "description": "Tab/section for recipe categories." },
+
+  "searchRecipes": "Търсене на рецепти...",
+  "@searchRecipes": { "description": "Placeholder text in recipe search input." },
+
+  "noRecipesFound": "Няма намерени рецепти",
+  "@noRecipesFound": { "description": "Shown when a recipe search returns no results." },
+
+  "addCategory": "Добави категория",
+  "@addCategory": { "description": "Action to create a new category." },
+
+  "removeCategory": "Премахни категория",
+  "@removeCategory": { "description": "Action to remove an existing category." },
+
+  "assignCategory": "Задай категория",
+  "@assignCategory": { "description": "Action to apply a category to a recipe." },
+
+  "recipeDetails": "Детайли за рецептата",
+  "@recipeDetails": { "description": "Header/title for the recipe details screen." },
+
+  "ingredients": "Съставки",
+  "@ingredients": { "description": "Section header for ingredients list." },
+
+  "instructions": "Инструкции",
+  "@instructions": { "description": "Section header for cooking steps." },
+
+  "notes": "Бележки",
+  "@notes": { "description": "Section header for extra notes." },
+
+  "dailyTipTitle": "Дневен съвет",
+  "@dailyTipTitle": { "description": "Title above the daily tip/message card." },
+
+  "dismiss": "Отхвърли",
+  "@dismiss": { "description": "Button to hide a tip/notification." },
+
+  "dailyMessagePlaceholder": "Дневното вдъхновение ще се появи тук.",
+  "@dailyMessagePlaceholder": { "description": "Placeholder text when the daily message hasn’t loaded." },
+
+  "upgradeNow": "Надгради сега",
+  "@upgradeNow": { "description": "Primary CTA to upgrade subscription." },
+
+  "trialAvailable": "Наличен безплатен пробен период",
+  "@trialAvailable": { "description": "Indicator that a free trial can be started." },
+
+  "upgradeBannerMessage": "Отключи повече рецепти, преводи и функции – надгради сега!",
+  "@upgradeBannerMessage": { "description": "Promotional banner text encouraging upgrade." },
+
+  "trialDaysRemaining": "Остават {days} дни",
+  "@trialDaysRemaining": {
+    "description": "Shows the number of trial days remaining.",
+    "placeholders": { "days": { "type": "int" } }
+  },
+
+  "planTaster": "Дегустатор",
+  "@planTaster": { "description": "Subscription tier: entry-level plan." },
+
+  "planHomeChef": "Домашен готвач",
+  "@planHomeChef": { "description": "Subscription tier: mid-level plan." },
+
+  "planMasterChef": "Майстор-готвач",
+  "@planMasterChef": { "description": "Subscription tier: top-level plan." },
+
+  "planFree": "Безплатен план",
+  "@planFree": { "description": "Subscription tier: free access plan." },
+
+  "unknownTier": "Неизвестен план",
+  "@unknownTier": { "description": "Shown when the user’s subscription tier cannot be determined." },
+
+  "specialAccessBadge": "⭐ {tierLabel}",
+  "@specialAccessBadge": {
+    "description": "Badge label for special access within a tier.",
+    "placeholders": { "tierLabel": { "type": "String" } }
+  },
+
+  "planHomeChefSubtitleAnnual": "Годишен план",
+  "@planHomeChefSubtitleAnnual": { "description": "Subtitle for Home Chef annual plan." },
+
+  "planHomeChefSubtitleMonthly": "Месечен план",
+  "@planHomeChefSubtitleMonthly": { "description": "Subtitle for Home Chef monthly plan." },
+
+  "planMasterChefSubtitleAnnual": "Годишен план",
+  "@planMasterChefSubtitleAnnual": { "description": "Subtitle for Master Chef annual plan." },
+
+  "planMasterChefSubtitleMonthly": "Месечен план",
+  "@planMasterChefSubtitleMonthly": { "description": "Subtitle for Master Chef monthly plan." },
+
+  "planHomeChefDescription": "Умен ъпгрейд – идеален за редовни домашни готвачи, които искат малко повече мощ.",
+  "@planHomeChefDescription": { "description": "Marketing description for the Home Chef tier." },
+
+  "planMasterChefDescriptionAnnual": "Най-добрият план за истински ценители – най-изгоден, ако си напълно отдаден.",
+  "@planMasterChefDescriptionAnnual": { "description": "Marketing description for Master Chef annual plan." },
+
+  "planMasterChefDescriptionMonthly": "За тези, които искат всичко – максимален достъп всеки месец.",
+  "@planMasterChefDescriptionMonthly": { "description": "Marketing description for Master Chef monthly plan." },
+
+  "featureUnlimitedRecipes": "Неограничени сканирания на рецепти",
+  "@featureUnlimitedRecipes": { "description": "Plan feature label: unlimited AI recipe scanning." },
+
+  "featureUnlimitedTranslations": "Неограничени преводи",
+  "@featureUnlimitedTranslations": { "description": "Plan feature label: unlimited translations." },
+
+  "featureCloudBackup": "Облачно архивиране",
+  "@featureCloudBackup": { "description": "Plan feature label: cloud backup of user data." },
+
+  "featureCategories": "Персонални категории",
+  "@featureCategories": { "description": "Plan feature label: create custom categories." },
+
+  "featureFavourites": "Отбелязване като любими",
+  "@featureFavourites": { "description": "Plan feature label: mark recipes as favourites." },
+
+  "featureVaultSync": "Синхронизация между устройства",
+  "@featureVaultSync": { "description": "Plan feature label: sync vault across devices." },
+
+  "featureHomeChef1": "👨‍🍳 20 AI рецепти/месец – нови идеи без усилие",
+  "@featureHomeChef1": { "description": "Home Chef feature list item 1." },
+
+  "featureHomeChef2": "🌍 5 превода/месец – сканирай ръкописни или чуждоезични рецепти",
+  "@featureHomeChef2": { "description": "Home Chef feature list item 2." },
+
+  "featureHomeChef3": "📦 Запазвай любимите рецепти в личния си трезор",
+  "@featureHomeChef3": { "description": "Home Chef feature list item 3." },
+
+  "featureHomeChef4": "🏷️ Създай и управлявай до 3 персонални категории",
+  "@featureHomeChef4": { "description": "Home Chef feature list item 4." },
+
+  "featureHomeChef5": "🔗 Споделяй рецепти с приятели и семейство",
+  "@featureHomeChef5": { "description": "Home Chef feature list item 5." },
+
+  "featureMasterChef1": "🍽️ 100 AI рецепти/месец – без ограничения за креативността",
+  "@featureMasterChef1": { "description": "Master Chef feature list item 1." },
+
+  "featureMasterChef2": "🈂️ 20 превода/месец – перфектно за международни ястия",
+  "@featureMasterChef2": { "description": "Master Chef feature list item 2." },
+
+  "featureMasterChef3": "📦 Неограничено запазване на рецепти в личния трезор",
+  "@featureMasterChef3": { "description": "Master Chef feature list item 3." },
+
+  "featureMasterChef4": "🏷️ Неограничени категории и разширени инструменти за сортиране",
+  "@featureMasterChef4": { "description": "Master Chef feature list item 4." },
+
+  "featureMasterChef5": "🔗 Споделяй навсякъде чрез публични линкове",
+  "@featureMasterChef5": { "description": "Master Chef feature list item 5." },
+
+  "featureMasterChef6": "⚡ Приоритетна AI обработка – по-бързо и по-умно всеки път",
+  "@featureMasterChef6": { "description": "Master Chef feature list item 6." },
+
+  "onboardingScan": "Натисни +, за да сканираш рецепта и да я запазиш веднага.",
+  "@onboardingScan": { "description": "Onboarding tip: how to scan a recipe." },
+
+  "onboardingSwitchView": "Превключвай между мрежа и списък тук.",
+  "@onboardingSwitchView": { "description": "Onboarding tip: toggle layout views." },
+
+  "onboardingLongPress": "Задръж върху рецепта за повече опции.",
+  "@onboardingLongPress": { "description": "Onboarding tip: long-press interaction." },
+
+  "deleteConfirmation": "Сигурни ли сте, че искате да изтриете това?",
+  "@deleteConfirmation": { "description": "Confirmation text before deleting an item." },
+
+  "recipeSaved": "Рецептата е запазена в трезора!",
+  "@recipeSaved": { "description": "Toast/snackbar after saving a recipe." },
+
+  "recipeDeleted": "Рецептата е изтрита.",
+  "@recipeDeleted": { "description": "Toast/snackbar after deleting a recipe." },
+
+  "translationUsed": "Преведено от {language}",
+  "@translationUsed": {
+    "description": "Indicates which language the recipe was translated from.",
+    "placeholders": { "language": { "type": "String" } }
+  },
+
+  "usageThisMonthTitle": "📊 Използване този месец",
+  "@usageThisMonthTitle": { "description": "Title above usage meters." },
+
+  "labelAiRecipes": "AI рецепти",
+  "@labelAiRecipes": { "description": "Label for AI recipe usage count." },
+
+  "labelTranslations": "Преводи",
+  "@labelTranslations": { "description": "Label for translation usage count." },
+
+  "usageCount": "{used} / {max}",
+  "@usageCount": {
+    "description": "Usage count in the form 'used / max'.",
+    "placeholders": { "used": { "type": "int" }, "max": { "type": "int" } }
+  },
+
+  "usageOutOfThisMonth": "от {max} за този месец",
+  "@usageOutOfThisMonth": {
+    "description": "Subtitle under AI usage meter.",
+    "placeholders": { "max": { "type": "int" } }
+  },
+
+  "usageMonthlyLimit": "месечен лимит {max}",
+  "@usageMonthlyLimit": {
+    "description": "Subtitle under translations usage meter.",
+    "placeholders": { "max": { "type": "int" } }
+  },
+
+  "error": "Грешка",
+  "@error": { "description": "Generic error dialog title." },
+
+  "networkError": "Мрежова грешка, опитайте отново.",
+  "@networkError": { "description": "Shown for connectivity-related failures." },
+
+  "unknownError": "Нещо се обърка. Моля, опитайте по-късно.",
+  "@unknownError": { "description": "Fallback error message for unknown issues." },
+
+  "tipScanPlus": "Натисни +, за да сканираш рецепта. Дори остатъците заслужават място в трезора!",
+  "@tipScanPlus": { "description": "Daily tip: encourages scanning recipes." },
+
+  "tipFamilyClassic": "Имате семейна класика? Добавете я днес и я запазете завинаги.",
+  "@tipFamilyClassic": { "description": "Daily tip: encourages adding family recipes." },
+
+  "tipLongPressSort": "Задръж върху рецепта, за да сортираш като професионалист. Подреден трезор, щастлив готвач.",
+  "@tipLongPressSort": { "description": "Daily tip: hints at long-press to organize." },
+
+  "tipFavouriteIt": "Не само запази — направи я любима! Докосни сърцето на любимите си ястия.",
+  "@tipFavouriteIt": { "description": "Daily tip: promotes using favourites." },
+
+  "tipNewCategory": "Създай нова категория днес. „Уютни есенни ястия“, например?",
+  "@tipNewCategory": { "description": "Daily tip: suggests creating a new category." },
+
+  "tipEachScanStep": "Всяко сканиране е стъпка към твоята собствена готварска книга.",
+  "@tipEachScanStep": { "description": "Daily tip: motivational scanning message." },
+
+  "funButter": "Помни: тайната съставка обикновено е масло... или объркване.",
+  "@funButter": { "description": "Light-hearted/funny daily message." },
+
+  "funPastaHeat": "Ако не понасяш жегата... вероятно преваряваш пастата.",
+  "@funPastaHeat": { "description": "Light-hearted/funny daily message." },
+
+  "funPoachIdeas": "Поширай идеи, не яйца. Имаме и за това ръководство.",
+  "@funPoachIdeas": { "description": "Light-hearted/funny daily message." },
+
+  "funRusticMess": "Днес е чудесен ден да изпечеш бъркотия и да я наречеш „рустик“.",
+  "@funRusticMess": { "description": "Light-hearted/funny daily message." },
+
+  "funCheflebration": "Запази 100‑тата си рецепта? Това е *шефлебрация* 🎉",
+  "@funCheflebration": { "description": "Light-hearted/funny daily message with pun." },
+
+  "funMoreThanGran": "Оня момент, когато трезорът ти има повече рецепти от на баба ти.",
+  "@funMoreThanGran": { "description": "Light-hearted/funny daily message." },
+
+  "factTomatoes": "Някога доматите се смятали за отровни. А сега: 🍝",
+  "@factTomatoes": { "description": "Food fact: trivia-style daily message." },
+
+  "factExpensivePizza": "Най-скъпата пица в света струва над £2,000. Твоята: безценна.",
+  "@factExpensivePizza": { "description": "Food fact: trivia-style daily message." },
+
+  "factBananasBerries": "Бананите са горски плодове. Ягодите – не. Запази този факт!",
+  "@factBananasBerries": { "description": "Food fact: trivia-style daily message." },
+
+  "factHoneyNeverSpoils": "Медът никога не се разваля. Като най-добрите рецепти.",
+  "@factHoneyNeverSpoils": { "description": "Food fact: trivia-style daily message." },
+
+  "factOysters": "Стридите някога били храна за бедни. Днес? Лукс.",
+  "@factOysters": { "description": "Food fact: trivia-style daily message." },
+
+  "factPuffLayers": "Бутер тестото има над 700 слоя. И тук има пряк път.",
+  "@factPuffLayers": { "description": "Food fact: trivia-style daily message." },
+
+  "vaultLikeFridge": "Трезорът е като хладилник: отваряй често и поддържай свежо.",
+  "@vaultLikeFridge": { "description": "Vault-themed motivational message." },
+
+  "vaultBackUpTastebuds": "Архивирай вкусовите си рецептори. Добави нова рецепта днес.",
+  "@vaultBackUpTastebuds": { "description": "Vault-themed motivational message." },
+
+  "vaultYouOwnIt": "Това е твоят трезор. Ние само държим вратата подредена.",
+  "@vaultYouOwnIt": { "description": "Vault-themed motivational message." },
+
+  "vaultFewerWhatsForDinner": "Всяка запазена рецепта е едно по-малко „Какво има за вечеря?“",
+  "@vaultFewerWhatsForDinner": { "description": "Vault-themed motivational message." },
+
+  "vaultHungryIdeas": "Трезорът ти звъни. Гладен е за нови идеи.",
+  "@vaultHungryIdeas": { "description": "Vault-themed motivational message." },
+
+  "quoteLoveVisible": "Готвенето е любов, направена видима – запази ястие, което те усмихна днес.",
+  "@quoteLoveVisible": { "description": "Inspirational quote." },
+
+  "quoteCuriousCook": "Никой не се ражда велик готвач – само любопитен.",
+  "@quoteCuriousCook": { "description": "Inspirational quote." },
+
+  "quoteStories": "Рецептите са като истории. Какво разказва твоята днес?",
+  "@quoteStories": { "description": "Inspirational quote." },
+
+  "quoteBurntToast": "Дори прегорената филия е урок, който си струва да запазиш.",
+  "@quoteBurntToast": { "description": "Inspirational quote." },
+
+  "quoteSingleChop": "Всяко ястие започва с една-единствена сечка.",
+  "@quoteSingleChop": { "description": "Inspirational quote." },
+
+  "riddleTinGrin": "🧠 Гатанка: Започвам в кутия, завършвам с усмивка и вървя чудесно с боб. Кой съм аз?",
+  "@riddleTinGrin": { "description": "Riddle-style daily engagement message." },
+
+  "quizPuffPastry": "💡 Викторина: Можеш ли да назовеш 3 ястия с бутер тесто?",
+  "@quizPuffPastry": { "description": "Quiz-style daily engagement message." },
+
+  "challengeFiveIngredients": "🥄 Предизвикателство: Добави рецепта днес само с 5 съставки.",
+  "@challengeFiveIngredients": { "description": "Challenge-style daily engagement message." },
+
+  "triviaPoachBoil": "🍳 Трийвия: Каква е разликата между поширане и варене? Подсказка: температура!",
+  "@triviaPoachBoil": { "description": "Trivia-style daily engagement message." },
+
+  "rollOldestRecipe": "🎲 Хвърли зара — сготви най-старата рецепта в трезора!",
+  "@rollOldestRecipe": { "description": "Challenge-style daily engagement message." },
+
+  "encouragementScribbledNote": "Днес е чудесен ден да превърнеш онази надраскана бележка в запазена рецепта.",
+  "@encouragementScribbledNote": { "description": "Encouragement message to capture a loose recipe." },
+
+  "encouragementDeliciousNotPerfect": "Не се цели в съвършенство — цели се във вкусно. После го запази!",
+  "@encouragementDeliciousNotPerfect": { "description": "Encouragement message about imperfection." },
+
+  "encouragementStockedWithJoy": "Поддържай трезора като кухнята си: пълен с радост и готов за ползване.",
+  "@encouragementStockedWithJoy": { "description": "Encouragement message about maintaining the vault." },
+
+  "encouragementLegacyCookbook": "Всяка запазена рецепта е стъпка към твоята наследствена готварска книга.",
+  "@encouragementLegacyCookbook": { "description": "Encouragement message about long-term collection." },
+
+  "changePasswordTitle": "Промяна на парола",
+  "@changePasswordTitle": { "description": "Title for the change password screen." },
+
+  "passwordUpdated": "Паролата е обновена успешно",
+  "@passwordUpdated": { "description": "Toast/snackbar after a successful password change." },
+
+  "currentPasswordLabel": "Текуща парола",
+  "@currentPasswordLabel": { "description": "Label for current password input field." },
+
+  "newPasswordLabel": "Нова парола",
+  "@newPasswordLabel": { "description": "Label for new password input field." },
+
+  "confirmPasswordLabel": "Потвърди новата парола",
+  "@confirmPasswordLabel": { "description": "Label for confirm password input field." },
+
+  "enterCurrentPassword": "Въведете текущата си парола",
+  "@enterCurrentPassword": { "description": "Helper text for current password input." },
+
+  "passwordMinLength": "Минимум 6 знака",
+  "@passwordMinLength": { "description": "Validation message for minimum password length." },
+
+  "passwordsDoNotMatch": "Паролите не съвпадат",
+  "@passwordsDoNotMatch": { "description": "Validation message when password confirmation fails." },
+
+  "updatePasswordButton": "Обнови паролата",
+  "@updatePasswordButton": { "description": "CTA to submit password change." },
+
+  "emailLabel": "Имейл",
+  "@emailLabel": { "description": "Label for email input field." },
+
+  "passwordLabel": "Парола",
+  "@passwordLabel": { "description": "Label for password input field." },
+
+  "signInWithEmail": "Вход с имейл",
+  "@signInWithEmail": { "description": "CTA to sign in using email/password." },
+
+  "signInWithGoogle": "Вход с Google",
+  "@signInWithGoogle": { "description": "CTA to sign in using Google account." },
+
+  "signInWithApple": "Вход с Apple",
+  "@signInWithApple": { "description": "CTA to sign in using Apple account." },
+
+  "registerCta": "Нямате акаунт? Регистрирайте се",
+  "@registerCta": { "description": "Prompt/CTA to navigate to registration." },
+
+  "signInCancelled": "Входът беше отменен.",
+  "@signInCancelled": { "description": "Shown when a third-party sign-in flow is cancelled by the user." },
+
+  "authInvalidCredential": "Невалиден имейл или парола.",
+  "@authInvalidCredential": { "description": "Auth error for invalid credentials." },
+
+  "authUserNotFound": "Няма акаунт с този имейл.",
+  "@authUserNotFound": { "description": "Auth error when no user exists for the provided email." },
+
+  "authWrongPassword": "Грешна парола.",
+  "@authWrongPassword": { "description": "Auth error when password is incorrect." },
+
+  "authTooManyRequests": "Твърде много опити. Опитайте по-късно.",
+  "@authTooManyRequests": { "description": "Rate-limiting/lockout auth error message." },
+
+  "createAccountTitle": "Създайте своя\\nакаунт в RecipeVault",
+  "@createAccountTitle": { "description": "Title on the registration screen (with forced line break)." },
+
+  "trialLine": "Насладете се на 7 дни безплатно – без карта.",
+  "@trialLine": { "description": "Subheading explaining registration includes a free trial." },
+
+  "createAccountButton": "Създай акаунт",
+  "@createAccountButton": { "description": "CTA to complete registration." },
+
+  "continueWithGoogle": "Продължи с Google",
+  "@continueWithGoogle": { "description": "Alternate registration CTA with Google." },
+
+  "continueWithApple": "Продължи с Apple",
+  "@continueWithApple": { "description": "Alternate registration CTA with Apple." },
+
+  "alreadyHaveAccountCta": "Вече имате акаунт? Влезте",
+  "@alreadyHaveAccountCta": { "description": "Link/CTA to go to login screen." },
+
+  "registrationFailed": "Регистрацията неуспешна",
+  "@registrationFailed": { "description": "Generic error title when registration fails." },
+
+  "googleSignupCancelled": "Регистрацията с Google беше отменена.",
+  "@googleSignupCancelled": { "description": "Shown when Google sign-up flow is cancelled." },
+
+  "googleSignupFailed": "Неуспешна регистрация с Google",
+  "@googleSignupFailed": { "description": "Shown when Google sign-up flow fails." },
+
+  "appleSignupCancelled": "Регистрацията с Apple беше отменена.",
+  "@appleSignupCancelled": { "description": "Shown when Apple sign-up flow is cancelled." },
+
+  "appleSignupFailed": "Неуспешна регистрация с Apple",
+  "@appleSignupFailed": { "description": "Shown when Apple sign-up flow fails." },
+
+  "purchaseSuccess": "Успешна покупка!",
+  "@purchaseSuccess": { "description": "Toast/snackbar after a successful purchase." },
+
+  "purchaseCancelled": "Покупката е отменена.",
+  "@purchaseCancelled": { "description": "Toast/snackbar when user cancels a purchase flow." },
+
+  "purchaseFailed": "Покупката неуспешна. Опитайте отново.",
+  "@purchaseFailed": { "description": "Toast/snackbar when purchase fails." },
+
+  "unexpectedError": "Възникна неочаквана грешка. Опитайте пак.",
+  "@unexpectedError": { "description": "Generic unexpected error message." },
+
+  "chefModeTitle": "Режим \"Шеф-готвач\"",
+  "@chefModeTitle": { "description": "Title for Chef Mode feature/screen." },
+
+  "paywallHeader": "Отключи пълния си кулинарен потенциал",
+  "@paywallHeader": { "description": "Header text at the top of the paywall screen." },
+
+  "badgeCurrentPlan": "Текущ план",
+  "@badgeCurrentPlan": { "description": "Badge label marking the user’s current plan." },
+
+  "badgeBestValue": "Най-изгодно",
+  "@badgeBestValue": { "description": "Badge label highlighting best-value plan." },
+
+  "badgeFreeTrial": "Безплатен пробен период",
+  "@badgeFreeTrial": { "description": "Badge label highlighting a free trial." },
+
+  "noPlans": "В момента няма налични абонаментни планове.",
+  "@noPlans": { "description": "Shown when the app cannot load any subscription plans." },
+
+  "legalAgreePrefix": "Продължавайки, приемате нашите",
+  "@legalAgreePrefix": { "description": "Lead-in text before terms/privacy links." },
+
+  "legalTerms": "Условия за ползване",
+  "@legalTerms": { "description": "Link label to Terms of Service." },
+
+  "legalAnd": "и",
+  "@legalAnd": { "description": "Conjunction between terms/privacy links." },
+
+  "legalPrivacy": "Политика за поверителност",
+  "@legalPrivacy": { "description": "Link label to Privacy Policy." },
+
+  "legalAutoRenew": "Абонаментите се подновяват автоматично, освен ако не бъдат отменени.",
+  "@legalAutoRenew": { "description": "Disclosure about auto-renewal." },
+
+  "legalManageApple": "Управлявайте абонамента си в настройките на Apple.",
+  "@legalManageApple": { "description": "Apple-specific subscription management guidance." },
+
+  "manageOrCancelCta": "Управлявай или отмени абонамента си",
+  "@manageOrCancelCta": { "description": "CTA to manage or cancel a subscription." },
+
+  "planDefaultDescription": "Пълен достъп до функциите на RecipeVault и AI инструментите.",
+  "@planDefaultDescription": { "description": "Fallback description for plans when a specific one is not provided." },
+
+  "trialEndedTitle": "Пробният период приключи",
+  "@trialEndedTitle": { "description": "Title shown when the free trial has ended." },
+
+  "trialEndedHeadline": "Безплатният ви пробен период приключи",
+  "@trialEndedHeadline": { "description": "Headline shown on the trial-ended screen." },
+
+  "trialEndedDescription": "За да продължите да използвате AI функциите на RecipeVault като сканиране, превод и качване на изображения, моля изберете план по-долу.",
+  "@trialEndedDescription": { "description": "Body copy explaining next steps after trial ends." },
+
+  "seePlanOptions": "Виж всички планове",
+  "@seePlanOptions": { "description": "CTA to view all available subscription plans." },
+
+  "appBarToggleViewMode": "Превключи изгледа",
+  "@appBarToggleViewMode": { "description": "Tooltip for switching between grid and list layouts." },
+
+  "appBarRefreshSubscription": "Опресни абонамента",
+  "@appBarRefreshSubscription": { "description": "Tooltip for button that refreshes subscription status." },
+
+  "subscriptionRefreshed": "Абонаментът е опреснен.",
+  "@subscriptionRefreshed": { "description": "Snackbar after subscription refresh completes." },
+
+  "upgradeToUnlockTitle": "Надгради, за да отключиш",
+  "@upgradeToUnlockTitle": { "description": "Dialog title when a feature is locked behind a paid plan." },
+
+  "imageUploadLockedMessage": "Създаване на рецепти от изображения е достъпно в платените планове.",
+  "@imageUploadLockedMessage": { "description": "Dialog body explaining image-based creation is paid-only." },
+
+  "upgradeToUnlockFeature": "Надгради, за да отключиш тази функция.",
+  "@upgradeToUnlockFeature": { "description": "Secondary message encouraging upgrade from the lock dialog." },
+
+  "createFromImagesPaid": "Създаването на рецепти от изображения е достъпно в платените планове.",
+  "@createFromImagesPaid": { "description": "Inline warning when free users attempt image creation." },
+
+  "upgradeToUnlockBody": "Надгради, за да отключиш тази функция.",
+  "@upgradeToUnlockBody": { "description": "Secondary message for locked feature dialog (duplicate-friendly)." },
+
+  "tabCreate": "Създай",
+  "@tabCreate": { "description": "Bottom navigation label for the Create tab." },
+
+  "tabVault": "Трезор",
+  "@tabVault": { "description": "Bottom navigation label for the Vault tab." },
+
+  "tabProfile": "Профил",
+  "@tabProfile": { "description": "Bottom navigation label for the Profile tab." },
+
+  "viewPlans": "Виж плановете",
+  "@viewPlans": { "description": "Button text to navigate to the paywall/plans screen." },
+
+  "addCategoryTitle": "Нова категория",
+  "@addCategoryTitle": { "description": "Dialog title for creating a new category." },
+
+  "addCategoryHint": "напр. Закуски",
+  "@addCategoryHint": { "description": "Hint text inside the new category name input." },
+
+  "add": "Добави",
+  "@add": { "description": "Generic Add action label used in buttons/menus." },
+
+  "usage": "Използване",
+  "@usage": { "description": "Label for usage metrics button or section." },
+
+  "createRecipe": "Създай рецепта",
+  "@createRecipe": { "description": "Speed-dial/action label to start recipe creation." },
+
+  "upgradeToCreateRecipe": "Надгради, за да създаваш рецепти",
+  "@upgradeToCreateRecipe": { "description": "Locked label shown when user’s plan cannot create recipes." },
+
+  "upgradeToAddCategory": "Надгради, за да добавяш категории",
+  "@upgradeToAddCategory": { "description": "Locked label shown when user’s plan cannot add categories." },
+
+  "recipeCreationLimited": "🔒 Създаването на рецепти е само за плановете Домашен и Майстор‑готвач.",
+  "@recipeCreationLimited": { "description": "SnackBar text when recipe creation is restricted by plan." },
+
+  "categoryCreationLimited": "🔒 Създаването на категории е само за плановете Домашен и Майстор‑готвач.",
+  "@categoryCreationLimited": { "description": "SnackBar text when category creation is restricted by plan." },
+
+  "gotIt": "Разбрах",
+  "@gotIt": { "description": "Button text for dismissing onboarding/info bubbles" },
+
+  "editRecipeTitle": "Редактирай рецепта",
+  "@editRecipeTitle": { "description": "Title of the edit recipe screen" },
+
+  "editRecipeFieldTitle": "Заглавие",
+  "@editRecipeFieldTitle": { "description": "Label for recipe title field" },
+
+  "editRecipeFieldIngredients": "Съставки (по една на ред)",
+  "@editRecipeFieldIngredients": { "description": "Label for ingredients field" },
+
+  "editRecipeFieldSteps": "Стъпки",
+  "@editRecipeFieldSteps": { "description": "Label for recipe steps field" },
+
+  "editRecipeSaving": "Запазване...",
+  "@editRecipeSaving": { "description": "Label shown while recipe is being saved" },
+
+  "editRecipeSaveChanges": "Запази промените",
+  "@editRecipeSaveChanges": { "description": "Label for button to save changes" },
+
+  "menuFavourite": "Добави в любими",
+  "@menuFavourite": { "description": "Popup menu item to mark a recipe as favourite" },
+
+  "menuUnfavourite": "Премахни от любими",
+  "@menuUnfavourite": { "description": "Popup menu item to remove a recipe from favourites" },
+
+  "menuAssignCategories": "Присвои категории",
+  "@menuAssignCategories": { "description": "Popup menu item to assign categories to a recipe" },
+
+  "menuMoreOptions": "Още опции",
+  "@menuMoreOptions": { "description": "Tooltip/accessible label for the overflow menu button on recipe cards" },
+
+  "systemAll": "Всички",
+  "@systemAll": { "description": "System category: show all recipes" },
+
+  "systemTranslated": "Преведени",
+  "@systemTranslated": { "description": "System category: recipes created via translation" },
+
+  "defaultBreakfast": "Закуска",
+  "@defaultBreakfast": { "description": "Default category name" },
+
+  "defaultMain": "Основно",
+  "@defaultMain": { "description": "Default category name for main course" },
+
+  "defaultDessert": "Десерт",
+  "@defaultDessert": { "description": "Default category name for desserts" },
+
+  "chipDeleteCategoryTooltip": "Премахни категорията",
+  "@chipDeleteCategoryTooltip": { "description": "Tooltip for the delete icon on a category chip" },
+
+  "addToFavourites": "Добави в любими",
+  "@addToFavourites": { "description": "Tooltip/action for marking an item as favourite" },
+
+  "removeFromFavourites": "Премахни от любими",
+  "@removeFromFavourites": { "description": "Tooltip/action for unmarking an item as favourite" },
+
+  "shareAsPdf": "Сподели като PDF",
+  "@shareAsPdf": { "description": "Tooltip / action to export and share the recipe as a PDF" },
+
+  "tapToViewRecipe": "Докосни, за да видиш рецептата",
+  "@tapToViewRecipe": { "description": "Small hint shown under a recipe title in list view." },
+
+  "recipeOptions": "Опции за рецепта",
+  "@recipeOptions": { "description": "Title for the bottom sheet that shows actions for a recipe" },
+
+  "updateImage": "Обнови изображението",
+  "@updateImage": { "description": "Button label to add or update the recipe image" },
+
+  "all": "Всички",
+  "@all": { "description": "System category label representing all recipes" },
+
+  "translated": "Преведени",
+  "@translated": { "description": "System category label for recipes that were translated" },
+
+  "clearSearch": "Изчисти търсенето",
+  "@clearSearch": { "description": "Tooltip text for the clear search (X) button in the search bar." },
+
+  "searchRecipesAndIngredients": "Търси рецепти или съставки...",
+  "@searchRecipesAndIngredients": { "description": "Hint when searching across recipe titles and ingredients." },
+
+  "searchScopeTitles": "Търси само в заглавия",
+  "@searchScopeTitles": { "description": "Tooltip for toggling the search scope to titles only." },
+
+  "searchScopeTitlesIngredients": "Търси заглавия + съставки",
+  "@searchScopeTitlesIngredients": { "description": "Tooltip for toggling the search scope to titles and ingredients." },
+
+  "title": "Заглавие",
+  "@title": { "description": "Generic label for a recipe title (used in markdown export)." },
+
+  "hintsAndTips": "Съвети и трикове",
+  "@hintsAndTips": { "description": "Label for the hints & tips section of a recipe (used in markdown export)." },
+
+  "noAdditionalTips": "Няма допълнителни съвети.",
+  "@noAdditionalTips": { "description": "Fallback text when there are no hints or tips for a recipe (used in markdown export)." },
+
+  "bubbleScan": "📸 Сканиране на рецепти\nНатисни „Създай“ или +, за да качиш и сканираш изображения.",
+  "@bubbleScan": { "description": "Onboarding bubble message explaining how to scan recipes by uploading images." },
+
+  "bubbleViewToggle": "👁️ Смяна на изгледа\nДокосни, за да промениш начина на показване.",
+  "@bubbleViewToggle": { "description": "Onboarding bubble message explaining how to toggle between different recipe view modes." },
+
+  "bubbleLongPress": "📌 Задръж върху рецепта\nЗадръж, за да добавиш в любими или да зададеш категория.",
+  "@bubbleLongPress": { "description": "Onboarding bubble message explaining how to long-press a recipe card to favourite or assign a category." },
+
+  "vaultBubbleSwitchViews": "Превключвай изгледите тук",
+  "@vaultBubbleSwitchViews": { "description": "Onboarding bubble prompting the user to change between grid/list views." },
+
+  "vaultBubbleLongPress": "Задръж върху рецепта за опции",
+  "@vaultBubbleLongPress": { "description": "Onboarding bubble explaining long-press on a recipe card." },
+
+  "vaultBubbleScan": "Сканирай рецепти с бутона +",
+  "@vaultBubbleScan": { "description": "Onboarding bubble pointing to the create/+ scan entry point." },
+
+  "sharedRecipeTitle": "Споделена рецепта",
+  "@sharedRecipeTitle": { "description": "AppBar title for the shared recipe screen." },
+
+  "sharedRecipeNotFound": "Тази споделена рецепта не беше намерена.",
+  "@sharedRecipeNotFound": { "description": "Shown when a shared recipe document is missing." },
+
+  "sharedRecipeLoadError": "Възникна грешка при зареждане на рецептата.",
+  "@sharedRecipeLoadError": { "description": "Shown when the shared recipe fetch fails." },
+
+  "noRecipeDataFound": "Няма намерени данни за рецепта.",
+  "@noRecipeDataFound": { "description": "Shown when ResultsScreen gets no data in navigation." },
+
+  "copyToClipboard": "Копирай",
+  "@copyToClipboard": { "description": "Tooltip for copy button on ResultsScreen." },
+
+  "copiedToClipboard": "📋 Рецептата е копирана",
+  "@copiedToClipboard": { "description": "Snackbar after copying recipe text." },
+
+  "languageLabel": "Език: {language}",
+  "@languageLabel": {
+    "description": "Label when simply displaying detected language.",
+    "placeholders": { "language": { "type": "String" } }
+  },
+
+  "notSignedIn": "Не сте влезли",
+  "@notSignedIn": { "description": "Error when an action requires a signed-in user." },
+
+  "imageCropCancelled": "Обрязването на изображението е отменено",
+  "@imageCropCancelled": { "description": "Shown when the user cancels image crop." },
+
+  "uploadFailed": "Качването неуспешно: {error}",
+  "@uploadFailed": {
+    "description": "Shown when image upload fails.",
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "showOcr": "Покажи OCR",
+  "@showOcr": { "description": "Debug toggle to show OCR text." },
+
+  "hideOcr": "Скрий OCR",
+  "@hideOcr": { "description": "Debug toggle to hide OCR text." },
+
+  "formattingError": "Опа! Възникна проблем с форматирането.\nМоля, опитайте отново.",
+  "@formattingError": { "description": "Error card message when the recipe formatter failed." },
+
+  "aboutLegalTitle": "Инфо и правни условия",
+  "@aboutLegalTitle": { "description": "App bar title for About screen." },
+
+  "appInfoSectionTitle": "Информация за приложението",
+  "@appInfoSectionTitle": { "description": "Section heading for app information." },
+
+  "versionLabel": "Версия",
+  "@versionLabel": { "description": "Label for the app version row." },
+
+  "legalSectionTitle": "Правни",
+  "@legalSectionTitle": { "description": "Section heading for legal links." },
+
+  "supportSectionTitle": "Поддръжка",
+  "@supportSectionTitle": { "description": "Section heading for support links." },
+
+  "visitWebsite": "Посети уебсайта",
+  "@visitWebsite": { "description": "Button/link to open the website." },
+
+  "contactSupport": "Свържи се с поддръжката",
+  "@contactSupport": { "description": "Button/link to contact support." },
+
+  "accountSettingsTitle": "Настройки на акаунта",
+  "@accountSettingsTitle": { "description": "App bar title for account settings screen." },
+
+  "noUserSignedIn": "Няма влязъл потребител",
+  "@noUserSignedIn": { "description": "Shown when account screen is opened without an authenticated user." },
+
+  "noName": "Без име",
+  "@noName": { "description": "Fallback display name when user.displayName is null." },
+
+  "securitySectionTitle": "Сигурност",
+  "@securitySectionTitle": { "description": "Section header for security items." },
+
+  "signOut": "Изход",
+  "@signOut": { "description": "Menu/button text to sign out." },
+
+  "signedOut": "Излязохте от акаунта",
+  "@signedOut": { "description": "Snackbar text after successful sign out." },
+
+  "signOutQuestion": "Да изляза ли?",
+  "@signOutQuestion": { "description": "Dialog title asking to confirm sign out." },
+
+  "signOutConfirmBody": "Сигурни ли сте, че искате да излезете?",
+  "@signOutConfirmBody": { "description": "Dialog body confirming sign out." },
+
+  "signOutFailed": "Неуспешен изход: {error}",
+  "@signOutFailed": {
+    "description": "Snackbar when sign out fails.",
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "deleteAccount": "Изтрий акаунта",
+  "@deleteAccount": { "description": "Menu/button text to delete the account." },
+
+  "deleteAccountQuestion": "Да изтрия акаунта?",
+  "@deleteAccountQuestion": { "description": "Dialog title asking to confirm account deletion." },
+
+  "deleteAccountBody": "Това ще изтрие завинаги акаунта ви и всички свързани данни – рецепти, изображения и предпочитания.\n\nДействието е необратимо.",
+  "@deleteAccountBody": { "description": "Dialog body warning about account deletion." },
+
+  "deleteAccountSuccess": "Акаунтът е изтрит успешно.",
+  "@deleteAccountSuccess": { "description": "Snackbar after successful account deletion." },
+
+  "deleteAccountFailed": "Неуспешно изтриване: {error}",
+  "@deleteAccountFailed": {
+    "description": "Snackbar when account deletion fails.",
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "appearanceTitle": "Външен вид",
+  "@appearanceTitle": { "description": "App bar title for the Appearance settings screen." },
+
+  "appThemeSectionTitle": "Тема на приложението",
+  "@appThemeSectionTitle": { "description": "Section header for theme options." },
+
+  "lightMode": "Светла тема",
+  "@lightMode": { "description": "Option label for light theme." },
+
+  "darkMode": "Тъмна тема",
+  "@darkMode": { "description": "Option label for dark theme." },
+
+  "textSizeSectionTitle": "Размер на текста",
+  "@textSizeSectionTitle": { "description": "Section header for text size options." },
+
+  "textSizeSmall": "Малък",
+  "@textSizeSmall": { "description": "Option label for small text size." },
+
+  "textSizeMedium": "Среден",
+  "@textSizeMedium": { "description": "Option label for medium text size." },
+
+  "textSizeLarge": "Голям",
+  "@textSizeLarge": { "description": "Option label for large text size." },
+
+  "faqsTitle": "ЧЗВ",
+  "@faqsTitle": { "description": "App bar title for the FAQs screen." },
+
+  "faqsSectionScanSave": "Сканиране и запазване",
+  "@faqsSectionScanSave": { "description": "Section header for scanning/saving FAQs." },
+
+  "faqsQHowScan": "Как да сканирам рецепта?",
+  "@faqsQHowScan": { "description": "Question: scanning a recipe." },
+
+  "faqsAHowScan": "От началния екран натиснете бутона „+“ и качете едно или повече изображения на рецептата.",
+  "@faqsAHowScan": { "description": "Answer: scanning a recipe." },
+
+  "faqsQAddImage": "Как да добавя изображение към рецепта?",
+  "@faqsQAddImage": { "description": "Question: add recipe image." },
+
+  "faqsAAddImage": "След сканиране натиснете „Добави изображение“, за да изрежете и качите снимка за заглавката на картата.",
+  "@faqsAAddImage": { "description": "Answer: add recipe image." },
+
+  "faqsQSaveRecipe": "Как да запазя рецепта?",
+  "@faqsQSaveRecipe": { "description": "Question: save recipe." },
+
+  "faqsASaveRecipe": "След като прегледате форматирания резултат, натиснете „Запази в трезора“, за да го съхраните.",
+  "@faqsASaveRecipe": { "description": "Answer: save recipe." },
+
+  "faqsSectionAccessUse": "Достъп и употреба",
+  "@faqsSectionAccessUse": { "description": "Section header for access/use FAQs." },
+
+  "faqsQOffline": "Мога ли да използвам приложението офлайн?",
+  "@faqsQOffline": { "description": "Question: offline usage." },
+
+  "faqsAOffline": "Можете да преглеждате вече запазени рецепти в трезора, дори без интернет.",
+  "@faqsAOffline": { "description": "Answer: offline usage." },
+
+  "faqsSectionSubSupport": "Абонамент и поддръжка",
+  "@faqsSectionSubSupport": { "description": "Section header for subscription/support FAQs." },
+
+  "faqsQWhySub": "Защо ми е нужен абонамент?",
+  "@faqsQWhySub": { "description": "Question: why subscription." },
+
+  "faqsAWhySub": "Абонаментите отключват облачна синхронизация, качване на изображения, превод и AI форматиране.",
+  "@faqsAWhySub": { "description": "Answer: why subscription." },
+
+  "faqsQCancel": "Как мога да отменя абонамента?",
+  "@faqsQCancel": { "description": "Question: cancel subscription." },
+
+  "faqsACancel": "Управлявайте или отменете плана си по всяко време от акаунта си в App Store или Google Play.",
+  "@faqsACancel": { "description": "Answer: cancel subscription." },
+
+  "notificationsTitle": "Известия",
+  "@notificationsTitle": { "description": "App bar title for notifications settings." },
+
+  "notificationsSectionReminders": "Напомняния",
+  "@notificationsSectionReminders": { "description": "Section header for reminder notifications." },
+
+  "notificationsWeeklyTitle": "Седмично напомняне за рецепти",
+  "@notificationsWeeklyTitle": { "description": "Title of weekly reminder toggle." },
+
+  "notificationsWeeklySubtitle": "Получавай седмичен тласък да добавяш рецепти в трезора.",
+  "@notificationsWeeklySubtitle": { "description": "Subtitle explaining weekly reminder." },
+
+  "notificationsSectionUpdates": "Актуализации",
+  "@notificationsSectionUpdates": { "description": "Section header for updates/announcements." },
+
+  "notificationsFeatureAlertsTitle": "Известия за нови функции",
+  "@notificationsFeatureAlertsTitle": { "description": "Title of feature announcements toggle." },
+
+  "notificationsFeatureAlertsSubtitle": "Бъди пръв, когато добавим нещо вкусно!",
+  "@notificationsFeatureAlertsSubtitle": { "description": "Subtitle for feature announcements toggle." },
+
+  "planIncludedHeader": "Включено в плана:",
+  "@planIncludedHeader": { "description": "Header shown above the list of plan benefits on the plan card." },
+
+  "trialEnds": "Пробният период изтича: {date}",
+  "@trialEnds": {
+    "description": "Shown on plan card if user is on a trial.",
+    "placeholders": { "date": { "type": "String" } }
+  },
+
+  "settingsSectionAccount": "Акаунт",
+  "@settingsSectionAccount": { "description": "Header label for account-related settings section in Settings screen.", "type": "text" },
+
+  "settingsSectionPreferences": "Предпочитания",
+  "@settingsSectionPreferences": { "description": "Header label for preferences-related settings section in Settings screen.", "type": "text" },
+
+  "settingsSectionStorage": "Локално съхранение",
+  "@settingsSectionStorage": { "description": "Header label for local storage management settings section in Settings screen.", "type": "text" },
+
+  "settingsSectionSubscription": "Абонамент",
+  "@settingsSectionSubscription": { "description": "Header label for subscription management settings section in Settings screen.", "type": "text" },
+
+  "settingsSectionSupport": "Поддръжка",
+  "@settingsSectionSupport": { "description": "Header label for support and help-related settings section in Settings screen.", "type": "text" },
+
+  "settingsTileAccountSettings": "Настройки на акаунта",
+  "@settingsTileAccountSettings": { "description": "Settings tile label for navigating to account settings.", "type": "text" },
+
+  "settingsTileAppearance": "Външен вид",
+  "@settingsTileAppearance": { "description": "Settings tile label for navigating to appearance/theme settings.", "type": "text" },
+
+  "settingsTileNotifications": "Известия",
+  "@settingsTileNotifications": { "description": "Settings tile label for navigating to notifications settings.", "type": "text" },
+
+  "settingsTileCacheClear": "Изчистване на кеша",
+  "@settingsTileCacheClear": { "description": "Settings tile label for clearing cached data from the app.", "type": "text" },
+
+  "settingsTileManageSubscription": "Управление на абонамента",
+  "@settingsTileManageSubscription": { "description": "Settings tile label for navigating to the subscription management screen.", "type": "text" },
+
+  "settingsTileHelpFaqs": "Помощ и ЧЗВ",
+  "@settingsTileHelpFaqs": { "description": "Settings tile label for navigating to the help and FAQs screen.", "type": "text" },
+
+  "settingsTileAboutLegal": "Инфо и правни условия",
+  "@settingsTileAboutLegal": { "description": "Settings tile label for navigating to the about and legal information screen.", "type": "text" },
+
+  "footerCompanyName": "Cheeky Badger Creations",
+  "@footerCompanyName": { "description": "The name of the company shown at the bottom of the settings screen.", "type": "text" },
+
+  "localStorageTitle": "Локално съхранение",
+  "@localStorageTitle": { "description": "App bar title for the screen that manages local storage and cache.", "type": "text" },
+
+  "clearLocalCacheTitle": "Изчисти локалния кеш",
+  "@clearLocalCacheTitle": { "description": "Headline on the Local Storage screen above the action to clear cache.", "type": "text" },
+
+  "clearLocalCacheDescription": "Изтрий всички рецепти, категории и флагове за уроци, съхранени на това устройство.\nОблачните ви данни няма да бъдат засегнати.",
+  "@clearLocalCacheDescription": { "description": "Body text describing what clearing the local cache will do.", "type": "text" },
+
+  "clearLocalCacheButton": "Изчисти локалния кеш",
+  "@clearLocalCacheButton": { "description": "Primary button label to start clearing local cache.", "type": "text" },
+
+  "clearCacheDialogTitle": "Да изчистя кеша?",
+  "@clearCacheDialogTitle": { "description": "Title of the confirmation dialog shown before clearing cache.", "type": "text" },
+
+  "clearCacheDialogBody": "Това ще изтрие всички локално съхранени рецепти, категории и флагове за уроци.\nВашите облачни данни ще останат безопасни.",
+  "@clearCacheDialogBody": { "description": "Body of the confirmation dialog explaining the effects of clearing cache.", "type": "text" },
+
+  "clearNow": "Изчисти сега",
+  "@clearNow": { "description": "Confirm action button in the clear cache dialog.", "type": "text" },
+
+  "localCacheCleared": "Локалният кеш е изчистен",
+  "@localCacheCleared": { "description": "Snackbar/toast text shown after local cache is successfully cleared.", "type": "text" }
+}

@@ -1,9 +1,23 @@
 arb-dir: lib/l10n
-template-arb-file: app_en_GB.arb
+template-arb-file: app_en.arb
 output-class: AppLocalizations
+output-localization-file: app_localizations.dart
 output-dir: lib/l10n
 synthetic-package: false
 nullable-getter: false
 required-resource-attributes: false
 preferred-supported-locales:
-  - en_GB
+  - en       # English fallback
+  - en_GB    # English (UK)
+  - bg       # Bulgarian
+  - cs       # Czech
+  - da       # Danish
+  - de       # German
+  - el       # Greek
+  - es       # Spanish
+  - fr       # French
+  - ga       # Irish
+  - it       # Italian
+  - nl       # Dutch
+  - pl       # Polish
+  - cy       # welsh

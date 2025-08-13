@@ -1,6 +1,6 @@
 {
-  "@@locale": "en",
-  "loading": "Loading...",
+  "@@locale": "da",
+  "loading": "Indlæser...",
   "@loading": {
     "description": "Shown while an operation is in progress."
   },
@@ -8,131 +8,131 @@
   "@appTitle": {
     "description": "Main application title."
   },
-  "welcomeMessage": "Welcome to RecipeVault",
+  "welcomeMessage": "Velkommen til RecipeVault",
   "@welcomeMessage": {
     "description": "Greeting shown on app launch/sign-in."
   },
-  "scanRecipe": "Scan Recipe",
+  "scanRecipe": "Scan opskrift",
   "@scanRecipe": {
     "description": "CTA/button to start scanning a recipe."
   },
-  "saveToVault": "Save to Vault",
+  "saveToVault": "Gem i Vault",
   "@saveToVault": {
     "description": "CTA/button to save a recipe to the user’s vault."
   },
-  "settings": "Settings",
+  "settings": "Indstillinger",
   "@settings": {
     "description": "Menu item to open settings."
   },
-  "logout": "Log out",
+  "logout": "Log ud",
   "@logout": {
     "description": "Action to sign out the current user."
   },
-  "yes": "Yes",
+  "yes": "Ja",
   "@yes": {
     "description": "Affirmative action label."
   },
-  "no": "No",
+  "no": "Nej",
   "@no": {
     "description": "Negative action label."
   },
-  "cancel": "Cancel",
+  "cancel": "Annuller",
   "@cancel": {
     "description": "Cancels the current action/dialog."
   },
-  "close": "Close",
+  "close": "Luk",
   "@close": {
     "description": "Closes a dialog/sheet."
   },
-  "save": "Save",
+  "save": "Gem",
   "@save": {
     "description": "Saves current changes."
   },
-  "delete": "Delete",
+  "delete": "Slet",
   "@delete": {
     "description": "Deletes the current item."
   },
-  "edit": "Edit",
+  "edit": "Rediger",
   "@edit": {
     "description": "Begins editing the current item."
   },
-  "confirm": "Confirm",
+  "confirm": "Bekræft",
   "@confirm": {
     "description": "Confirms the current action."
   },
-  "myVault": "My Vault",
+  "myVault": "Min Vault",
   "@myVault": {
     "description": "Tab/section for user’s saved recipes."
   },
-  "favourites": "Favourites",
+  "favourites": "Favoritter",
   "@favourites": {
     "description": "Tab/section for favourite recipes."
   },
-  "categories": "Categories",
+  "categories": "Kategorier",
   "@categories": {
     "description": "Tab/section for recipe categories."
   },
-  "searchRecipes": "Search recipes...",
+  "searchRecipes": "Søg efter opskrifter...",
   "@searchRecipes": {
     "description": "Placeholder text in recipe search input."
   },
-  "noRecipesFound": "No recipes found",
+  "noRecipesFound": "Ingen opskrifter fundet",
   "@noRecipesFound": {
     "description": "Shown when a recipe search returns no results."
   },
-  "addCategory": "Add Category",
+  "addCategory": "Tilføj kategori",
   "@addCategory": {
     "description": "Action to create a new category."
   },
-  "removeCategory": "Remove Category",
+  "removeCategory": "Fjern kategori",
   "@removeCategory": {
     "description": "Action to remove an existing category."
   },
-  "assignCategory": "Assign Category",
+  "assignCategory": "Tildel kategori",
   "@assignCategory": {
     "description": "Action to apply a category to a recipe."
   },
-  "recipeDetails": "Recipe Details",
+  "recipeDetails": "Opskriftsdetaljer",
   "@recipeDetails": {
     "description": "Header/title for the recipe details screen."
   },
-  "ingredients": "Ingredients",
+  "ingredients": "Ingredienser",
   "@ingredients": {
     "description": "Section header for ingredients list."
   },
-  "instructions": "Instructions",
+  "instructions": "Fremgangsmåde",
   "@instructions": {
     "description": "Section header for cooking steps."
   },
-  "notes": "Notes",
+  "notes": "Noter",
   "@notes": {
     "description": "Section header for extra notes."
   },
-  "dailyTipTitle": "Daily Tip",
+  "dailyTipTitle": "Dagens tip",
   "@dailyTipTitle": {
     "description": "Title above the daily tip/message card."
   },
-  "dismiss": "Dismiss",
+  "dismiss": "Afvis",
   "@dismiss": {
     "description": "Button to hide a tip/notification."
   },
-  "dailyMessagePlaceholder": "Your daily inspiration will appear here.",
+  "dailyMessagePlaceholder": "Din daglige inspiration vises her.",
   "@dailyMessagePlaceholder": {
     "description": "Placeholder text when the daily message hasn’t loaded."
   },
-  "upgradeNow": "Upgrade Now",
+  "upgradeNow": "Opgrader nu",
   "@upgradeNow": {
     "description": "Primary CTA to upgrade subscription."
   },
-  "trialAvailable": "Free Trial Available",
+  "trialAvailable": "Gratis prøveperiode tilgængelig",
   "@trialAvailable": {
     "description": "Indicator that a free trial can be started."
   },
-  "upgradeBannerMessage": "Unlock more recipes, translations, and features – upgrade now!",
+  "upgradeBannerMessage": "Lås op for flere opskrifter, oversættelser og funktioner – opgrader nu!",
   "@upgradeBannerMessage": {
     "description": "Promotional banner text encouraging upgrade."
   },
-  "trialDaysRemaining": "{days} days remaining",
+  "trialDaysRemaining": "{days} dage tilbage",
   "@trialDaysRemaining": {
     "description": "Shows the number of trial days remaining.",
     "placeholders": {
@@ -141,23 +141,23 @@
       }
     }
   },
-  "planTaster": "Taster",
+  "planTaster": "Smagsprøve",
   "@planTaster": {
     "description": "Subscription tier: entry-level plan."
   },
-  "planHomeChef": "Home Chef",
+  "planHomeChef": "Hjemmekok",
   "@planHomeChef": {
     "description": "Subscription tier: mid-level plan."
   },
-  "planMasterChef": "Master Chef",
+  "planMasterChef": "Mesterkok",
   "@planMasterChef": {
     "description": "Subscription tier: top-level plan."
   },
-  "planFree": "Free Plan",
+  "planFree": "Gratis plan",
   "@planFree": {
     "description": "Subscription tier: free access plan."
   },
-  "unknownTier": "Unknown Tier",
+  "unknownTier": "Ukendt niveau",
   "@unknownTier": {
     "description": "Shown when the user’s subscription tier cannot be determined."
   },
@@ -170,127 +170,127 @@
       }
     }
   },
-  "planHomeChefSubtitleAnnual": "Annual Plan",
+  "planHomeChefSubtitleAnnual": "Årsabonnement",
   "@planHomeChefSubtitleAnnual": {
     "description": "Subtitle for Home Chef annual plan."
   },
-  "planHomeChefSubtitleMonthly": "Monthly Plan",
+  "planHomeChefSubtitleMonthly": "Månedligt abonnement",
   "@planHomeChefSubtitleMonthly": {
     "description": "Subtitle for Home Chef monthly plan."
   },
-  "planMasterChefSubtitleAnnual": "Annual Plan",
+  "planMasterChefSubtitleAnnual": "Årsabonnement",
   "@planMasterChefSubtitleAnnual": {
     "description": "Subtitle for Master Chef annual plan."
   },
-  "planMasterChefSubtitleMonthly": "Monthly Plan",
+  "planMasterChefSubtitleMonthly": "Månedligt abonnement",
   "@planMasterChefSubtitleMonthly": {
     "description": "Subtitle for Master Chef monthly plan."
   },
-  "planHomeChefDescription": "A smart step up – perfect for regular home cooks who want a little more power.",
+  "planHomeChefDescription": "Et smart skridt op – perfekt til den flittige hjemmekok, der vil have lidt mere power.",
   "@planHomeChefDescription": {
     "description": "Marketing description for the Home Chef tier."
   },
-  "planMasterChefDescriptionAnnual": "The ultimate plan for serious foodies – best value if you’re all in.",
+  "planMasterChefDescriptionAnnual": "Den ultimative plan for seriøse madentusiaster – bedst værdi, hvis du går all‑in.",
   "@planMasterChefDescriptionAnnual": {
     "description": "Marketing description for Master Chef annual plan."
   },
-  "planMasterChefDescriptionMonthly": "For those who want it all – maximum access, every month.",
+  "planMasterChefDescriptionMonthly": "Til dig der vil have det hele – maksimal adgang, hver måned.",
   "@planMasterChefDescriptionMonthly": {
     "description": "Marketing description for Master Chef monthly plan."
   },
-  "featureUnlimitedRecipes": "Unlimited recipe scans",
+  "featureUnlimitedRecipes": "Ubegrænsede opskriftscanninger",
   "@featureUnlimitedRecipes": {
     "description": "Plan feature label: unlimited AI recipe scanning."
   },
-  "featureUnlimitedTranslations": "Unlimited translations",
+  "featureUnlimitedTranslations": "Ubegrænsede oversættelser",
   "@featureUnlimitedTranslations": {
     "description": "Plan feature label: unlimited translations."
   },
-  "featureCloudBackup": "Cloud backup",
+  "featureCloudBackup": "Cloud-backup",
   "@featureCloudBackup": {
     "description": "Plan feature label: cloud backup of user data."
   },
-  "featureCategories": "Custom categories",
+  "featureCategories": "Brugerdefinerede kategorier",
   "@featureCategories": {
     "description": "Plan feature label: create custom categories."
   },
-  "featureFavourites": "Mark favourites",
+  "featureFavourites": "Marker favoritter",
   "@featureFavourites": {
     "description": "Plan feature label: mark recipes as favourites."
   },
-  "featureVaultSync": "Sync across devices",
+  "featureVaultSync": "Synkroniser på tværs af enheder",
   "@featureVaultSync": {
     "description": "Plan feature label: sync vault across devices."
   },
-  "featureHomeChef1": "👨‍🍳 20 AI recipe cards/month – cook new ideas effortlessly",
+  "featureHomeChef1": "👨‍🍳 20 AI-opskriftskort/måned – find nye idéer uden besvær",
   "@featureHomeChef1": {
     "description": "Home Chef feature list item 1."
   },
-  "featureHomeChef2": "🌍 5 translations/month – scan handwritten or foreign recipes",
+  "featureHomeChef2": "🌍 5 oversættelser/måned – scan håndskrevne eller udenlandske opskrifter",
   "@featureHomeChef2": {
     "description": "Home Chef feature list item 2."
   },
-  "featureHomeChef3": "📦 Save your favourite recipes to your personal vault",
+  "featureHomeChef3": "📦 Gem dine favoritopskrifter i din personlige Vault",
   "@featureHomeChef3": {
     "description": "Home Chef feature list item 3."
   },
-  "featureHomeChef4": "🏷️ Create and manage up to 3 custom categories",
+  "featureHomeChef4": "🏷️ Opret og administrér op til 3 brugerdefinerede kategorier",
   "@featureHomeChef4": {
     "description": "Home Chef feature list item 4."
   },
-  "featureHomeChef5": "🔗 Share your recipes with friends and family",
+  "featureHomeChef5": "🔗 Del dine opskrifter med venner og familie",
   "@featureHomeChef5": {
     "description": "Home Chef feature list item 5."
   },
-  "featureMasterChef1": "🍽️ 100 AI recipe cards/month – no limits on creativity",
+  "featureMasterChef1": "🍽️ 100 AI-opskriftskort/måned – ingen grænser for kreativiteten",
   "@featureMasterChef1": {
     "description": "Master Chef feature list item 1."
   },
-  "featureMasterChef2": "🈂️ 20 translations/month – perfect for international dishes",
+  "featureMasterChef2": "🈂️ 20 oversættelser/måned – perfekt til internationale retter",
   "@featureMasterChef2": {
     "description": "Master Chef feature list item 2."
   },
-  "featureMasterChef3": "📦 Unlimited recipe saving to your personal vault",
+  "featureMasterChef3": "📦 Ubegrænset gemning i din personlige Vault",
   "@featureMasterChef3": {
     "description": "Master Chef feature list item 3."
   },
-  "featureMasterChef4": "🏷️ Unlimited category creation & advanced sorting tools",
+  "featureMasterChef4": "🏷️ Ubegrænset kategorioprettelse og avancerede sorteringsværktøjer",
   "@featureMasterChef4": {
     "description": "Master Chef feature list item 4."
   },
-  "featureMasterChef5": "🔗 Share your recipes anywhere with public links",
+  "featureMasterChef5": "🔗 Del dine opskrifter hvor som helst med offentlige links",
   "@featureMasterChef5": {
     "description": "Master Chef feature list item 5."
   },
-  "featureMasterChef6": "⚡ Priority AI processing – faster and smarter every time",
+  "featureMasterChef6": "⚡ Prioriteret AI-behandling – hurtigere og klogere hver gang",
   "@featureMasterChef6": {
     "description": "Master Chef feature list item 6."
   },
-  "onboardingScan": "Tap + to scan a recipe and save it instantly.",
+  "onboardingScan": "Tryk på + for at scanne en opskrift og gemme den med det samme.",
   "@onboardingScan": {
     "description": "Onboarding tip: how to scan a recipe."
   },
-  "onboardingSwitchView": "Switch between grid and list views here.",
+  "onboardingSwitchView": "Skift mellem gitter- og listevisning her.",
   "@onboardingSwitchView": {
     "description": "Onboarding tip: toggle layout views."
   },
-  "onboardingLongPress": "Long-press a recipe to see more options.",
+  "onboardingLongPress": "Tryk og hold på en opskrift for at se flere muligheder.",
   "@onboardingLongPress": {
     "description": "Onboarding tip: long-press interaction."
   },
-  "deleteConfirmation": "Are you sure you want to delete this?",
+  "deleteConfirmation": "Er du sikker på, at du vil slette dette?",
   "@deleteConfirmation": {
     "description": "Confirmation text before deleting an item."
   },
-  "recipeSaved": "Recipe saved to vault!",
+  "recipeSaved": "Opskrift gemt i Vault!",
   "@recipeSaved": {
     "description": "Toast/snackbar after saving a recipe."
   },
-  "recipeDeleted": "Recipe deleted.",
+  "recipeDeleted": "Opskrift slettet.",
   "@recipeDeleted": {
     "description": "Toast/snackbar after deleting a recipe."
   },
-  "translationUsed": "Translated from {language}",
+  "translationUsed": "Oversat fra {language}",
   "@translationUsed": {
     "description": "Indicates which language the recipe was translated from.",
     "placeholders": {
@@ -299,15 +299,15 @@
       }
     }
   },
-  "usageThisMonthTitle": "📊 Usage this month",
+  "usageThisMonthTitle": "📊 Forbrug denne måned",
   "@usageThisMonthTitle": {
     "description": "Title above usage meters."
   },
-  "labelAiRecipes": "AI Recipes",
+  "labelAiRecipes": "AI-opskrifter",
   "@labelAiRecipes": {
     "description": "Label for AI recipe usage count."
   },
-  "labelTranslations": "Translations",
+  "labelTranslations": "Oversættelser",
   "@labelTranslations": {
     "description": "Label for translation usage count."
   },
@@ -323,7 +323,7 @@
       }
     }
   },
-  "usageOutOfThisMonth": "out of {max} this month",
+  "usageOutOfThisMonth": "ud af {max} denne måned",
   "@usageOutOfThisMonth": {
     "description": "Subtitle under AI usage meter.",
     "placeholders": {
@@ -332,7 +332,7 @@
       }
     }
   },
-  "usageMonthlyLimit": "monthly limit of {max}",
+  "usageMonthlyLimit": "månedlig grænse på {max}",
   "@usageMonthlyLimit": {
     "description": "Subtitle under translations usage meter.",
     "placeholders": {
@@ -341,411 +341,411 @@
       }
     }
   },
-  "error": "Error",
+  "error": "Fejl",
   "@error": {
     "description": "Generic error dialog title."
   },
-  "networkError": "Network error, please try again.",
+  "networkError": "Netværksfejl, prøv igen.",
   "@networkError": {
     "description": "Shown for connectivity-related failures."
   },
-  "unknownError": "Something went wrong. Please try again later.",
+  "unknownError": "Noget gik galt. Prøv igen senere.",
   "@unknownError": {
     "description": "Fallback error message for unknown issues."
   },
-  "tipScanPlus": "Tap + to scan a recipe. Even leftovers deserve a place in your vault!",
+  "tipScanPlus": "Tryk på + for at scanne en opskrift. Selv rester fortjener en plads i din Vault!",
   "@tipScanPlus": {
     "description": "Daily tip: encourages scanning recipes."
   },
-  "tipFamilyClassic": "Got a family classic? Add it today and keep it safe forever.",
+  "tipFamilyClassic": "Har du en familiefavorit? Tilføj den i dag og behold den for altid.",
   "@tipFamilyClassic": {
     "description": "Daily tip: encourages adding family recipes."
   },
-  "tipLongPressSort": "Long-press a recipe to sort it like a pro. Tidy vault, happy chef.",
+  "tipLongPressSort": "Tryk og hold for at sortere som en pro. Ryddelig Vault, glad kok.",
   "@tipLongPressSort": {
     "description": "Daily tip: hints at long-press to organize."
   },
-  "tipFavouriteIt": "Don’t just save it—favourite it! Tap the heart on your top dishes.",
+  "tipFavouriteIt": "Gem den ikke bare—gør den til favorit! Tryk på hjertet på dine topretter.",
   "@tipFavouriteIt": {
     "description": "Daily tip: promotes using favourites."
   },
-  "tipNewCategory": "Try creating a new category today. 'Cosy Autumn Meals', anyone?",
+  "tipNewCategory": "Prøv at oprette en ny kategori i dag. 'Hyggelige efterårsretter', nogen?",
   "@tipNewCategory": {
     "description": "Daily tip: suggests creating a new category."
   },
-  "tipEachScanStep": "Each scan is a step closer to your own cookbook.",
+  "tipEachScanStep": "Hver scanning er et skridt tættere på din egen kogebog.",
   "@tipEachScanStep": {
     "description": "Daily tip: motivational scanning message."
   },
-  "funButter": "Remember: the secret ingredient is usually butter... or confusion.",
+  "funButter": "Husk: Den hemmelige ingrediens er som regel smør... eller forvirring.",
   "@funButter": {
     "description": "Light-hearted/funny daily message."
   },
-  "funPastaHeat": "If you can't stand the heat... you're probably overcooking pasta.",
+  "funPastaHeat": "Hvis du ikke kan klare varmen... overkoger du nok pastaen.",
   "@funPastaHeat": {
     "description": "Light-hearted/funny daily message."
   },
-  "funPoachIdeas": "Poach ideas, not eggs. We've got a guide for that too.",
+  "funPoachIdeas": "Pocher idéer, ikke æg. Vi har også en guide til det.",
   "@funPoachIdeas": {
     "description": "Light-hearted/funny daily message."
   },
-  "funRusticMess": "Today's a great day to bake a mess and call it rustic.",
+  "funRusticMess": "I dag er en god dag til at bage et rod og kalde det rustikt.",
   "@funRusticMess": {
     "description": "Light-hearted/funny daily message."
   },
-  "funCheflebration": "Saving your 100th recipe? That’s called a *cheflebration* 🎉",
+  "funCheflebration": "Gemmer du din opskrift nr. 100? Det kaldes en *cheflebration* 🎉",
   "@funCheflebration": {
     "description": "Light-hearted/funny daily message with pun."
   },
-  "funMoreThanGran": "That moment when your vault has more recipes than your gran.",
+  "funMoreThanGran": "Det øjeblik, hvor din Vault har flere opskrifter end din bedstemor.",
   "@funMoreThanGran": {
     "description": "Light-hearted/funny daily message."
   },
-  "factTomatoes": "Tomatoes were once thought to be poisonous. Joke’s on them: 🍝",
+  "factTomatoes": "Tomater blev engang anset for at være giftige. Det var de ikke: 🍝",
   "@factTomatoes": {
     "description": "Food fact: trivia-style daily message."
   },
-  "factExpensivePizza": "The world’s most expensive pizza costs over £2,000. Yours: priceless.",
+  "factExpensivePizza": "Verdens dyreste pizza koster over £2.000. Din: uvurderlig.",
   "@factExpensivePizza": {
     "description": "Food fact: trivia-style daily message."
   },
-  "factBananasBerries": "Bananas are berries. Strawberries are not. Vault that one!",
+  "factBananasBerries": "Bananer er bær. Jordbær er det ikke. Gem den viden!",
   "@factBananasBerries": {
     "description": "Food fact: trivia-style daily message."
   },
-  "factHoneyNeverSpoils": "Honey never spoils. Ever. Like your best recipes.",
+  "factHoneyNeverSpoils": "Honning bliver aldrig dårlig. Aldrig. Ligesom dine bedste opskrifter.",
   "@factHoneyNeverSpoils": {
     "description": "Food fact: trivia-style daily message."
   },
-  "factOysters": "Oysters were once considered poor man's food. Now? Luxury.",
+  "factOysters": "Østers blev engang betragtet som fattigmandsmad. Nu? Luksus.",
   "@factOysters": {
     "description": "Food fact: trivia-style daily message."
   },
-  "factPuffLayers": "Puff pastry has over 700 layers. It also has a shortcut here.",
+  "factPuffLayers": "Butterdej har over 700 lag. Vi har også en genvej her.",
   "@factPuffLayers": {
     "description": "Food fact: trivia-style daily message."
   },
-  "vaultLikeFridge": "Your vault’s like a fridge: open it often and keep it fresh.",
+  "vaultLikeFridge": "Din Vault er som et køleskab: åbn den ofte og hold den frisk.",
   "@vaultLikeFridge": {
     "description": "Vault-themed motivational message."
   },
-  "vaultBackUpTastebuds": "Back up your tastebuds. Add a new recipe today.",
+  "vaultBackUpTastebuds": "Tag backup af dine smagsløg. Tilføj en ny opskrift i dag.",
   "@vaultBackUpTastebuds": {
     "description": "Vault-themed motivational message."
   },
-  "vaultYouOwnIt": "You own this vault. We just keep the door tidy.",
+  "vaultYouOwnIt": "Det er din Vault. Vi sørger bare for, at døren er pæn.",
   "@vaultYouOwnIt": {
     "description": "Vault-themed motivational message."
   },
-  "vaultFewerWhatsForDinner": "Every recipe saved is one fewer 'What’s for dinner?'",
+  "vaultFewerWhatsForDinner": "Hver gemt opskrift er ét 'Hvad skal vi have til aftensmad?' mindre.",
   "@vaultFewerWhatsForDinner": {
     "description": "Vault-themed motivational message."
   },
-  "vaultHungryIdeas": "Your vault called. It’s hungry for new ideas.",
+  "vaultHungryIdeas": "Din Vault ringede. Den er sulten efter nye idéer.",
   "@vaultHungryIdeas": {
     "description": "Vault-themed motivational message."
   },
-  "quoteLoveVisible": "Cooking is love made visible – save a dish that made you smile today.",
+  "quoteLoveVisible": "Madlavning er kærlighed gjort synlig – gem en ret, der fik dig til at smile i dag.",
   "@quoteLoveVisible": {
     "description": "Inspirational quote."
   },
-  "quoteCuriousCook": "No one is born a great cook – just a curious one.",
+  "quoteCuriousCook": "Ingen er født som en dygtig kok – bare en nysgerrig én.",
   "@quoteCuriousCook": {
     "description": "Inspirational quote."
   },
-  "quoteStories": "Recipes are like stories. What’s yours telling today?",
+  "quoteStories": "Opskrifter er som historier. Hvad fortæller din i dag?",
   "@quoteStories": {
     "description": "Inspirational quote."
   },
-  "quoteBurntToast": "Even burnt toast is a lesson worth saving.",
+  "quoteBurntToast": "Selv brændt toast er en lektie værd at gemme.",
   "@quoteBurntToast": {
     "description": "Inspirational quote."
   },
-  "quoteSingleChop": "Every dish begins with a single chop.",
+  "quoteSingleChop": "Hver ret begynder med det første hak.",
   "@quoteSingleChop": {
     "description": "Inspirational quote."
   },
-  "riddleTinGrin": "🧠 Riddle: I start in a tin, end in a grin, and go great with beans. What am I?",
+  "riddleTinGrin": "🧠 Gåde: Jeg starter i en dåse, ender med et grin og passer godt til bønner. Hvad er jeg?",
   "@riddleTinGrin": {
     "description": "Riddle-style daily engagement message."
   },
-  "quizPuffPastry": "💡 Quiz yourself: Can you name 3 dishes using puff pastry?",
+  "quizPuffPastry": "💡 Quiz: Kan du nævne 3 retter med butterdej?",
   "@quizPuffPastry": {
     "description": "Quiz-style daily engagement message."
   },
-  "challengeFiveIngredients": "🥄 Vault challenge: Add a recipe today with just 5 ingredients.",
+  "challengeFiveIngredients": "🥄 Vault-udfordring: Tilføj en opskrift i dag med kun 5 ingredienser.",
   "@challengeFiveIngredients": {
     "description": "Challenge-style daily engagement message."
   },
-  "triviaPoachBoil": "🍳 Trivia: What’s the difference between poaching and boiling? Hint: temperature!",
+  "triviaPoachBoil": "🍳 Trivia: Hvad er forskellen på at pochere og at koge? Tip: temperaturen!",
   "@triviaPoachBoil": {
     "description": "Trivia-style daily engagement message."
   },
-  "rollOldestRecipe": "🎲 Roll the dice—try cooking the oldest recipe in your vault!",
+  "rollOldestRecipe": "🎲 Kast terningen—prøv at lave den ældste opskrift i din Vault!",
   "@rollOldestRecipe": {
     "description": "Challenge-style daily engagement message."
   },
-  "encouragementScribbledNote": "Today’s a great day to turn that scribbled note into a saved recipe.",
+  "encouragementScribbledNote": "I dag er en god dag til at forvandle den krøllede note til en gemt opskrift.",
   "@encouragementScribbledNote": {
     "description": "Encouragement message to capture a loose recipe."
   },
-  "encouragementDeliciousNotPerfect": "Don't aim for perfect—aim for delicious. Then save it!",
+  "encouragementDeliciousNotPerfect": "Sigt ikke efter perfekt—sigt efter lækkert. Og gem den bagefter!",
   "@encouragementDeliciousNotPerfect": {
     "description": "Encouragement message about imperfection."
   },
-  "encouragementStockedWithJoy": "Keep your vault like your kitchen: stocked with joy and ready to use.",
+  "encouragementStockedWithJoy": "Hold din Vault som dit køkken: fyldt med glæde og klar til brug.",
   "@encouragementStockedWithJoy": {
     "description": "Encouragement message about maintaining the vault."
   },
-  "encouragementLegacyCookbook": "Each recipe saved is one step closer to your own legacy cookbook.",
+  "encouragementLegacyCookbook": "Hver gemt opskrift er et skridt tættere på din egen arve-kogebog.",
   "@encouragementLegacyCookbook": {
     "description": "Encouragement message about long-term collection."
   },
-  "changePasswordTitle": "Change Password",
+  "changePasswordTitle": "Skift adgangskode",
   "@changePasswordTitle": {
     "description": "Title for the change password screen."
   },
-  "passwordUpdated": "Password updated successfully",
+  "passwordUpdated": "Adgangskode opdateret",
   "@passwordUpdated": {
     "description": "Toast/snackbar after a successful password change."
   },
-  "currentPasswordLabel": "Current Password",
+  "currentPasswordLabel": "Nuværende adgangskode",
   "@currentPasswordLabel": {
     "description": "Label for current password input field."
   },
-  "newPasswordLabel": "New Password",
+  "newPasswordLabel": "Ny adgangskode",
   "@newPasswordLabel": {
     "description": "Label for new password input field."
   },
-  "confirmPasswordLabel": "Confirm New Password",
+  "confirmPasswordLabel": "Bekræft ny adgangskode",
   "@confirmPasswordLabel": {
     "description": "Label for confirm password input field."
   },
-  "enterCurrentPassword": "Enter your current password",
+  "enterCurrentPassword": "Indtast din nuværende adgangskode",
   "@enterCurrentPassword": {
     "description": "Helper text for current password input."
   },
-  "passwordMinLength": "Must be at least 6 characters",
+  "passwordMinLength": "Skal være mindst 6 tegn",
   "@passwordMinLength": {
     "description": "Validation message for minimum password length."
   },
-  "passwordsDoNotMatch": "Passwords do not match",
+  "passwordsDoNotMatch": "Adgangskoderne er ikke ens",
   "@passwordsDoNotMatch": {
     "description": "Validation message when password confirmation fails."
   },
-  "updatePasswordButton": "Update Password",
+  "updatePasswordButton": "Opdater adgangskode",
   "@updatePasswordButton": {
     "description": "CTA to submit password change."
   },
-  "emailLabel": "Email",
+  "emailLabel": "E-mail",
   "@emailLabel": {
     "description": "Label for email input field."
   },
-  "passwordLabel": "Password",
+  "passwordLabel": "Adgangskode",
   "@passwordLabel": {
     "description": "Label for password input field."
   },
-  "signInWithEmail": "Sign in with Email",
+  "signInWithEmail": "Log ind med e-mail",
   "@signInWithEmail": {
     "description": "CTA to sign in using email/password."
   },
-  "signInWithGoogle": "Sign in with Google",
+  "signInWithGoogle": "Log ind med Google",
   "@signInWithGoogle": {
     "description": "CTA to sign in using Google account."
   },
-  "signInWithApple": "Sign in with Apple",
+  "signInWithApple": "Log ind med Apple",
   "@signInWithApple": {
     "description": "CTA to sign in using Apple account."
   },
-  "registerCta": "Don't have an account? Register",
+  "registerCta": "Har du ikke en konto? Registrér",
   "@registerCta": {
     "description": "Prompt/CTA to navigate to registration."
   },
-  "signInCancelled": "Sign-in was cancelled.",
+  "signInCancelled": "Login blev annulleret.",
   "@signInCancelled": {
     "description": "Shown when a third-party sign-in flow is cancelled by the user."
   },
-  "authInvalidCredential": "Invalid email or password.",
+  "authInvalidCredential": "Ugyldig e-mail eller adgangskode.",
   "@authInvalidCredential": {
     "description": "Auth error for invalid credentials."
   },
-  "authUserNotFound": "No account found with that email.",
+  "authUserNotFound": "Ingen konto fundet med den e-mail.",
   "@authUserNotFound": {
     "description": "Auth error when no user exists for the provided email."
   },
-  "authWrongPassword": "Incorrect password.",
+  "authWrongPassword": "Forkert adgangskode.",
   "@authWrongPassword": {
     "description": "Auth error when password is incorrect."
   },
-  "authTooManyRequests": "Too many attempts. Please try again later.",
+  "authTooManyRequests": "For mange forsøg. Prøv igen senere.",
   "@authTooManyRequests": {
     "description": "Rate-limiting/lockout auth error message."
   },
-  "createAccountTitle": "Create your\\nRecipeVault account",
+  "createAccountTitle": "Opret din\\nRecipeVault-konto",
   "@createAccountTitle": {
     "description": "Title on the registration screen (with forced line break)."
   },
-  "trialLine": "Enjoy a 7-day free trial – no card required.",
+  "trialLine": "Nyd 7 dages gratis prøveperiode – ingen kortoplysninger krævet.",
   "@trialLine": {
     "description": "Subheading explaining registration includes a free trial."
   },
-  "createAccountButton": "Create Account",
+  "createAccountButton": "Opret konto",
   "@createAccountButton": {
     "description": "CTA to complete registration."
   },
-  "continueWithGoogle": "Continue with Google",
+  "continueWithGoogle": "Fortsæt med Google",
   "@continueWithGoogle": {
     "description": "Alternate registration CTA with Google."
   },
-  "continueWithApple": "Continue with Apple",
+  "continueWithApple": "Fortsæt med Apple",
   "@continueWithApple": {
     "description": "Alternate registration CTA with Apple."
   },
-  "alreadyHaveAccountCta": "Already have an account? Log in",
+  "alreadyHaveAccountCta": "Har du allerede en konto? Log ind",
   "@alreadyHaveAccountCta": {
     "description": "Link/CTA to go to login screen."
   },
-  "registrationFailed": "Registration failed",
+  "registrationFailed": "Registrering mislykkedes",
   "@registrationFailed": {
     "description": "Generic error title when registration fails."
   },
-  "googleSignupCancelled": "Google sign-up was cancelled.",
+  "googleSignupCancelled": "Google-tilmelding blev annulleret.",
   "@googleSignupCancelled": {
     "description": "Shown when Google sign-up flow is cancelled."
   },
-  "googleSignupFailed": "Google sign-up failed",
+  "googleSignupFailed": "Google-tilmelding mislykkedes",
   "@googleSignupFailed": {
     "description": "Shown when Google sign-up flow fails."
   },
-  "appleSignupCancelled": "Apple sign-up was cancelled.",
+  "appleSignupCancelled": "Apple-tilmelding blev annulleret.",
   "@appleSignupCancelled": {
     "description": "Shown when Apple sign-up flow is cancelled."
   },
-  "appleSignupFailed": "Apple sign-up failed",
+  "appleSignupFailed": "Apple-tilmelding mislykkedes",
   "@appleSignupFailed": {
     "description": "Shown when Apple sign-up flow fails."
   },
-  "purchaseSuccess": "Purchase successful!",
+  "purchaseSuccess": "Køb gennemført!",
   "@purchaseSuccess": {
     "description": "Toast/snackbar after a successful purchase."
   },
-  "purchaseCancelled": "Purchase cancelled.",
+  "purchaseCancelled": "Køb annulleret.",
   "@purchaseCancelled": {
     "description": "Toast/snackbar when user cancels a purchase flow."
   },
-  "purchaseFailed": "Purchase failed. Please try again.",
+  "purchaseFailed": "Køb mislykkedes. Prøv igen.",
   "@purchaseFailed": {
     "description": "Toast/snackbar when purchase fails."
   },
-  "unexpectedError": "An unexpected error occurred. Please try again.",
+  "unexpectedError": "Der opstod en uventet fejl. Prøv igen.",
   "@unexpectedError": {
     "description": "Generic unexpected error message."
   },
-  "chefModeTitle": "Chef Mode",
+  "chefModeTitle": "Kokketilstand",
   "@chefModeTitle": {
     "description": "Title for Chef Mode feature/screen."
   },
-  "paywallHeader": "Unlock your full culinary potential",
+  "paywallHeader": "Lås op for dit fulde kulinariske potentiale",
   "@paywallHeader": {
     "description": "Header text at the top of the paywall screen."
   },
-  "badgeCurrentPlan": "Current Plan",
+  "badgeCurrentPlan": "Nuværende plan",
   "@badgeCurrentPlan": {
     "description": "Badge label marking the user’s current plan."
   },
-  "badgeBestValue": "Best Value",
+  "badgeBestValue": "Bedst værdi",
   "@badgeBestValue": {
     "description": "Badge label highlighting best-value plan."
   },
-  "badgeFreeTrial": "Free Trial",
+  "badgeFreeTrial": "Gratis prøve",
   "@badgeFreeTrial": {
     "description": "Badge label highlighting a free trial."
   },
-  "noPlans": "No subscription plans available at the moment.",
+  "noPlans": "Ingen abonnementer tilgængelige i øjeblikket.",
   "@noPlans": {
     "description": "Shown when the app cannot load any subscription plans."
   },
-  "legalAgreePrefix": "By continuing, you agree to our",
+  "legalAgreePrefix": "Ved at fortsætte accepterer du vores",
   "@legalAgreePrefix": {
     "description": "Lead-in text before terms/privacy links."
   },
-  "legalTerms": "Terms of Service",
+  "legalTerms": "Servicevilkår",
   "@legalTerms": {
     "description": "Link label to Terms of Service."
   },
-  "legalAnd": "and",
+  "legalAnd": "og",
   "@legalAnd": {
     "description": "Conjunction between terms/privacy links."
   },
-  "legalPrivacy": "Privacy Policy",
+  "legalPrivacy": "Privatlivspolitik",
   "@legalPrivacy": {
     "description": "Link label to Privacy Policy."
   },
-  "legalAutoRenew": "Subscriptions auto-renew unless cancelled.",
+  "legalAutoRenew": "Abonnementer fornyes automatisk, medmindre de opsiges.",
   "@legalAutoRenew": {
     "description": "Disclosure about auto-renewal."
   },
-  "legalManageApple": "Manage your subscription in Apple Settings.",
+  "legalManageApple": "Administrér dit abonnement i Apple-indstillinger.",
   "@legalManageApple": {
     "description": "Apple-specific subscription management guidance."
   },
-  "manageOrCancelCta": "Manage or cancel your subscription",
+  "manageOrCancelCta": "Administrér eller annullér dit abonnement",
   "@manageOrCancelCta": {
     "description": "CTA to manage or cancel a subscription."
   },
-  "planDefaultDescription": "Enjoy full access to RecipeVault features and AI-powered tools.",
+  "planDefaultDescription": "Få fuld adgang til RecipeVault-funktioner og AI-værktøjer.",
   "@planDefaultDescription": {
     "description": "Fallback description for plans when a specific one is not provided."
   },
-  "trialEndedTitle": "Trial Ended",
+  "trialEndedTitle": "Prøveperiode udløbet",
   "@trialEndedTitle": {
     "description": "Title shown when the free trial has ended."
   },
-  "trialEndedHeadline": "Your free trial has ended",
+  "trialEndedHeadline": "Din gratis prøveperiode er slut",
   "@trialEndedHeadline": {
     "description": "Headline shown on the trial-ended screen."
   },
-  "trialEndedDescription": "To continue using RecipeVault AI features like scanning, translation, and image uploads, please choose a plan below.",
+  "trialEndedDescription": "For at fortsætte med at bruge RecipeVaults AI-funktioner som scanning, oversættelse og billedeuploads skal du vælge en plan nedenfor.",
   "@trialEndedDescription": {
     "description": "Body copy explaining next steps after trial ends."
   },
-  "seePlanOptions": "See all plan options",
+  "seePlanOptions": "Se alle planmuligheder",
   "@seePlanOptions": {
     "description": "CTA to view all available subscription plans."
   },
-  "appBarToggleViewMode": "Toggle view mode",
+  "appBarToggleViewMode": "Skift visningstilstand",
   "@appBarToggleViewMode": {
     "description": "Tooltip for switching between grid and list layouts."
   },
-  "appBarRefreshSubscription": "Refresh your subscription plan",
+  "appBarRefreshSubscription": "Opdatér dit abonnement",
   "@appBarRefreshSubscription": {
     "description": "Tooltip for button that refreshes subscription status."
   },
-  "subscriptionRefreshed": "Subscription plan refreshed.",
+  "subscriptionRefreshed": "Abonnement opdateret.",
   "@subscriptionRefreshed": {
     "description": "Snackbar after subscription refresh completes."
   },
-  "upgradeToUnlockTitle": "Upgrade to Unlock",
+  "upgradeToUnlockTitle": "Opgrader for at låse op",
   "@upgradeToUnlockTitle": {
     "description": "Dialog title when a feature is locked behind a paid plan."
   },
-  "imageUploadLockedMessage": "Creating recipes from images is available on paid plans.",
+  "imageUploadLockedMessage": "Oprettelse af opskrifter fra billeder er tilgængelig på betalte planer.",
   "@imageUploadLockedMessage": {
     "description": "Dialog body explaining image-based creation is paid-only."
   },
-  "upgradeToUnlockFeature": "Upgrade to unlock this feature.",
+  "upgradeToUnlockFeature": "Opgrader for at låse denne funktion op.",
   "@upgradeToUnlockFeature": {
     "description": "Secondary message encouraging upgrade from the lock dialog."
   },
-  "createFromImagesPaid": "Creating recipes from images is available on paid plans.",
+  "createFromImagesPaid": "Oprettelse af opskrifter fra billeder er tilgængelig på betalte planer.",
   "@createFromImagesPaid": {
     "description": "Inline warning when free users attempt image creation."
   },
-  "upgradeToUnlockBody": "Upgrade to unlock this feature.",
+  "upgradeToUnlockBody": "Opgrader for at låse denne funktion op.",
   "@upgradeToUnlockBody": {
     "description": "Secondary message for locked feature dialog (duplicate-friendly)."
   },
-  "tabCreate": "Create",
+  "tabCreate": "Opret",
   "@tabCreate": {
     "description": "Bottom navigation label for the Create tab."
   },
@@ -753,107 +753,107 @@
   "@tabVault": {
     "description": "Bottom navigation label for the Vault tab."
   },
-  "tabProfile": "Profile",
+  "tabProfile": "Profil",
   "@tabProfile": {
     "description": "Bottom navigation label for the Profile tab."
   },
-  "viewPlans": "View Plans",
+  "viewPlans": "Se planer",
   "@viewPlans": {
     "description": "Button text to navigate to the paywall/plans screen."
   },
-  "addCategoryTitle": "Add New Category",
+  "addCategoryTitle": "Tilføj ny kategori",
   "@addCategoryTitle": {
     "description": "Dialog title for creating a new category."
   },
-  "addCategoryHint": "e.g. Snacks",
+  "addCategoryHint": "f.eks. Snacks",
   "@addCategoryHint": {
     "description": "Hint text inside the new category name input."
   },
-  "add": "Add",
+  "add": "Tilføj",
   "@add": {
     "description": "Generic Add action label used in buttons/menus."
   },
-  "usage": "Usage",
+  "usage": "Forbrug",
   "@usage": {
     "description": "Label for usage metrics button or section."
   },
-  "createRecipe": "Create Recipe",
+  "createRecipe": "Opret opskrift",
   "@createRecipe": {
     "description": "Speed-dial/action label to start recipe creation."
   },
-  "upgradeToCreateRecipe": "Upgrade to Create Recipe",
+  "upgradeToCreateRecipe": "Opgrader for at oprette opskrift",
   "@upgradeToCreateRecipe": {
     "description": "Locked label shown when user’s plan cannot create recipes."
   },
-  "upgradeToAddCategory": "Upgrade to Add Category",
+  "upgradeToAddCategory": "Opgrader for at tilføje kategori",
   "@upgradeToAddCategory": {
     "description": "Locked label shown when user’s plan cannot add categories."
   },
-  "recipeCreationLimited": "🔒 Recipe creation is limited to Home Chef and Master Chef plans.",
+  "recipeCreationLimited": "🔒 Oprettelse af opskrifter er begrænset til Home Chef- og Master Chef-planer.",
   "@recipeCreationLimited": {
     "description": "SnackBar text when recipe creation is restricted by plan."
   },
-  "categoryCreationLimited": "🔒 Category creation is limited to Home Chef and Master Chef plans.",
+  "categoryCreationLimited": "🔒 Oprettelse af kategorier er begrænset til Home Chef- og Master Chef-planer.",
   "@categoryCreationLimited": {
     "description": "SnackBar text when category creation is restricted by plan."
   },
-  "gotIt": "Got it",
+  "gotIt": "Forstået",
   "@gotIt": {
     "description": "Button text for dismissing onboarding/info bubbles"
   },
-  "editRecipeTitle": "Edit Recipe",
+  "editRecipeTitle": "Redigér opskrift",
   "@editRecipeTitle": {
     "description": "Title of the edit recipe screen"
   },
-  "editRecipeFieldTitle": "Title",
+  "editRecipeFieldTitle": "Titel",
   "@editRecipeFieldTitle": {
     "description": "Label for recipe title field"
   },
-  "editRecipeFieldIngredients": "Ingredients (one per line)",
+  "editRecipeFieldIngredients": "Ingredienser (én pr. linje)",
   "@editRecipeFieldIngredients": {
     "description": "Label for ingredients field"
   },
-  "editRecipeFieldSteps": "Steps",
+  "editRecipeFieldSteps": "Trin",
   "@editRecipeFieldSteps": {
     "description": "Label for recipe steps field"
   },
-  "editRecipeSaving": "Saving...",
+  "editRecipeSaving": "Gemmer...",
   "@editRecipeSaving": {
     "description": "Label shown while recipe is being saved"
   },
-  "editRecipeSaveChanges": "Save Changes",
+  "editRecipeSaveChanges": "Gem ændringer",
   "@editRecipeSaveChanges": {
     "description": "Label for button to save changes"
   },
-  "menuFavourite": "Favourite",
+  "menuFavourite": "Føj til favoritter",
   "@menuFavourite": {
     "description": "Popup menu item to mark a recipe as favourite"
   },
-  "menuUnfavourite": "Unfavourite",
+  "menuUnfavourite": "Fjern fra favoritter",
   "@menuUnfavourite": {
     "description": "Popup menu item to remove a recipe from favourites"
   },
-  "menuAssignCategories": "Assign categories",
+  "menuAssignCategories": "Tildel kategorier",
   "@menuAssignCategories": {
     "description": "Popup menu item to assign categories to a recipe"
   },
-  "menuMoreOptions": "More options",
+  "menuMoreOptions": "Flere muligheder",
   "@menuMoreOptions": {
     "description": "Tooltip/accessible label for the overflow menu button on recipe cards"
   },
-  "systemAll": "All",
+  "systemAll": "Alle",
   "@systemAll": {
     "description": "System category: show all recipes"
   },
-  "systemTranslated": "Translated",
+  "systemTranslated": "Oversat",
   "@systemTranslated": {
     "description": "System category: recipes created via translation"
   },
-  "defaultBreakfast": "Breakfast",
+  "defaultBreakfast": "Morgenmad",
   "@defaultBreakfast": {
     "description": "Default category name"
   },
-  "defaultMain": "Main",
+  "defaultMain": "Hovedret",
   "@defaultMain": {
     "description": "Default category name for main course"
   },
@@ -861,119 +861,119 @@
   "@defaultDessert": {
     "description": "Default category name for desserts"
   },
-  "chipDeleteCategoryTooltip": "Remove category",
+  "chipDeleteCategoryTooltip": "Fjern kategori",
   "@chipDeleteCategoryTooltip": {
     "description": "Tooltip for the delete icon on a category chip"
   },
-  "addToFavourites": "Add to favourites",
+  "addToFavourites": "Føj til favoritter",
   "@addToFavourites": {
     "description": "Tooltip/action for marking an item as favourite"
   },
-  "removeFromFavourites": "Remove from favourites",
+  "removeFromFavourites": "Fjern fra favoritter",
   "@removeFromFavourites": {
     "description": "Tooltip/action for unmarking an item as favourite"
   },
-  "shareAsPdf": "Share as PDF",
+  "shareAsPdf": "Del som PDF",
   "@shareAsPdf": {
     "description": "Tooltip / action to export and share the recipe as a PDF"
   },
-  "tapToViewRecipe": "Tap to view recipe",
+  "tapToViewRecipe": "Tryk for at se opskrift",
   "@tapToViewRecipe": {
     "description": "Small hint shown under a recipe title in list view."
   },
-  "recipeOptions": "Recipe Options",
+  "recipeOptions": "Opskriftsmuligheder",
   "@recipeOptions": {
     "description": "Title for the bottom sheet that shows actions for a recipe"
   },
-  "updateImage": "Update Image",
+  "updateImage": "Opdatér billede",
   "@updateImage": {
     "description": "Button label to add or update the recipe image"
   },
-  "all": "All",
+  "all": "Alle",
   "@all": {
     "description": "System category label representing all recipes"
   },
-  "translated": "Translated",
+  "translated": "Oversat",
   "@translated": {
     "description": "System category label for recipes that were translated"
   },
-  "clearSearch": "Clear search",
+  "clearSearch": "Ryd søgning",
   "@clearSearch": {
     "description": "Tooltip text for the clear search (X) button in the search bar."
   },
-  "searchRecipesAndIngredients": "Search recipes or ingredients...",
+  "searchRecipesAndIngredients": "Søg i opskrifter eller ingredienser...",
   "@searchRecipesAndIngredients": {
     "description": "Hint when searching across recipe titles and ingredients."
   },
-  "searchScopeTitles": "Search titles only",
+  "searchScopeTitles": "Søg kun i titler",
   "@searchScopeTitles": {
     "description": "Tooltip for toggling the search scope to titles only."
   },
-  "searchScopeTitlesIngredients": "Search titles + ingredients",
+  "searchScopeTitlesIngredients": "Søg i titler + ingredienser",
   "@searchScopeTitlesIngredients": {
     "description": "Tooltip for toggling the search scope to titles and ingredients."
   },
-  "title": "Title",
+  "title": "Titel",
   "@title": {
     "description": "Generic label for a recipe title (used in markdown export)."
   },
-  "hintsAndTips": "Hints & Tips",
+  "hintsAndTips": "Tips & tricks",
   "@hintsAndTips": {
     "description": "Label for the hints & tips section of a recipe (used in markdown export)."
   },
-  "noAdditionalTips": "No additional tips provided.",
+  "noAdditionalTips": "Ingen ekstra tips angivet.",
   "@noAdditionalTips": {
     "description": "Fallback text when there are no hints or tips for a recipe (used in markdown export)."
   },
-  "bubbleScan": "📸 Scan Recipes\nTap “Create” or + to upload and scan recipe images.",
+  "bubbleScan": "📸 Scan opskrifter\nTryk på “Opret” eller + for at uploade og scanne billeder af opskrifter.",
   "@bubbleScan": {
     "description": "Onboarding bubble message explaining how to scan recipes by uploading images."
   },
-  "bubbleViewToggle": "👁️ Switch Views\nTap to change how recipes are displayed.",
+  "bubbleViewToggle": "👁️ Skift visning\nTryk for at ændre, hvordan opskrifter vises.",
   "@bubbleViewToggle": {
     "description": "Onboarding bubble message explaining how to toggle between different recipe view modes."
   },
-  "bubbleLongPress": "📌 Long-press a recipe\nTap and hold to favourite or assign a category.",
+  "bubbleLongPress": "📌 Tryk og hold på en opskrift\nTryk og hold for at gøre til favorit eller tildele en kategori.",
   "@bubbleLongPress": {
     "description": "Onboarding bubble message explaining how to long-press a recipe card to favourite or assign a category."
   },
-  "vaultBubbleSwitchViews": "Switch views here",
+  "vaultBubbleSwitchViews": "Skift visning her",
   "@vaultBubbleSwitchViews": {
     "description": "Onboarding bubble prompting the user to change between grid/list views."
   },
-  "vaultBubbleLongPress": "Long‑press a recipe for options",
+  "vaultBubbleLongPress": "Tryk og hold på en opskrift for muligheder",
   "@vaultBubbleLongPress": {
     "description": "Onboarding bubble explaining long-press on a recipe card."
   },
-  "vaultBubbleScan": "Scan recipes with the + button",
+  "vaultBubbleScan": "Scan opskrifter med +-knappen",
   "@vaultBubbleScan": {
     "description": "Onboarding bubble pointing to the create/+ scan entry point."
   },
-  "sharedRecipeTitle": "Shared Recipe",
+  "sharedRecipeTitle": "Delt opskrift",
   "@sharedRecipeTitle": {
     "description": "AppBar title for the shared recipe screen."
   },
-  "sharedRecipeNotFound": "This shared recipe could not be found.",
+  "sharedRecipeNotFound": "Denne delte opskrift blev ikke fundet.",
   "@sharedRecipeNotFound": {
     "description": "Shown when a shared recipe document is missing."
   },
-  "sharedRecipeLoadError": "An error occurred while loading the recipe.",
+  "sharedRecipeLoadError": "Der opstod en fejl under indlæsning af opskriften.",
   "@sharedRecipeLoadError": {
     "description": "Shown when the shared recipe fetch fails."
   },
-  "noRecipeDataFound": "No recipe data found.",
+  "noRecipeDataFound": "Ingen opskriftsdata fundet.",
   "@noRecipeDataFound": {
     "description": "Shown when ResultsScreen gets no data in navigation."
   },
-  "copyToClipboard": "Copy to clipboard",
+  "copyToClipboard": "Kopiér til udklipsholder",
   "@copyToClipboard": {
     "description": "Tooltip for copy button on ResultsScreen."
   },
-  "copiedToClipboard": "📋 Recipe copied to clipboard",
+  "copiedToClipboard": "📋 Opskrift kopieret til udklipsholderen",
   "@copiedToClipboard": {
     "description": "Snackbar after copying recipe text."
   },
-  "languageLabel": "Language: {language}",
+  "languageLabel": "Sprog: {language}",
   "@languageLabel": {
     "description": "Label when simply displaying detected language.",
     "placeholders": {
@@ -982,15 +982,15 @@
       }
     }
   },
-  "notSignedIn": "Not signed in",
+  "notSignedIn": "Ikke logget ind",
   "@notSignedIn": {
     "description": "Error when an action requires a signed-in user."
   },
-  "imageCropCancelled": "Image crop cancelled",
+  "imageCropCancelled": "Beskæring af billede annulleret",
   "@imageCropCancelled": {
     "description": "Shown when the user cancels image crop."
   },
-  "uploadFailed": "Upload failed: {error}",
+  "uploadFailed": "Upload mislykkedes: {error}",
   "@uploadFailed": {
     "description": "Shown when image upload fails.",
     "placeholders": {
@@ -999,23 +999,23 @@
       }
     }
   },
-  "showOcr": "Show OCR",
+  "showOcr": "Vis OCR",
   "@showOcr": {
     "description": "Debug toggle to show OCR text."
   },
-  "hideOcr": "Hide OCR",
+  "hideOcr": "Skjul OCR",
   "@hideOcr": {
     "description": "Debug toggle to hide OCR text."
   },
-  "formattingError": "Whoops! Something went wrong with formatting.\nPlease try again.",
+  "formattingError": "Hov! Noget gik galt med formateringen.\nPrøv igen.",
   "@formattingError": {
     "description": "Error card message when the recipe formatter failed."
   },
-  "aboutLegalTitle": "About & Legal",
+  "aboutLegalTitle": "Om & juridisk",
   "@aboutLegalTitle": {
     "description": "App bar title for About screen."
   },
-  "appInfoSectionTitle": "App Info",
+  "appInfoSectionTitle": "Appoplysninger",
   "@appInfoSectionTitle": {
     "description": "Section heading for app information."
   },
@@ -1023,7 +1023,7 @@
   "@versionLabel": {
     "description": "Label for the app version row."
   },
-  "legalSectionTitle": "Legal",
+  "legalSectionTitle": "Juridisk",
   "@legalSectionTitle": {
     "description": "Section heading for legal links."
   },
@@ -1031,47 +1031,47 @@
   "@supportSectionTitle": {
     "description": "Section heading for support links."
   },
-  "visitWebsite": "Visit Website",
+  "visitWebsite": "Besøg websted",
   "@visitWebsite": {
     "description": "Button/link to open the website."
   },
-  "contactSupport": "Contact Support",
+  "contactSupport": "Kontakt support",
   "@contactSupport": {
     "description": "Button/link to contact support."
   },
-  "accountSettingsTitle": "Account Settings",
+  "accountSettingsTitle": "Kontoindstillinger",
   "@accountSettingsTitle": {
     "description": "App bar title for account settings screen."
   },
-  "noUserSignedIn": "No user signed in",
+  "noUserSignedIn": "Ingen bruger logget ind",
   "@noUserSignedIn": {
     "description": "Shown when account screen is opened without an authenticated user."
   },
-  "noName": "No name",
+  "noName": "Intet navn",
   "@noName": {
     "description": "Fallback display name when user.displayName is null."
   },
-  "securitySectionTitle": "Security",
+  "securitySectionTitle": "Sikkerhed",
   "@securitySectionTitle": {
     "description": "Section header for security items."
   },
-  "signOut": "Sign Out",
+  "signOut": "Log ud",
   "@signOut": {
     "description": "Menu/button text to sign out."
   },
-  "signedOut": "Signed out",
+  "signedOut": "Logget ud",
   "@signedOut": {
     "description": "Snackbar text after successful sign out."
   },
-  "signOutQuestion": "Sign Out?",
+  "signOutQuestion": "Logge ud?",
   "@signOutQuestion": {
     "description": "Dialog title asking to confirm sign out."
   },
-  "signOutConfirmBody": "Are you sure you want to sign out?",
+  "signOutConfirmBody": "Er du sikker på, at du vil logge ud?",
   "@signOutConfirmBody": {
     "description": "Dialog body confirming sign out."
   },
-  "signOutFailed": "Sign out failed: {error}",
+  "signOutFailed": "Log ud mislykkedes: {error}",
   "@signOutFailed": {
     "description": "Snackbar when sign out fails.",
     "placeholders": {
@@ -1080,23 +1080,23 @@
       }
     }
   },
-  "deleteAccount": "Delete Account",
+  "deleteAccount": "Slet konto",
   "@deleteAccount": {
     "description": "Menu/button text to delete the account."
   },
-  "deleteAccountQuestion": "Delete Your Account?",
+  "deleteAccountQuestion": "Slette din konto?",
   "@deleteAccountQuestion": {
     "description": "Dialog title asking to confirm account deletion."
   },
-  "deleteAccountBody": "This will permanently delete your account and all associated data including recipes, images, and preferences.\n\nThis action is irreversible.",
+  "deleteAccountBody": "Dette vil permanent slette din konto og alle tilknyttede data inklusive opskrifter, billeder og præferencer.\n\nDenne handling kan ikke fortrydes.",
   "@deleteAccountBody": {
     "description": "Dialog body warning about account deletion."
   },
-  "deleteAccountSuccess": "Account deleted successfully.",
+  "deleteAccountSuccess": "Kontoen blev slettet.",
   "@deleteAccountSuccess": {
     "description": "Snackbar after successful account deletion."
   },
-  "deleteAccountFailed": "Failed to delete account: {error}",
+  "deleteAccountFailed": "Kunne ikke slette konto: {error}",
   "@deleteAccountFailed": {
     "description": "Snackbar when account deletion fails.",
     "placeholders": {
@@ -1105,135 +1105,135 @@
       }
     }
   },
-  "appearanceTitle": "Appearance",
+  "appearanceTitle": "Udseende",
   "@appearanceTitle": {
     "description": "App bar title for the Appearance settings screen."
   },
-  "appThemeSectionTitle": "App Theme",
+  "appThemeSectionTitle": "App-tema",
   "@appThemeSectionTitle": {
     "description": "Section header for theme options."
   },
-  "lightMode": "Light Mode",
+  "lightMode": "Lyst tema",
   "@lightMode": {
     "description": "Option label for light theme."
   },
-  "darkMode": "Dark Mode",
+  "darkMode": "Mørkt tema",
   "@darkMode": {
     "description": "Option label for dark theme."
   },
-  "textSizeSectionTitle": "Text Size",
+  "textSizeSectionTitle": "Skriftstørrelse",
   "@textSizeSectionTitle": {
     "description": "Section header for text size options."
   },
-  "textSizeSmall": "Small",
+  "textSizeSmall": "Lille",
   "@textSizeSmall": {
     "description": "Option label for small text size."
   },
-  "textSizeMedium": "Medium",
+  "textSizeMedium": "Mellem",
   "@textSizeMedium": {
     "description": "Option label for medium text size."
   },
-  "textSizeLarge": "Large",
+  "textSizeLarge": "Stor",
   "@textSizeLarge": {
     "description": "Option label for large text size."
   },
-  "faqsTitle": "FAQs",
+  "faqsTitle": "Ofte stillede spørgsmål",
   "@faqsTitle": {
     "description": "App bar title for the FAQs screen."
   },
-  "faqsSectionScanSave": "Scanning & Saving",
+  "faqsSectionScanSave": "Scanning & gemning",
   "@faqsSectionScanSave": {
     "description": "Section header for scanning/saving FAQs."
   },
-  "faqsQHowScan": "How do I scan a recipe?",
+  "faqsQHowScan": "Hvordan scanner jeg en opskrift?",
   "@faqsQHowScan": {
     "description": "Question: scanning a recipe."
   },
-  "faqsAHowScan": "From the Home screen, tap the \"+\" button and upload one or more images of your recipe.",
+  "faqsAHowScan": "Fra startsiden skal du trykke på \"+\" og uploade ét eller flere billeder af din opskrift.",
   "@faqsAHowScan": {
     "description": "Answer: scanning a recipe."
   },
-  "faqsQAddImage": "How do I add a recipe image?",
+  "faqsQAddImage": "Hvordan tilføjer jeg et opskriftsbillede?",
   "@faqsQAddImage": {
     "description": "Question: add recipe image."
   },
-  "faqsAAddImage": "After scanning, tap \"Add Image\" to crop and upload a photo for your recipe card header.",
+  "faqsAAddImage": "Efter scanning skal du trykke på \"Tilføj billede\" for at beskære og uploade et foto til din opskrifts header.",
   "@faqsAAddImage": {
     "description": "Answer: add recipe image."
   },
-  "faqsQSaveRecipe": "How do I save a recipe?",
+  "faqsQSaveRecipe": "Hvordan gemmer jeg en opskrift?",
   "@faqsQSaveRecipe": {
     "description": "Question: save recipe."
   },
-  "faqsASaveRecipe": "Once you’ve reviewed the formatted result, tap \"Save to Vault\" to store it permanently.",
+  "faqsASaveRecipe": "Når du har gennemgået det formaterede resultat, trykker du på \"Gem i Vault\" for at gemme den permanent.",
   "@faqsASaveRecipe": {
     "description": "Answer: save recipe."
   },
-  "faqsSectionAccessUse": "App Access & Use",
+  "faqsSectionAccessUse": "App-adgang & brug",
   "@faqsSectionAccessUse": {
     "description": "Section header for access/use FAQs."
   },
-  "faqsQOffline": "Can I use the app offline?",
+  "faqsQOffline": "Kan jeg bruge appen offline?",
   "@faqsQOffline": {
     "description": "Question: offline usage."
   },
-  "faqsAOffline": "You can view any recipes already saved to your Vault, even without an internet connection.",
+  "faqsAOffline": "Du kan se alle opskrifter, der allerede er gemt i din Vault, også uden internetforbindelse.",
   "@faqsAOffline": {
     "description": "Answer: offline usage."
   },
-  "faqsSectionSubSupport": "Subscription & Support",
+  "faqsSectionSubSupport": "Abonnement & support",
   "@faqsSectionSubSupport": {
     "description": "Section header for subscription/support FAQs."
   },
-  "faqsQWhySub": "Why do I need a subscription?",
+  "faqsQWhySub": "Hvorfor har jeg brug for et abonnement?",
   "@faqsQWhySub": {
     "description": "Question: why subscription."
   },
-  "faqsAWhySub": "Subscriptions unlock cloud sync, image uploads, translation, and AI-powered formatting.",
+  "faqsAWhySub": "Abonnementer låser op for cloud-synkronisering, billedeuploads, oversættelse og AI-formatering.",
   "@faqsAWhySub": {
     "description": "Answer: why subscription."
   },
-  "faqsQCancel": "How can I cancel my subscription?",
+  "faqsQCancel": "Hvordan kan jeg annullere mit abonnement?",
   "@faqsQCancel": {
     "description": "Question: cancel subscription."
   },
-  "faqsACancel": "Manage or cancel your plan anytime through your App Store or Google Play account settings.",
+  "faqsACancel": "Administrér eller annullér din plan når som helst via dine App Store- eller Google Play-kontoindstillinger.",
   "@faqsACancel": {
     "description": "Answer: cancel subscription."
   },
-  "notificationsTitle": "Notifications",
+  "notificationsTitle": "Notifikationer",
   "@notificationsTitle": {
     "description": "App bar title for notifications settings."
   },
-  "notificationsSectionReminders": "Reminders",
+  "notificationsSectionReminders": "Påmindelser",
   "@notificationsSectionReminders": {
     "description": "Section header for reminder notifications."
   },
-  "notificationsWeeklyTitle": "Weekly Recipe Reminder",
+  "notificationsWeeklyTitle": "Ugentlig opskriftspåmindelse",
   "@notificationsWeeklyTitle": {
     "description": "Title of weekly reminder toggle."
   },
-  "notificationsWeeklySubtitle": "Get nudged weekly to add recipes to your vault.",
+  "notificationsWeeklySubtitle": "Få en ugentlig påmindelse om at tilføje opskrifter til din Vault.",
   "@notificationsWeeklySubtitle": {
     "description": "Subtitle explaining weekly reminder."
   },
-  "notificationsSectionUpdates": "Updates",
+  "notificationsSectionUpdates": "Opdateringer",
   "@notificationsSectionUpdates": {
     "description": "Section header for updates/announcements."
   },
-  "notificationsFeatureAlertsTitle": "New Feature Alerts",
+  "notificationsFeatureAlertsTitle": "Underretninger om nye funktioner",
   "@notificationsFeatureAlertsTitle": {
     "description": "Title of feature announcements toggle."
   },
-  "notificationsFeatureAlertsSubtitle": "Be the first to hear when something tasty is added!",
+  "notificationsFeatureAlertsSubtitle": "Vær den første til at høre, når der kommer noget lækkert!",
   "@notificationsFeatureAlertsSubtitle": {
     "description": "Subtitle for feature announcements toggle."
   },
-  "planIncludedHeader": "Included in your plan:",
+  "planIncludedHeader": "Inkluderet i din plan:",
   "@planIncludedHeader": {
     "description": "Header shown above the list of plan benefits on the plan card."
   },
-  "trialEnds": "Trial ends: {date}",
+  "trialEnds": "Prøveperioden slutter: {date}",
   "@trialEnds": {
     "description": "Shown on plan card if user is on a trial.",
     "placeholders": {
@@ -1242,22 +1242,22 @@
       }
     }
   },
-  "settingsSectionAccount": "Account",
+  "settingsSectionAccount": "Konto",
   "@settingsSectionAccount": {
     "description": "Header label for account-related settings section in Settings screen.",
     "type": "text"
   },
-  "settingsSectionPreferences": "Preferences",
+  "settingsSectionPreferences": "Præferencer",
   "@settingsSectionPreferences": {
     "description": "Header label for preferences-related settings section in Settings screen.",
     "type": "text"
   },
-  "settingsSectionStorage": "Local Storage",
+  "settingsSectionStorage": "Lokal lagring",
   "@settingsSectionStorage": {
     "description": "Header label for local storage management settings section in Settings screen.",
     "type": "text"
   },
-  "settingsSectionSubscription": "Subscription",
+  "settingsSectionSubscription": "Abonnement",
   "@settingsSectionSubscription": {
     "description": "Header label for subscription management settings section in Settings screen.",
     "type": "text"
@@ -1267,37 +1267,37 @@
     "description": "Header label for support and help-related settings section in Settings screen.",
     "type": "text"
   },
-  "settingsTileAccountSettings": "Account Settings",
+  "settingsTileAccountSettings": "Kontoindstillinger",
   "@settingsTileAccountSettings": {
     "description": "Settings tile label for navigating to account settings.",
     "type": "text"
   },
-  "settingsTileAppearance": "Appearance",
+  "settingsTileAppearance": "Udseende",
   "@settingsTileAppearance": {
     "description": "Settings tile label for navigating to appearance/theme settings.",
     "type": "text"
   },
-  "settingsTileNotifications": "Notifications",
+  "settingsTileNotifications": "Notifikationer",
   "@settingsTileNotifications": {
     "description": "Settings tile label for navigating to notifications settings.",
     "type": "text"
   },
-  "settingsTileCacheClear": "Cache Clear",
+  "settingsTileCacheClear": "Ryd cache",
   "@settingsTileCacheClear": {
     "description": "Settings tile label for clearing cached data from the app.",
     "type": "text"
   },
-  "settingsTileManageSubscription": "Manage Subscription",
+  "settingsTileManageSubscription": "Administrér abonnement",
   "@settingsTileManageSubscription": {
     "description": "Settings tile label for navigating to the subscription management screen.",
     "type": "text"
   },
-  "settingsTileHelpFaqs": "Help & FAQs",
+  "settingsTileHelpFaqs": "Hjælp & FAQ",
   "@settingsTileHelpFaqs": {
     "description": "Settings tile label for navigating to the help and FAQs screen.",
     "type": "text"
   },
-  "settingsTileAboutLegal": "About & Legal",
+  "settingsTileAboutLegal": "Om & juridisk",
   "@settingsTileAboutLegal": {
     "description": "Settings tile label for navigating to the about and legal information screen.",
     "type": "text"
@@ -1307,42 +1307,42 @@
     "description": "The name of the company shown at the bottom of the settings screen.",
     "type": "text"
   },
-  "localStorageTitle": "Local Storage",
+  "localStorageTitle": "Lokal lagring",
   "@localStorageTitle": {
     "description": "App bar title for the screen that manages local storage and cache.",
     "type": "text"
   },
-  "clearLocalCacheTitle": "Clear Local Cache",
+  "clearLocalCacheTitle": "Ryd lokal cache",
   "@clearLocalCacheTitle": {
     "description": "Headline on the Local Storage screen above the action to clear cache.",
     "type": "text"
   },
-  "clearLocalCacheDescription": "Delete all recipes, categories and tutorial flags stored on this device.\nYour cloud data will not be affected.",
+  "clearLocalCacheDescription": "Slet alle opskrifter, kategorier og tutorial-flag, der er gemt på denne enhed.\nDine cloud-data påvirkes ikke.",
   "@clearLocalCacheDescription": {
     "description": "Body text describing what clearing the local cache will do.",
     "type": "text"
   },
-  "clearLocalCacheButton": "Clear Local Cache",
+  "clearLocalCacheButton": "Ryd lokal cache",
   "@clearLocalCacheButton": {
     "description": "Primary button label to start clearing local cache.",
     "type": "text"
   },
-  "clearCacheDialogTitle": "Clear Cache?",
+  "clearCacheDialogTitle": "Ryd cache?",
   "@clearCacheDialogTitle": {
     "description": "Title of the confirmation dialog shown before clearing cache.",
     "type": "text"
   },
-  "clearCacheDialogBody": "This will delete all locally stored recipes, categories, and tutorial flags.\nYour cloud data will remain safe.",
+  "clearCacheDialogBody": "Dette vil slette alle lokalt gemte opskrifter, kategorier og tutorial-flag.\nDine cloud-data forbliver sikre.",
   "@clearCacheDialogBody": {
     "description": "Body of the confirmation dialog explaining the effects of clearing cache.",
     "type": "text"
   },
-  "clearNow": "Clear Now",
+  "clearNow": "Ryd nu",
   "@clearNow": {
     "description": "Confirm action button in the clear cache dialog.",
     "type": "text"
   },
-  "localCacheCleared": "Local cache cleared",
+  "localCacheCleared": "Lokal cache ryddet",
   "@localCacheCleared": {
     "description": "Snackbar/toast text shown after local cache is successfully cleared.",
     "type": "text"

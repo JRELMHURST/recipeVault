@@ -1,6 +1,6 @@
 {
-  "@@locale": "en",
-  "loading": "Loading...",
+  "@@locale": "nl",
+  "loading": "Laden...",
   "@loading": {
     "description": "Shown while an operation is in progress."
   },
@@ -8,131 +8,131 @@
   "@appTitle": {
     "description": "Main application title."
   },
-  "welcomeMessage": "Welcome to RecipeVault",
+  "welcomeMessage": "Welkom bij RecipeVault",
   "@welcomeMessage": {
     "description": "Greeting shown on app launch/sign-in."
   },
-  "scanRecipe": "Scan Recipe",
+  "scanRecipe": "Recept scannen",
   "@scanRecipe": {
     "description": "CTA/button to start scanning a recipe."
   },
-  "saveToVault": "Save to Vault",
+  "saveToVault": "Opslaan in kluis",
   "@saveToVault": {
     "description": "CTA/button to save a recipe to the user’s vault."
   },
-  "settings": "Settings",
+  "settings": "Instellingen",
   "@settings": {
     "description": "Menu item to open settings."
   },
-  "logout": "Log out",
+  "logout": "Uitloggen",
   "@logout": {
     "description": "Action to sign out the current user."
   },
-  "yes": "Yes",
+  "yes": "Ja",
   "@yes": {
     "description": "Affirmative action label."
   },
-  "no": "No",
+  "no": "Nee",
   "@no": {
     "description": "Negative action label."
   },
-  "cancel": "Cancel",
+  "cancel": "Annuleren",
   "@cancel": {
     "description": "Cancels the current action/dialog."
   },
-  "close": "Close",
+  "close": "Sluiten",
   "@close": {
     "description": "Closes a dialog/sheet."
   },
-  "save": "Save",
+  "save": "Opslaan",
   "@save": {
     "description": "Saves current changes."
   },
-  "delete": "Delete",
+  "delete": "Verwijderen",
   "@delete": {
     "description": "Deletes the current item."
   },
-  "edit": "Edit",
+  "edit": "Bewerken",
   "@edit": {
     "description": "Begins editing the current item."
   },
-  "confirm": "Confirm",
+  "confirm": "Bevestigen",
   "@confirm": {
     "description": "Confirms the current action."
   },
-  "myVault": "My Vault",
+  "myVault": "Mijn kluis",
   "@myVault": {
     "description": "Tab/section for user’s saved recipes."
   },
-  "favourites": "Favourites",
+  "favourites": "Favorieten",
   "@favourites": {
     "description": "Tab/section for favourite recipes."
   },
-  "categories": "Categories",
+  "categories": "Categorieën",
   "@categories": {
     "description": "Tab/section for recipe categories."
   },
-  "searchRecipes": "Search recipes...",
+  "searchRecipes": "Recepten zoeken...",
   "@searchRecipes": {
     "description": "Placeholder text in recipe search input."
   },
-  "noRecipesFound": "No recipes found",
+  "noRecipesFound": "Geen recepten gevonden",
   "@noRecipesFound": {
     "description": "Shown when a recipe search returns no results."
   },
-  "addCategory": "Add Category",
+  "addCategory": "Categorie toevoegen",
   "@addCategory": {
     "description": "Action to create a new category."
   },
-  "removeCategory": "Remove Category",
+  "removeCategory": "Categorie verwijderen",
   "@removeCategory": {
     "description": "Action to remove an existing category."
   },
-  "assignCategory": "Assign Category",
+  "assignCategory": "Categorie toewijzen",
   "@assignCategory": {
     "description": "Action to apply a category to a recipe."
   },
-  "recipeDetails": "Recipe Details",
+  "recipeDetails": "Receptdetails",
   "@recipeDetails": {
     "description": "Header/title for the recipe details screen."
   },
-  "ingredients": "Ingredients",
+  "ingredients": "Ingrediënten",
   "@ingredients": {
     "description": "Section header for ingredients list."
   },
-  "instructions": "Instructions",
+  "instructions": "Instructies",
   "@instructions": {
     "description": "Section header for cooking steps."
   },
-  "notes": "Notes",
+  "notes": "Notities",
   "@notes": {
     "description": "Section header for extra notes."
   },
-  "dailyTipTitle": "Daily Tip",
+  "dailyTipTitle": "Dagelijkse tip",
   "@dailyTipTitle": {
     "description": "Title above the daily tip/message card."
   },
-  "dismiss": "Dismiss",
+  "dismiss": "Sluiten",
   "@dismiss": {
     "description": "Button to hide a tip/notification."
   },
-  "dailyMessagePlaceholder": "Your daily inspiration will appear here.",
+  "dailyMessagePlaceholder": "Je dagelijkse inspiratie verschijnt hier.",
   "@dailyMessagePlaceholder": {
     "description": "Placeholder text when the daily message hasn’t loaded."
   },
-  "upgradeNow": "Upgrade Now",
+  "upgradeNow": "Nu upgraden",
   "@upgradeNow": {
     "description": "Primary CTA to upgrade subscription."
   },
-  "trialAvailable": "Free Trial Available",
+  "trialAvailable": "Gratis proefperiode beschikbaar",
   "@trialAvailable": {
     "description": "Indicator that a free trial can be started."
   },
-  "upgradeBannerMessage": "Unlock more recipes, translations, and features – upgrade now!",
+  "upgradeBannerMessage": "Ontgrendel meer recepten, vertalingen en functies – upgrade nu!",
   "@upgradeBannerMessage": {
     "description": "Promotional banner text encouraging upgrade."
   },
-  "trialDaysRemaining": "{days} days remaining",
+  "trialDaysRemaining": "{days} dagen resterend",
   "@trialDaysRemaining": {
     "description": "Shows the number of trial days remaining.",
     "placeholders": {
@@ -141,23 +141,23 @@
       }
     }
   },
-  "planTaster": "Taster",
+  "planTaster": "Proever",
   "@planTaster": {
     "description": "Subscription tier: entry-level plan."
   },
-  "planHomeChef": "Home Chef",
+  "planHomeChef": "Thuischef",
   "@planHomeChef": {
     "description": "Subscription tier: mid-level plan."
   },
-  "planMasterChef": "Master Chef",
+  "planMasterChef": "Meesterchef",
   "@planMasterChef": {
     "description": "Subscription tier: top-level plan."
   },
-  "planFree": "Free Plan",
+  "planFree": "Gratis plan",
   "@planFree": {
     "description": "Subscription tier: free access plan."
   },
-  "unknownTier": "Unknown Tier",
+  "unknownTier": "Onbekend niveau",
   "@unknownTier": {
     "description": "Shown when the user’s subscription tier cannot be determined."
   },
@@ -170,127 +170,127 @@
       }
     }
   },
-  "planHomeChefSubtitleAnnual": "Annual Plan",
+  "planHomeChefSubtitleAnnual": "Jaarlijks Abonnement",
   "@planHomeChefSubtitleAnnual": {
     "description": "Subtitle for Home Chef annual plan."
   },
-  "planHomeChefSubtitleMonthly": "Monthly Plan",
+  "planHomeChefSubtitleMonthly": "Maandelijks Abonnement",
   "@planHomeChefSubtitleMonthly": {
     "description": "Subtitle for Home Chef monthly plan."
   },
-  "planMasterChefSubtitleAnnual": "Annual Plan",
+  "planMasterChefSubtitleAnnual": "Jaarlijks Abonnement",
   "@planMasterChefSubtitleAnnual": {
     "description": "Subtitle for Master Chef annual plan."
   },
-  "planMasterChefSubtitleMonthly": "Monthly Plan",
+  "planMasterChefSubtitleMonthly": "Maandelijks Abonnement",
   "@planMasterChefSubtitleMonthly": {
     "description": "Subtitle for Master Chef monthly plan."
   },
-  "planHomeChefDescription": "A smart step up – perfect for regular home cooks who want a little more power.",
+  "planHomeChefDescription": "Een slimme stap vooruit – perfect voor thuiskoks die wat meer mogelijkheden willen.",
   "@planHomeChefDescription": {
     "description": "Marketing description for the Home Chef tier."
   },
-  "planMasterChefDescriptionAnnual": "The ultimate plan for serious foodies – best value if you’re all in.",
+  "planMasterChefDescriptionAnnual": "Het ultieme plan voor serieuze fijnproevers – beste waarde als je er helemaal voor gaat.",
   "@planMasterChefDescriptionAnnual": {
     "description": "Marketing description for Master Chef annual plan."
   },
-  "planMasterChefDescriptionMonthly": "For those who want it all – maximum access, every month.",
+  "planMasterChefDescriptionMonthly": "Voor wie alles wil – maximale toegang, elke maand.",
   "@planMasterChefDescriptionMonthly": {
     "description": "Marketing description for Master Chef monthly plan."
   },
-  "featureUnlimitedRecipes": "Unlimited recipe scans",
+  "featureUnlimitedRecipes": "Onbeperkt recepten scannen",
   "@featureUnlimitedRecipes": {
     "description": "Plan feature label: unlimited AI recipe scanning."
   },
-  "featureUnlimitedTranslations": "Unlimited translations",
+  "featureUnlimitedTranslations": "Onbeperkt vertalen",
   "@featureUnlimitedTranslations": {
     "description": "Plan feature label: unlimited translations."
   },
-  "featureCloudBackup": "Cloud backup",
+  "featureCloudBackup": "Cloud back-up",
   "@featureCloudBackup": {
     "description": "Plan feature label: cloud backup of user data."
   },
-  "featureCategories": "Custom categories",
+  "featureCategories": "Aangepaste categorieën",
   "@featureCategories": {
     "description": "Plan feature label: create custom categories."
   },
-  "featureFavourites": "Mark favourites",
+  "featureFavourites": "Favorieten markeren",
   "@featureFavourites": {
     "description": "Plan feature label: mark recipes as favourites."
   },
-  "featureVaultSync": "Sync across devices",
+  "featureVaultSync": "Synchroniseer op alle apparaten",
   "@featureVaultSync": {
     "description": "Plan feature label: sync vault across devices."
   },
-  "featureHomeChef1": "👨‍🍳 20 AI recipe cards/month – cook new ideas effortlessly",
+  "featureHomeChef1": "👨‍🍳 20 AI-receptkaarten/maand – kook moeiteloos nieuwe ideeën",
   "@featureHomeChef1": {
     "description": "Home Chef feature list item 1."
   },
-  "featureHomeChef2": "🌍 5 translations/month – scan handwritten or foreign recipes",
+  "featureHomeChef2": "🌍 5 vertalingen/maand – scan handgeschreven of buitenlandse recepten",
   "@featureHomeChef2": {
     "description": "Home Chef feature list item 2."
   },
-  "featureHomeChef3": "📦 Save your favourite recipes to your personal vault",
+  "featureHomeChef3": "📦 Sla je favoriete recepten op in je persoonlijke archief",
   "@featureHomeChef3": {
     "description": "Home Chef feature list item 3."
   },
-  "featureHomeChef4": "🏷️ Create and manage up to 3 custom categories",
+  "featureHomeChef4": "🏷️ Maak en beheer tot 3 aangepaste categorieën",
   "@featureHomeChef4": {
     "description": "Home Chef feature list item 4."
   },
-  "featureHomeChef5": "🔗 Share your recipes with friends and family",
+  "featureHomeChef5": "🔗 Deel je recepten met vrienden en familie",
   "@featureHomeChef5": {
     "description": "Home Chef feature list item 5."
   },
-  "featureMasterChef1": "🍽️ 100 AI recipe cards/month – no limits on creativity",
+  "featureMasterChef1": "🍽️ 100 AI-receptkaarten/maand – geen grenzen aan creativiteit",
   "@featureMasterChef1": {
     "description": "Master Chef feature list item 1."
   },
-  "featureMasterChef2": "🈂️ 20 translations/month – perfect for international dishes",
+  "featureMasterChef2": "🈂️ 20 vertalingen/maand – perfect voor internationale gerechten",
   "@featureMasterChef2": {
     "description": "Master Chef feature list item 2."
   },
-  "featureMasterChef3": "📦 Unlimited recipe saving to your personal vault",
+  "featureMasterChef3": "📦 Onbeperkt recepten opslaan in je persoonlijke archief",
   "@featureMasterChef3": {
     "description": "Master Chef feature list item 3."
   },
-  "featureMasterChef4": "🏷️ Unlimited category creation & advanced sorting tools",
+  "featureMasterChef4": "🏷️ Onbeperkt categorieën maken & geavanceerde sorteertools",
   "@featureMasterChef4": {
     "description": "Master Chef feature list item 4."
   },
-  "featureMasterChef5": "🔗 Share your recipes anywhere with public links",
+  "featureMasterChef5": "🔗 Deel je recepten overal met openbare links",
   "@featureMasterChef5": {
     "description": "Master Chef feature list item 5."
   },
-  "featureMasterChef6": "⚡ Priority AI processing – faster and smarter every time",
+  "featureMasterChef6": "⚡ Prioriteit bij AI-verwerking – sneller en slimmer elke keer",
   "@featureMasterChef6": {
     "description": "Master Chef feature list item 6."
   },
-  "onboardingScan": "Tap + to scan a recipe and save it instantly.",
+  "onboardingScan": "Tik op + om een recept te scannen en direct op te slaan.",
   "@onboardingScan": {
     "description": "Onboarding tip: how to scan a recipe."
   },
-  "onboardingSwitchView": "Switch between grid and list views here.",
+  "onboardingSwitchView": "Schakel hier tussen raster- en lijstweergave.",
   "@onboardingSwitchView": {
     "description": "Onboarding tip: toggle layout views."
   },
-  "onboardingLongPress": "Long-press a recipe to see more options.",
+  "onboardingLongPress": "Houd een recept ingedrukt om meer opties te zien.",
   "@onboardingLongPress": {
     "description": "Onboarding tip: long-press interaction."
   },
-  "deleteConfirmation": "Are you sure you want to delete this?",
+  "deleteConfirmation": "Weet je zeker dat je dit wilt verwijderen?",
   "@deleteConfirmation": {
     "description": "Confirmation text before deleting an item."
   },
-  "recipeSaved": "Recipe saved to vault!",
+  "recipeSaved": "Recept opgeslagen in archief!",
   "@recipeSaved": {
     "description": "Toast/snackbar after saving a recipe."
   },
-  "recipeDeleted": "Recipe deleted.",
+  "recipeDeleted": "Recept verwijderd.",
   "@recipeDeleted": {
     "description": "Toast/snackbar after deleting a recipe."
   },
-  "translationUsed": "Translated from {language}",
+  "translationUsed": "Vertaald uit {language}",
   "@translationUsed": {
     "description": "Indicates which language the recipe was translated from.",
     "placeholders": {
@@ -299,15 +299,15 @@
       }
     }
   },
-  "usageThisMonthTitle": "📊 Usage this month",
+  "usageThisMonthTitle": "📊 Gebruik deze maand",
   "@usageThisMonthTitle": {
     "description": "Title above usage meters."
   },
-  "labelAiRecipes": "AI Recipes",
+  "labelAiRecipes": "AI-recepten",
   "@labelAiRecipes": {
     "description": "Label for AI recipe usage count."
   },
-  "labelTranslations": "Translations",
+  "labelTranslations": "Vertalingen",
   "@labelTranslations": {
     "description": "Label for translation usage count."
   },
@@ -323,7 +323,7 @@
       }
     }
   },
-  "usageOutOfThisMonth": "out of {max} this month",
+  "usageOutOfThisMonth": "van {max} deze maand",
   "@usageOutOfThisMonth": {
     "description": "Subtitle under AI usage meter.",
     "placeholders": {
@@ -332,7 +332,7 @@
       }
     }
   },
-  "usageMonthlyLimit": "monthly limit of {max}",
+  "usageMonthlyLimit": "maandlimiet van {max}",
   "@usageMonthlyLimit": {
     "description": "Subtitle under translations usage meter.",
     "placeholders": {
@@ -341,519 +341,519 @@
       }
     }
   },
-  "error": "Error",
+  "error": "Fout",
   "@error": {
     "description": "Generic error dialog title."
   },
-  "networkError": "Network error, please try again.",
+  "networkError": "Netwerkfout, probeer het opnieuw.",
   "@networkError": {
     "description": "Shown for connectivity-related failures."
   },
-  "unknownError": "Something went wrong. Please try again later.",
+  "unknownError": "Er is iets misgegaan. Probeer het later opnieuw.",
   "@unknownError": {
     "description": "Fallback error message for unknown issues."
   },
-  "tipScanPlus": "Tap + to scan a recipe. Even leftovers deserve a place in your vault!",
+  "tipScanPlus": "Tik op + om een recept te scannen. Zelfs restjes verdienen een plek in je archief!",
   "@tipScanPlus": {
     "description": "Daily tip: encourages scanning recipes."
   },
-  "tipFamilyClassic": "Got a family classic? Add it today and keep it safe forever.",
+  "tipFamilyClassic": "Heb je een familiegerecht? Voeg het vandaag toe en bewaar het voor altijd.",
   "@tipFamilyClassic": {
     "description": "Daily tip: encourages adding family recipes."
   },
-  "tipLongPressSort": "Long-press a recipe to sort it like a pro. Tidy vault, happy chef.",
+  "tipLongPressSort": "Houd een recept ingedrukt om het als een pro te sorteren. Opgeruimd archief, blije chef.",
   "@tipLongPressSort": {
     "description": "Daily tip: hints at long-press to organize."
   },
-  "tipFavouriteIt": "Don’t just save it—favourite it! Tap the heart on your top dishes.",
+  "tipFavouriteIt": "Sla het niet alleen op—markeer het als favoriet! Tik op het hart bij je topgerechten.",
   "@tipFavouriteIt": {
     "description": "Daily tip: promotes using favourites."
   },
-  "tipNewCategory": "Try creating a new category today. 'Cosy Autumn Meals', anyone?",
+  "tipNewCategory": "Probeer vandaag een nieuwe categorie te maken. ‘Gezellige Herfstmaaltijden’ misschien?",
   "@tipNewCategory": {
     "description": "Daily tip: suggests creating a new category."
   },
-  "tipEachScanStep": "Each scan is a step closer to your own cookbook.",
+  "tipEachScanStep": "Elke scan is een stap dichter bij je eigen kookboek.",
   "@tipEachScanStep": {
     "description": "Daily tip: motivational scanning message."
   },
-  "funButter": "Remember: the secret ingredient is usually butter... or confusion.",
+  "funButter": "Onthoud: het geheime ingrediënt is meestal boter... of verwarring.",
   "@funButter": {
     "description": "Light-hearted/funny daily message."
   },
-  "funPastaHeat": "If you can't stand the heat... you're probably overcooking pasta.",
+  "funPastaHeat": "Als je de hitte niet aankan... kook je waarschijnlijk de pasta te lang.",
   "@funPastaHeat": {
     "description": "Light-hearted/funny daily message."
   },
-  "funPoachIdeas": "Poach ideas, not eggs. We've got a guide for that too.",
+  "funPoachIdeas": "Pocheer ideeën, geen eieren. We hebben daar ook een gids voor.",
   "@funPoachIdeas": {
     "description": "Light-hearted/funny daily message."
   },
-  "funRusticMess": "Today's a great day to bake a mess and call it rustic.",
+  "funRusticMess": "Vandaag is een geweldige dag om een rommeltje te bakken en het 'rustiek' te noemen.",
   "@funRusticMess": {
     "description": "Light-hearted/funny daily message."
   },
-  "funCheflebration": "Saving your 100th recipe? That’s called a *cheflebration* 🎉",
+  "funCheflebration": "Je 100e recept opslaan? Dat noemen we een *cheflebratie* 🎉",
   "@funCheflebration": {
     "description": "Light-hearted/funny daily message with pun."
   },
-  "funMoreThanGran": "That moment when your vault has more recipes than your gran.",
+  "funMoreThanGran": "Dat moment waarop je kluis meer recepten heeft dan je oma.",
   "@funMoreThanGran": {
     "description": "Light-hearted/funny daily message."
   },
-  "factTomatoes": "Tomatoes were once thought to be poisonous. Joke’s on them: 🍝",
+  "factTomatoes": "Tomaten werden ooit als giftig beschouwd. Grapje van de natuur: 🍝",
   "@factTomatoes": {
     "description": "Food fact: trivia-style daily message."
   },
-  "factExpensivePizza": "The world’s most expensive pizza costs over £2,000. Yours: priceless.",
+  "factExpensivePizza": "De duurste pizza ter wereld kost meer dan £2.000. Die van jou: onbetaalbaar.",
   "@factExpensivePizza": {
     "description": "Food fact: trivia-style daily message."
   },
-  "factBananasBerries": "Bananas are berries. Strawberries are not. Vault that one!",
+  "factBananasBerries": "Bananen zijn bessen. Aardbeien niet. Sla die maar op in je kluis!",
   "@factBananasBerries": {
     "description": "Food fact: trivia-style daily message."
   },
-  "factHoneyNeverSpoils": "Honey never spoils. Ever. Like your best recipes.",
+  "factHoneyNeverSpoils": "Honing bederft nooit. Net als je beste recepten.",
   "@factHoneyNeverSpoils": {
     "description": "Food fact: trivia-style daily message."
   },
-  "factOysters": "Oysters were once considered poor man's food. Now? Luxury.",
+  "factOysters": "Oesters werden ooit als armeluisvoedsel gezien. Nu? Luxe.",
   "@factOysters": {
     "description": "Food fact: trivia-style daily message."
   },
-  "factPuffLayers": "Puff pastry has over 700 layers. It also has a shortcut here.",
+  "factPuffLayers": "Bladerdeeg heeft meer dan 700 lagen. Hier vind je ook een snelkoppeling.",
   "@factPuffLayers": {
     "description": "Food fact: trivia-style daily message."
   },
-  "vaultLikeFridge": "Your vault’s like a fridge: open it often and keep it fresh.",
+  "vaultLikeFridge": "Je kluis is als een koelkast: open hem vaak en houd hem vers.",
   "@vaultLikeFridge": {
     "description": "Vault-themed motivational message."
   },
-  "vaultBackUpTastebuds": "Back up your tastebuds. Add a new recipe today.",
+  "vaultBackUpTastebuds": "Maak een back-up van je smaakpapillen. Voeg vandaag een nieuw recept toe.",
   "@vaultBackUpTastebuds": {
     "description": "Vault-themed motivational message."
   },
-  "vaultYouOwnIt": "You own this vault. We just keep the door tidy.",
+  "vaultYouOwnIt": "Jij bent de eigenaar van deze kluis. Wij houden alleen de deur netjes.",
   "@vaultYouOwnIt": {
     "description": "Vault-themed motivational message."
   },
-  "vaultFewerWhatsForDinner": "Every recipe saved is one fewer 'What’s for dinner?'",
+  "vaultFewerWhatsForDinner": "Elk recept dat je opslaat is één keer minder 'Wat eten we vanavond?'",
   "@vaultFewerWhatsForDinner": {
     "description": "Vault-themed motivational message."
   },
-  "vaultHungryIdeas": "Your vault called. It’s hungry for new ideas.",
+  "vaultHungryIdeas": "Je kluis belde. Hij heeft honger naar nieuwe ideeën.",
   "@vaultHungryIdeas": {
     "description": "Vault-themed motivational message."
   },
-  "quoteLoveVisible": "Cooking is love made visible – save a dish that made you smile today.",
+  "quoteLoveVisible": "Koken is liefde die zichtbaar wordt – sla vandaag een gerecht op dat je liet glimlachen.",
   "@quoteLoveVisible": {
     "description": "Inspirational quote."
   },
-  "quoteCuriousCook": "No one is born a great cook – just a curious one.",
+  "quoteCuriousCook": "Niemand wordt geboren als een geweldige kok – alleen als een nieuwsgierige.",
   "@quoteCuriousCook": {
     "description": "Inspirational quote."
   },
-  "quoteStories": "Recipes are like stories. What’s yours telling today?",
+  "quoteStories": "Recepten zijn als verhalen. Wat vertelt het jouwe vandaag?",
   "@quoteStories": {
     "description": "Inspirational quote."
   },
-  "quoteBurntToast": "Even burnt toast is a lesson worth saving.",
+  "quoteBurntToast": "Zelfs aangebrande toast is een les die het waard is om op te slaan.",
   "@quoteBurntToast": {
     "description": "Inspirational quote."
   },
-  "quoteSingleChop": "Every dish begins with a single chop.",
+  "quoteSingleChop": "Elk gerecht begint met een enkele snede.",
   "@quoteSingleChop": {
     "description": "Inspirational quote."
   },
-  "riddleTinGrin": "🧠 Riddle: I start in a tin, end in a grin, and go great with beans. What am I?",
+  "riddleTinGrin": "🧠 Raadsel: Ik begin in een blik, eindig in een glimlach en ga goed samen met bonen. Wat ben ik?",
   "@riddleTinGrin": {
     "description": "Riddle-style daily engagement message."
   },
-  "quizPuffPastry": "💡 Quiz yourself: Can you name 3 dishes using puff pastry?",
+  "quizPuffPastry": "💡 Test jezelf: Kun je 3 gerechten noemen met bladerdeeg?",
   "@quizPuffPastry": {
     "description": "Quiz-style daily engagement message."
   },
-  "challengeFiveIngredients": "🥄 Vault challenge: Add a recipe today with just 5 ingredients.",
+  "challengeFiveIngredients": "🥄 Kluis-uitdaging: Voeg vandaag een recept toe met slechts 5 ingrediënten.",
   "@challengeFiveIngredients": {
     "description": "Challenge-style daily engagement message."
   },
-  "triviaPoachBoil": "🍳 Trivia: What’s the difference between poaching and boiling? Hint: temperature!",
+  "triviaPoachBoil": "🍳 Trivia: Wat is het verschil tussen pocheren en koken? Hint: temperatuur!",
   "@triviaPoachBoil": {
     "description": "Trivia-style daily engagement message."
   },
-  "rollOldestRecipe": "🎲 Roll the dice—try cooking the oldest recipe in your vault!",
+  "rollOldestRecipe": "🎲 Gooi met de dobbelsteen—kook het oudste recept in je kluis!",
   "@rollOldestRecipe": {
     "description": "Challenge-style daily engagement message."
   },
-  "encouragementScribbledNote": "Today’s a great day to turn that scribbled note into a saved recipe.",
+  "encouragementScribbledNote": "Vandaag is een geweldige dag om dat gekrabbelde briefje om te zetten in een opgeslagen recept.",
   "@encouragementScribbledNote": {
     "description": "Encouragement message to capture a loose recipe."
   },
-  "encouragementDeliciousNotPerfect": "Don't aim for perfect—aim for delicious. Then save it!",
+  "encouragementDeliciousNotPerfect": "Streef niet naar perfect—streef naar lekker. En sla het daarna op!",
   "@encouragementDeliciousNotPerfect": {
     "description": "Encouragement message about imperfection."
   },
-  "encouragementStockedWithJoy": "Keep your vault like your kitchen: stocked with joy and ready to use.",
+  "encouragementStockedWithJoy": "Houd je kluis zoals je keuken: gevuld met plezier en klaar voor gebruik.",
   "@encouragementStockedWithJoy": {
     "description": "Encouragement message about maintaining the vault."
   },
-  "encouragementLegacyCookbook": "Each recipe saved is one step closer to your own legacy cookbook.",
+  "encouragementLegacyCookbook": "Elk recept dat je opslaat brengt je dichter bij je eigen erfgoedkookboek.",
   "@encouragementLegacyCookbook": {
     "description": "Encouragement message about long-term collection."
   },
-  "changePasswordTitle": "Change Password",
+  "changePasswordTitle": "Wachtwoord wijzigen",
   "@changePasswordTitle": {
     "description": "Title for the change password screen."
   },
-  "passwordUpdated": "Password updated successfully",
+  "passwordUpdated": "Wachtwoord succesvol bijgewerkt",
   "@passwordUpdated": {
     "description": "Toast/snackbar after a successful password change."
   },
-  "currentPasswordLabel": "Current Password",
+  "currentPasswordLabel": "Huidig wachtwoord",
   "@currentPasswordLabel": {
     "description": "Label for current password input field."
   },
-  "newPasswordLabel": "New Password",
+  "newPasswordLabel": "Nieuw wachtwoord",
   "@newPasswordLabel": {
     "description": "Label for new password input field."
   },
-  "confirmPasswordLabel": "Confirm New Password",
+  "confirmPasswordLabel": "Bevestig nieuw wachtwoord",
   "@confirmPasswordLabel": {
     "description": "Label for confirm password input field."
   },
-  "enterCurrentPassword": "Enter your current password",
+  "enterCurrentPassword": "Voer je huidige wachtwoord in",
   "@enterCurrentPassword": {
     "description": "Helper text for current password input."
   },
-  "passwordMinLength": "Must be at least 6 characters",
+  "passwordMinLength": "Moet minimaal 6 tekens bevatten",
   "@passwordMinLength": {
     "description": "Validation message for minimum password length."
   },
-  "passwordsDoNotMatch": "Passwords do not match",
+  "passwordsDoNotMatch": "Wachtwoorden komen niet overeen",
   "@passwordsDoNotMatch": {
     "description": "Validation message when password confirmation fails."
   },
-  "updatePasswordButton": "Update Password",
+  "updatePasswordButton": "Wachtwoord bijwerken",
   "@updatePasswordButton": {
     "description": "CTA to submit password change."
   },
-  "emailLabel": "Email",
+  "emailLabel": "E-mail",
   "@emailLabel": {
     "description": "Label for email input field."
   },
-  "passwordLabel": "Password",
+  "passwordLabel": "Wachtwoord",
   "@passwordLabel": {
     "description": "Label for password input field."
   },
-  "signInWithEmail": "Sign in with Email",
+  "signInWithEmail": "Inloggen met e-mail",
   "@signInWithEmail": {
     "description": "CTA to sign in using email/password."
   },
-  "signInWithGoogle": "Sign in with Google",
+  "signInWithGoogle": "Inloggen met Google",
   "@signInWithGoogle": {
     "description": "CTA to sign in using Google account."
   },
-  "signInWithApple": "Sign in with Apple",
+  "signInWithApple": "Inloggen met Apple",
   "@signInWithApple": {
     "description": "CTA to sign in using Apple account."
   },
-  "registerCta": "Don't have an account? Register",
+  "registerCta": "Nog geen account? Registreren",
   "@registerCta": {
     "description": "Prompt/CTA to navigate to registration."
   },
-  "signInCancelled": "Sign-in was cancelled.",
+  "signInCancelled": "Inloggen is geannuleerd.",
   "@signInCancelled": {
     "description": "Shown when a third-party sign-in flow is cancelled by the user."
   },
-  "authInvalidCredential": "Invalid email or password.",
+  "authInvalidCredential": "Ongeldig e-mailadres of wachtwoord.",
   "@authInvalidCredential": {
     "description": "Auth error for invalid credentials."
   },
-  "authUserNotFound": "No account found with that email.",
+  "authUserNotFound": "Geen account gevonden met dat e-mailadres.",
   "@authUserNotFound": {
     "description": "Auth error when no user exists for the provided email."
   },
-  "authWrongPassword": "Incorrect password.",
+  "authWrongPassword": "Onjuist wachtwoord.",
   "@authWrongPassword": {
     "description": "Auth error when password is incorrect."
   },
-  "authTooManyRequests": "Too many attempts. Please try again later.",
+  "authTooManyRequests": "Te veel pogingen. Probeer het later opnieuw.",
   "@authTooManyRequests": {
     "description": "Rate-limiting/lockout auth error message."
   },
-  "createAccountTitle": "Create your\\nRecipeVault account",
+  "createAccountTitle": "Maak je\\nRecipeVault-account aan",
   "@createAccountTitle": {
     "description": "Title on the registration screen (with forced line break)."
   },
-  "trialLine": "Enjoy a 7-day free trial – no card required.",
+  "trialLine": "Geniet van 7 dagen gratis proefperiode – geen kaart nodig.",
   "@trialLine": {
     "description": "Subheading explaining registration includes a free trial."
   },
-  "createAccountButton": "Create Account",
+  "createAccountButton": "Account aanmaken",
   "@createAccountButton": {
     "description": "CTA to complete registration."
   },
-  "continueWithGoogle": "Continue with Google",
+  "continueWithGoogle": "Doorgaan met Google",
   "@continueWithGoogle": {
     "description": "Alternate registration CTA with Google."
   },
-  "continueWithApple": "Continue with Apple",
+  "continueWithApple": "Doorgaan met Apple",
   "@continueWithApple": {
     "description": "Alternate registration CTA with Apple."
   },
-  "alreadyHaveAccountCta": "Already have an account? Log in",
+  "alreadyHaveAccountCta": "Heb je al een account? Inloggen",
   "@alreadyHaveAccountCta": {
     "description": "Link/CTA to go to login screen."
   },
-  "registrationFailed": "Registration failed",
+  "registrationFailed": "Registratie mislukt",
   "@registrationFailed": {
     "description": "Generic error title when registration fails."
   },
-  "googleSignupCancelled": "Google sign-up was cancelled.",
+  "googleSignupCancelled": "Google-aanmelding is geannuleerd.",
   "@googleSignupCancelled": {
     "description": "Shown when Google sign-up flow is cancelled."
   },
-  "googleSignupFailed": "Google sign-up failed",
+  "googleSignupFailed": "Google-aanmelding mislukt",
   "@googleSignupFailed": {
     "description": "Shown when Google sign-up flow fails."
   },
-  "appleSignupCancelled": "Apple sign-up was cancelled.",
+  "appleSignupCancelled": "Apple-aanmelding is geannuleerd.",
   "@appleSignupCancelled": {
     "description": "Shown when Apple sign-up flow is cancelled."
   },
-  "appleSignupFailed": "Apple sign-up failed",
+  "appleSignupFailed": "Apple-aanmelding mislukt",
   "@appleSignupFailed": {
     "description": "Shown when Apple sign-up flow fails."
   },
-  "purchaseSuccess": "Purchase successful!",
+  "purchaseSuccess": "Aankoop geslaagd!",
   "@purchaseSuccess": {
     "description": "Toast/snackbar after a successful purchase."
   },
-  "purchaseCancelled": "Purchase cancelled.",
+  "purchaseCancelled": "Aankoop geannuleerd.",
   "@purchaseCancelled": {
     "description": "Toast/snackbar when user cancels a purchase flow."
   },
-  "purchaseFailed": "Purchase failed. Please try again.",
+  "purchaseFailed": "Aankoop mislukt. Probeer het opnieuw.",
   "@purchaseFailed": {
     "description": "Toast/snackbar when purchase fails."
   },
-  "unexpectedError": "An unexpected error occurred. Please try again.",
+  "unexpectedError": "Er is een onverwachte fout opgetreden. Probeer het opnieuw.",
   "@unexpectedError": {
     "description": "Generic unexpected error message."
   },
-  "chefModeTitle": "Chef Mode",
+  "chefModeTitle": "Chef-modus",
   "@chefModeTitle": {
     "description": "Title for Chef Mode feature/screen."
   },
-  "paywallHeader": "Unlock your full culinary potential",
+  "paywallHeader": "Ontgrendel je volledige culinaire potentieel",
   "@paywallHeader": {
     "description": "Header text at the top of the paywall screen."
   },
-  "badgeCurrentPlan": "Current Plan",
+  "badgeCurrentPlan": "Huidig abonnement",
   "@badgeCurrentPlan": {
     "description": "Badge label marking the user’s current plan."
   },
-  "badgeBestValue": "Best Value",
+  "badgeBestValue": "Beste waarde",
   "@badgeBestValue": {
     "description": "Badge label highlighting best-value plan."
   },
-  "badgeFreeTrial": "Free Trial",
+  "badgeFreeTrial": "Gratis proefperiode",
   "@badgeFreeTrial": {
     "description": "Badge label highlighting a free trial."
   },
-  "noPlans": "No subscription plans available at the moment.",
+  "noPlans": "Op dit moment zijn er geen abonnementen beschikbaar.",
   "@noPlans": {
     "description": "Shown when the app cannot load any subscription plans."
   },
-  "legalAgreePrefix": "By continuing, you agree to our",
+  "legalAgreePrefix": "Door verder te gaan, ga je akkoord met onze",
   "@legalAgreePrefix": {
     "description": "Lead-in text before terms/privacy links."
   },
-  "legalTerms": "Terms of Service",
+  "legalTerms": "Servicevoorwaarden",
   "@legalTerms": {
     "description": "Link label to Terms of Service."
   },
-  "legalAnd": "and",
+  "legalAnd": "en",
   "@legalAnd": {
     "description": "Conjunction between terms/privacy links."
   },
-  "legalPrivacy": "Privacy Policy",
+  "legalPrivacy": "Privacybeleid",
   "@legalPrivacy": {
     "description": "Link label to Privacy Policy."
   },
-  "legalAutoRenew": "Subscriptions auto-renew unless cancelled.",
+  "legalAutoRenew": "Abonnementen worden automatisch verlengd, tenzij geannuleerd.",
   "@legalAutoRenew": {
     "description": "Disclosure about auto-renewal."
   },
-  "legalManageApple": "Manage your subscription in Apple Settings.",
+  "legalManageApple": "Beheer je abonnement in Apple-instellingen.",
   "@legalManageApple": {
     "description": "Apple-specific subscription management guidance."
   },
-  "manageOrCancelCta": "Manage or cancel your subscription",
+  "manageOrCancelCta": "Beheer of annuleer je abonnement",
   "@manageOrCancelCta": {
     "description": "CTA to manage or cancel a subscription."
   },
-  "planDefaultDescription": "Enjoy full access to RecipeVault features and AI-powered tools.",
+  "planDefaultDescription": "Geniet van volledige toegang tot RecipeVault-functies en AI-tools.",
   "@planDefaultDescription": {
     "description": "Fallback description for plans when a specific one is not provided."
   },
-  "trialEndedTitle": "Trial Ended",
+  "trialEndedTitle": "Proefperiode beëindigd",
   "@trialEndedTitle": {
     "description": "Title shown when the free trial has ended."
   },
-  "trialEndedHeadline": "Your free trial has ended",
+  "trialEndedHeadline": "Je gratis proefperiode is beëindigd",
   "@trialEndedHeadline": {
     "description": "Headline shown on the trial-ended screen."
   },
-  "trialEndedDescription": "To continue using RecipeVault AI features like scanning, translation, and image uploads, please choose a plan below.",
+  "trialEndedDescription": "Om AI-functies zoals scannen, vertalen en het uploaden van afbeeldingen te blijven gebruiken, kies hieronder een abonnement.",
   "@trialEndedDescription": {
     "description": "Body copy explaining next steps after trial ends."
   },
-  "seePlanOptions": "See all plan options",
+  "seePlanOptions": "Bekijk alle abonnementen",
   "@seePlanOptions": {
     "description": "CTA to view all available subscription plans."
   },
-  "appBarToggleViewMode": "Toggle view mode",
+  "appBarToggleViewMode": "Schakel weergavemodus",
   "@appBarToggleViewMode": {
     "description": "Tooltip for switching between grid and list layouts."
   },
-  "appBarRefreshSubscription": "Refresh your subscription plan",
+  "appBarRefreshSubscription": "Vernieuw je abonnement",
   "@appBarRefreshSubscription": {
     "description": "Tooltip for button that refreshes subscription status."
   },
-  "subscriptionRefreshed": "Subscription plan refreshed.",
+  "subscriptionRefreshed": "Abonnement vernieuwd.",
   "@subscriptionRefreshed": {
     "description": "Snackbar after subscription refresh completes."
   },
-  "upgradeToUnlockTitle": "Upgrade to Unlock",
+  "upgradeToUnlockTitle": "Upgrade om te ontgrendelen",
   "@upgradeToUnlockTitle": {
     "description": "Dialog title when a feature is locked behind a paid plan."
   },
-  "imageUploadLockedMessage": "Creating recipes from images is available on paid plans.",
+  "imageUploadLockedMessage": "Recepten maken van afbeeldingen is alleen beschikbaar bij betaalde abonnementen.",
   "@imageUploadLockedMessage": {
     "description": "Dialog body explaining image-based creation is paid-only."
   },
-  "upgradeToUnlockFeature": "Upgrade to unlock this feature.",
+  "upgradeToUnlockFeature": "Upgrade om deze functie te ontgrendelen.",
   "@upgradeToUnlockFeature": {
     "description": "Secondary message encouraging upgrade from the lock dialog."
   },
-  "createFromImagesPaid": "Creating recipes from images is available on paid plans.",
+  "createFromImagesPaid": "Recepten maken van afbeeldingen is alleen beschikbaar bij betaalde abonnementen.",
   "@createFromImagesPaid": {
     "description": "Inline warning when free users attempt image creation."
   },
-  "upgradeToUnlockBody": "Upgrade to unlock this feature.",
+  "upgradeToUnlockBody": "Upgrade om deze functie te ontgrendelen.",
   "@upgradeToUnlockBody": {
     "description": "Secondary message for locked feature dialog (duplicate-friendly)."
   },
-  "tabCreate": "Create",
+  "tabCreate": "Maken",
   "@tabCreate": {
     "description": "Bottom navigation label for the Create tab."
   },
-  "tabVault": "Vault",
+  "tabVault": "Kluis",
   "@tabVault": {
     "description": "Bottom navigation label for the Vault tab."
   },
-  "tabProfile": "Profile",
+  "tabProfile": "Profiel",
   "@tabProfile": {
     "description": "Bottom navigation label for the Profile tab."
   },
-  "viewPlans": "View Plans",
+  "viewPlans": "Bekijk abonnementen",
   "@viewPlans": {
     "description": "Button text to navigate to the paywall/plans screen."
   },
-  "addCategoryTitle": "Add New Category",
+  "addCategoryTitle": "Nieuwe categorie toevoegen",
   "@addCategoryTitle": {
     "description": "Dialog title for creating a new category."
   },
-  "addCategoryHint": "e.g. Snacks",
+  "addCategoryHint": "bijv. Snacks",
   "@addCategoryHint": {
     "description": "Hint text inside the new category name input."
   },
-  "add": "Add",
+  "add": "Toevoegen",
   "@add": {
     "description": "Generic Add action label used in buttons/menus."
   },
-  "usage": "Usage",
+  "usage": "Gebruik",
   "@usage": {
     "description": "Label for usage metrics button or section."
   },
-  "createRecipe": "Create Recipe",
+  "createRecipe": "Recept maken",
   "@createRecipe": {
     "description": "Speed-dial/action label to start recipe creation."
   },
-  "upgradeToCreateRecipe": "Upgrade to Create Recipe",
+  "upgradeToCreateRecipe": "Upgrade om een recept te maken",
   "@upgradeToCreateRecipe": {
     "description": "Locked label shown when user’s plan cannot create recipes."
   },
-  "upgradeToAddCategory": "Upgrade to Add Category",
+  "upgradeToAddCategory": "Upgrade om categorie toe te voegen",
   "@upgradeToAddCategory": {
     "description": "Locked label shown when user’s plan cannot add categories."
   },
-  "recipeCreationLimited": "🔒 Recipe creation is limited to Home Chef and Master Chef plans.",
+  "recipeCreationLimited": "🔒 Recept maken is beperkt tot Home Chef en Master Chef abonnementen.",
   "@recipeCreationLimited": {
     "description": "SnackBar text when recipe creation is restricted by plan."
   },
-  "categoryCreationLimited": "🔒 Category creation is limited to Home Chef and Master Chef plans.",
+  "categoryCreationLimited": "🔒 Categorie maken is beperkt tot Home Chef en Master Chef abonnementen.",
   "@categoryCreationLimited": {
     "description": "SnackBar text when category creation is restricted by plan."
   },
-  "gotIt": "Got it",
+  "gotIt": "Begrepen",
   "@gotIt": {
     "description": "Button text for dismissing onboarding/info bubbles"
   },
-  "editRecipeTitle": "Edit Recipe",
+  "editRecipeTitle": "Recept bewerken",
   "@editRecipeTitle": {
     "description": "Title of the edit recipe screen"
   },
-  "editRecipeFieldTitle": "Title",
+  "editRecipeFieldTitle": "Titel",
   "@editRecipeFieldTitle": {
     "description": "Label for recipe title field"
   },
-  "editRecipeFieldIngredients": "Ingredients (one per line)",
+  "editRecipeFieldIngredients": "Ingrediënten (één per regel)",
   "@editRecipeFieldIngredients": {
     "description": "Label for ingredients field"
   },
-  "editRecipeFieldSteps": "Steps",
+  "editRecipeFieldSteps": "Stappen",
   "@editRecipeFieldSteps": {
     "description": "Label for recipe steps field"
   },
-  "editRecipeSaving": "Saving...",
+  "editRecipeSaving": "Opslaan...",
   "@editRecipeSaving": {
     "description": "Label shown while recipe is being saved"
   },
-  "editRecipeSaveChanges": "Save Changes",
+  "editRecipeSaveChanges": "Wijzigingen opslaan",
   "@editRecipeSaveChanges": {
     "description": "Label for button to save changes"
   },
-  "menuFavourite": "Favourite",
+  "menuFavourite": "Favoriet",
   "@menuFavourite": {
     "description": "Popup menu item to mark a recipe as favourite"
   },
-  "menuUnfavourite": "Unfavourite",
+  "menuUnfavourite": "Niet-favoriet",
   "@menuUnfavourite": {
     "description": "Popup menu item to remove a recipe from favourites"
   },
-  "menuAssignCategories": "Assign categories",
+  "menuAssignCategories": "Categorieën toewijzen",
   "@menuAssignCategories": {
     "description": "Popup menu item to assign categories to a recipe"
   },
-  "menuMoreOptions": "More options",
+  "menuMoreOptions": "Meer opties",
   "@menuMoreOptions": {
     "description": "Tooltip/accessible label for the overflow menu button on recipe cards"
   },
-  "systemAll": "All",
+  "systemAll": "Alles",
   "@systemAll": {
     "description": "System category: show all recipes"
   },
-  "systemTranslated": "Translated",
+  "systemTranslated": "Vertaald",
   "@systemTranslated": {
     "description": "System category: recipes created via translation"
   },
-  "defaultBreakfast": "Breakfast",
+  "defaultBreakfast": "Ontbijt",
   "@defaultBreakfast": {
     "description": "Default category name"
   },
-  "defaultMain": "Main",
+  "defaultMain": "Hoofdgerecht",
   "@defaultMain": {
     "description": "Default category name for main course"
   },
@@ -861,119 +861,119 @@
   "@defaultDessert": {
     "description": "Default category name for desserts"
   },
-  "chipDeleteCategoryTooltip": "Remove category",
+  "chipDeleteCategoryTooltip": "Categorie verwijderen",
   "@chipDeleteCategoryTooltip": {
     "description": "Tooltip for the delete icon on a category chip"
   },
-  "addToFavourites": "Add to favourites",
+  "addToFavourites": "Toevoegen aan favorieten",
   "@addToFavourites": {
     "description": "Tooltip/action for marking an item as favourite"
   },
-  "removeFromFavourites": "Remove from favourites",
+  "removeFromFavourites": "Verwijderen uit favorieten",
   "@removeFromFavourites": {
     "description": "Tooltip/action for unmarking an item as favourite"
   },
-  "shareAsPdf": "Share as PDF",
+  "shareAsPdf": "Delen als PDF",
   "@shareAsPdf": {
     "description": "Tooltip / action to export and share the recipe as a PDF"
   },
-  "tapToViewRecipe": "Tap to view recipe",
+  "tapToViewRecipe": "Tik om recept te bekijken",
   "@tapToViewRecipe": {
     "description": "Small hint shown under a recipe title in list view."
   },
-  "recipeOptions": "Recipe Options",
+  "recipeOptions": "Receptopties",
   "@recipeOptions": {
     "description": "Title for the bottom sheet that shows actions for a recipe"
   },
-  "updateImage": "Update Image",
+  "updateImage": "Afbeelding bijwerken",
   "@updateImage": {
     "description": "Button label to add or update the recipe image"
   },
-  "all": "All",
+  "all": "Alles",
   "@all": {
     "description": "System category label representing all recipes"
   },
-  "translated": "Translated",
+  "translated": "Vertaald",
   "@translated": {
     "description": "System category label for recipes that were translated"
   },
-  "clearSearch": "Clear search",
+  "clearSearch": "Zoekopdracht wissen",
   "@clearSearch": {
     "description": "Tooltip text for the clear search (X) button in the search bar."
   },
-  "searchRecipesAndIngredients": "Search recipes or ingredients...",
+  "searchRecipesAndIngredients": "Zoek recepten of ingrediënten...",
   "@searchRecipesAndIngredients": {
     "description": "Hint when searching across recipe titles and ingredients."
   },
-  "searchScopeTitles": "Search titles only",
+  "searchScopeTitles": "Alleen titels zoeken",
   "@searchScopeTitles": {
     "description": "Tooltip for toggling the search scope to titles only."
   },
-  "searchScopeTitlesIngredients": "Search titles + ingredients",
+  "searchScopeTitlesIngredients": "Zoek titels + ingrediënten",
   "@searchScopeTitlesIngredients": {
     "description": "Tooltip for toggling the search scope to titles and ingredients."
   },
-  "title": "Title",
+  "title": "Titel",
   "@title": {
     "description": "Generic label for a recipe title (used in markdown export)."
   },
-  "hintsAndTips": "Hints & Tips",
+  "hintsAndTips": "Tips & Tricks",
   "@hintsAndTips": {
     "description": "Label for the hints & tips section of a recipe (used in markdown export)."
   },
-  "noAdditionalTips": "No additional tips provided.",
+  "noAdditionalTips": "Geen extra tips beschikbaar.",
   "@noAdditionalTips": {
     "description": "Fallback text when there are no hints or tips for a recipe (used in markdown export)."
   },
-  "bubbleScan": "📸 Scan Recipes\nTap “Create” or + to upload and scan recipe images.",
+  "bubbleScan": "📸 Recepten scannen\nTik op “Maken” of + om afbeeldingen te uploaden en te scannen.",
   "@bubbleScan": {
     "description": "Onboarding bubble message explaining how to scan recipes by uploading images."
   },
-  "bubbleViewToggle": "👁️ Switch Views\nTap to change how recipes are displayed.",
+  "bubbleViewToggle": "👁️ Weergave wisselen\nTik om te veranderen hoe recepten worden weergegeven.",
   "@bubbleViewToggle": {
     "description": "Onboarding bubble message explaining how to toggle between different recipe view modes."
   },
-  "bubbleLongPress": "📌 Long-press a recipe\nTap and hold to favourite or assign a category.",
+  "bubbleLongPress": "📌 Houd een recept ingedrukt\nTik en houd vast om als favoriet te markeren of een categorie toe te wijzen.",
   "@bubbleLongPress": {
     "description": "Onboarding bubble message explaining how to long-press a recipe card to favourite or assign a category."
   },
-  "vaultBubbleSwitchViews": "Switch views here",
+  "vaultBubbleSwitchViews": "Wissel hier van weergave",
   "@vaultBubbleSwitchViews": {
     "description": "Onboarding bubble prompting the user to change between grid/list views."
   },
-  "vaultBubbleLongPress": "Long‑press a recipe for options",
+  "vaultBubbleLongPress": "Houd een recept ingedrukt voor opties",
   "@vaultBubbleLongPress": {
     "description": "Onboarding bubble explaining long-press on a recipe card."
   },
-  "vaultBubbleScan": "Scan recipes with the + button",
+  "vaultBubbleScan": "Scan recepten met de + knop",
   "@vaultBubbleScan": {
     "description": "Onboarding bubble pointing to the create/+ scan entry point."
   },
-  "sharedRecipeTitle": "Shared Recipe",
+  "sharedRecipeTitle": "Gedeeld recept",
   "@sharedRecipeTitle": {
     "description": "AppBar title for the shared recipe screen."
   },
-  "sharedRecipeNotFound": "This shared recipe could not be found.",
+  "sharedRecipeNotFound": "Dit gedeelde recept kon niet worden gevonden.",
   "@sharedRecipeNotFound": {
     "description": "Shown when a shared recipe document is missing."
   },
-  "sharedRecipeLoadError": "An error occurred while loading the recipe.",
+  "sharedRecipeLoadError": "Er is een fout opgetreden bij het laden van het recept.",
   "@sharedRecipeLoadError": {
     "description": "Shown when the shared recipe fetch fails."
   },
-  "noRecipeDataFound": "No recipe data found.",
+  "noRecipeDataFound": "Geen receptgegevens gevonden.",
   "@noRecipeDataFound": {
     "description": "Shown when ResultsScreen gets no data in navigation."
   },
-  "copyToClipboard": "Copy to clipboard",
+  "copyToClipboard": "Kopiëren naar klembord",
   "@copyToClipboard": {
     "description": "Tooltip for copy button on ResultsScreen."
   },
-  "copiedToClipboard": "📋 Recipe copied to clipboard",
+  "copiedToClipboard": "📋 Recept gekopieerd naar klembord",
   "@copiedToClipboard": {
     "description": "Snackbar after copying recipe text."
   },
-  "languageLabel": "Language: {language}",
+  "languageLabel": "Taal: {language}",
   "@languageLabel": {
     "description": "Label when simply displaying detected language.",
     "placeholders": {
@@ -982,15 +982,15 @@
       }
     }
   },
-  "notSignedIn": "Not signed in",
+  "notSignedIn": "Niet ingelogd",
   "@notSignedIn": {
     "description": "Error when an action requires a signed-in user."
   },
-  "imageCropCancelled": "Image crop cancelled",
+  "imageCropCancelled": "Bijsnijden geannuleerd",
   "@imageCropCancelled": {
     "description": "Shown when the user cancels image crop."
   },
-  "uploadFailed": "Upload failed: {error}",
+  "uploadFailed": "Upload mislukt: {error}",
   "@uploadFailed": {
     "description": "Shown when image upload fails.",
     "placeholders": {
@@ -999,79 +999,79 @@
       }
     }
   },
-  "showOcr": "Show OCR",
+  "showOcr": "OCR weergeven",
   "@showOcr": {
     "description": "Debug toggle to show OCR text."
   },
-  "hideOcr": "Hide OCR",
+  "hideOcr": "OCR verbergen",
   "@hideOcr": {
     "description": "Debug toggle to hide OCR text."
   },
-  "formattingError": "Whoops! Something went wrong with formatting.\nPlease try again.",
+  "formattingError": "Oeps! Er is iets misgegaan met de opmaak.\nProbeer het opnieuw.",
   "@formattingError": {
     "description": "Error card message when the recipe formatter failed."
   },
-  "aboutLegalTitle": "About & Legal",
+  "aboutLegalTitle": "Over & Juridisch",
   "@aboutLegalTitle": {
     "description": "App bar title for About screen."
   },
-  "appInfoSectionTitle": "App Info",
+  "appInfoSectionTitle": "App-info",
   "@appInfoSectionTitle": {
     "description": "Section heading for app information."
   },
-  "versionLabel": "Version",
+  "versionLabel": "Versie",
   "@versionLabel": {
     "description": "Label for the app version row."
   },
-  "legalSectionTitle": "Legal",
+  "legalSectionTitle": "Juridisch",
   "@legalSectionTitle": {
     "description": "Section heading for legal links."
   },
-  "supportSectionTitle": "Support",
+  "supportSectionTitle": "Ondersteuning",
   "@supportSectionTitle": {
     "description": "Section heading for support links."
   },
-  "visitWebsite": "Visit Website",
+  "visitWebsite": "Bezoek website",
   "@visitWebsite": {
     "description": "Button/link to open the website."
   },
-  "contactSupport": "Contact Support",
+  "contactSupport": "Contact opnemen met ondersteuning",
   "@contactSupport": {
     "description": "Button/link to contact support."
   },
-  "accountSettingsTitle": "Account Settings",
+  "accountSettingsTitle": "Accountinstellingen",
   "@accountSettingsTitle": {
     "description": "App bar title for account settings screen."
   },
-  "noUserSignedIn": "No user signed in",
+  "noUserSignedIn": "Geen gebruiker aangemeld",
   "@noUserSignedIn": {
     "description": "Shown when account screen is opened without an authenticated user."
   },
-  "noName": "No name",
+  "noName": "Geen naam",
   "@noName": {
     "description": "Fallback display name when user.displayName is null."
   },
-  "securitySectionTitle": "Security",
+  "securitySectionTitle": "Beveiliging",
   "@securitySectionTitle": {
     "description": "Section header for security items."
   },
-  "signOut": "Sign Out",
+  "signOut": "Uitloggen",
   "@signOut": {
     "description": "Menu/button text to sign out."
   },
-  "signedOut": "Signed out",
+  "signedOut": "Uitgelogd",
   "@signedOut": {
     "description": "Snackbar text after successful sign out."
   },
-  "signOutQuestion": "Sign Out?",
+  "signOutQuestion": "Uitloggen?",
   "@signOutQuestion": {
     "description": "Dialog title asking to confirm sign out."
   },
-  "signOutConfirmBody": "Are you sure you want to sign out?",
+  "signOutConfirmBody": "Weet je zeker dat je wilt uitloggen?",
   "@signOutConfirmBody": {
     "description": "Dialog body confirming sign out."
   },
-  "signOutFailed": "Sign out failed: {error}",
+  "signOutFailed": "Uitloggen mislukt: {error}",
   "@signOutFailed": {
     "description": "Snackbar when sign out fails.",
     "placeholders": {
@@ -1080,23 +1080,23 @@
       }
     }
   },
-  "deleteAccount": "Delete Account",
+  "deleteAccount": "Account verwijderen",
   "@deleteAccount": {
     "description": "Menu/button text to delete the account."
   },
-  "deleteAccountQuestion": "Delete Your Account?",
+  "deleteAccountQuestion": "Je account verwijderen?",
   "@deleteAccountQuestion": {
     "description": "Dialog title asking to confirm account deletion."
   },
-  "deleteAccountBody": "This will permanently delete your account and all associated data including recipes, images, and preferences.\n\nThis action is irreversible.",
+  "deleteAccountBody": "Dit verwijdert permanent je account en alle bijbehorende gegevens, inclusief recepten, afbeeldingen en voorkeuren.\n\nDeze actie kan niet ongedaan worden gemaakt.",
   "@deleteAccountBody": {
     "description": "Dialog body warning about account deletion."
   },
-  "deleteAccountSuccess": "Account deleted successfully.",
+  "deleteAccountSuccess": "Account succesvol verwijderd.",
   "@deleteAccountSuccess": {
     "description": "Snackbar after successful account deletion."
   },
-  "deleteAccountFailed": "Failed to delete account: {error}",
+  "deleteAccountFailed": "Verwijderen van account mislukt: {error}",
   "@deleteAccountFailed": {
     "description": "Snackbar when account deletion fails.",
     "placeholders": {
@@ -1105,115 +1105,115 @@
       }
     }
   },
-  "appearanceTitle": "Appearance",
+  "appearanceTitle": "Weergave",
   "@appearanceTitle": {
     "description": "App bar title for the Appearance settings screen."
   },
-  "appThemeSectionTitle": "App Theme",
+  "appThemeSectionTitle": "App-thema",
   "@appThemeSectionTitle": {
     "description": "Section header for theme options."
   },
-  "lightMode": "Light Mode",
+  "lightMode": "Lichte modus",
   "@lightMode": {
     "description": "Option label for light theme."
   },
-  "darkMode": "Dark Mode",
+  "darkMode": "Donkere modus",
   "@darkMode": {
     "description": "Option label for dark theme."
   },
-  "textSizeSectionTitle": "Text Size",
+  "textSizeSectionTitle": "Tekstgrootte",
   "@textSizeSectionTitle": {
     "description": "Section header for text size options."
   },
-  "textSizeSmall": "Small",
+  "textSizeSmall": "Klein",
   "@textSizeSmall": {
     "description": "Option label for small text size."
   },
-  "textSizeMedium": "Medium",
+  "textSizeMedium": "Middel",
   "@textSizeMedium": {
     "description": "Option label for medium text size."
   },
-  "textSizeLarge": "Large",
+  "textSizeLarge": "Groot",
   "@textSizeLarge": {
     "description": "Option label for large text size."
   },
-  "faqsTitle": "FAQs",
+  "faqsTitle": "Veelgestelde vragen",
   "@faqsTitle": {
     "description": "App bar title for the FAQs screen."
   },
-  "faqsSectionScanSave": "Scanning & Saving",
+  "faqsSectionScanSave": "Scannen & opslaan",
   "@faqsSectionScanSave": {
     "description": "Section header for scanning/saving FAQs."
   },
-  "faqsQHowScan": "How do I scan a recipe?",
+  "faqsQHowScan": "Hoe scan ik een recept?",
   "@faqsQHowScan": {
     "description": "Question: scanning a recipe."
   },
-  "faqsAHowScan": "From the Home screen, tap the \"+\" button and upload one or more images of your recipe.",
+  "faqsAHowScan": "Vanaf het startscherm tik je op de knop \"+\" en upload je een of meer afbeeldingen van je recept.",
   "@faqsAHowScan": {
     "description": "Answer: scanning a recipe."
   },
-  "faqsQAddImage": "How do I add a recipe image?",
+  "faqsQAddImage": "Hoe voeg ik een receptafbeelding toe?",
   "@faqsQAddImage": {
     "description": "Question: add recipe image."
   },
-  "faqsAAddImage": "After scanning, tap \"Add Image\" to crop and upload a photo for your recipe card header.",
+  "faqsAAddImage": "Na het scannen tik je op \"Afbeelding toevoegen\" om een foto bij te snijden en te uploaden voor de kop van je receptkaart.",
   "@faqsAAddImage": {
     "description": "Answer: add recipe image."
   },
-  "faqsQSaveRecipe": "How do I save a recipe?",
+  "faqsQSaveRecipe": "Hoe sla ik een recept op?",
   "@faqsQSaveRecipe": {
     "description": "Question: save recipe."
   },
-  "faqsASaveRecipe": "Once you’ve reviewed the formatted result, tap \"Save to Vault\" to store it permanently.",
+  "faqsASaveRecipe": "Zodra je het opgemaakte resultaat hebt gecontroleerd, tik je op \"Opslaan in kluis\" om het permanent op te slaan.",
   "@faqsASaveRecipe": {
     "description": "Answer: save recipe."
   },
-  "faqsSectionAccessUse": "App Access & Use",
+  "faqsSectionAccessUse": "App-toegang & gebruik",
   "@faqsSectionAccessUse": {
     "description": "Section header for access/use FAQs."
   },
-  "faqsQOffline": "Can I use the app offline?",
+  "faqsQOffline": "Kan ik de app offline gebruiken?",
   "@faqsQOffline": {
     "description": "Question: offline usage."
   },
-  "faqsAOffline": "You can view any recipes already saved to your Vault, even without an internet connection.",
+  "faqsAOffline": "Je kunt alle recepten bekijken die al in je kluis zijn opgeslagen, zelfs zonder internetverbinding.",
   "@faqsAOffline": {
     "description": "Answer: offline usage."
   },
-  "faqsSectionSubSupport": "Subscription & Support",
+  "faqsSectionSubSupport": "Abonnement & ondersteuning",
   "@faqsSectionSubSupport": {
     "description": "Section header for subscription/support FAQs."
   },
-  "faqsQWhySub": "Why do I need a subscription?",
+  "faqsQWhySub": "Waarom heb ik een abonnement nodig?",
   "@faqsQWhySub": {
     "description": "Question: why subscription."
   },
-  "faqsAWhySub": "Subscriptions unlock cloud sync, image uploads, translation, and AI-powered formatting.",
+  "faqsAWhySub": "Abonnementen ontgrendelen cloud-synchronisatie, afbeeldingsuploads, vertalingen en AI-gestuurde opmaak.",
   "@faqsAWhySub": {
     "description": "Answer: why subscription."
   },
-  "faqsQCancel": "How can I cancel my subscription?",
+  "faqsQCancel": "Hoe kan ik mijn abonnement opzeggen?",
   "@faqsQCancel": {
     "description": "Question: cancel subscription."
   },
-  "faqsACancel": "Manage or cancel your plan anytime through your App Store or Google Play account settings.",
+  "faqsACancel": "Beheer of annuleer je abonnement op elk moment via de instellingen van je App Store- of Google Play-account.",
   "@faqsACancel": {
     "description": "Answer: cancel subscription."
   },
-  "notificationsTitle": "Notifications",
+  "notificationsTitle": "Meldingen",
   "@notificationsTitle": {
     "description": "App bar title for notifications settings."
   },
-  "notificationsSectionReminders": "Reminders",
+  "notificationsSectionReminders": "Herinneringen",
   "@notificationsSectionReminders": {
     "description": "Section header for reminder notifications."
   },
-  "notificationsWeeklyTitle": "Weekly Recipe Reminder",
+  "notificationsWeeklyTitle": "Wekelijkse receptherinnering",
   "@notificationsWeeklyTitle": {
     "description": "Title of weekly reminder toggle."
   },
-  "notificationsWeeklySubtitle": "Get nudged weekly to add recipes to your vault.",
+  "notificationsWeeklySubtitle": "Krijg wekelijks een herinnering om recepten aan je kluis toe te voegen.",
   "@notificationsWeeklySubtitle": {
     "description": "Subtitle explaining weekly reminder."
   },
@@ -1221,19 +1221,19 @@
   "@notificationsSectionUpdates": {
     "description": "Section header for updates/announcements."
   },
-  "notificationsFeatureAlertsTitle": "New Feature Alerts",
+  "notificationsFeatureAlertsTitle": "Meldingen over nieuwe functies",
   "@notificationsFeatureAlertsTitle": {
     "description": "Title of feature announcements toggle."
   },
-  "notificationsFeatureAlertsSubtitle": "Be the first to hear when something tasty is added!",
+  "notificationsFeatureAlertsSubtitle": "Wees als eerste op de hoogte wanneer er iets smakelijks wordt toegevoegd!",
   "@notificationsFeatureAlertsSubtitle": {
     "description": "Subtitle for feature announcements toggle."
   },
-  "planIncludedHeader": "Included in your plan:",
+  "planIncludedHeader": "Inbegrepen in je abonnement:",
   "@planIncludedHeader": {
     "description": "Header shown above the list of plan benefits on the plan card."
   },
-  "trialEnds": "Trial ends: {date}",
+  "trialEnds": "Proefperiode eindigt: {date}",
   "@trialEnds": {
     "description": "Shown on plan card if user is on a trial.",
     "placeholders": {
@@ -1247,57 +1247,57 @@
     "description": "Header label for account-related settings section in Settings screen.",
     "type": "text"
   },
-  "settingsSectionPreferences": "Preferences",
+  "settingsSectionPreferences": "Voorkeuren",
   "@settingsSectionPreferences": {
     "description": "Header label for preferences-related settings section in Settings screen.",
     "type": "text"
   },
-  "settingsSectionStorage": "Local Storage",
+  "settingsSectionStorage": "Lokale opslag",
   "@settingsSectionStorage": {
     "description": "Header label for local storage management settings section in Settings screen.",
     "type": "text"
   },
-  "settingsSectionSubscription": "Subscription",
+  "settingsSectionSubscription": "Abonnement",
   "@settingsSectionSubscription": {
     "description": "Header label for subscription management settings section in Settings screen.",
     "type": "text"
   },
-  "settingsSectionSupport": "Support",
+  "settingsSectionSupport": "Ondersteuning",
   "@settingsSectionSupport": {
     "description": "Header label for support and help-related settings section in Settings screen.",
     "type": "text"
   },
-  "settingsTileAccountSettings": "Account Settings",
+  "settingsTileAccountSettings": "Accountinstellingen",
   "@settingsTileAccountSettings": {
     "description": "Settings tile label for navigating to account settings.",
     "type": "text"
   },
-  "settingsTileAppearance": "Appearance",
+  "settingsTileAppearance": "Weergave",
   "@settingsTileAppearance": {
     "description": "Settings tile label for navigating to appearance/theme settings.",
     "type": "text"
   },
-  "settingsTileNotifications": "Notifications",
+  "settingsTileNotifications": "Meldingen",
   "@settingsTileNotifications": {
     "description": "Settings tile label for navigating to notifications settings.",
     "type": "text"
   },
-  "settingsTileCacheClear": "Cache Clear",
+  "settingsTileCacheClear": "Cache wissen",
   "@settingsTileCacheClear": {
     "description": "Settings tile label for clearing cached data from the app.",
     "type": "text"
   },
-  "settingsTileManageSubscription": "Manage Subscription",
+  "settingsTileManageSubscription": "Abonnement beheren",
   "@settingsTileManageSubscription": {
     "description": "Settings tile label for navigating to the subscription management screen.",
     "type": "text"
   },
-  "settingsTileHelpFaqs": "Help & FAQs",
+  "settingsTileHelpFaqs": "Hulp & veelgestelde vragen",
   "@settingsTileHelpFaqs": {
     "description": "Settings tile label for navigating to the help and FAQs screen.",
     "type": "text"
   },
-  "settingsTileAboutLegal": "About & Legal",
+  "settingsTileAboutLegal": "Over & juridisch",
   "@settingsTileAboutLegal": {
     "description": "Settings tile label for navigating to the about and legal information screen.",
     "type": "text"
@@ -1307,42 +1307,42 @@
     "description": "The name of the company shown at the bottom of the settings screen.",
     "type": "text"
   },
-  "localStorageTitle": "Local Storage",
+  "localStorageTitle": "Lokale opslag",
   "@localStorageTitle": {
     "description": "App bar title for the screen that manages local storage and cache.",
     "type": "text"
   },
-  "clearLocalCacheTitle": "Clear Local Cache",
+  "clearLocalCacheTitle": "Lokale cache wissen",
   "@clearLocalCacheTitle": {
     "description": "Headline on the Local Storage screen above the action to clear cache.",
     "type": "text"
   },
-  "clearLocalCacheDescription": "Delete all recipes, categories and tutorial flags stored on this device.\nYour cloud data will not be affected.",
+  "clearLocalCacheDescription": "Verwijder alle recepten, categorieën en tutorialmarkeringen die op dit apparaat zijn opgeslagen.\nJe cloudgegevens worden niet beïnvloed.",
   "@clearLocalCacheDescription": {
     "description": "Body text describing what clearing the local cache will do.",
     "type": "text"
   },
-  "clearLocalCacheButton": "Clear Local Cache",
+  "clearLocalCacheButton": "Lokale cache wissen",
   "@clearLocalCacheButton": {
     "description": "Primary button label to start clearing local cache.",
     "type": "text"
   },
-  "clearCacheDialogTitle": "Clear Cache?",
+  "clearCacheDialogTitle": "Cache wissen?",
   "@clearCacheDialogTitle": {
     "description": "Title of the confirmation dialog shown before clearing cache.",
     "type": "text"
   },
-  "clearCacheDialogBody": "This will delete all locally stored recipes, categories, and tutorial flags.\nYour cloud data will remain safe.",
+  "clearCacheDialogBody": "Dit verwijdert alle lokaal opgeslagen recepten, categorieën en tutorialmarkeringen.\nJe cloudgegevens blijven veilig.",
   "@clearCacheDialogBody": {
     "description": "Body of the confirmation dialog explaining the effects of clearing cache.",
     "type": "text"
   },
-  "clearNow": "Clear Now",
+  "clearNow": "Nu wissen",
   "@clearNow": {
     "description": "Confirm action button in the clear cache dialog.",
     "type": "text"
   },
-  "localCacheCleared": "Local cache cleared",
+  "localCacheCleared": "Lokale cache gewist",
   "@localCacheCleared": {
     "description": "Snackbar/toast text shown after local cache is successfully cleared.",
     "type": "text"

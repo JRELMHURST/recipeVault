@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_cast
+
 import 'dart:convert';
 import 'package:hive/hive.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -45,6 +47,14 @@ class RecipeCardModel extends HiveObject {
   @HiveField(12)
   final bool isGlobal;
 
+  /// Optional Firestore-only fields (NOT stored in Hive):
+  /// - `translations` holds per-locale formatted blocks (e.g. {'pl': {'formatted': '...'}})
+  /// - `availableLocales` lists locales the doc has
+  /// - `locale` the base/authoring locale of this doc (e.g. 'en-GB')
+  final Map<String, dynamic>? translations;
+  final List<String>? availableLocales;
+  final String? locale;
+
   RecipeCardModel({
     required this.id,
     required this.userId,
@@ -59,6 +69,9 @@ class RecipeCardModel extends HiveObject {
     List<String>? hints,
     this.translationUsed = false,
     this.isGlobal = false,
+    this.translations,
+    this.availableLocales,
+    this.locale,
   }) : createdAt = createdAt ?? DateTime.now(),
        categories = categories ?? const [],
        originalImageUrls = originalImageUrls ?? const [],
@@ -78,12 +91,14 @@ class RecipeCardModel extends HiveObject {
     'hints': hints,
     'translationUsed': translationUsed,
     'isGlobal': isGlobal,
+    if (translations != null) 'translations': translations,
+    if (availableLocales != null) 'availableLocales': availableLocales,
+    if (locale != null) 'locale': locale,
   };
 
   factory RecipeCardModel.fromJson(Map<String, dynamic> json) {
     final rawCreatedAt = json['createdAt'];
     DateTime parsedCreatedAt;
-
     if (rawCreatedAt is Timestamp) {
       parsedCreatedAt = rawCreatedAt.toDate();
     } else if (rawCreatedAt is String) {
@@ -91,6 +106,11 @@ class RecipeCardModel extends HiveObject {
     } else {
       parsedCreatedAt = DateTime.now();
     }
+
+    // Allow translations to be either Map<String, dynamic> or null
+    final Map<String, dynamic>? tr = (json['translations'] is Map)
+        ? (json['translations'] as Map).cast<String, dynamic>()
+        : null;
 
     return RecipeCardModel(
       id: json['id'] ?? '',
@@ -108,6 +128,9 @@ class RecipeCardModel extends HiveObject {
       hints: List<String>.from(json['hints'] ?? const []),
       translationUsed: json['translationUsed'] ?? false,
       isGlobal: json['isGlobal'] ?? false,
+      translations: tr,
+      availableLocales: (json['availableLocales'] as List?)?.cast<String>(),
+      locale: json['locale'] as String?,
     );
   }
 
@@ -122,6 +145,9 @@ class RecipeCardModel extends HiveObject {
     String? title,
     List<String>? ingredients,
     List<String>? instructions,
+    Map<String, dynamic>? translations,
+    List<String>? availableLocales,
+    String? locale,
   }) {
     return RecipeCardModel(
       id: id,
@@ -137,6 +163,9 @@ class RecipeCardModel extends HiveObject {
       translationUsed: translationUsed ?? this.translationUsed,
       categories: categories ?? this.categories,
       isGlobal: isGlobal ?? this.isGlobal,
+      translations: translations ?? this.translations,
+      availableLocales: availableLocales ?? this.availableLocales,
+      locale: locale ?? this.locale,
     );
   }
 
@@ -146,12 +175,10 @@ class RecipeCardModel extends HiveObject {
   ) => RecipeCardModel.fromJson(doc.data()!);
 
   String toRawJson() => jsonEncode(toJson());
-
   factory RecipeCardModel.fromRawJson(String str) =>
       RecipeCardModel.fromJson(jsonDecode(str));
 
   bool get hasImage => imageUrl?.isNotEmpty ?? false;
-
   bool get isTranslated => categories.contains('Translated');
 
   String get formattedText {
@@ -161,7 +188,6 @@ class RecipeCardModel extends HiveObject {
         .entries
         .map((e) => '${e.key + 1}. ${e.value}')
         .join('\n');
-
     return '## Ingredients\n• $ingredientsStr\n\n## Instructions\n$instructionsStr';
   }
 
@@ -169,19 +195,48 @@ class RecipeCardModel extends HiveObject {
   bool matchesQuery(String query) {
     if (query.trim().isEmpty) return true;
     final q = query.toLowerCase();
-
     return title.toLowerCase().contains(q) ||
         ingredients.any((ing) => ing.toLowerCase().contains(q)) ||
         instructions.any((step) => step.toLowerCase().contains(q)) ||
         hints.any((hint) => hint.toLowerCase().contains(q));
   }
 
+  // ---------------- i18n helpers (UI usage) ----------------
+
+  /// Normalise a BCP‑47 tag from the device to keys we store.
+  /// e.g. 'pl-PL' → 'pl'. Keep 'en-GB' special.
+  static String normaliseLocaleTag(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.startsWith('en-gb')) return 'en-GB';
+    return lower.split('-').first;
+  }
+
+  /// Return the localised formatted block (ingredients+instructions) for a device tag,
+  /// falling back to 'en-GB', 'en', or any first entry if necessary.
+  String? formattedForLocaleTag(String bcp47) {
+    final tr = translations;
+    if (tr == null || tr.isEmpty) return null;
+
+    final norm = normaliseLocaleTag(bcp47);
+    final candidate =
+        tr[norm] ??
+        tr['en-GB'] ??
+        tr['en'] ??
+        (tr.values.isNotEmpty ? tr.values.first : null);
+
+    if (candidate is Map && candidate['formatted'] is String) {
+      return candidate['formatted'] as String;
+    }
+    if (candidate is String) return candidate; // tolerate string storage
+    return null;
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is RecipeCardModel &&
+      (other is RecipeCardModel &&
           runtimeType == other.runtimeType &&
-          id == other.id;
+          id == other.id);
 
   @override
   int get hashCode => id.hashCode;

@@ -96,14 +96,15 @@ export const extractAndFormatRecipe = onCall(
 
     // —— Target locale from frontend (defaults preserved)
     const targetLanguage = (request.data?.targetLanguage || "en").toLowerCase();
-    const targetRegion = request.data?.targetRegion || "GB";
-    const targetLanguageTag = toBcp47(targetLanguage, targetRegion);             // e.g. "pl" / "en-GB"
+    const targetRegion = (request.data?.targetRegion || "GB") || undefined;
+    const targetLanguageTag = toBcp47(targetLanguage, targetRegion);              // e.g. "pl" / "en-GB"
     const targetFlutterLocale = toFlutterLocaleTag(targetLanguage, targetRegion); // e.g. "pl" / "en_GB"
 
     const tier = await getResolvedTier(uid);
     console.log(`🎟️ Subscription tier resolved as: ${tier}`);
     console.log(`🎯 Target: ${targetLanguageTag} (flutter: ${targetFlutterLocale})`);
 
+    // We always try to clean up uploaded images even if processing fails
     try {
       console.log(`📸 Starting processing of ${imageUrls.length} image(s)...`);
 
@@ -182,16 +183,17 @@ export const extractAndFormatRecipe = onCall(
 
       previewText("🧠 GPT input preview", finalText);
 
-      // —— GPT formatting (now requires 3 args)
+      // —— GPT formatting
       await enforceGptRecipePolicy(uid);
 
-      // Source language for prompt context: if we translated, pass the detected source base; else pass the target base
+      // Source language for prompt context:
+      // if we translated, pass the detected source base; else pass the target base
       const sourceLangForPrompt = translationUsed ? (srcBase || "unknown") : (tgtBase || "en");
 
       const formattedRecipe = await generateFormattedRecipe(
         finalText,
         sourceLangForPrompt,
-        targetFlutterLocale   // <-- IMPORTANT: ensure labels & output in the app’s language
+        targetFlutterLocale   // ensure labels & output in the app’s language
       );
 
       console.log("✅ GPT formatting complete.");
@@ -223,43 +225,6 @@ export const extractAndFormatRecipe = onCall(
         console.warn("⚠️ Failed to sync usage metrics to Firestore:", err);
       }
 
-      // —— Cleanup uploaded images
-      await Promise.all(imageUrls.map(deleteUploadedImage));
-
-      // —— Optional: refresh global recipes (unchanged)
-      try {
-        const globalSnapshot = await admin.firestore().collection("global_recipes").get();
-        if (!globalSnapshot.empty) {
-          const userRecipesRef = admin.firestore().collection(`users/${uid}/recipes`);
-          const batch = admin.firestore().batch();
-
-          for (const doc of globalSnapshot.docs) {
-            const globalRecipe = doc.data();
-            const recipeId = doc.id;
-
-            const docRef = userRecipesRef.doc(recipeId);
-            batch.set(docRef, {
-              ...globalRecipe,
-              userId: uid,
-              isGlobal: true,
-              createdAt:
-                globalRecipe.createdAt ??
-                admin.firestore.FieldValue.serverTimestamp(),
-            });
-          }
-
-          const userDocRef = admin.firestore().doc(`users/${uid}`);
-          batch.update(userDocRef, {
-            lastGlobalSync: admin.firestore.FieldValue.serverTimestamp(),
-          });
-
-          await batch.commit();
-          console.log(`🔄 Global recipes refreshed for ${uid} (${globalSnapshot.size})`);
-        }
-      } catch (e) {
-        console.warn("⚠️ Failed to auto-refresh global recipes:", e);
-      }
-
       console.log(`🏁 Processing complete in ${Date.now() - start}ms`);
 
       return {
@@ -285,6 +250,13 @@ export const extractAndFormatRecipe = onCall(
         "internal",
         `❌ Failed to process recipe: ${err?.message || "Unknown error"}`
       );
+    } finally {
+      // —— Always attempt to clean up uploaded images, success or fail
+      try {
+        await Promise.all((request.data?.imageUrls ?? []).map(deleteUploadedImage));
+      } catch (e) {
+        console.warn("⚠️ Failed to delete uploaded images in finally:", e);
+      }
     }
   }
 );

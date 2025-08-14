@@ -4,87 +4,144 @@ import { logger } from 'firebase-functions';
 
 const db = getFirestore();
 
-type LocaleLabels = {
-  title?: string;
-  ingredients?: string[] | string;
-  instructions?: string[] | string;
-  notes?: string[] | string;
-};
+type LocaleBlock = { formatted?: string; notes?: string | string[]; title?: string; ingredients?: string[] | string; instructions?: string[] | string; hints?: string[] | string; };
+type TranslationsMap = Record<string, LocaleBlock>;
 
 type GlobalRecipe = {
-  // single-language fields (optional)
+  // base fields (EN-GB in your seed)
+  id?: string;
   title?: string;
   ingredients?: string[] | string;
   instructions?: string[] | string;
-  notes?: string[] | string;
-
-  // i18n map style (optional)
-  i18n?: Record<string, LocaleLabels>;
-
-  // or per-field suffix style (optional): title_pl, title_en_GB, etc.
-  [key: string]: any;
-
+  hints?: string[] | string;     // ← your seed uses 'hints'
+  notes?: string[] | string;     // legacy alias
+  imageUrl?: string;
+  categories?: string[];
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
+
+  // new seed schema
+  translations?: TranslationsMap;
+  availableLocales?: string[];
+  locale?: string; // e.g. 'en-GB'
+
+  // legacy shapes we’ll still tolerate
+  i18n?: Record<string, { title?: string; ingredients?: string[] | string; instructions?: string[] | string; notes?: string[] | string; }>;
+  [key: string]: any;
 };
 
-/** Normalises locale codes so 'en-GB' and 'en_GB' match the same data. */
-function normaliseLocale(loc?: string): string | undefined {
-  if (!loc) return undefined;
-  return loc.replace('-', '_'); // store / look up as underscores
+const FALLBACKS = ['en-GB', 'en'];
+
+function toArray(val?: string[] | string): string[] | undefined {
+  if (val == null) return undefined;
+  return Array.isArray(val) ? val : [val];
 }
 
-/** Picks the best localised variant from a global recipe with fallbacks. */
-function pickLocalisedVariant(
-  doc: GlobalRecipe,
-  desired: string | undefined,
-  fallbackChain: string[] = ['en_GB', 'en']
-): LocaleLabels {
-  const want = normaliseLocale(desired);
+function normaliseDesiredLocale(loc?: string): { exact?: string; lang?: string } {
+  if (!loc) return {};
+  const lower = loc.toLowerCase();
+  // special-case en-GB key since you store it with a dash, not underscore
+  if (lower.startsWith('en-gb')) return { exact: 'en-GB', lang: 'en' };
+  const parts = lower.split('-');
+  const lang = parts[0];
+  return { exact: loc, lang }; // preserve original exact (may be 'pl-PL')
+}
 
-  // 1) i18n map shape: i18n: { pl: {...}, en_GB: {...} }
-  if (doc.i18n && typeof doc.i18n === 'object') {
-    // try exact
-    if (want && doc.i18n[want]) return doc.i18n[want]!;
-    // try fallbacks
-    for (const fb of fallbackChain) {
-      if (doc.i18n[fb]) return doc.i18n[fb]!;
+/** Pick the best locale block from translations/i18n/suffixes + sensible fallbacks. */
+function pickLocalised(
+  doc: GlobalRecipe,
+  desired?: string
+): { title?: string; ingredients?: string[]; instructions?: string[]; hints?: string[] } {
+  const { exact, lang } = normaliseDesiredLocale(desired);
+
+  // 1) New schema: translations map
+  const tr = doc.translations as TranslationsMap | undefined;
+  if (tr && typeof tr === 'object') {
+    const tryKeys: string[] = [];
+    if (exact) tryKeys.push(exact);
+    if (lang && !tryKeys.includes(lang)) tryKeys.push(lang);
+    for (const fb of FALLBACKS) if (!tryKeys.includes(fb)) tryKeys.push(fb);
+
+    for (const k of tryKeys) {
+      const blk = tr[k];
+      if (!blk) continue;
+
+      // Preferred shape is { formatted } but allow split fields if present.
+      if (blk.formatted) {
+        // If you later want to parse 'formatted' back into sections, do it here.
+        // For now, we return undefined here so the app uses recipe.formattedForLocaleTag().
+        return {
+          // Don’t override title/sections from CFN if formatted exists; UI will render it.
+          title: undefined,
+          ingredients: undefined,
+          instructions: undefined,
+          hints: undefined,
+        };
+      }
+
+      return {
+        title: blk.title,
+        ingredients: toArray(blk.ingredients),
+        instructions: toArray(blk.instructions),
+        hints: toArray((blk.hints ?? blk.notes) as any),
+      };
     }
   }
 
-  // 2) per-field suffix shape: title_pl, title_en_GB, etc.
-  const trySuffix = (keyBase: string): string | string[] | undefined => {
-    if (want && doc[`${keyBase}_${want}`] != null) return doc[`${keyBase}_${want}`];
-    for (const fb of fallbackChain) {
-      if (doc[`${keyBase}_${fb}`] != null) return doc[`${keyBase}_${fb}`];
+  // 2) Legacy i18n shape
+  const i18n = doc.i18n;
+  if (i18n && typeof i18n === 'object') {
+    const tryKeys: string[] = [];
+    if (exact) tryKeys.push(exact.replace('-', '_'));
+    if (lang && !tryKeys.includes(lang)) tryKeys.push(lang);
+    for (const fb of FALLBACKS) if (!tryKeys.includes(fb)) tryKeys.push(fb.replace('-', '_'));
+
+    for (const k of tryKeys) {
+      const blk = i18n[k];
+      if (!blk) continue;
+      return {
+        title: blk.title,
+        ingredients: toArray(blk.ingredients),
+        instructions: toArray(blk.instructions),
+        hints: toArray((blk as any).hints ?? blk.notes),
+      };
+    }
+  }
+
+  // 3) Per-field suffixes (title_pl, title_en_GB, etc.)
+  const suffixTry = (base: string): string | string[] | undefined => {
+    if (exact && doc[`${base}_${exact.replace('-', '_')}`] != null) return doc[`${base}_${exact.replace('-', '_')}`];
+    if (lang && doc[`${base}_${lang}`] != null) return doc[`${base}_${lang}`];
+    for (const fb of FALLBACKS) {
+      const key = `${base}_${fb.replace('-', '_')}`;
+      if (doc[key] != null) return doc[key];
     }
     return undefined;
   };
 
-  const titleS     = trySuffix('title');
-  const ingS       = trySuffix('ingredients');
-  const instrS     = trySuffix('instructions');
-  const notesS     = trySuffix('notes');
+  const tS = suffixTry('title');
+  const iS = suffixTry('ingredients');
+  const sS = suffixTry('instructions');
+  const hS = suffixTry('hints') ?? suffixTry('notes');
 
-  if (titleS || ingS || instrS || notesS) {
+  if (tS || iS || sS || hS) {
     return {
-      title: typeof titleS === 'string' ? titleS : titleS as any,
-      ingredients: ingS as any,
-      instructions: instrS as any,
-      notes: notesS as any,
+      title: (typeof tS === 'string' ? tS : undefined),
+      ingredients: toArray(iS),
+      instructions: toArray(sS),
+      hints: toArray(hS),
     };
   }
 
-  // 3) single-language fallback (whatever the doc has)
+  // 4) Fallback to base single-language fields
   return {
     title: doc.title,
-    ingredients: doc.ingredients,
-    instructions: doc.instructions,
-    notes: doc.notes,
+    ingredients: toArray(doc.ingredients),
+    instructions: toArray(doc.instructions),
+    hints: toArray(doc.hints ?? doc.notes),
   };
 }
 
-/** Splits an array into chunks of size n. */
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -93,32 +150,28 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 export const copyGlobalRecipesToUser = onDocumentCreated('users/{userId}', async (event) => {
   const userId = event.params.userId;
+
   const userSnap = await db.collection('users').doc(userId).get();
-  const preferredLocale: string | undefined = normaliseLocale(userSnap.get('preferredLocale'));
+  const preferredLocale: string | undefined = userSnap.get('preferredLocale') || undefined;
 
   logger.info(`👤 New user ${userId}; copying global recipes with locale=${preferredLocale ?? 'default'}`);
 
-  // Pull all global recipes (if you expect a lot, paginate instead of a single get())
   const globalSnapshot = await db.collection('global_recipes').get();
   if (globalSnapshot.empty) {
     logger.warn('⚠️ No global recipes found to copy');
     return;
   }
 
-  // Find which recipe IDs the user already has
   const userRecipesRef = db.collection(`users/${userId}/recipes`);
   const userSnapshot = await userRecipesRef.get();
   const existingIds = new Set(userSnapshot.docs.map((d) => d.id));
 
-  // Prepare writes (skip existing)
   const toCopy = globalSnapshot.docs.filter((d) => !existingIds.has(d.id));
-
   if (!toCopy.length) {
     logger.info(`ℹ️ All global recipes already present for ${userId}. Nothing to copy.`);
     return;
   }
 
-  // Firestore batch limit = 500 operations; keep headroom
   const CHUNK_SIZE = 490;
   const chunks = chunk(toCopy, CHUNK_SIZE);
 
@@ -131,26 +184,31 @@ export const copyGlobalRecipesToUser = onDocumentCreated('users/{userId}', async
       const globalRecipe = doc.data() as GlobalRecipe;
       const recipeId = doc.id;
 
-      const localised = pickLocalisedVariant(globalRecipe, preferredLocale);
+      const loc = pickLocalised(globalRecipe, preferredLocale);
 
-      const newDocRef = userRecipesRef.doc(recipeId);
-      batch.set(newDocRef, {
-        // keep a copy of the whole object if you want (handy for future re-localisation)
-        // i18n: globalRecipe.i18n ?? undefined,
-
-        // write the chosen localised view into canonical fields your app uses:
-        title: localised.title ?? globalRecipe.title ?? '',
-        ingredients: localised.ingredients ?? globalRecipe.ingredients ?? [],
-        instructions: localised.instructions ?? globalRecipe.instructions ?? [],
-        notes: localised.notes ?? globalRecipe.notes ?? [],
-
+      batch.set(userRecipesRef.doc(recipeId), {
+        id: recipeId,
         userId,
         isGlobal: true,
+        // Copy stable base fields; let the app render formatted locale text at runtime
+        title: (loc.title ?? globalRecipe.title ?? ''),
+        ingredients: (loc.ingredients ?? toArray(globalRecipe.ingredients) ?? []),
+        instructions: (loc.instructions ?? toArray(globalRecipe.instructions) ?? []),
+        hints: (loc.hints ?? toArray(globalRecipe.hints ?? globalRecipe.notes) ?? []),
+        categories: globalRecipe.categories ?? [],
+        imageUrl: globalRecipe.imageUrl ?? null,
+
+        // Optional provenance
         sourceGlobalId: recipeId,
+        locale: preferredLocale ?? (globalRecipe.locale ?? 'en-GB'),
+
+        isFavourite: false,
+        originalImageUrls: [],
+        translationUsed: false,
+
         createdAt: globalRecipe.createdAt ?? FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
-        locale: preferredLocale ?? 'en_GB', // optional: note which variant was chosen
-      });
+      }, { merge: true });
 
       copiedCount++;
     }

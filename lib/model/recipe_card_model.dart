@@ -165,6 +165,17 @@ class RecipeCardModel extends HiveObject {
     return '## Ingredients\n• $ingredientsStr\n\n## Instructions\n$instructionsStr';
   }
 
+  /// 🔍 Match query against title, ingredients, instructions, and hints
+  bool matchesQuery(String query) {
+    if (query.trim().isEmpty) return true;
+    final q = query.toLowerCase();
+
+    return title.toLowerCase().contains(q) ||
+        ingredients.any((ing) => ing.toLowerCase().contains(q)) ||
+        instructions.any((step) => step.toLowerCase().contains(q)) ||
+        hints.any((hint) => hint.toLowerCase().contains(q));
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

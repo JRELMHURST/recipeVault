@@ -5,8 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:recipe_vault/core/daily_message_bubble.dart.dart';
 
+// FIX: removed duplicate .dart
+import 'package:recipe_vault/core/daily_message_bubble.dart.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
@@ -40,7 +41,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
   _recipeStreamSubscription;
 
-  // IMPORTANT: these are the internal keys used in storage/filters
+  // Internal category keys
   static const String kAll = 'All';
   static const String kFav = 'Favourites';
   static const String kTranslated = 'Translated';
@@ -67,17 +68,18 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   bool _showScanBubble = false;
   bool _hasLoadedBubbles = false;
 
+  // ✅ Now searches title, ingredients, instructions and hints via .matchesQuery
   List<RecipeCardModel> get _filteredRecipes {
+    final q = _searchQuery.trim();
     return _allRecipes.where((recipe) {
       final categories = recipe.categories;
+
       final matchesCategory =
           _selectedCategory == kAll ||
           (_selectedCategory == kFav && recipe.isFavourite) ||
           categories.contains(_selectedCategory);
 
-      final matchesSearch =
-          _searchQuery.isEmpty ||
-          recipe.title.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesSearch = q.isEmpty || recipe.matchesQuery(q);
 
       return matchesCategory && matchesSearch;
     }).toList();
@@ -91,6 +93,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       case kFav:
         return t.favourites;
       case kTranslated:
+        // If your l10n key is systemTranslated, swap to t.systemTranslated
         return t.translated;
       case kBreakfast:
         return t.defaultBreakfast;
@@ -104,9 +107,9 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   }
 
   String _keyFor(String label, AppLocalizations t) {
-    // Map localised labels back to internal keys
     if (label == t.systemAll) return kAll;
     if (label == t.favourites) return kFav;
+    // If you use systemTranslated in l10n, map that instead:
     if (label == t.translated) return kTranslated;
     if (label == t.defaultBreakfast) return kBreakfast;
     if (label == t.defaultMain) return kMain;

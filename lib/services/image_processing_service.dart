@@ -144,16 +144,27 @@ class ImageProcessingService {
     Duration timeout = const Duration(seconds: 30),
   }) async {
     try {
+      // ✅ Detect the user's app locale
+      final locale = Localizations.localeOf(context);
+      final targetLanguage = locale.languageCode; // e.g. "pl"
+      final targetRegion = locale.countryCode; // e.g. "GB" for en_GB
+
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
       final callable = functions.httpsCallable('extractAndFormatRecipe');
 
       _logDebug(
-        '🤖 Calling Cloud Function with ${imageUrls.length} image(s)...',
+        '🤖 Calling Cloud Function with ${imageUrls.length} image(s)... Target: $targetLanguage${targetRegion != null ? "_$targetRegion" : ""}',
       );
 
+      // ✅ Include locale info in request
       final result = await callable
-          .call({'imageUrls': imageUrls})
+          .call({
+            'imageUrls': imageUrls,
+            'targetLanguage': targetLanguage,
+            'targetRegion': targetRegion,
+          })
           .timeout(timeout);
+
       final data = result.data as Map<String, dynamic>;
 
       if ((data['formattedRecipe'] as String?)?.isEmpty ?? true) {

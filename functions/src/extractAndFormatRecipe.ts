@@ -2,12 +2,12 @@ import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https
 import { defineSecret } from "firebase-functions/params";
 import { getStorage } from "firebase-admin/storage";
 import { decode } from "html-entities";
-import admin from "./firebase.js"; // ✅ Firebase initialised here
+import admin from "./firebase.js";
 import dayjs from "dayjs";
 
 import { extractTextFromImages } from "./ocr.js";
-import { detectLanguage } from "./detect.js"; // ✅ returns { languageCode, confidence, flutterLocale }
-import { translateToEnglish } from "./translate.js";
+import { detectLanguage } from "./detect.js"; // returns { languageCode, confidence, flutterLocale }
+import { translateText } from "./translate.js"; // generic translator "src -> target"
 import { generateFormattedRecipe } from "./gpt_logic.js";
 import { cleanText, previewText } from "./text_utils.js";
 import {
@@ -21,6 +21,24 @@ import {
 const REVENUECAT_SECRET_KEY = defineSecret("REVENUECAT_SECRET_KEY");
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
+// ---------------------------- helpers ----------------------------
+function normalizeLangBase(code: string | undefined | null): string {
+  if (!code) return "";
+  return code.toLowerCase().split(/[_-]/)[0] || "";
+}
+
+function toBcp47(lang?: string, region?: string | null): string {
+  const base = (lang || "en").toLowerCase();
+  const reg = region ? region.toUpperCase() : "";
+  return reg ? `${base}-${reg}` : base;
+}
+
+function toFlutterLocaleTag(lang?: string, region?: string | null): string {
+  const base = (lang || "en").toLowerCase();
+  const reg = region ? region.toUpperCase() : "";
+  return reg ? `${base}_${reg}` : base;
+}
+
 // Delete a single uploaded image by its signed URL
 async function deleteUploadedImage(url: string) {
   try {
@@ -29,16 +47,13 @@ async function deleteUploadedImage(url: string) {
       console.warn("❌ Could not extract path from URL:", url);
       return;
     }
-
-    const path = decodeURIComponent(match[1]); // e.g. users/UID/...
+    const path = decodeURIComponent(match[1]);
     const file = getStorage().bucket().file(path);
     const [exists] = await file.exists();
-
     if (!exists) {
       console.warn(`⚠️ Skipped deletion – file not found: ${path}`);
       return;
     }
-
     await file.delete();
     console.log(`🗑️ Deleted uploaded image: ${path}`);
   } catch (err) {
@@ -46,11 +61,16 @@ async function deleteUploadedImage(url: string) {
   }
 }
 
+// ---------------------------- main ----------------------------
 export const extractAndFormatRecipe = onCall(
   {
     secrets: [REVENUECAT_SECRET_KEY, OPENAI_API_KEY],
   },
-  async (request: CallableRequest<{ imageUrls: string[] }>) => {
+  async (request: CallableRequest<{
+    imageUrls: string[];
+    targetLanguage?: string; // e.g. "pl", "en"
+    targetRegion?: string;   // e.g. "GB", "PL"
+  }>) => {
     const start = Date.now();
 
     // —— Validate input
@@ -74,8 +94,15 @@ export const extractAndFormatRecipe = onCall(
       throw new HttpsError("failed-precondition", "No project ID available.");
     }
 
+    // —— Target locale from frontend (defaults preserved)
+    const targetLanguage = (request.data?.targetLanguage || "en").toLowerCase();
+    const targetRegion = request.data?.targetRegion || "GB";
+    const targetLanguageTag = toBcp47(targetLanguage, targetRegion);             // e.g. "pl" / "en-GB"
+    const targetFlutterLocale = toFlutterLocaleTag(targetLanguage, targetRegion); // e.g. "pl" / "en_GB"
+
     const tier = await getResolvedTier(uid);
     console.log(`🎟️ Subscription tier resolved as: ${tier}`);
+    console.log(`🎯 Target: ${targetLanguageTag} (flutter: ${targetFlutterLocale})`);
 
     try {
       console.log(`📸 Starting processing of ${imageUrls.length} image(s)...`);
@@ -89,15 +116,15 @@ export const extractAndFormatRecipe = onCall(
       const cleanInput = cleanText(ocrText);
       previewText("🔎 Raw OCR text", ocrText);
 
-      // —— Language detection (maps to flutterLocale too)
+      // —— Language detection
       let detectedLanguage = "unknown";
       let confidence = 0;
-      let flutterLocale = "en_GB"; // default to your preferred English
+      let flutterLocale = "en_GB";
 
       try {
         const detection = await detectLanguage(cleanInput, projectId);
-        detectedLanguage = detection.languageCode;
-        confidence = detection.confidence;
+        detectedLanguage = detection.languageCode || "unknown";
+        confidence = detection.confidence ?? 0;
         flutterLocale = detection.flutterLocale || "en_GB";
         console.log(
           `🌐 Detected language: ${detectedLanguage} (conf: ${confidence}) → flutterLocale: ${flutterLocale}`
@@ -106,44 +133,47 @@ export const extractAndFormatRecipe = onCall(
         console.warn("⚠️ Language detection failed:", err);
       }
 
-      // —— Translate if needed (target = en-GB)
-      const isLikelyEnglish =
-        detectedLanguage.toLowerCase() === "en" ||
-        detectedLanguage.toLowerCase().startsWith("en-");
+      // —— Decide if translation is needed
+      const srcBase = normalizeLangBase(detectedLanguage);
+      const tgtBase = normalizeLangBase(targetLanguage);
+      const alreadyTarget = srcBase && tgtBase && srcBase === tgtBase;
 
-      let translatedText = cleanInput;
+      let usedText = cleanInput;
       let translationUsed = false;
 
-      if (!isLikelyEnglish) {
+      if (!srcBase) {
+        console.log("🤷 Detection returned unknown — skipping translation.");
+      } else if (!alreadyTarget) {
         try {
-          console.log(`🚧 Translating from "${detectedLanguage}" → en-GB...`);
-          const result = await translateToEnglish(cleanInput, detectedLanguage, projectId);
-
-          if (result?.trim()) {
-            const cleanedTranslated = cleanText(result.trim());
-            translatedText = result.trim();
+          console.log(`🚧 Translating from "${detectedLanguage}" → ${targetLanguageTag}...`);
+          const translated = await translateText(
+            cleanInput,
+            detectedLanguage,
+            targetLanguageTag,
+            projectId
+          );
+          const cleanedTranslated = cleanText(translated || "");
+          if (cleanedTranslated) {
+            usedText = cleanedTranslated;
             translationUsed = true;
-            previewText("📝 Translated preview", translatedText);
+            previewText("📝 Translated preview", usedText);
 
-            // Only count translation usage if it materially changed the text
-            const cleanedOriginal = cleanText(cleanInput);
-            if (cleanedOriginal !== cleanedTranslated) {
+            if (cleanText(cleanInput) !== cleanedTranslated) {
               await enforceTranslationPolicy(uid);
               await incrementTranslationUsage(uid);
             } else {
-              console.log("⚠️ Translation was minimal — skipping usage enforcement.");
+              console.log("⚠️ Translation minimal — skipping usage enforcement.");
             }
           } else {
-            console.warn("⚠️ Translation returned empty or null. Skipping.");
+            console.warn("⚠️ Translation returned empty or null. Continuing with original text.");
           }
         } catch (err) {
           console.error("❌ Translation failed:", err);
+          // Continue with original text if translation fails
         }
       } else {
-        console.log("🟢 Skipping translation – already English");
+        console.log(`🟢 Skipping translation – already ${targetLanguageTag}`);
       }
-
-      const usedText = translationUsed ? translatedText : cleanInput;
 
       // —— Normalise whitespace and HTML entities
       const finalText = decode(usedText.trim())
@@ -152,12 +182,16 @@ export const extractAndFormatRecipe = onCall(
 
       previewText("🧠 GPT input preview", finalText);
 
-      // —— GPT formatting (keep UK English conventions in the formatter)
+      // —— GPT formatting (now requires 3 args)
       await enforceGptRecipePolicy(uid);
+
+      // Source language for prompt context: if we translated, pass the detected source base; else pass the target base
+      const sourceLangForPrompt = translationUsed ? (srcBase || "unknown") : (tgtBase || "en");
 
       const formattedRecipe = await generateFormattedRecipe(
         finalText,
-        translationUsed ? detectedLanguage : "en" // source language info for prompt context
+        sourceLangForPrompt,
+        targetFlutterLocale   // <-- IMPORTANT: ensure labels & output in the app’s language
       );
 
       console.log("✅ GPT formatting complete.");
@@ -192,7 +226,7 @@ export const extractAndFormatRecipe = onCall(
       // —— Cleanup uploaded images
       await Promise.all(imageUrls.map(deleteUploadedImage));
 
-      // —— Optional: refresh global recipes for this user
+      // —— Optional: refresh global recipes (unchanged)
       try {
         const globalSnapshot = await admin.firestore().collection("global_recipes").get();
         if (!globalSnapshot.empty) {
@@ -231,10 +265,11 @@ export const extractAndFormatRecipe = onCall(
       return {
         formattedRecipe,
         originalText: ocrText,
-        detectedLanguage,                 // e.g. "pl", "es", "en"
-        flutterLocale,                    // e.g. "pl", "en_GB" — matches your Flutter locales
+        detectedLanguage,          // e.g. "pl", "es", "en"
+        flutterLocale,             // detected source locale for reference
         translationUsed,
-        targetLanguage: "en_GB",
+        targetLanguageTag,         // e.g. "pl" or "en-GB"
+        targetFlutterLocale,       // e.g. "pl" or "en_GB" (matches Flutter)
         imageUrls,
         isTranslated: translationUsed,
         translatedFromLanguage: translationUsed ? detectedLanguage : null,

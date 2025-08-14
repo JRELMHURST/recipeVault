@@ -5,7 +5,8 @@ type GptRecipeResponse = {
   notes?: string;
 };
 
-const MODEL = "gpt-3.5-turbo-0125";
+// Use your preferred model; keep your original if required
+const MODEL = "gpt-4o-mini"; // or "gpt-3.5-turbo-0125"
 
 // Map locale → language name for the instruction + localised labels
 const LOCALE_META: Record<
@@ -165,8 +166,7 @@ const LOCALE_META: Record<
 
 // Fallback to en_GB semantics if we don’t recognise the locale
 function resolveLocaleMeta(locale: string | undefined) {
-  if (!locale) return LOCALE_META.en_GB;
-  return LOCALE_META[locale] || LOCALE_META.en_GB;
+  return (locale && LOCALE_META[locale]) ? LOCALE_META[locale] : LOCALE_META.en_GB;
 }
 
 /**
@@ -176,7 +176,7 @@ function resolveLocaleMeta(locale: string | undefined) {
 export async function generateFormattedRecipe(
   text: string,
   sourceLang: string,
-  targetLocale: string = "en_GB" // pass the user's Locale here, e.g. from Flutter `Localizations.localeOf(context)`
+  targetLocale: string // REQUIRED: pass the app's current locale (e.g. "pl", "en_GB")
 ): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -187,7 +187,7 @@ export async function generateFormattedRecipe(
   const openai = new OpenAI({ apiKey });
 
   const systemPrompt = `
-You are a recipe assistant. The original recipe was written in ${sourceLang.toUpperCase()}, but the text below is already translated.
+You are a recipe assistant. The original recipe was written in ${sourceLang.toUpperCase()}, but the text below is already translated (if translation was necessary).
 
 Write the final output in **${languageName}** and follow that language's spelling and culinary conventions (units, ingredient names). Keep a clear, friendly tone.
 
@@ -247,18 +247,12 @@ Return only a single JSON object **inside a JSON code block** like:
 
   let parsed: GptRecipeResponse | null = null;
 
-  try {
-    parsed = JSON.parse(jsonCandidate) as GptRecipeResponse;
-  } catch {
-    const m = rawContent.match(/```json\s*([\s\S]*?)\s*```/i);
-    if (m) {
-      try {
-        parsed = JSON.parse(m[1].trim()) as GptRecipeResponse;
-      } catch {
-        // fall through
-      }
-    }
-  }
+  const tryParse = (s: string) => {
+    try { return JSON.parse(s) as GptRecipeResponse; } catch { return null; }
+  };
+
+  parsed = tryParse(jsonCandidate) ||
+           tryParse((rawContent.match(/```json\s*([\s\S]*?)\s*```/i)?.[1] || "").trim());
 
   if (!parsed || typeof parsed.formattedRecipe !== "string") {
     console.error("❌ Failed to parse GPT response:\n", rawContent);
@@ -269,9 +263,7 @@ Return only a single JSON object **inside a JSON code block** like:
   const notes = (parsed.notes || labels.noTips).trim();
 
   // If model didn’t include the hints section, append it
-  const hasHintsSection = new RegExp(`(^|\\n)${labels.hints}\\s*:`, "i").test(
-    formatted
-  );
+  const hasHintsSection = new RegExp(`(^|\\n)${labels.hints}\\s*:`, "i").test(formatted);
 
   return hasHintsSection ? formatted : `${formatted}\n\n${labels.hints}:\n${notes}`;
 }

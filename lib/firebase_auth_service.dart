@@ -9,6 +9,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/rev_cat/tier_utils.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:collection/collection.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart'; // <-- needed for PlatformException
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'package:recipe_vault/rev_cat/tier_utils.dart'; // ✅ Shared tier logic
@@ -29,7 +30,8 @@ class PurchaseHelper {
       final customerInfo = await Purchases.purchasePackage(package);
       await syncEntitlementToFirestore(customerInfo);
       return customerInfo;
-    } on PurchasesErrorCode {
+    } on PlatformException {
+      // Forward to caller so UI can handle cancelled/failed cases
       rethrow;
     }
   }
@@ -76,8 +78,7 @@ class PurchaseHelper {
       'originalPurchaseDate': entitlement?.originalPurchaseDate,
       'expirationDate': entitlement?.expirationDate,
       'store': entitlement?.store,
-      'periodType':
-          entitlement?.periodType.name, // ✅ "trial", "intro", or "normal"
+      'periodType': entitlement?.periodType.name, // "trial", "intro", "normal"
     };
 
     try {

@@ -17,7 +17,7 @@ import 'services/user_preference_service.dart';
 class AppBootstrap {
   static bool _isReady = false;
 
-  /// Firebase globals – exposed if needed in-app
+  /// Firebase & Cloud Functions globals
   static final FirebaseFunctions functions = FirebaseFunctions.instanceFor(
     region: 'europe-west2',
   );
@@ -26,7 +26,7 @@ class AppBootstrap {
   static Future<void> ensureReady() async {
     if (_isReady) return;
 
-    // 🔌 Firebase Init
+    // 1️⃣ Firebase Init
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
@@ -39,7 +39,7 @@ class AppBootstrap {
       return;
     }
 
-    // 🔐 Firebase App Check
+    // 2️⃣ Firebase App Check
     try {
       await FirebaseAppCheck.instance.activate(
         androidProvider: AndroidProvider.debug,
@@ -52,7 +52,7 @@ class AppBootstrap {
       }
     }
 
-    // 🛒 RevenueCat Setup
+    // 3️⃣ RevenueCat Setup
     try {
       await Purchases.configure(
         PurchasesConfiguration('appl_oqbgqmtmctjzzERpEkswCejmukh'),
@@ -64,7 +64,7 @@ class AppBootstrap {
       }
     }
 
-    // 🔔 Push Notifications
+    // 4️⃣ Push Notifications
     try {
       await NotificationService.init();
     } catch (e, stack) {
@@ -74,16 +74,19 @@ class AppBootstrap {
       }
     }
 
-    // 🐝 Hive Init
+    // 5️⃣ Hive Init + Migrations
+    bool hasLocalData = false;
     try {
       await Hive.initFlutter();
       Hive.registerAdapter(RecipeCardModelAdapter());
       Hive.registerAdapter(CategoryModelAdapter());
 
-      await Hive.openBox<RecipeCardModel>('recipes');
+      final recipeBox = await Hive.openBox<RecipeCardModel>('recipes');
       final categoryBox = await Hive.openBox<CategoryModel>('categories');
 
-      // 🔁 Migrate legacy string categories to CategoryModel
+      hasLocalData = recipeBox.isNotEmpty || categoryBox.isNotEmpty;
+
+      // Migrate legacy String categories to CategoryModel
       final legacyKeys = categoryBox.keys
           .where((k) => categoryBox.get(k) is String)
           .toList();
@@ -92,6 +95,7 @@ class AppBootstrap {
         final oldValue = categoryBox.get(key) as String;
         final migrated = CategoryModel(id: key.toString(), name: oldValue);
         await categoryBox.put(key, migrated);
+
         if (kDebugMode) {
           print('🔁 Migrated legacy category "$oldValue" to CategoryModel');
         }
@@ -105,7 +109,7 @@ class AppBootstrap {
       }
     }
 
-    // 🧠 User preferences
+    // 6️⃣ User preferences
     try {
       await UserPreferencesService.init();
     } catch (e, stack) {
@@ -115,7 +119,34 @@ class AppBootstrap {
       }
     }
 
-    // 👤 Just log current auth state — do not initialise session here
+    // 7️⃣ Check new user status (Firestore + Hive)
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      bool isNew = false;
+
+      if (user != null) {
+        final doc = await firestore.collection('users').doc(user.uid).get();
+        if (!doc.exists && !hasLocalData) {
+          isNew = true;
+        }
+      } else if (!hasLocalData) {
+        isNew = true;
+      }
+
+      if (isNew) {
+        await UserPreferencesService.setBool('is_new_user', true);
+        if (kDebugMode) print('🆕 New user detected — onboarding enabled');
+      } else {
+        await UserPreferencesService.setBool('is_new_user', false);
+      }
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('⚠️ Failed to determine new user status: $e');
+        print(stack);
+      }
+    }
+
+    // 8️⃣ Auth state logging (for dev)
     if (kDebugMode) {
       FirebaseAuth.instance.authStateChanges().listen((user) {
         if (user == null) {
@@ -129,9 +160,6 @@ class AppBootstrap {
         }
       });
     }
-
-    // ✅ Do NOT call UserSessionService.init() here anymore
-    // It is now safely handled in main.dart via authStateChanges()
 
     _isReady = true;
   }

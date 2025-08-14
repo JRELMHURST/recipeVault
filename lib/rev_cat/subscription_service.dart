@@ -1,7 +1,8 @@
 // Full updated SubscriptionService.dart
-// [Refreshed August 2025] - resolves Home Chef always displaying issue
+// [Refreshed August 2025] - fixes brand‑new user showing "Trial Ended" prematurely
 
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,6 +20,7 @@ class SubscriptionService extends ChangeNotifier {
   String _entitlementId = 'none';
   bool _hasSpecialAccess = false;
   bool _isLoadingTier = false;
+  bool _isInitialising = false;
   String? _lastLoggedTier;
 
   CustomerInfo? _customerInfo;
@@ -80,9 +82,20 @@ class SubscriptionService extends ChangeNotifier {
     return null;
   }
 
+  /// "d/M/yyyy" formatted trial end date or "N/A" if no active trial.
   String get trialEndDateFormatted {
-    final date = trialEndDate;
-    return date != null ? '${date.day}/${date.month}/${date.year}' : 'N/A';
+    final d = trialEndDate;
+    return d != null ? DateFormat('d/M/yyyy').format(d) : 'N/A';
+  }
+
+  // True when the active entitlement is a trial that hasn't expired yet
+  bool get isInTrial {
+    final e = _activeEntitlement;
+    if (e == null || e.periodType != PeriodType.trial) return false;
+    final end = e.expirationDate != null
+        ? DateTime.tryParse(e.expirationDate!)
+        : null;
+    return end != null && DateTime.now().isBefore(end);
   }
 
   bool get hasAccess => allowSaveToVault;
@@ -103,12 +116,19 @@ class SubscriptionService extends ChangeNotifier {
   // ───── Lifecycle Methods ─────
 
   Future<void> init() async {
-    await Purchases.invalidateCustomerInfoCache();
-    await loadSubscriptionStatus();
-    await _loadAvailablePackages();
+    if (_isInitialising) return;
+    _isInitialising = true;
+    try {
+      await Purchases.invalidateCustomerInfoCache();
+      await loadSubscriptionStatus();
+      await _loadAvailablePackages();
+    } finally {
+      _isInitialising = false;
+    }
   }
 
   Future<void> refresh() async {
+    if (_isLoadingTier) return;
     await Purchases.invalidateCustomerInfoCache();
     await loadSubscriptionStatus();
   }
@@ -135,11 +155,9 @@ class SubscriptionService extends ChangeNotifier {
       _tier = newTier;
       tierNotifier.value = newTier;
 
-      // Only log tier changes if not switching to 'free' again
       if (newTier != 'free') {
         _logTierOnce(source: 'updateTier');
       }
-
       notifyListeners();
     }
   }
@@ -154,9 +172,12 @@ class SubscriptionService extends ChangeNotifier {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      _customerInfo = await Purchases.getCustomerInfo();
-      final entitlements = _customerInfo!.entitlements.active;
+      // New accounts sometimes need a moment for RC to provision entitlements.
+      _customerInfo = await _getCustomerInfoWithRetry(
+        preferRetry: _isBrandNewUser(user),
+      );
 
+      final entitlements = _customerInfo?.entitlements.active ?? const {};
       final rcTier = _resolveTierFromEntitlements(entitlements);
       final activeEntitlement = _getActiveEntitlement(entitlements, rcTier);
       final rcEntitlementId = activeEntitlement?.productIdentifier ?? 'none';
@@ -168,7 +189,7 @@ class SubscriptionService extends ChangeNotifier {
 
       _logTierOnce(source: 'loadSubscriptionStatus');
 
-      // Firestore override check
+      // Firestore override check (admin override / special access)
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -192,6 +213,8 @@ class SubscriptionService extends ChangeNotifier {
       }
 
       await _loadUsageData(user.uid);
+
+      // Ensure onboarding bubbles state is set up consistently for the current tier.
       await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(_tier);
 
       notifyListeners();
@@ -300,6 +323,30 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
+  bool _isBrandNewUser(User user) {
+    final created = user.metadata.creationTime;
+    final last = user.metadata.lastSignInTime;
+    return created != null && last != null && created.isAtSameMomentAs(last);
+  }
+
+  // Light retry to avoid "no entitlement" on brand‑new accounts
+  Future<CustomerInfo> _getCustomerInfoWithRetry({
+    required bool preferRetry,
+  }) async {
+    int attempts = preferRetry ? 3 : 1; // up to ~1.2s total
+    Duration delay = const Duration(milliseconds: 400);
+
+    CustomerInfo info = await Purchases.getCustomerInfo();
+    while (attempts > 1 && info.entitlements.active.isEmpty) {
+      await Future.delayed(delay);
+      info = await Purchases.getCustomerInfo();
+      attempts--;
+      delay *= 2;
+      debugPrint('⏳ Retrying RevenueCat fetch… remaining=$attempts');
+    }
+    return info;
+  }
+
   // ───── Tier Resolution Public Method ─────
 
   Future<String> getResolvedTier({bool forceRefresh = false}) async {
@@ -311,7 +358,9 @@ class SubscriptionService extends ChangeNotifier {
     final uid = user.uid;
     final firestore = FirebaseFirestore.instance;
 
-    final customerInfo = await Purchases.getCustomerInfo();
+    final customerInfo = await _getCustomerInfoWithRetry(
+      preferRetry: _isBrandNewUser(user),
+    );
     final entitlements = customerInfo.entitlements.active;
     final rcTier = _resolveTierFromEntitlements(entitlements);
     final entitlementId =
@@ -339,14 +388,15 @@ class SubscriptionService extends ChangeNotifier {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final customerInfo = await Purchases.getCustomerInfo();
+    final customerInfo = await _getCustomerInfoWithRetry(
+      preferRetry: _isBrandNewUser(user),
+    );
     final entitlements = customerInfo.entitlements.active;
     final rcTier = _resolveTierFromEntitlements(entitlements);
     final entitlementId =
         _getActiveEntitlement(entitlements, rcTier)?.productIdentifier ??
         'none';
 
-    // ✅ Add this debug log right here
     debugPrint('📦 RevenueCat entitlementId resolved: $entitlementId');
 
     _tier = rcTier;

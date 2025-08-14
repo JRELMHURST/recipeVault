@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
-// If your file is actually named "dismissible_bubble.dart", update this import.
+// Keep this import matching your actual file name.
 import 'package:recipe_vault/screens/recipe_vault/dismissable_bubble.dart';
 
 class RecipeVaultBubbles extends StatelessWidget {
@@ -11,6 +11,11 @@ class RecipeVaultBubbles extends StatelessWidget {
   final VoidCallback onDismissViewToggle;
   final VoidCallback onDismissLongPress;
 
+  /// Optional anchors – if provided, bubbles will position relative to these.
+  final GlobalKey? keyFab; // e.g. wraps your CategorySpeedDial / FAB area
+  final GlobalKey? keyViewToggle; // e.g. filter bar / toggle action
+  final GlobalKey? keyFirstCard; // e.g. first list/grid item area
+
   const RecipeVaultBubbles({
     super.key,
     required this.showScan,
@@ -19,6 +24,9 @@ class RecipeVaultBubbles extends StatelessWidget {
     required this.onDismissScan,
     required this.onDismissViewToggle,
     required this.onDismissLongPress,
+    this.keyFab,
+    this.keyViewToggle,
+    this.keyFirstCard,
   });
 
   @override
@@ -27,32 +35,37 @@ class RecipeVaultBubbles extends StatelessWidget {
 
     // Must be placed inside a Stack in the parent.
     return IgnorePointer(
-      ignoring: false, // allow taps to reach Dismissible/InkWell
+      ignoring: false, // allow taps to pass through to page where appropriate
       child: Stack(
         children: [
           if (showViewToggle)
             DismissibleBubble(
               message: t.vaultBubbleSwitchViews,
-              // near the AppBar/right side
-              position: _posFrom(context, top: 56, right: 16),
+              // Prefer anchor if provided; otherwise fallback to previous offsets.
+              anchorKey: keyViewToggle,
+              position: keyViewToggle == null
+                  ? _posFrom(context, top: 56, right: 16)
+                  : null,
               onDismiss: onDismissViewToggle,
             ),
+
           if (showLongPress)
             DismissibleBubble(
               message: t.vaultBubbleLongPress,
-              // roughly centre; nudged up a bit
-              position: _posFrom(
-                context,
-                topFraction: 0.40,
-                leftFraction: 0.10,
-              ),
+              anchorKey: keyFirstCard,
+              position: keyFirstCard == null
+                  ? _posFrom(context, topFraction: 0.40, leftFraction: 0.10)
+                  : null,
               onDismiss: onDismissLongPress,
             ),
+
           if (showScan)
             DismissibleBubble(
               message: t.vaultBubbleScan,
-              // above FAB area (bottom‑right)
-              position: _posFrom(context, bottom: 96, right: 16),
+              anchorKey: keyFab,
+              position: keyFab == null
+                  ? _posFrom(context, bottom: 96, right: 16)
+                  : null,
               onDismiss: onDismissScan,
             ),
         ],
@@ -61,7 +74,7 @@ class RecipeVaultBubbles extends StatelessWidget {
   }
 
   /// Helper to place bubbles using either absolute (top/left/right/bottom)
-  /// or screen‑fraction positions.
+  /// or screen‑fraction positions (backwards‑compatible fallback).
   Offset _posFrom(
     BuildContext context, {
     double? top,

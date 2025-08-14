@@ -53,23 +53,39 @@ class UserPreferencesService {
     }
   }
 
+  /// Call this after sign-in and on app start (if a user is already signed in).
   static Future<void> init() async {
-    if (FirebaseAuth.instance.currentUser == null) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
       if (kDebugMode) {
         print('🟡 Skipping UserPreferencesService.init() – no user signed in');
       }
       return;
     }
 
-    if (Hive.isBoxOpen(_boxName)) {
-      if (kDebugMode) print('📦 Hive box reused: $_boxName');
-    } else {
+    if (!Hive.isBoxOpen(_boxName)) {
+      await Hive.openBox(_boxName);
       if (kDebugMode) print('📦 Hive box opened: $_boxName');
+    } else {
+      if (kDebugMode) print('📦 Hive box reused: $_boxName');
     }
   }
 
+  /// Ensures the box is open before any read/write.
+  static Future<Box?> _ensureBox() async {
+    if (!Hive.isBoxOpen(_boxName)) {
+      try {
+        await Hive.openBox(_boxName);
+      } catch (e) {
+        debugPrint('⚠️ Failed to open Hive box $_boxName: $e');
+        return null;
+      }
+    }
+    return _safeBox;
+  }
+
   static Future<void> saveViewMode(ViewMode mode) async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     if (box != null) {
       await box.put(_keyViewMode, mode.index);
       if (kDebugMode) print('📂 Saved view mode: ${mode.name}');
@@ -77,7 +93,7 @@ class UserPreferencesService {
   }
 
   static Future<ViewMode> getSavedViewMode() async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     final index = box?.get(_keyViewMode) as int?;
     final mode = index != null && index >= 0 && index < ViewMode.values.length
         ? ViewMode.values[index]
@@ -87,7 +103,7 @@ class UserPreferencesService {
   }
 
   static Future<void> markVaultTutorialCompleted() async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     if (box != null) await box.put(_keyVaultTutorialComplete, true);
   }
 
@@ -99,13 +115,13 @@ class UserPreferencesService {
   }
 
   static Future<bool> hasCompletedVaultTutorial() async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     return box?.get(_keyVaultTutorialComplete, defaultValue: false) as bool? ??
         false;
   }
 
   static Future<void> markBubbleDismissed(String key) async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     if (box != null) {
       await box.put('bubbleDismissed_$key', true);
       await maybeMarkTutorialCompleted();
@@ -113,7 +129,7 @@ class UserPreferencesService {
   }
 
   static Future<bool> hasDismissedBubble(String key) async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     return box?.get('bubbleDismissed_$key', defaultValue: false) as bool? ??
         false;
   }
@@ -125,7 +141,7 @@ class UserPreferencesService {
   }
 
   static Future<void> resetBubbles() async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     if (box != null) {
       for (final key in _bubbleKeys) {
         await box.delete('bubbleDismissed_$key');
@@ -134,7 +150,7 @@ class UserPreferencesService {
   }
 
   static Future<void> ensureBubbleFlagTriggeredIfEligible(String tier) async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     final hasShownBubblesOnce =
         box?.get(_keyBubblesShownOnce, defaultValue: false) as bool? ?? false;
     final tutorialComplete =
@@ -147,7 +163,7 @@ class UserPreferencesService {
       );
     }
 
-    if (tier == 'free' && !hasShownBubblesOnce) {
+    if (tier == 'free' && !hasShownBubblesOnce && !tutorialComplete) {
       await resetBubbles();
       if (box != null) await box.put(_keyBubblesShownOnce, true);
       if (kDebugMode) print('🌟 Bubbles triggered for free tier (first time)');
@@ -155,26 +171,18 @@ class UserPreferencesService {
   }
 
   static Future<bool> get hasShownBubblesOnce async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     return box?.get(_keyBubblesShownOnce, defaultValue: false) as bool? ??
         false;
   }
 
   static Future<void> markBubblesShown() async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     if (box != null) await box.put(_keyBubblesShownOnce, true);
   }
 
-  static Future<void> markUserAsNew() async {
-    final box = _safeBox;
-    if (box != null) {
-      await box.put('isNewUser', true);
-      if (kDebugMode) print('🔟 markUserAsNew → Hive only');
-    }
-  }
-
   static Future<void> markAsNewUser() async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     if (box != null) {
       await box.delete(_keyVaultTutorialComplete);
       await box.delete(_keyBubblesShownOnce);
@@ -215,12 +223,12 @@ class UserPreferencesService {
   static dynamic get(String key) => _safeBox?.get(key);
 
   static Future<void> set(String key, dynamic value) async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     if (box != null) await box.put(key, value);
   }
 
   static Future<void> setBool(String key, bool value) async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     if (box != null) await box.put(key, value);
   }
 
@@ -229,7 +237,7 @@ class UserPreferencesService {
   }
 
   static Future<void> setCachedUsage({int? ai, int? translations}) async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     if (box != null) {
       if (ai != null) await box.put(_keyAiUsage, ai);
       if (translations != null) {
@@ -242,12 +250,12 @@ class UserPreferencesService {
   }
 
   static Future<int> getCachedAiUsage() async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     return box?.get(_keyAiUsage, defaultValue: 0) as int? ?? 0;
   }
 
   static Future<int> getCachedTranslationUsage() async {
-    final box = _safeBox;
+    final box = await _ensureBox();
     return box?.get(_keyTranslationUsage, defaultValue: 0) as int? ?? 0;
   }
 

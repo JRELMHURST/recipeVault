@@ -19,14 +19,32 @@ class _TrialEndedScreenState extends State<TrialEndedScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPackages();
+    _loadAndGuard();
   }
 
-  Future<void> _loadPackages() async {
+  Future<void> _loadAndGuard() async {
+    // Initialise RC + tier/packages.
     await _subscriptionService.init();
-    if (mounted) {
-      setState(() => _isLoading = false);
+
+    // Defensive guard: if the user actually has an active trial OR a paid tier,
+    // leave this screen immediately.
+    final trialEnd = _subscriptionService.trialEndDate;
+    final inTrial = trialEnd != null && DateTime.now().isBefore(trialEnd);
+    final hasPaid = _subscriptionService.hasActiveSubscription;
+
+    if (!mounted) return;
+
+    if (inTrial || hasPaid) {
+      // Prefer pop if this screen was pushed; otherwise replace with your home route.
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        Navigator.of(context).pushReplacementNamed('/'); // home/root
+      }
+      return;
     }
+
+    setState(() => _isLoading = false);
   }
 
   @override

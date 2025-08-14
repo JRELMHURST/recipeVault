@@ -68,6 +68,12 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   _OnboardingStep _step = _OnboardingStep.none;
   bool _hasLoadedBubbles = false;
 
+  // ---------- Anchors for future bubble positioning ----------
+  // NOTE: adding keys & wrappers does not change behaviour; it just prepares anchors.
+  final GlobalKey _keyFab = GlobalKey();
+  final GlobalKey _keyViewToggle = GlobalKey();
+  final GlobalKey _keyFirstCardArea = GlobalKey();
+
   // ✅ Search: title, ingredients, instructions, hints
   List<RecipeCardModel> get _filteredRecipes {
     final q = _searchQuery.trim();
@@ -368,27 +374,37 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                   // Removed DailyMessageBubble (file not present)
                   const SizedBox.shrink(),
                   const SizedBox(height: 8),
+
+                  // Search bar (unchanged)
                   RecipeSearchBar(
                     initialValue: _searchQuery,
                     onChanged: (value) => setState(() => _searchQuery = value),
                   ),
+
                   const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 6.0),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: RecipeChipFilterBar(
-                        categories: displayedCategories,
-                        selectedCategory: displayedSelected,
-                        onCategorySelected: (label) => setState(() {
-                          _selectedCategory = _keyFor(label, t);
-                        }),
-                        onCategoryDeleted: (label) => _removeCategory(label),
-                        allRecipes: _allRecipes,
+
+                  // Filter chips row — wrapped with a key to anchor a "view toggle" hint nearby if needed
+                  KeyedSubtree(
+                    key: _keyViewToggle,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: RecipeChipFilterBar(
+                          categories: displayedCategories,
+                          selectedCategory: displayedSelected,
+                          onCategorySelected: (label) => setState(() {
+                            _selectedCategory = _keyFor(label, t);
+                          }),
+                          onCategoryDeleted: (label) => _removeCategory(label),
+                          allRecipes: _allRecipes,
+                        ),
                       ),
                     ),
                   ),
+
+                  // Upgrade banner (unchanged)
                   ValueListenableBuilder<String?>(
                     valueListenable:
                         ImageProcessingService.upgradeBannerMessage,
@@ -396,48 +412,54 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                         ? const SizedBox.shrink()
                         : UpgradeBanner(message: message),
                   ),
+
+                  // Results area — wrapped with a key to anchor a "long-press" hint roughly over first card area
                   Expanded(
-                    child: _filteredRecipes.isEmpty
-                        ? Center(child: Text(t.noRecipesFound))
-                        : AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 300),
-                            child: ResponsiveWrapper(
-                              child: switch (view) {
-                                ViewMode.list => RecipeListView(
-                                  recipes: _filteredRecipes,
-                                  onDelete: _deleteRecipe,
-                                  onTap: (r) => showRecipeDialog(context, r),
-                                  onToggleFavourite: _toggleFavourite,
-                                  categories: _allCategories,
-                                  onAssignCategories: _assignCategories,
-                                  onAddOrUpdateImage: _addOrUpdateImage,
-                                ),
-                                ViewMode.grid => RecipeGridView(
-                                  recipes: _filteredRecipes,
-                                  onTap: (r) => showRecipeDialog(context, r),
-                                  onToggleFavourite: _toggleFavourite,
-                                  onAssignCategories: _assignCategories,
-                                  categories: _allCategories,
-                                  onDelete: _deleteRecipe,
-                                  onAddOrUpdateImage: _addOrUpdateImage,
-                                ),
-                                ViewMode.compact => RecipeCompactView(
-                                  recipes: _filteredRecipes,
-                                  onTap: (r) => showRecipeDialog(context, r),
-                                  onToggleFavourite: _toggleFavourite,
-                                  onDelete: _deleteRecipe,
-                                  categories: _allCategories,
-                                  onAssignCategories: _assignCategories,
-                                  onAddOrUpdateImage: _addOrUpdateImage,
-                                ),
-                              },
+                    child: KeyedSubtree(
+                      key: _keyFirstCardArea,
+                      child: _filteredRecipes.isEmpty
+                          ? Center(child: Text(t.noRecipesFound))
+                          : AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              child: ResponsiveWrapper(
+                                child: switch (view) {
+                                  ViewMode.list => RecipeListView(
+                                    recipes: _filteredRecipes,
+                                    onDelete: _deleteRecipe,
+                                    onTap: (r) => showRecipeDialog(context, r),
+                                    onToggleFavourite: _toggleFavourite,
+                                    categories: _allCategories,
+                                    onAssignCategories: _assignCategories,
+                                    onAddOrUpdateImage: _addOrUpdateImage,
+                                  ),
+                                  ViewMode.grid => RecipeGridView(
+                                    recipes: _filteredRecipes,
+                                    onTap: (r) => showRecipeDialog(context, r),
+                                    onToggleFavourite: _toggleFavourite,
+                                    onAssignCategories: _assignCategories,
+                                    categories: _allCategories,
+                                    onDelete: _deleteRecipe,
+                                    onAddOrUpdateImage: _addOrUpdateImage,
+                                  ),
+                                  ViewMode.compact => RecipeCompactView(
+                                    recipes: _filteredRecipes,
+                                    onTap: (r) => showRecipeDialog(context, r),
+                                    onToggleFavourite: _toggleFavourite,
+                                    onDelete: _deleteRecipe,
+                                    categories: _allCategories,
+                                    onAssignCategories: _assignCategories,
+                                    onAddOrUpdateImage: _addOrUpdateImage,
+                                  ),
+                                },
+                              ),
                             ),
-                          ),
+                    ),
                   ),
                 ],
               ),
             ),
-            // Drive the overlay from the enum:
+
+            // Drive the overlay from the enum (unchanged API for now)
             RecipeVaultBubbles(
               showScan: _step == _OnboardingStep.scan,
               showViewToggle: _step == _OnboardingStep.viewToggle,
@@ -445,10 +467,16 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               onDismissScan: _advanceOnboarding,
               onDismissViewToggle: _advanceOnboarding,
               onDismissLongPress: _advanceOnboarding,
+              // NOTE: once RecipeVaultBubbles supports target keys, we'll pass:
+              // keyFab: _keyFab,
+              // keyViewToggle: _keyViewToggle,
+              // keyFirstCard: _keyFirstCardArea,
             ),
           ],
         ),
       ),
+
+      // FAB — wrap in KeyedSubtree so we can anchor bubbles to it later without changing CategorySpeedDial
       floatingActionButton: Builder(
         builder: (context) {
           final subService = Provider.of<SubscriptionService>(context);
@@ -459,9 +487,12 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               subService.allowCategoryCreation ||
               (subService.isHomeChef && count < 3);
 
-          return CategorySpeedDial(
-            onCategoryChanged: _loadCustomCategories,
-            allowCreation: allow,
+          return KeyedSubtree(
+            key: _keyFab,
+            child: CategorySpeedDial(
+              onCategoryChanged: _loadCustomCategories,
+              allowCreation: allow,
+            ),
           );
         },
       ),

@@ -24,7 +24,8 @@ class UserSessionService {
   static StreamSubscription<DocumentSnapshot>? _userDocSubscription;
   static StreamSubscription<DocumentSnapshot>? _aiUsageSub;
   static StreamSubscription<DocumentSnapshot>? _translationSub;
-  static StreamSubscription<QuerySnapshot>? _vaultListener;
+
+  // Note: the vault listener lives inside VaultRecipeService; we call its cancel method on teardown.
 
   static bool get isInitialised => _isInitialised;
 
@@ -34,16 +35,43 @@ class UserSessionService {
 
   static Future<bool> shouldShowTrialEndedScreen() async {
     try {
+      // 1) Prefer our in‑app snapshot first
+      final sub = SubscriptionService();
+      await sub.refresh(); // light refresh; no-op if already loading
+
+      // If user is in an active trial or on any paid plan → do NOT show
+      if (sub.isInTrial || sub.hasActiveSubscription) return false;
+
+      // 2) Fallback: ask RevenueCat directly
       final info = await Purchases.getCustomerInfo();
-      final entitlement = info.entitlements.active.values.isNotEmpty
-          ? info.entitlements.active.values.first
-          : null;
-      final isTrialEnded =
-          entitlement == null ||
-          (!entitlement.isActive && entitlement.willRenew == false);
-      return isTrialEnded;
+
+      // No active entitlements at all → play it safe for brand‑new users
+      if (info.entitlements.active.isEmpty) return false;
+
+      // Check the first active entitlement
+      final e = info.entitlements.active.values.first;
+
+      // Active and not a trial → do NOT show
+      if (e.isActive && e.periodType != PeriodType.trial) return false;
+
+      // Trial entitlement → only show when it actually ended AND won't renew
+      if (e.periodType == PeriodType.trial) {
+        final expiryStr = e.expirationDate;
+        if (expiryStr == null) return false;
+        final expiry = DateTime.tryParse(expiryStr);
+        if (expiry == null) return false;
+
+        final trialEnded = DateTime.now().isAfter(expiry);
+        final wontRenew = e.willRenew == false;
+        return trialEnded && wontRenew;
+      }
+
+      // Default: do NOT show
+      return false;
     } catch (e) {
-      _logDebug('⚠️ Error checking trial ended state: $e');
+      _logDebug(
+        '⚠️ Error checking trial ended state (safe default = false): $e',
+      );
       return false;
     }
   }
@@ -77,6 +105,7 @@ class UserSessionService {
     final monthKey = DateFormat('yyyy-MM').format(DateTime.now());
 
     try {
+      // Ensure prefs box is ready
       await UserPreferencesService.init();
       if (!Hive.isBoxOpen('userPrefs_$uid')) {
         await Hive.openBox('userPrefs_$uid');
@@ -88,7 +117,9 @@ class UserSessionService {
       final isNewUser = await AuthService.ensureUserDocumentIfMissing(user);
       if (isNewUser) {
         try {
-          await UserPreferencesService.markUserAsNew();
+          await UserPreferencesService.markAsNewUser();
+          // Ensure onboarding is clean for a fresh account
+          await UserPreferencesService.resetBubbles();
         } catch (e, stack) {
           _logDebug('⚠️ Failed to mark user as new: $e');
           if (kDebugMode) print(stack);
@@ -179,6 +210,7 @@ class UserSessionService {
 
       _logDebug('📡 Starting vault listener...');
       if (FirebaseAuth.instance.currentUser?.uid == uid) {
+        // The service owns its subscription; we just start it.
         VaultRecipeService.listenToVaultChanges(() {
           debugPrint('📡 Vault changed!');
         });
@@ -191,8 +223,9 @@ class UserSessionService {
       if (shouldShowTrialEnded) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final context = navigatorKey.currentContext;
+          if (context == null) return;
           final currentRoute =
-              ModalRoute.of(context!)?.settings.name ?? 'unknown';
+              ModalRoute.of(context)?.settings.name ?? 'unknown';
 
           if (currentRoute != '/trial-ended') {
             _logDebug('🚪 Redirecting to /trial-ended due to trial expiry');
@@ -252,6 +285,8 @@ class UserSessionService {
 
     await CategoryService.clearCache();
     await SubscriptionService().reset();
+    // Ensure the internal vault listener is stopped.
+    VaultRecipeService.cancelVaultListener();
 
     _isInitialised = false;
     _bubbleFlagsReady = null;
@@ -262,12 +297,13 @@ class UserSessionService {
     await _userDocSubscription?.cancel();
     await _aiUsageSub?.cancel();
     await _translationSub?.cancel();
-    await _vaultListener?.cancel();
 
     _userDocSubscription = null;
     _aiUsageSub = null;
     _translationSub = null;
-    _vaultListener = null;
+
+    // Also cancel the service-owned vault listener
+    VaultRecipeService.cancelVaultListener();
   }
 
   static Future<void> reset() async {

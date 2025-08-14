@@ -14,8 +14,38 @@ export const tierLimits: Record<
   master_chef: { translation: 20, recipes: 100, images: 250 },
 };
 
+/** 🧭 Helpers */
+function monthKey(): string {
+  return new Date().toISOString().slice(0, 7); // YYYY-MM
+}
+
+function usagePath(uid: string, kind: "aiUsage" | "translationUsage" | "imageUsage") {
+  return `users/${uid}/${kind}/usage`;
+}
+
+async function getMonthlyUsed(uid: string, kind: "aiUsage" | "translationUsage" | "imageUsage") {
+  const key = monthKey();
+  const snap = await firestore.doc(usagePath(uid, kind)).get();
+  return snap.data()?.[key] || 0;
+}
+
+async function addMonthlyUsage(
+  uid: string,
+  kind: "aiUsage" | "translationUsage" | "imageUsage",
+  by = 1
+) {
+  const key = monthKey();
+  const updates: Record<string, any> = {
+    total: FieldValue.increment(by),
+    [key]: FieldValue.increment(by),
+  };
+  await firestore.doc(usagePath(uid, kind)).set(updates, { merge: true });
+}
+
 /** 🧩 Resolve user tier: prefer Firestore, fall back to RevenueCat helper */
-async function getResolvedTier(uid: string): Promise<"free" | "home_chef" | "master_chef"> {
+export async function getResolvedTier(
+  uid: string
+): Promise<"free" | "home_chef" | "master_chef"> {
   const userRef = firestore.collection("users").doc(uid);
   const doc = await userRef.get();
   const data = doc.data();
@@ -29,23 +59,20 @@ async function getResolvedTier(uid: string): Promise<"free" | "home_chef" | "mas
   }
 
   console.warn(`⚠️ Tier missing in Firestore — resolving via RevenueCat for ${uid}...`);
-  const tier = await getUserEntitlementFromRevenueCat(uid); // returns a tier already
+  const tier = await getUserEntitlementFromRevenueCat(uid); // returns one of the tiers
 
-  // Persist for next time
   await userRef.set({ tier }, { merge: true });
   console.log(`✅ Firestore updated from RevenueCat → Tier: ${tier}`);
 
   return tier;
 }
 
-/** 🧠 GPT recipe generation enforcement */
-async function enforceGptRecipePolicy(uid: string): Promise<void> {
+/** 🧠 Recipe-card (GPT formatting) limit enforcement */
+export async function enforceGptRecipePolicy(uid: string): Promise<void> {
   const tier = await getResolvedTier(uid);
   const limits = tierLimits[tier];
 
-  const monthKey = new Date().toISOString().slice(0, 7); // YYYY-MM
-  const usageDoc = await firestore.doc(`users/${uid}/aiUsage/usage`).get();
-  const monthlyUsed = usageDoc.data()?.[monthKey] || 0;
+  const monthlyUsed = await getMonthlyUsed(uid, "aiUsage");
 
   if (Number.isFinite(limits.recipes) && monthlyUsed >= limits.recipes) {
     throw new HttpsError(
@@ -57,34 +84,18 @@ async function enforceGptRecipePolicy(uid: string): Promise<void> {
   console.log(`✅ GPT usage allowed → Tier: ${tier}, Used this month: ${monthlyUsed}/${limits.recipes}`);
 }
 
-/** 📈 GPT usage increment */
-async function incrementGptRecipeUsage(uid: string): Promise<void> {
-  const monthKey = new Date().toISOString().slice(0, 7);
-  const updates: Record<string, any> = {
-    total: FieldValue.increment(1),
-    [monthKey]: FieldValue.increment(1),
-  };
-
-  await firestore.doc(`users/${uid}/aiUsage/usage`).set(updates, { merge: true });
+/** 📈 Recipe-card usage increment */
+export async function incrementGptRecipeUsage(uid: string): Promise<void> {
+  await addMonthlyUsage(uid, "aiUsage", 1);
   console.log(`📈 GPT usage incremented for UID ${uid}`);
 }
 
 /** 🧠 Translation limit enforcement */
-async function enforceTranslationPolicy(uid: string): Promise<void> {
+export async function enforceTranslationPolicy(uid: string): Promise<void> {
   const tier = await getResolvedTier(uid);
   const limits = tierLimits[tier];
 
-  console.log(`🧪 enforceTranslationPolicy → UID: ${uid}, Tier: ${tier}`);
-
-  // Master tier is unlimited for translation in this policy
-  if (tier === "master_chef") {
-    console.log("🟢 Master Chef tier — translation allowed.");
-    return;
-  }
-
-  const monthKey = new Date().toISOString().slice(0, 7);
-  const usageDoc = await firestore.doc(`users/${uid}/translationUsage/usage`).get();
-  const monthlyUsed = usageDoc.data()?.[monthKey] || 0;
+  const monthlyUsed = await getMonthlyUsed(uid, "translationUsage");
 
   if (Number.isFinite(limits.translation) && monthlyUsed >= limits.translation) {
     throw new HttpsError(
@@ -97,21 +108,35 @@ async function enforceTranslationPolicy(uid: string): Promise<void> {
 }
 
 /** 📈 Translation usage increment */
-async function incrementTranslationUsage(uid: string): Promise<void> {
-  const monthKey = new Date().toISOString().slice(0, 7);
-  const updates: Record<string, any> = {
-    total: FieldValue.increment(1),
-    [monthKey]: FieldValue.increment(1),
-  };
-
-  await firestore.doc(`users/${uid}/translationUsage/usage`).set(updates, { merge: true });
+export async function incrementTranslationUsage(uid: string): Promise<void> {
+  await addMonthlyUsage(uid, "translationUsage", 1);
   console.log(`📈 Translation usage incremented for UID ${uid}`);
 }
 
-export {
-  enforceGptRecipePolicy,
-  incrementGptRecipeUsage,
-  enforceTranslationPolicy,
-  incrementTranslationUsage,
-  getResolvedTier,
-};
+/** 🖼️ Image upload/processing enforcement (by N images per request) */
+export async function enforceImageUploadPolicy(uid: string, by: number): Promise<void> {
+  if (!Number.isFinite(by) || by <= 0) return;
+
+  const tier = await getResolvedTier(uid);
+  const limits = tierLimits[tier];
+
+  const monthlyUsed = await getMonthlyUsed(uid, "imageUsage");
+  const wouldBe = monthlyUsed + by;
+
+  if (Number.isFinite(limits.images) && wouldBe > limits.images) {
+    const remaining = Math.max(0, limits.images - monthlyUsed);
+    throw new HttpsError(
+      "resource-exhausted",
+      `${tier.replace("_", " ")} plan allows up to ${limits.images} image uploads per month. Remaining this month: ${remaining}.`
+    );
+  }
+
+  console.log(`✅ Image usage allowed → Tier: ${tier}, Next usage: ${monthlyUsed}+${by}/${limits.images}`);
+}
+
+/** 📈 Image usage increment (by N images processed/uploaded) */
+export async function incrementImageUploadUsage(uid: string, by: number): Promise<void> {
+  if (!Number.isFinite(by) || by <= 0) return;
+  await addMonthlyUsage(uid, "imageUsage", by);
+  console.log(`📈 Image usage +${by} incremented for UID ${uid}`);
+}

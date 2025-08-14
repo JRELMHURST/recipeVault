@@ -6,8 +6,6 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// FIX: removed duplicate .dart
-import 'package:recipe_vault/core/daily_message_bubble.dart.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
@@ -26,6 +24,9 @@ import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
+
+/// Drives which onboarding bubble is visible (top-level — not inside a class)
+enum _OnboardingStep { none, viewToggle, longPress, scan, done }
 
 class RecipeVaultScreen extends StatefulWidget {
   final ViewMode viewMode;
@@ -63,24 +64,20 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   List<String> _allCategories = const [kAll, kFav, kTranslated];
   List<RecipeCardModel> _allRecipes = [];
 
-  bool _showViewModeBubble = false;
-  bool _showLongPressBubble = false;
-  bool _showScanBubble = false;
+  // ---------- Onboarding bubbles: state machine ----------
+  _OnboardingStep _step = _OnboardingStep.none;
   bool _hasLoadedBubbles = false;
 
-  // ✅ Now searches title, ingredients, instructions and hints via .matchesQuery
+  // ✅ Search: title, ingredients, instructions, hints
   List<RecipeCardModel> get _filteredRecipes {
     final q = _searchQuery.trim();
     return _allRecipes.where((recipe) {
-      final categories = recipe.categories;
-
       final matchesCategory =
           _selectedCategory == kAll ||
           (_selectedCategory == kFav && recipe.isFavourite) ||
-          categories.contains(_selectedCategory);
+          recipe.categories.contains(_selectedCategory);
 
       final matchesSearch = q.isEmpty || recipe.matchesQuery(q);
-
       return matchesCategory && matchesSearch;
     }).toList();
   }
@@ -93,7 +90,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       case kFav:
         return t.favourites;
       case kTranslated:
-        // If your l10n key is systemTranslated, swap to t.systemTranslated
+        // If your l10n uses systemTranslated, swap to t.systemTranslated
         return t.translated;
       case kBreakfast:
         return t.defaultBreakfast;
@@ -102,7 +99,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       case kDessert:
         return t.defaultDessert;
       default:
-        return key; // custom categories unchanged
+        return key;
     }
   }
 
@@ -114,7 +111,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     if (label == t.defaultBreakfast) return kBreakfast;
     if (label == t.defaultMain) return kMain;
     if (label == t.defaultDessert) return kDessert;
-    return label; // custom categories pass-through
+    return label;
   }
 
   @override
@@ -130,9 +127,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   }
 
   Future<void> _deleteRecipe(RecipeCardModel recipe) async {
-    setState(() {
-      _allRecipes.removeWhere((r) => r.id == recipe.id);
-    });
+    setState(() => _allRecipes.removeWhere((r) => r.id == recipe.id));
     await HiveRecipeService.delete(recipe.id);
     await recipeCollection.doc(recipe.id).delete();
     if (recipe.imageUrl?.isNotEmpty == true) {
@@ -193,27 +188,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     await _loadCustomCategories();
   }
 
-  void _onboardingBubbleProgression() async {
-    Future.delayed(const Duration(milliseconds: 100), () async {
-      if (!mounted) return;
-
-      if (_showViewModeBubble) {
-        setState(() {
-          _showViewModeBubble = false;
-          _showLongPressBubble = true;
-        });
-      } else if (_showLongPressBubble) {
-        setState(() {
-          _showLongPressBubble = false;
-          _showScanBubble = true;
-        });
-      } else if (_showScanBubble) {
-        setState(() => _showScanBubble = false);
-        await UserPreferencesService.markVaultTutorialCompleted();
-      }
-    });
-  }
-
+  // ---------- Onboarding flow ----------
   Future<void> _initVault() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.isAnonymous) {
@@ -231,9 +206,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     final subService = Provider.of<SubscriptionService>(context, listen: false);
     final tier = subService.tier;
 
-    await Future.delayed(
-      const Duration(milliseconds: 100),
-    ); // ensure layout ready
+    await Future.delayed(const Duration(milliseconds: 100)); // allow layout
 
     await Future.wait([
       _initializeDefaultCategories(),
@@ -241,80 +214,104 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       Future(_startRecipeListener),
     ]);
 
-    final hasShown = await UserPreferencesService.hasShownBubblesOnce;
+    final hasShownOnce = await UserPreferencesService.hasShownBubblesOnce;
     final tutorialComplete =
         await UserPreferencesService.hasCompletedVaultTutorial();
 
-    if (!_hasLoadedBubbles && tier == 'free' && !tutorialComplete && hasShown) {
-      setState(() => _showViewModeBubble = true);
+    // Show only if NOT shown before and NOT completed
+    if (!_hasLoadedBubbles &&
+        tier == 'free' &&
+        !tutorialComplete &&
+        !hasShownOnce) {
+      setState(() => _step = _OnboardingStep.viewToggle);
+      // If you DO have a persisted "shown once" flag, call it here.
+      // await UserPreferencesService.markBubblesShownOnce();
     }
 
     _hasLoadedBubbles = true;
   }
 
+  void _advanceOnboarding() async {
+    if (!mounted) return;
+    setState(() {
+      switch (_step) {
+        case _OnboardingStep.viewToggle:
+          _step = _OnboardingStep.longPress;
+          break;
+        case _OnboardingStep.longPress:
+          _step = _OnboardingStep.scan;
+          break;
+        case _OnboardingStep.scan:
+          _step = _OnboardingStep.done;
+          break;
+        case _OnboardingStep.none:
+        case _OnboardingStep.done:
+          break;
+      }
+    });
+
+    if (_step == _OnboardingStep.done) {
+      await UserPreferencesService.markVaultTutorialCompleted();
+    }
+  }
+
+  // ---------- Data/bootstrap ----------
   void _startRecipeListener() {
     _recipeStreamSubscription = recipeCollection
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .listen(
-          (snapshot) async {
-            try {
-              final userRecipes = snapshot.docs
-                  .map((doc) => RecipeCardModel.fromJson(doc.data()))
-                  .toList();
+        .listen((snapshot) async {
+          try {
+            final userRecipes = snapshot.docs
+                .map((doc) => RecipeCardModel.fromJson(doc.data()))
+                .toList();
 
-              final hiddenSnapshot = await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(userId)
-                  .collection('hiddenGlobalRecipes')
-                  .get();
+            final hiddenSnapshot = await FirebaseFirestore.instance
+                .collection('users')
+                .doc(userId)
+                .collection('hiddenGlobalRecipes')
+                .get();
 
-              final hiddenGlobalIds = hiddenSnapshot.docs
-                  .map((doc) => doc.id)
-                  .toSet();
+            final hiddenGlobalIds = hiddenSnapshot.docs
+                .map((doc) => doc.id)
+                .toSet();
 
-              final globalSnapshot = await FirebaseFirestore.instance
-                  .collection('global_recipes')
-                  .orderBy('createdAt', descending: true)
-                  .get();
+            final globalSnapshot = await FirebaseFirestore.instance
+                .collection('global_recipes')
+                .orderBy('createdAt', descending: true)
+                .get();
 
-              final globalRecipes = globalSnapshot.docs
-                  .where((doc) => !hiddenGlobalIds.contains(doc.id))
-                  .map((doc) => RecipeCardModel.fromJson(doc.data()))
-                  .toList();
+            final globalRecipes = globalSnapshot.docs
+                .where((doc) => !hiddenGlobalIds.contains(doc.id))
+                .map((doc) => RecipeCardModel.fromJson(doc.data()))
+                .toList();
 
-              final localRecipes = await HiveRecipeService.getAll();
+            final localRecipes = await HiveRecipeService.getAll();
 
-              final Map<String, RecipeCardModel> mergedMap = {
-                for (final r in globalRecipes) r.id: r,
-                for (final r in userRecipes) r.id: r,
-              };
+            final Map<String, RecipeCardModel> mergedMap = {
+              for (final r in globalRecipes) r.id: r,
+              for (final r in userRecipes) r.id: r,
+            };
 
-              final List<RecipeCardModel> merged = mergedMap.values.map((
-                recipe,
-              ) {
-                final local = localRecipes.firstWhere(
-                  (r) => r.id == recipe.id,
-                  orElse: () => recipe,
-                );
-                final mergedRecipe = recipe.copyWith(
-                  isFavourite: local.isFavourite,
-                  categories: local.categories,
-                );
-                HiveRecipeService.save(mergedRecipe);
-                return mergedRecipe;
-              }).toList();
+            final List<RecipeCardModel> merged = mergedMap.values.map((recipe) {
+              final local = localRecipes.firstWhere(
+                (r) => r.id == recipe.id,
+                orElse: () => recipe,
+              );
+              final mergedRecipe = recipe.copyWith(
+                isFavourite: local.isFavourite,
+                categories: local.categories,
+              );
+              HiveRecipeService.save(mergedRecipe);
+              return mergedRecipe;
+            }).toList();
 
-              if (!mounted) return;
-              setState(() => _allRecipes = merged);
-            } catch (e) {
-              debugPrint("⚠️ Live recipe sync failed: $e");
-            }
-          },
-          onError: (e) {
-            debugPrint("⚠️ Recipe stream error: $e");
-          },
-        );
+            if (!mounted) return;
+            setState(() => _allRecipes = merged);
+          } catch (e) {
+            debugPrint("⚠️ Live recipe sync failed: $e");
+          }
+        }, onError: (e) => debugPrint("⚠️ Recipe stream error: $e"));
   }
 
   Future<void> _initializeDefaultCategories() async {
@@ -348,7 +345,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     final scale = Provider.of<TextScaleNotifier>(context).scaleFactor;
     final t = AppLocalizations.of(context);
 
-    // Localised list for display; internal keys remain unchanged elsewhere
     final displayedCategories = _allCategories
         .map((c) => _labelFor(c, t))
         .toList();
@@ -369,7 +365,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const DailyMessageBubble(),
+                  // Removed DailyMessageBubble (file not present)
+                  const SizedBox.shrink(),
                   const SizedBox(height: 8),
                   RecipeSearchBar(
                     initialValue: _searchQuery,
@@ -440,13 +437,14 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                 ],
               ),
             ),
+            // Drive the overlay from the enum:
             RecipeVaultBubbles(
-              showScan: _showScanBubble,
-              showViewToggle: _showViewModeBubble,
-              showLongPress: _showLongPressBubble,
-              onDismissScan: _onboardingBubbleProgression,
-              onDismissViewToggle: _onboardingBubbleProgression,
-              onDismissLongPress: _onboardingBubbleProgression,
+              showScan: _step == _OnboardingStep.scan,
+              showViewToggle: _step == _OnboardingStep.viewToggle,
+              showLongPress: _step == _OnboardingStep.longPress,
+              onDismissScan: _advanceOnboarding,
+              onDismissViewToggle: _advanceOnboarding,
+              onDismissLongPress: _advanceOnboarding,
             ),
           ],
         ),

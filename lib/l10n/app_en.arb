@@ -581,7 +581,7 @@
   "@authTooManyRequests": {
     "description": "Rate-limiting/lockout auth error message."
   },
-  "createAccountTitle": "Create your\\nRecipeVault account",
+  "createAccountTitle": "Create your\nRecipeVault account",
   "@createAccountTitle": {
     "description": "Title on the registration screen (with forced line break)."
   },

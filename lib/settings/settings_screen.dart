@@ -64,80 +64,92 @@ class SettingsScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 24),
+
+              // Account section
               _buildSettingsCard(
                 context,
-                title: 'Account', // consider localizing
+                title: t.settingsSectionAccount,
                 items: [
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.manage_accounts_outlined,
-                    label: 'Account Settings', // consider localizing
+                    label: t.settingsTileAccountSettings,
                     route: '/settings/account',
                   ),
                 ],
               ),
+
+              // Preferences section
               _buildSettingsCard(
                 context,
-                title: 'Preferences', // consider localizing
+                title: t.settingsSectionPreferences,
                 items: [
                   _buildSettingsTile(
                     context: context,
                     icon: CupertinoIcons.brightness,
-                    label: 'Appearance', // consider localizing
+                    label: t.settingsTileAppearance,
                     route: '/settings/appearance',
                   ),
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.notifications_outlined,
-                    label: 'Notifications', // consider localizing
+                    label: t.settingsTileNotifications,
                     route: '/settings/notifications',
                   ),
                 ],
               ),
+
+              // Local Storage section
               _buildSettingsCard(
                 context,
-                title: 'Local Storage', // consider localizing
+                title: t.settingsSectionStorage,
                 items: [
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.cloud_done_outlined,
-                    label: 'Cache Clear', // consider localizing
+                    label: t.settingsTileCacheClear,
                     route: '/settings/storage',
                   ),
                 ],
               ),
+
+              // Subscription section
               _buildSettingsCard(
                 context,
-                title: 'Subscription', // consider localizing
+                title: t.settingsSectionSubscription,
                 items: [
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.card_membership_outlined,
-                    label: t.manageOrCancelCta, // existing ARB key
+                    label: t.settingsTileManageSubscription,
                     route: '/paywall',
                   ),
                 ],
               ),
+
+              // Support section
               _buildSettingsCard(
                 context,
-                title: 'Support', // consider localizing
+                title: t.settingsSectionSupport,
                 items: [
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.help_outline,
-                    label: 'Help & FAQs', // consider localizing
+                    label: t.settingsTileHelpFaqs,
                     route: '/settings/faqs',
                   ),
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.info_outline,
-                    label: 'About & Legal', // consider localizing
+                    label: t.settingsTileAboutLegal,
                     route: '/settings/about',
                   ),
                 ],
               ),
 
               const SizedBox(height: 12),
+
+              // Footer
               Center(
                 child: Column(
                   children: [
@@ -145,7 +157,7 @@ class SettingsScreen extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Cheeky Badger Creations', // consider localizing
+                          t.footerCompanyName, // localized company name
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: Colors.grey,
                           ),
@@ -168,7 +180,7 @@ class SettingsScreen extends StatelessWidget {
                             'https://badger-creations.co.uk/privacy',
                           ),
                           child: Text(
-                            t.legalPrivacy, // ARB
+                            t.legalPrivacy, // make sure these two keys exist in ARBs
                             style: theme.textTheme.labelSmall?.copyWith(
                               decoration: TextDecoration.underline,
                               color: Colors.blueAccent,
@@ -180,7 +192,7 @@ class SettingsScreen extends StatelessWidget {
                             'https://badger-creations.co.uk/terms',
                           ),
                           child: Text(
-                            t.legalTerms, // ARB
+                            t.legalTerms, // make sure these two keys exist in ARBs
                             style: theme.textTheme.labelSmall?.copyWith(
                               decoration: TextDecoration.underline,
                               color: Colors.blueAccent,
@@ -218,14 +230,16 @@ class SettingsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Use styling instead of toUpperCase() so translations remain correct.
           Padding(
             padding: const EdgeInsets.only(left: 8, bottom: 4),
             child: Text(
-              title.toUpperCase(),
+              title,
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
+                letterSpacing: 0.6,
               ),
             ),
           ),

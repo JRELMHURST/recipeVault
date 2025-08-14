@@ -7,6 +7,22 @@ import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/screens/recipe_vault/edit_recipe_screen.dart';
 
 class RecipeLongPressMenu {
+  /// Localize only the built‑in category names; keep user categories as typed.
+  static String localizeCategoryLabel(String raw, AppLocalizations t) {
+    final v = raw.trim().toLowerCase();
+    switch (v) {
+      case 'breakfast':
+        return t.defaultBreakfast;
+      case 'main':
+      case 'main course':
+        return t.defaultMain;
+      case 'dessert':
+        return t.defaultDessert;
+      default:
+        return raw;
+    }
+  }
+
   static Future<void> show({
     required BuildContext context,
     required RecipeCardModel recipe,
@@ -17,15 +33,20 @@ class RecipeLongPressMenu {
   }) async {
     final l = AppLocalizations.of(context);
 
-    // Filter out system categories (supports localized "Favourites")
+    // Treat these as "system chips" and hide them from assignment.
+    final systemChips = <String>{
+      // canonical English fallbacks
+      'Favourites',
+      'All',
+      'Translated',
+      // localized labels
+      l.favourites,
+      l.all,
+      l.translated,
+    };
+
     final filteredCategories = categories
-        .where(
-          (c) =>
-              c != 'Favourites' && // English fallback
-              c != 'Translated' && // still literal (no l10n key yet)
-              c != 'All' && // still literal (no l10n key yet)
-              (c != l.favourites),
-        )
+        .where((c) => !systemChips.contains(c))
         .toList();
 
     final selectedCategories = List<String>.from(recipe.categories);
@@ -59,8 +80,9 @@ class RecipeLongPressMenu {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
+                        // ✅ Localized title
                         Text(
-                          'Recipe Options', // no key yet; keep literal
+                          l.recipeOptions,
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
@@ -68,13 +90,14 @@ class RecipeLongPressMenu {
                               ),
                         ),
                         const SizedBox(height: 16),
+
                         Row(
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(10),
                               child:
-                                  recipe.imageUrl != null &&
-                                      recipe.imageUrl!.isNotEmpty
+                                  (recipe.imageUrl != null &&
+                                      recipe.imageUrl!.isNotEmpty)
                                   ? Image.network(
                                       recipe.imageUrl!,
                                       width: 48,
@@ -109,40 +132,49 @@ class RecipeLongPressMenu {
                                       child: Wrap(
                                         spacing: 6,
                                         runSpacing: -4,
-                                        children: recipe.categories
-                                            .map(
-                                              (c) => Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  border: Border.all(
+                                        children: recipe.categories.map((c) {
+                                          // ✅ Localize built‑in category chips & system chips
+                                          final shown = systemChips.contains(c)
+                                              ? (c == 'Translated' ||
+                                                        c == l.translated
+                                                    ? l.translated
+                                                    : c == 'Favourites' ||
+                                                          c == l.favourites
+                                                    ? l.favourites
+                                                    : c == 'All' || c == l.all
+                                                    ? l.all
+                                                    : c)
+                                              : localizeCategoryLabel(c, l);
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .outline
+                                                    .withOpacity(0.4),
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              shown,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .labelSmall
+                                                  ?.copyWith(
+                                                    fontSize: 10,
                                                     color: Theme.of(context)
                                                         .colorScheme
-                                                        .outline
-                                                        .withOpacity(0.4),
+                                                        .onSurface
+                                                        .withOpacity(0.6),
                                                   ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: Text(
-                                                  c,
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .labelSmall
-                                                      ?.copyWith(
-                                                        fontSize: 10,
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .onSurface
-                                                            .withOpacity(0.6),
-                                                      ),
-                                                ),
-                                              ),
-                                            )
-                                            .toList(),
+                                            ),
+                                          );
+                                        }).toList(),
                                       ),
                                     ),
                                 ],
@@ -160,7 +192,7 @@ class RecipeLongPressMenu {
                             child: ExpansionTile(
                               tilePadding: EdgeInsets.zero,
                               title: Text(
-                                l.assignCategory,
+                                l.menuAssignCategories, // ✅ use existing key
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                               childrenPadding: EdgeInsets.zero,
@@ -168,10 +200,14 @@ class RecipeLongPressMenu {
                                 final isSelected = selectedCategories.contains(
                                   category,
                                 );
+                                final label = localizeCategoryLabel(
+                                  category,
+                                  l,
+                                ); // ✅
                                 return CheckboxListTile(
                                   dense: true,
                                   contentPadding: EdgeInsets.zero,
-                                  title: Text(category),
+                                  title: Text(label),
                                   value: isSelected,
                                   controlAffinity:
                                       ListTileControlAffinity.leading,
@@ -200,9 +236,10 @@ class RecipeLongPressMenu {
                             Expanded(
                               child: OutlinedButton.icon(
                                 icon: const Icon(Icons.image_rounded, size: 18),
-                                label: const Text(
-                                  'Update Image', // no key yet
-                                  style: TextStyle(fontSize: 13),
+                                // ✅ Localized
+                                label: Text(
+                                  l.updateImage,
+                                  style: const TextStyle(fontSize: 13),
                                 ),
                                 onPressed: () {
                                   Navigator.pop(context);
@@ -294,8 +331,9 @@ class RecipeLongPressMenu {
                                           color: Colors.redAccent,
                                         ),
                                         const SizedBox(height: 12),
+                                        // Title: reuse the generic delete label
                                         Text(
-                                          'Delete Recipe?', // keep literal
+                                          l.delete,
                                           style: Theme.of(context)
                                               .textTheme
                                               .titleMedium

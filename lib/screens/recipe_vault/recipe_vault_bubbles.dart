@@ -41,36 +41,79 @@ class RecipeVaultBubbles extends StatelessWidget {
           if (showViewToggle)
             DismissibleBubble(
               message: t.vaultBubbleSwitchViews,
-              // Prefer anchor if provided; otherwise fallback to previous offsets.
-              anchorKey: keyViewToggle,
-              position: keyViewToggle == null
-                  ? _posFrom(context, top: 56, right: 16)
-                  : null,
+              position:
+                  _posFromAnchor(
+                    context,
+                    keyViewToggle,
+                    // nudge up a bit so it sits above the chips/toggles
+                    nudge: const Offset(0, -56),
+                  ) ??
+                  _posFrom(context, top: 56, right: 16),
               onDismiss: onDismissViewToggle,
             ),
 
           if (showLongPress)
             DismissibleBubble(
               message: t.vaultBubbleLongPress,
-              anchorKey: keyFirstCard,
-              position: keyFirstCard == null
-                  ? _posFrom(context, topFraction: 0.40, leftFraction: 0.10)
-                  : null,
+              position:
+                  _posFromAnchor(
+                    context,
+                    keyFirstCard,
+                    // nudge downward slightly to not cover the first card’s title
+                    nudge: const Offset(0, 8),
+                  ) ??
+                  _posFrom(context, topFraction: 0.40, leftFraction: 0.10),
               onDismiss: onDismissLongPress,
             ),
 
           if (showScan)
             DismissibleBubble(
               message: t.vaultBubbleScan,
-              anchorKey: keyFab,
-              position: keyFab == null
-                  ? _posFrom(context, bottom: 96, right: 16)
-                  : null,
+              position:
+                  _posFromAnchor(
+                    context,
+                    keyFab,
+                    // nudge upward/left so it points at the FAB
+                    nudge: const Offset(-12, -72),
+                  ) ??
+                  _posFrom(context, bottom: 96, right: 16),
               onDismiss: onDismissScan,
             ),
         ],
       ),
     );
+  }
+
+  /// Compute a bubble position from an anchor GlobalKey.
+  /// Converts the anchor’s global top-left to local coordinates of this widget,
+  /// then applies an optional nudge so the bubble doesn’t overlap the anchor.
+  Offset? _posFromAnchor(
+    BuildContext context,
+    GlobalKey? anchorKey, {
+    Offset nudge = Offset.zero,
+  }) {
+    if (anchorKey == null) return null;
+    final targetContext = anchorKey.currentContext;
+    final selfRenderObject = context.findRenderObject();
+    final targetRenderObject = targetContext?.findRenderObject();
+
+    if (selfRenderObject is! RenderBox || targetRenderObject is! RenderBox) {
+      return null;
+    }
+
+    // Global position of the anchor
+    final targetGlobal = targetRenderObject.localToGlobal(Offset.zero);
+    // Global position of this widget (the Stack container)
+    final selfGlobal = selfRenderObject.localToGlobal(Offset.zero);
+    // Convert to local coords (relative to the Stack)
+    final localTopLeft = targetGlobal - selfGlobal;
+
+    // Clamp within the current widget’s bounds with some bubble width/height margin.
+    final size = (selfRenderObject).size;
+    final x = (localTopLeft.dx + nudge.dx).clamp(8.0, size.width - 288.0);
+    final y = (localTopLeft.dy + nudge.dy).clamp(8.0, size.height - 120.0);
+
+    return Offset(x.toDouble(), y.toDouble());
   }
 
   /// Helper to place bubbles using either absolute (top/left/right/bottom)

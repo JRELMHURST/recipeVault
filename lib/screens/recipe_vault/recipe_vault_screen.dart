@@ -69,7 +69,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   bool _hasLoadedBubbles = false;
 
   // ---------- Anchors for future bubble positioning ----------
-  // NOTE: adding keys & wrappers does not change behaviour; it just prepares anchors.
   final GlobalKey _keyFab = GlobalKey();
   final GlobalKey _keyViewToggle = GlobalKey();
   final GlobalKey _keyFirstCardArea = GlobalKey();
@@ -96,8 +95,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       case kFav:
         return t.favourites;
       case kTranslated:
-        // If your l10n uses systemTranslated, swap to t.systemTranslated
-        return t.translated;
+        return t.translated; // or t.systemTranslated if you use that
       case kBreakfast:
         return t.defaultBreakfast;
       case kMain:
@@ -112,8 +110,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   String _keyFor(String label, AppLocalizations t) {
     if (label == t.systemAll) return kAll;
     if (label == t.favourites) return kFav;
-    // If you use systemTranslated in l10n, map that instead:
-    if (label == t.translated) return kTranslated;
+    if (label == t.translated) return kTranslated; // match above mapping
     if (label == t.defaultBreakfast) return kBreakfast;
     if (label == t.defaultMain) return kMain;
     if (label == t.defaultDessert) return kDessert;
@@ -212,26 +209,33 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     final subService = Provider.of<SubscriptionService>(context, listen: false);
     final tier = subService.tier;
 
-    await Future.delayed(const Duration(milliseconds: 100)); // allow layout
+    // small delay to allow layout + session prep
+    await Future.delayed(const Duration(milliseconds: 100));
 
     await Future.wait([
       _initializeDefaultCategories(),
       _loadCustomCategories(),
       Future(_startRecipeListener),
+      UserPreferencesService.waitForBubbleFlags(),
     ]);
 
     final hasShownOnce = await UserPreferencesService.hasShownBubblesOnce;
     final tutorialComplete =
         await UserPreferencesService.hasCompletedVaultTutorial();
 
-    // Show only if NOT shown before and NOT completed
-    if (!_hasLoadedBubbles &&
+    // Show only if NOT shown before and NOT completed and free tier
+    final shouldShowBubbles =
+        !_hasLoadedBubbles &&
         tier == 'free' &&
         !tutorialComplete &&
-        !hasShownOnce) {
+        !hasShownOnce;
+
+    if (shouldShowBubbles) {
+      // mark the first actual show (not at trigger time)
+      await UserPreferencesService.markBubblesShown();
+      if (!mounted) return;
       setState(() => _step = _OnboardingStep.viewToggle);
-      // If you DO have a persisted "shown once" flag, call it here.
-      // await UserPreferencesService.markBubblesShownOnce();
+      debugPrint('🫧 Onboarding bubbles: showing first step (viewToggle)');
     }
 
     _hasLoadedBubbles = true;
@@ -239,6 +243,23 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   void _advanceOnboarding() async {
     if (!mounted) return;
+
+    // Mark dismissal for the bubble we’re leaving
+    switch (_step) {
+      case _OnboardingStep.viewToggle:
+        await UserPreferencesService.markBubbleDismissed('viewToggle');
+        break;
+      case _OnboardingStep.longPress:
+        await UserPreferencesService.markBubbleDismissed('longPress');
+        break;
+      case _OnboardingStep.scan:
+        await UserPreferencesService.markBubbleDismissed('scan');
+        break;
+      case _OnboardingStep.none:
+      case _OnboardingStep.done:
+        break;
+    }
+
     setState(() {
       switch (_step) {
         case _OnboardingStep.viewToggle:
@@ -258,6 +279,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
     if (_step == _OnboardingStep.done) {
       await UserPreferencesService.markVaultTutorialCompleted();
+      debugPrint('🎉 Onboarding bubbles completed');
     }
   }
 
@@ -371,11 +393,10 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Removed DailyMessageBubble (file not present)
                   const SizedBox.shrink(),
                   const SizedBox(height: 8),
 
-                  // Search bar (unchanged)
+                  // Search bar
                   RecipeSearchBar(
                     initialValue: _searchQuery,
                     onChanged: (value) => setState(() => _searchQuery = value),
@@ -383,7 +404,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
                   const SizedBox(height: 12),
 
-                  // Filter chips row — wrapped with a key to anchor a "view toggle" hint nearby if needed
+                  // Filter chips row
                   KeyedSubtree(
                     key: _keyViewToggle,
                     child: Container(
@@ -404,7 +425,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                     ),
                   ),
 
-                  // Upgrade banner (unchanged)
+                  // Upgrade banner
                   ValueListenableBuilder<String?>(
                     valueListenable:
                         ImageProcessingService.upgradeBannerMessage,
@@ -413,7 +434,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                         : UpgradeBanner(message: message),
                   ),
 
-                  // Results area — wrapped with a key to anchor a "long-press" hint roughly over first card area
+                  // Results area
                   Expanded(
                     child: KeyedSubtree(
                       key: _keyFirstCardArea,
@@ -459,7 +480,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               ),
             ),
 
-            // Drive the overlay from the enum (unchanged API for now)
+            // Onboarding bubbles overlay
             RecipeVaultBubbles(
               showScan: _step == _OnboardingStep.scan,
               showViewToggle: _step == _OnboardingStep.viewToggle,
@@ -467,16 +488,14 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               onDismissScan: _advanceOnboarding,
               onDismissViewToggle: _advanceOnboarding,
               onDismissLongPress: _advanceOnboarding,
-              // NOTE: once RecipeVaultBubbles supports target keys, we'll pass:
-              // keyFab: _keyFab,
-              // keyViewToggle: _keyViewToggle,
-              // keyFirstCard: _keyFirstCardArea,
+              // Future: pass anchors when supported by the widget:
+              // keyFab: _keyFab, keyViewToggle: _keyViewToggle, keyFirstCard: _keyFirstCardArea,
             ),
           ],
         ),
       ),
 
-      // FAB — wrap in KeyedSubtree so we can anchor bubbles to it later without changing CategorySpeedDial
+      // FAB (wrapped for future anchoring)
       floatingActionButton: Builder(
         builder: (context) {
           final subService = Provider.of<SubscriptionService>(context);

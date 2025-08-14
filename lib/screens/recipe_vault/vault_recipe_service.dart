@@ -1,7 +1,6 @@
 // ignore_for_file: unnecessary_null_checks
 
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -13,7 +12,6 @@ import 'package:recipe_vault/services/hive_recipe_service.dart';
 class VaultRecipeService {
   static final _auth = FirebaseAuth.instance;
   static final _firestore = FirebaseFirestore.instance;
-
   static StreamSubscription? _vaultSub;
 
   static CollectionReference<Map<String, dynamic>> get _userRecipeCollection {
@@ -24,7 +22,9 @@ class VaultRecipeService {
     return _firestore.collection('users').doc(uid).collection('recipes');
   }
 
-  /// 🗑️ Delete recipe from Hive, Firestore, and optionally Firebase Storage
+  // ─────────────────────────────── public API ───────────────────────────────
+
+  /// 🗑 Delete recipe from Hive, Firestore, and optionally Firebase Storage.
   static Future<void> delete(RecipeCardModel recipe) async {
     await HiveRecipeService.delete(recipe.id);
     try {
@@ -38,12 +38,12 @@ class VaultRecipeService {
         final ref = FirebaseStorage.instance.refFromURL(recipe.imageUrl!);
         await ref.delete();
       } catch (_) {
-        // Ignore storage deletion errors
+        // ignore storage deletion errors
       }
     }
   }
 
-  /// 💾 Save recipe to Hive and Firestore (merge mode)
+  /// 💾 Save recipe to Hive and Firestore (merge mode).
   static Future<void> save(RecipeCardModel recipe) async {
     await HiveRecipeService.save(recipe);
     try {
@@ -55,16 +55,124 @@ class VaultRecipeService {
     }
   }
 
-  /// 📥 Load user recipes from Firestore
+  /// ⬇ Load all recipes (user + global), merge and cache in Hive.
+  static Future<List<RecipeCardModel>> loadAndMergeAllRecipes() async {
+    try {
+      await HiveRecipeService.init(); // ensure box is open
+
+      final userRecipes = await _loadUserRecipes();
+      final globalRecipes = await _loadGlobalRecipes();
+
+      // Merge: global first, then user overrides (keeps global fallbacks)
+      final mergedMap = <String, RecipeCardModel>{
+        for (final r in globalRecipes) r.id: r,
+        for (final r in userRecipes) r.id: r,
+      };
+
+      final box = await HiveRecipeService.getBox();
+      final mergedList = <RecipeCardModel>[];
+
+      for (final recipe in mergedMap.values) {
+        final local = box.get(recipe.id);
+        final enriched = recipe.copyWith(
+          isFavourite: local?.isFavourite ?? recipe.isFavourite,
+          categories: local?.categories ?? recipe.categories,
+        );
+        await box.put(recipe.id, enriched);
+        mergedList.add(enriched);
+      }
+
+      return mergedList;
+    } catch (e) {
+      debugPrint("⚠️ Firestore fetch failed, falling back to Hive: $e");
+      return HiveRecipeService.getAll();
+    }
+  }
+
+  static Future<void> load() async {
+    await loadAndMergeAllRecipes();
+    debugPrint('📦 VaultRecipeService.load complete');
+  }
+
+  /// 📡 Listen to Firestore recipe changes and trigger a refresh callback.
+  static void listenToVaultChanges(void Function() onUpdate) {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) {
+      debugPrint("⚠️ Cannot listen to vault changes – no user signed in");
+      return;
+    }
+
+    _vaultSub?.cancel();
+    try {
+      _vaultSub = _userRecipeCollection.snapshots().listen(
+        (_) => onUpdate(),
+        onError: (err) => debugPrint('⚠️ Vault snapshot error: $err'),
+        cancelOnError: true,
+      );
+      debugPrint('📡 Firestore vault listener started');
+    } catch (e) {
+      debugPrint("⚠️ Failed to start vault listener: $e");
+    }
+  }
+
+  static void cancelVaultListener() {
+    _vaultSub?.cancel();
+    _vaultSub = null;
+    debugPrint('📡 Firestore vault listener cancelled');
+  }
+
+  static Future<void> clearCache() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return;
+    await _closeAndDeleteBox<RecipeCardModel>('recipes_$uid');
+  }
+
+  static Future<void> updateTextContent({
+    required String recipeId,
+    required String title,
+    required List<String> ingredients,
+    required List<String> instructions,
+  }) async {
+    try {
+      final box = await HiveRecipeService.getBox();
+      final recipe = box.get(recipeId);
+      if (recipe == null) {
+        debugPrint("⚠️ Recipe not found in Hive: $recipeId");
+        return;
+      }
+
+      final updated = recipe.copyWith(
+        title: title,
+        ingredients: ingredients,
+        instructions: instructions,
+      );
+
+      await HiveRecipeService.save(updated);
+
+      final uid = _auth.currentUser?.uid;
+      if (uid != null) {
+        await _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('recipes')
+            .doc(recipeId)
+            .set(updated.toJson(), SetOptions(merge: true));
+      }
+
+      debugPrint('✅ Recipe text updated: $recipeId');
+    } catch (e) {
+      debugPrint("⚠️ Failed to update recipe text: $e");
+    }
+  }
+
+  // ─────────────────────────────── internals ───────────────────────────────
+
   static Future<List<RecipeCardModel>> _loadUserRecipes() async {
     try {
       final uid = _auth.currentUser?.uid;
       if (uid == null) return [];
 
-      final snapshot = await _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('recipes')
+      final snapshot = await _userRecipeCollection
           .orderBy('createdAt', descending: true)
           .get();
 
@@ -77,12 +185,12 @@ class VaultRecipeService {
     }
   }
 
-  /// 🌍 Load global recipes, excluding hidden ones
   static Future<List<RecipeCardModel>> _loadGlobalRecipes() async {
     try {
       final uid = _auth.currentUser?.uid;
       if (uid == null) return [];
 
+      // Find hidden global recipe IDs for this user
       final hiddenIds =
           (await _firestore
                   .collection('users')
@@ -93,100 +201,24 @@ class VaultRecipeService {
               .map((doc) => doc.id)
               .toSet();
 
-      final globalSnapshot = await _firestore
+      final snapshot = await _firestore
           .collection('global_recipes')
           .orderBy('createdAt', descending: true)
           .get();
 
-      return globalSnapshot.docs
-          .where((doc) => !hiddenIds.contains(doc.id))
-          .map((doc) => RecipeCardModel.fromJson(doc.data()))
-          .toList();
+      return snapshot.docs.where((doc) => !hiddenIds.contains(doc.id)).map((
+        doc,
+      ) {
+        final json = doc.data();
+        json['isGlobal'] = true; // mark so we can treat it differently later
+        return RecipeCardModel.fromJson(json);
+      }).toList();
     } catch (e) {
       debugPrint("⚠️ Failed to fetch global recipes: $e");
       return [];
     }
   }
 
-  /// 🔁 Load, merge, deduplicate, and cache all recipes to Hive
-  static Future<List<RecipeCardModel>> loadAndMergeAllRecipes() async {
-    try {
-      final userRecipes = await _loadUserRecipes();
-      final globalRecipes = await _loadGlobalRecipes();
-
-      final Map<String, RecipeCardModel> mergedMap = {
-        for (final r in globalRecipes) r.id: r,
-        for (final r in userRecipes) r.id: r,
-      };
-
-      final box = await HiveRecipeService.getBox();
-      final List<RecipeCardModel> merged = [];
-
-      for (final recipe in mergedMap.values) {
-        final local = box.get(recipe.id);
-        final enriched = recipe.copyWith(
-          isFavourite: local?.isFavourite ?? recipe.isFavourite,
-          categories: local?.categories ?? recipe.categories,
-        );
-        await box.put(recipe.id, enriched);
-        merged.add(enriched);
-      }
-
-      return merged;
-    } catch (e) {
-      debugPrint("⚠️ Firestore fetch failed, falling back to Hive: $e");
-      return HiveRecipeService.getAll();
-    }
-  }
-
-  /// ⬇️ Load all recipes into cache
-  static Future<void> load() async {
-    await loadAndMergeAllRecipes();
-    debugPrint('📦 VaultRecipeService.load complete');
-  }
-
-  /// 📡 Listen to Firestore recipe changes
-  static void listenToVaultChanges(void Function() onUpdate) {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) {
-      debugPrint("⚠️ Cannot listen to vault changes – no user signed in");
-      return;
-    }
-
-    _vaultSub?.cancel();
-
-    try {
-      _vaultSub = _firestore
-          .collection('users')
-          .doc(uid)
-          .collection('recipes')
-          .snapshots()
-          .listen(
-            (_) => onUpdate(),
-            onError: (error) => debugPrint('⚠️ Vault snapshot error: $error'),
-            cancelOnError: true,
-          );
-      debugPrint('📡 Firestore vault listener started');
-    } catch (e) {
-      debugPrint("⚠️ Failed to start vault listener: $e");
-    }
-  }
-
-  /// ❌ Cancel Firestore recipe listener
-  static void cancelVaultListener() {
-    _vaultSub?.cancel();
-    _vaultSub = null;
-    debugPrint('📡 Firestore vault listener cancelled');
-  }
-
-  /// 🧹 Clear local Hive recipe cache
-  static Future<void> clearCache() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-    await _closeAndDeleteBox<RecipeCardModel>('recipes_$uid');
-  }
-
-  /// 🧰 Safely close and delete a Hive box
   static Future<void> _closeAndDeleteBox<T>(String name) async {
     try {
       if (Hive.isBoxOpen(name)) {
@@ -197,48 +229,6 @@ class VaultRecipeService {
       if (kDebugMode) print('📦 Cleared Hive box: $name');
     } catch (e) {
       if (kDebugMode) print('⚠️ Error clearing Hive box $name: $e');
-    }
-  }
-
-  /// ✏️ Update recipe title, ingredients, and method
-  static Future<void> updateTextContent({
-    required String recipeId,
-    required String title,
-    required List<String> ingredients,
-    required List<String> instructions,
-  }) async {
-    try {
-      final box = await HiveRecipeService.getBox();
-      final recipe = box.get(recipeId);
-
-      if (recipe == null) {
-        debugPrint("⚠️ Recipe not found in Hive: $recipeId");
-        return;
-      }
-
-      final updated = recipe.copyWith(
-        title: title,
-        ingredients: ingredients,
-        instructions: instructions,
-      );
-
-      // Save to Hive
-      await HiveRecipeService.save(updated);
-
-      // Sync to Firestore
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .collection('recipes')
-            .doc(recipeId)
-            .set(updated.toJson(), SetOptions(merge: true));
-      }
-
-      debugPrint('✅ Recipe text updated: $recipeId');
-    } catch (e) {
-      debugPrint("⚠️ Failed to update recipe text: $e");
     }
   }
 }

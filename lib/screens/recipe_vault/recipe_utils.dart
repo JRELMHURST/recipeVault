@@ -1,46 +1,65 @@
+import 'package:flutter/widgets.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
-import 'package:flutter/widgets.dart';
 
-/// Converts a [RecipeCardModel] into formatted markdown text.
 String formatRecipeMarkdown(BuildContext context, RecipeCardModel recipe) {
-  final l = AppLocalizations.of(context);
+  final t = AppLocalizations.of(context);
 
-  final ingredients = recipe.ingredients.map((i) => "- $i").join("\n");
+  String mdEscape(String s) => s.replaceAllMapped(
+    RegExp(r'([\\`*_{}$begin:math:display$$end:math:display$()#+\-.!|>])'),
+    (m) => '\\${m[1]}',
+  );
 
-  // Strip any leading numbers or bullets from original instructions
-  final instructionRegex = RegExp(r'^\s*[\d]+[.)\-]?\s*');
+  String bulletify(Iterable<String> items) =>
+      items.map((e) => "- ${mdEscape(e.trim())}").join("\n");
 
-  final methodLines = recipe.instructions
-      .where((line) => line.trim().isNotEmpty)
+  final numberPrefix = RegExp(r'^\s*(?:\d+|[•\-*])[\.\)\-]?\s+');
+
+  // Ingredients
+  final ingredientsList = recipe.ingredients
+      .where((e) => e.trim().isNotEmpty)
       .toList();
+  final ingredients = ingredientsList.isEmpty
+      ? "- ${t.noAdditionalTips}"
+      : bulletify(ingredientsList);
 
-  final instructions = methodLines
-      .asMap()
-      .entries
-      .map((e) {
-        final cleaned = e.value.replaceFirst(instructionRegex, '').trim();
-        return "${e.key + 1}. $cleaned";
-      })
-      .join("\n");
+  // Instructions
+  final instructionList = recipe.instructions
+      .map((e) => e.replaceFirst(numberPrefix, '').trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
+  final instructions = instructionList.isEmpty
+      ? "1. ${t.noAdditionalTips}"
+      : instructionList
+            .asMap()
+            .entries
+            .map((e) => "${e.key + 1}. ${mdEscape(e.value)}")
+            .join("\n");
 
-  final hintsList = recipe.hints;
-  final hints = hintsList.isNotEmpty
-      ? hintsList.map((h) => "- $h").join("\n")
-      : "- ${l.noAdditionalTips}";
+  // Hints
+  final hintsList = recipe.hints.where((e) => e.trim().isNotEmpty).toList();
+  final hints = hintsList.isEmpty
+      ? "- ${t.noAdditionalTips}"
+      : bulletify(hintsList);
 
-  return '''
----
-${l.title}: ${recipe.title}
+  // Categories (optional)
+  final categoriesLine = recipe.categories.isNotEmpty
+      ? "\n${t.categories}: ${mdEscape(recipe.categories.join(', '))}"
+      : "";
 
-${l.ingredients}:
+  return """
+${mdEscape(t.title)}: ${mdEscape(recipe.title.trim().isEmpty ? "Untitled" : recipe.title)}
+
+$categoriesLine
+
+${mdEscape(t.ingredients)}:
 $ingredients
 
-${l.instructions}:
+${mdEscape(t.instructions)}:
 $instructions
 
-${l.hintsAndTips}:
+${mdEscape(t.hintsAndTips)}:
 $hints
----
-''';
+"""
+      .trim();
 }

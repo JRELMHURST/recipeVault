@@ -1,12 +1,12 @@
-import 'package:flutter/foundation.dart'; // ✅ for debugPrint
+import 'package:flutter/foundation.dart'; // ✅ debugPrint
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_vault/model/category_model.dart';
 
 class CategoryService {
-  static const _systemCategories = ['Favourites', 'Translated'];
-  static const _defaultCategories = [
+  static const List<String> _systemCategories = ['Favourites', 'Translated'];
+  static const List<String> _defaultCategories = [
     'Favourites',
     'Translated',
     'Breakfast',
@@ -18,32 +18,40 @@ class CategoryService {
   static String get _customBoxName => 'customCategories_$_uid';
   static String get _hiddenDefaultBox => 'hiddenDefaultCategories_$_uid';
 
+  static String? _boxesForUid;
+
+  // ───────────────────────────────── init / bootstrap ─────────────────────────────────
+
+  /// Open boxes for current user, migrate legacy values, and ensure defaults exist locally.
   static Future<void> init() async {
-    final customBox = await Hive.openBox(_customBoxName);
-    await Hive.openBox<String>(_hiddenDefaultBox);
+    await _ensureBoxesForCurrentUser();
 
-    // 🔁 Migrate legacy string-based values to CategoryModel
+    final customBox = Hive.box(_customBoxName);
+
+    // 🔁 Migrate legacy string entries -> CategoryModel json
     final legacyKeys = customBox.keys
-        .where((key) => customBox.get(key) is String)
+        .where((k) => customBox.get(k) is String)
         .toList();
-
     for (final key in legacyKeys) {
       final name = customBox.get(key) as String;
-      await customBox.put(
-        key,
-        CategoryModel(id: key.toString(), name: name).toJson(),
-      );
+      await customBox.put(key, CategoryModel(id: name, name: name).toJson());
       debugPrint('🔁 Migrated legacy category "$name"');
     }
+
+    // ✅ Ensure default categories exist locally (non‑system ones stored in custom box)
+    await _ensureDefaultCategoriesLocal();
   }
 
   static Future<void> load() async {
-    await getAllCategories();
+    await getAllCategories(); // warms cache / triggers open
     debugPrint('📂 CategoryService.load() called');
   }
 
+  // ─────────────────────────────── queries / mutations ───────────────────────────────
+
   static Future<List<CategoryModel>> getAllCategories() async {
-    final box = await _openCategoryBoxIfNeeded();
+    await _ensureBoxesForCurrentUser();
+    final box = Hive.box(_customBoxName);
     return box.values
         .whereType<Map>()
         .map((e) => CategoryModel.fromJson(Map<String, dynamic>.from(e)))
@@ -51,16 +59,18 @@ class CategoryService {
   }
 
   static Future<void> saveCategory(String category) async {
-    if (_systemCategories.contains(category)) return;
+    final name = category.trim();
+    if (name.isEmpty || _systemCategories.contains(name)) return;
 
-    final box = await _openCategoryBoxIfNeeded();
+    await _ensureBoxesForCurrentUser();
+
+    final box = Hive.box(_customBoxName);
     final alreadyExists = box.values.whereType<Map>().any(
-      (e) => e['name'] == category,
+      (e) => e['name'] == name,
     );
-
     if (!alreadyExists) {
-      final categoryModel = CategoryModel(id: category, name: category);
-      await box.add(categoryModel.toJson());
+      final model = CategoryModel(id: name, name: name);
+      await box.add(model.toJson());
     }
 
     final user = FirebaseAuth.instance.currentUser;
@@ -68,17 +78,23 @@ class CategoryService {
       final ref = FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
-          .collection('categories');
-      await ref.doc(category).set({'name': category});
+          .collection('categories')
+          .doc(name);
+
+      // merge-safe so first write creates, later writes update
+      await ref.set({'name': name}, SetOptions(merge: true));
     }
   }
 
   static Future<void> deleteCategory(String category) async {
-    if (_systemCategories.contains(category)) return;
+    final name = category.trim();
+    if (name.isEmpty || _systemCategories.contains(name)) return;
 
-    final box = await _openCategoryBoxIfNeeded();
+    await _ensureBoxesForCurrentUser();
+    final box = Hive.box(_customBoxName);
+
     final key = box.keys.firstWhere(
-      (k) => (box.get(k) as Map?)?['name'] == category,
+      (k) => (box.get(k) as Map?)?['name'] == name,
       orElse: () => null,
     );
     if (key != null) {
@@ -90,17 +106,21 @@ class CategoryService {
       final ref = FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
-          .collection('categories');
-      await ref.doc(category).delete();
+          .collection('categories')
+          .doc(name);
+      await ref.delete().catchError((_) => null);
     }
   }
 
+  /// Pulls user categories from Firestore and replaces local custom box with them.
+  /// (System/default visibility is handled by _hiddenDefaultBox)
   static Future<void> syncFromFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       debugPrint('⚠️ Cannot sync categories – no user signed in');
       return;
     }
+    await _ensureBoxesForCurrentUser();
 
     try {
       final ref = FirebaseFirestore.instance
@@ -109,38 +129,48 @@ class CategoryService {
           .collection('categories');
 
       final snapshot = await ref.get();
-      final box = await _openCategoryBoxIfNeeded();
+      final box = Hive.box(_customBoxName);
       await box.clear();
 
       for (final doc in snapshot.docs) {
-        final name = doc['name'];
+        final name = doc.data()['name'];
         if (name is String && !_systemCategories.contains(name)) {
-          final categoryModel = CategoryModel(id: name, name: name);
-          await box.add(categoryModel.toJson());
+          final model = CategoryModel(id: name, name: name);
+          await box.add(model.toJson());
         }
       }
+
+      // Ensure defaults still exist (local)
+      await _ensureDefaultCategoriesLocal();
     } catch (e) {
       debugPrint('⚠️ Failed to sync categories from Firestore: $e');
     }
   }
 
+  // ───────────────────────────── default visibility controls ─────────────────────────────
+
   static Future<void> hideDefaultCategory(String category) async {
     if (!_defaultCategories.contains(category)) return;
-    final box = await _openHiddenBoxIfNeeded();
+    await _ensureBoxesForCurrentUser();
+    final box = Hive.box<String>(_hiddenDefaultBox);
     await box.put(category, category);
   }
 
   static Future<void> unhideDefaultCategory(String category) async {
-    final box = await _openHiddenBoxIfNeeded();
+    await _ensureBoxesForCurrentUser();
+    final box = Hive.box<String>(_hiddenDefaultBox);
     await box.delete(category);
   }
 
   static Future<List<String>> getHiddenDefaultCategories() async {
-    final box = await _openHiddenBoxIfNeeded();
+    await _ensureBoxesForCurrentUser();
+    final box = Hive.box<String>(_hiddenDefaultBox);
     return box.values.toList();
   }
 
-  /// 🔄 Clear category cache from Hive (used on logout/reset)
+  // ───────────────────────────── cleanup helpers ─────────────────────────────
+
+  /// Clear opened boxes (without deleting from disk) – used at logout/reset.
   static Future<void> clearCache() async {
     try {
       if (Hive.isBoxOpen(_customBoxName)) {
@@ -156,10 +186,10 @@ class CategoryService {
     }
   }
 
-  /// 🔄 Clears category boxes for a specific user from disk (e.g. on account deletion)
+  /// Delete boxes for a specific user from disk (e.g. on account deletion).
   static Future<void> clearCacheForUser(String uid) async {
     final customBoxName = 'customCategories_$uid';
-    final hiddenDefaultBox = 'hiddenDefaultCategories_$uid';
+    final hiddenBoxName = 'hiddenDefaultCategories_$uid';
 
     try {
       if (Hive.isBoxOpen(customBoxName)) {
@@ -170,31 +200,64 @@ class CategoryService {
         debugPrint('🧼 Deleted unopened $customBoxName from disk');
       }
 
-      if (Hive.isBoxOpen(hiddenDefaultBox)) {
-        await Hive.box<String>(hiddenDefaultBox).deleteFromDisk();
-        debugPrint('🧼 Deleted $hiddenDefaultBox from disk');
-      } else if (await Hive.boxExists(hiddenDefaultBox)) {
-        await Hive.deleteBoxFromDisk(hiddenDefaultBox);
-        debugPrint('🧼 Deleted unopened $hiddenDefaultBox from disk');
+      if (Hive.isBoxOpen(hiddenBoxName)) {
+        await Hive.box<String>(hiddenBoxName).deleteFromDisk();
+        debugPrint('🧼 Deleted $hiddenBoxName from disk');
+      } else if (await Hive.boxExists(hiddenBoxName)) {
+        await Hive.deleteBoxFromDisk(hiddenBoxName);
+        debugPrint('🧼 Deleted unopened $hiddenBoxName from disk');
       }
     } catch (e) {
       debugPrint('⚠️ Failed to clear category data for $uid: $e');
     }
   }
 
-  /// 📦 Ensures the custom category box is opened before accessing
-  static Future<Box> _openCategoryBoxIfNeeded() async {
-    if (Hive.isBoxOpen(_customBoxName)) {
-      return Hive.box(_customBoxName);
+  // ───────────────────────────── internals ─────────────────────────────
+
+  /// Ensure we have the correct boxes opened for the **current** signed-in user.
+  static Future<void> _ensureBoxesForCurrentUser() async {
+    final needsSwitch = _boxesForUid != _uid;
+
+    if (needsSwitch) {
+      // Close previous user boxes if open (avoid cross-user leakage)
+      if (_boxesForUid != null) {
+        final prevCustom = 'customCategories_$_boxesForUid';
+        final prevHidden = 'hiddenDefaultCategories_$_boxesForUid';
+        try {
+          if (Hive.isBoxOpen(prevCustom)) await Hive.box(prevCustom).close();
+          if (Hive.isBoxOpen(prevHidden)) await Hive.box(prevHidden).close();
+        } catch (e) {
+          debugPrint('⚠️ Failed closing previous user category boxes: $e');
+        }
+      }
+      _boxesForUid = _uid;
     }
-    return await Hive.openBox(_customBoxName);
+
+    if (!Hive.isBoxOpen(_customBoxName)) {
+      await Hive.openBox(_customBoxName);
+      debugPrint('📦 Opened box: $_customBoxName');
+    }
+    if (!Hive.isBoxOpen(_hiddenDefaultBox)) {
+      await Hive.openBox<String>(_hiddenDefaultBox);
+      debugPrint('📦 Opened box: $_hiddenDefaultBox');
+    }
   }
 
-  /// 📦 Ensures the hidden default category box is opened before accessing
-  static Future<Box<String>> _openHiddenBoxIfNeeded() async {
-    if (Hive.isBoxOpen(_hiddenDefaultBox)) {
-      return Hive.box<String>(_hiddenDefaultBox);
+  /// Ensure all default categories appear in the UI:
+  /// - System defaults are **not** stored in custom box (they’re implied).
+  /// - Non-system defaults (Breakfast/Main/Dessert) are inserted locally if missing.
+  static Future<void> _ensureDefaultCategoriesLocal() async {
+    final box = Hive.box(_customBoxName);
+    final existing = box.values
+        .whereType<Map>()
+        .map((e) => (e['name'] as String?) ?? '')
+        .toSet();
+
+    for (final name in _defaultCategories) {
+      if (_systemCategories.contains(name)) continue; // implied
+      if (!existing.contains(name)) {
+        await box.add(CategoryModel(id: name, name: name).toJson());
+      }
     }
-    return await Hive.openBox<String>(_hiddenDefaultBox);
   }
 }

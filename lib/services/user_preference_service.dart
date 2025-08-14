@@ -36,7 +36,9 @@ class UserPreferencesService {
   static const String _keyBubblesShownOnce = 'hasShownBubblesOnce';
   static const String _keyAiUsage = 'aiUsage';
   static const String _keyTranslationUsage = 'translationUsage';
-  static const List<String> _bubbleKeys = ['scan', 'viewToggle', 'longPress'];
+
+  /// Order matters only for `maybeMarkTutorialCompleted`.
+  static const List<String> _bubbleKeys = ['viewToggle', 'longPress', 'scan'];
 
   static String get _uid => FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
   static String get _boxName => 'userPrefs_$_uid';
@@ -84,6 +86,8 @@ class UserPreferencesService {
     return _safeBox;
   }
 
+  // ── View mode ──────────────────────────────────────────────────────────────
+
   static Future<void> saveViewMode(ViewMode mode) async {
     final box = await _ensureBox();
     if (box != null) {
@@ -101,6 +105,8 @@ class UserPreferencesService {
     if (kDebugMode) print('📅 Loaded view mode: ${mode.name}');
     return mode;
   }
+
+  // ── Onboarding / bubbles ──────────────────────────────────────────────────
 
   static Future<void> markVaultTutorialCompleted() async {
     final box = await _ensureBox();
@@ -149,6 +155,8 @@ class UserPreferencesService {
     }
   }
 
+  /// Prepare bubble state for the given tier.
+  /// NOTE: This no longer marks "shown once" – that happens when UI actually shows the first bubble.
   static Future<void> ensureBubbleFlagTriggeredIfEligible(String tier) async {
     final box = await _ensureBox();
     final hasShownBubblesOnce =
@@ -164,9 +172,10 @@ class UserPreferencesService {
     }
 
     if (tier == 'free' && !hasShownBubblesOnce && !tutorialComplete) {
-      await resetBubbles();
-      if (box != null) await box.put(_keyBubblesShownOnce, true);
-      if (kDebugMode) print('🌟 Bubbles triggered for free tier (first time)');
+      await resetBubbles(); // prepare clean slate; do NOT set _keyBubblesShownOnce here
+      if (kDebugMode) {
+        print('🌟 Bubbles prepared for free tier (first show pending)');
+      }
     }
   }
 
@@ -176,11 +185,13 @@ class UserPreferencesService {
         false;
   }
 
+  /// Call this at the moment you actually show the first bubble.
   static Future<void> markBubblesShown() async {
     final box = await _ensureBox();
     if (box != null) await box.put(_keyBubblesShownOnce, true);
   }
 
+  /// Clear all onboarding flags for (re)onboarding.
   static Future<void> markAsNewUser() async {
     final box = await _ensureBox();
     if (box != null) {
@@ -193,6 +204,44 @@ class UserPreferencesService {
         print('🎯 User marked as new → all onboarding flags cleared');
       }
     }
+  }
+
+  /// Small delay to allow session to prep flags before UI checks.
+  static Future<void> waitForBubbleFlags() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+  }
+
+  // ── Usage counters (local cache) ───────────────────────────────────────────
+
+  static Future<void> setCachedUsage({int? ai, int? translations}) async {
+    final box = await _ensureBox();
+    if (box != null) {
+      if (ai != null) await box.put(_keyAiUsage, ai);
+      if (translations != null) {
+        await box.put(_keyTranslationUsage, translations);
+      }
+      if (kDebugMode) {
+        print('📂 Cached usage: AI=$ai, Translations=$translations');
+      }
+    }
+  }
+
+  static Future<int> getCachedAiUsage() async {
+    final box = await _ensureBox();
+    return box?.get(_keyAiUsage, defaultValue: 0) as int? ?? 0;
+  }
+
+  static Future<int> getCachedTranslationUsage() async {
+    final box = await _ensureBox();
+    return box?.get(_keyTranslationUsage, defaultValue: 0) as int? ?? 0;
+  }
+
+  // ── Clearing helpers ───────────────────────────────────────────────────────
+
+  static Future<void> clearAllUserData(String uid) async {
+    await deleteLocalDataForUser(uid);
+    await clearAllPreferences(uid);
+    if (kDebugMode) print('🧼 All local user data cleared for $uid');
   }
 
   static Future<void> deleteLocalDataForUser(String uid) async {
@@ -230,39 +279,6 @@ class UserPreferencesService {
   static Future<void> setBool(String key, bool value) async {
     final box = await _ensureBox();
     if (box != null) await box.put(key, value);
-  }
-
-  static Future<void> waitForBubbleFlags() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-  }
-
-  static Future<void> setCachedUsage({int? ai, int? translations}) async {
-    final box = await _ensureBox();
-    if (box != null) {
-      if (ai != null) await box.put(_keyAiUsage, ai);
-      if (translations != null) {
-        await box.put(_keyTranslationUsage, translations);
-      }
-      if (kDebugMode) {
-        print('📂 Cached usage: AI=$ai, Translations=$translations');
-      }
-    }
-  }
-
-  static Future<int> getCachedAiUsage() async {
-    final box = await _ensureBox();
-    return box?.get(_keyAiUsage, defaultValue: 0) as int? ?? 0;
-  }
-
-  static Future<int> getCachedTranslationUsage() async {
-    final box = await _ensureBox();
-    return box?.get(_keyTranslationUsage, defaultValue: 0) as int? ?? 0;
-  }
-
-  static Future<void> clearAllUserData(String uid) async {
-    await deleteLocalDataForUser(uid);
-    await clearAllPreferences(uid);
-    if (kDebugMode) print('🧼 All local user data cleared for $uid');
   }
 
   /// 🔒 Internal: close and delete a Hive box

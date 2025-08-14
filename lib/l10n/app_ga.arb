@@ -1346,5 +1346,117 @@
   "@localCacheCleared": {
     "description": "Snackbar/toast text shown after local cache is successfully cleared.",
     "type": "text"
+  },
+  "processingTitle": "Do oideas á phróiseáil",
+  "@processingTitle": {
+    "description": "Teideal an fhuinneog forleagain phróiseála."
+  },
+  "processingStepUploading": "Íomhánna á n-uaslódáil",
+  "@processingStepUploading": {
+    "description": "Céim: íomhánna á n-uaslódáil."
+  },
+  "processingStepTranslating": "Ag aistriú",
+  "@processingStepTranslating": {
+    "description": "Céim: téacs á aistriú."
+  },
+  "processingStepFormatting": "Ag baint agus ag formáidiú",
+  "@processingStepFormatting": {
+    "description": "Céim: oidis á mbaint agus á bhformáidiú."
+  },
+  "processingStepFinishing": "Ag críochnú",
+  "@processingStepFinishing": {
+    "description": "Céim: ag críochnú."
+  },
+  "processingFunUploading": "Ag crónán ar na seatanna scáileáin mar arán ar maidin…",
+  "@processingFunUploading": {
+    "description": "Líne spraíúil a thaispeántar le linn na céime uaslódála."
+  },
+  "processingFunFormatting": "Ag cur do oideas i láthair go hálainn…",
+  "@processingFunFormatting": {
+    "description": "Líne spraíúil a thaispeántar le linn na céime formáidithe."
+  },
+  "processingFunCompleted": "Ag cur an mhaisiúcháin deiridh leis…",
+  "@processingFunCompleted": {
+    "description": "Líne spraíúil a thaispeántar le linn na céime críochnaithe."
+  },
+  "processingFunUploading1": "Ag uaslódáil do screenshots…",
+  "@processingFunUploading1": {
+    "description": "Líne spraíúil le linn an chéim uaslódála."
+  },
+  "processingFunUploading2": "Ag seoladh comhábhar chuig an gcistin scamall…",
+  "@processingFunUploading2": {
+    "description": "Líne spraíúil le linn an chéim uaslódála."
+  },
+  "processingFunUploading3": "Ag coganta screenshots cosúil le calóga arbhair…",
+  "@processingFunUploading3": {
+    "description": "Líne spraíúil le linn an chéim uaslódála."
+  },
+  "processingFunUploading4": "Ag meascadh do phoit uaslódála…",
+  "@processingFunUploading4": {
+    "description": "Líne spraíúil le linn an chéim uaslódála."
+  },
+  "processingFunExtracting1": "Ag léamh do scribbles lámhscríofa…",
+  "@processingFunExtracting1": {
+    "description": "Líne spraíúil le linn an chéim eastósctha."
+  },
+  "processingFunExtracting2": "Ag glaoch ar na gnomes OCR…",
+  "@processingFunExtracting2": {
+    "description": "Líne spraíúil le linn an chéim eastósctha."
+  },
+  "processingFunExtracting3": "Ag eastóscadh sonraí blasta as picteilíní…",
+  "@processingFunExtracting3": {
+    "description": "Líne spraíúil le linn an chéim eastósctha."
+  },
+  "processingFunExtracting4": "Ag aimsiú ór oidis sa torann…",
+  "@processingFunExtracting4": {
+    "description": "Líne spraíúil le linn an chéim eastósctha."
+  },
+  "processingFunTranslating1": "Ag aistriú rúin chócaireachta go Béarla na Breataine…",
+  "@processingFunTranslating1": {
+    "description": "Líne spraíúil le linn an chéim aistriúcháin."
+  },
+  "processingFunTranslating2": "Ag cur pionsa gramadaí cheart leis…",
+  "@processingFunTranslating2": {
+    "description": "Líne spraíúil le linn an chéim aistriúcháin."
+  },
+  "processingFunTranslating3": "Ag tabhairt blas galánta d’oidis…",
+  "@processingFunTranslating3": {
+    "description": "Líne spraíúil le linn an chéim aistriúcháin."
+  },
+  "processingFunTranslating4": "Ag cócaireacht pota aistriúcháin…",
+  "@processingFunTranslating4": {
+    "description": "Líne spraíúil le linn an chéim aistriúcháin."
+  },
+  "processingFunFormatting1": "Tá ChatGPT ag caitheamh hata an chócaire…",
+  "@processingFunFormatting1": {
+    "description": "Líne spraíúil le linn an chéim formáidithe."
+  },
+  "processingFunFormatting2": "Ag sciobadh do théacs isteach in oideas blasta…",
+  "@processingFunFormatting2": {
+    "description": "Líne spraíúil le linn an chéim formáidithe."
+  },
+  "processingFunFormatting3": "Ag glanadh do threoracha le draíocht AI…",
+  "@processingFunFormatting3": {
+    "description": "Líne spraíúil le linn an chéim formáidithe."
+  },
+  "processingFunFormatting4": "Ag maisiú na gcéimeanna le cruinneas…",
+  "@processingFunFormatting4": {
+    "description": "Líne spraíúil le linn an chéim formáidithe."
+  },
+  "processingFunCompleted1": "Cárta oidis réidh! Bain sult as! 🍽️",
+  "@processingFunCompleted1": {
+    "description": "Líne spraíúil le linn an chéim dheireanach."
+  },
+  "processingFunCompleted2": "Voilà! Tá do mhias digiteach seirbheáilte.",
+  "@processingFunCompleted2": {
+    "description": "Líne spraíúil le linn an chéim dheireanach."
+  },
+  "processingFunCompleted3": "Críochnaithe — bain sult as stíl AI!",
+  "@processingFunCompleted3": {
+    "description": "Líne spraíúil le linn an chéim dheireanach."
+  },
+  "processingFunCompleted4": "Tá d’oideas réidh le freastal!",
+  "@processingFunCompleted4": {
+    "description": "Líne spraíúil le linn an chéim dheireanach."
   }
 }

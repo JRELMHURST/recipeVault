@@ -4,9 +4,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
-import 'package:recipe_vault/widgets/processing_messages.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:recipe_vault/widgets/processing_messages.dart';
 
 class ProcessingOverlay {
   static OverlayEntry? _currentOverlay;
@@ -41,8 +42,10 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     with TickerProviderStateMixin {
   int _currentStep = 0;
   bool _hasCancelled = false;
+
   late List<String> _currentSteps;
   late List<String> _currentFunMessages;
+  bool _inited = false;
 
   late final AnimationController _iconSpinController = AnimationController(
     vsync: this,
@@ -62,18 +65,26 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
   )..repeat(reverse: true);
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_inited) return;
+
+    final t = AppLocalizations.of(context);
+
+    // Default (no translation step)
     _currentSteps = [
-      'Uploading Images',
-      'Extracting & Formatting',
-      'Finishing Up',
+      t.processingStepUploading,
+      t.processingStepFormatting,
+      t.processingStepFinishing,
     ];
     _currentFunMessages = [
-      ProcessingMessages.pickRandom(ProcessingMessages.uploading),
-      ProcessingMessages.pickRandom(ProcessingMessages.formatting),
-      ProcessingMessages.pickRandom(ProcessingMessages.completed),
+      ProcessingMessages.pickRandom(ProcessingMessages.uploading(context)),
+      ProcessingMessages.pickRandom(ProcessingMessages.formatting(context)),
+      ProcessingMessages.pickRandom(ProcessingMessages.completed(context)),
     ];
+
+    _inited = true;
+    // Kick off after we have a valid localised context
     _runFullFlow();
   }
 
@@ -103,6 +114,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       debugPrint(
         '📄 User tier before extractAndFormatRecipe: ${userDoc.data()?['tier']}',
       );
+
       final result = await ImageProcessingService.extractAndFormatRecipe(
         imageUrls,
         context,
@@ -115,35 +127,37 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
       final needsTranslation = result.translationUsed;
 
-      // 🧩 If translation was used, expand overlay steps
       if (mounted && needsTranslation) {
+        final t = AppLocalizations.of(context);
         _currentSteps = [
-          'Uploading Images',
-          'Translating',
-          'Extracting & Formatting',
-          'Finishing Up',
+          t.processingStepUploading,
+          t.processingStepTranslating,
+          t.processingStepFormatting,
+          t.processingStepFinishing,
         ];
         _currentFunMessages = [
-          ProcessingMessages.pickRandom(ProcessingMessages.uploading),
-          ProcessingMessages.pickRandom(ProcessingMessages.translating),
-          ProcessingMessages.pickRandom(ProcessingMessages.formatting),
-          ProcessingMessages.pickRandom(ProcessingMessages.completed),
+          ProcessingMessages.pickRandom(ProcessingMessages.uploading(context)),
+          ProcessingMessages.pickRandom(
+            ProcessingMessages.translating(context),
+          ),
+          ProcessingMessages.pickRandom(ProcessingMessages.formatting(context)),
+          ProcessingMessages.pickRandom(ProcessingMessages.completed(context)),
         ];
         setState(() {});
       }
 
       if (needsTranslation) {
-        await _setStep(1);
+        await _setStep(1); // Translating
         await Future.delayed(const Duration(milliseconds: 600));
-        await _setStep(2);
+        await _setStep(2); // Formatting
       } else {
-        await _setStep(1);
+        await _setStep(1); // Formatting
       }
 
       if (_hasCancelled) return;
       await Future.delayed(const Duration(milliseconds: 600));
 
-      await _setStep(_currentSteps.length - 1);
+      await _setStep(_currentSteps.length - 1); // Finishing
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (!mounted) return;
@@ -158,9 +172,10 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
           message.contains('Usage limit reached');
 
       if (mounted && !isUpgradePrompt) {
+        final t = AppLocalizations.of(context);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ).showSnackBar(SnackBar(content: Text('${t.error}: $e')));
       }
 
       ProcessingOverlay.hide();
@@ -178,20 +193,24 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     ProcessingOverlay.hide();
   }
 
-  IconData _stepIcon(int step) {
-    final icons = [
-      Icons.cloud_upload_rounded,
-      Icons.translate,
-      Icons.auto_fix_high_rounded,
-      Icons.hourglass_bottom_rounded,
-    ];
-    return icons[step.clamp(0, icons.length - 1)];
+  IconData _currentStepIcon(AppLocalizations t) {
+    final label = _currentSteps[_currentStep];
+    if (label == t.processingStepUploading) {
+      return Icons.cloud_upload_rounded;
+    } else if (label == t.processingStepTranslating) {
+      return Icons.translate;
+    } else if (label == t.processingStepFormatting) {
+      return Icons.auto_fix_high_rounded;
+    } else {
+      return Icons.hourglass_bottom_rounded;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
+    final t = AppLocalizations.of(context);
 
     return Material(
       color: Colors.black.withOpacity(0.1),
@@ -217,7 +236,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
                         radius: 30,
                         backgroundColor: accent.withOpacity(0.15),
                         child: Icon(
-                          _stepIcon(_currentStep),
+                          _currentStepIcon(t),
                           color: accent,
                           size: 30,
                         ),
@@ -226,7 +245,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Processing Your Recipe',
+                    t.processingTitle,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
@@ -283,7 +302,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
                     child: GestureDetector(
                       onTap: _cancel,
                       child: Text(
-                        'Cancel',
+                        t.cancel,
                         style: TextStyle(
                           color: accent.withOpacity(0.82),
                           fontWeight: FontWeight.w500,

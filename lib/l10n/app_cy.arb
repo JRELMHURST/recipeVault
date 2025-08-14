@@ -1346,5 +1346,117 @@
     "@localCacheCleared": {
         "description": "Snackbar/toast text shown after local cache is successfully cleared.",
         "type": "text"
+    },
+    "processingTitle": "Wrthi’n Prosesu Eich Rysáit",
+    "@processingTitle": {
+        "description": "Title of the processing overlay."
+    },
+    "processingStepUploading": "Llwytho Delweddau i Fyny",
+    "@processingStepUploading": {
+        "description": "Step: uploading images."
+    },
+    "processingStepTranslating": "Cyfieithu",
+    "@processingStepTranslating": {
+        "description": "Step: translating text."
+    },
+    "processingStepFormatting": "Echdynnu a Fformatio",
+    "@processingStepFormatting": {
+        "description": "Step: extracting & formatting recipe."
+    },
+    "processingStepFinishing": "Gorffen",
+    "@processingStepFinishing": {
+        "description": "Step: finishing up."
+    },
+    "processingFunUploading": "Yn chrensian lluniau sgrin fel cornflakes…",
+    "@processingFunUploading": {
+        "description": "Fun line shown during upload step."
+    },
+    "processingFunFormatting": "Yn gweini eich rysáit yn daclus…",
+    "@processingFunFormatting": {
+        "description": "Fun line shown during formatting step."
+    },
+    "processingFunCompleted": "Yn ychwanegu’r addurn olaf…",
+    "@processingFunCompleted": {
+        "description": "Fun line shown during finishing step."
+    },
+    "processingFunUploading1": "Wrthi'n llwytho eich sgrinluniau…",
+    "@processingFunUploading1": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam llwytho."
+    },
+    "processingFunUploading2": "Anfon cynhwysion i'r gegin yn y cwmwl…",
+    "@processingFunUploading2": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam llwytho."
+    },
+    "processingFunUploading3": "Cnoi sgrinluniau fel cornflakes…",
+    "@processingFunUploading3": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam llwytho."
+    },
+    "processingFunUploading4": "Cymysgu eich hud lwytho…",
+    "@processingFunUploading4": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam llwytho."
+    },
+    "processingFunExtracting1": "Darllen eich brasluniau ysgrifenedig â llaw…",
+    "@processingFunExtracting1": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam echdynnu."
+    },
+    "processingFunExtracting2": "Galw ar y corachod OCR…",
+    "@processingFunExtracting2": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam echdynnu."
+    },
+    "processingFunExtracting3": "Echdynnu manylion blasus o'r picseli…",
+    "@processingFunExtracting3": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam echdynnu."
+    },
+    "processingFunExtracting4": "Dod o hyd i aur rysáit yn y sŵn…",
+    "@processingFunExtracting4": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam echdynnu."
+    },
+    "processingFunTranslating1": "Trosi cyfrinachau coginio i Saesneg Prydeinig…",
+    "@processingFunTranslating1": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam cyfieithu."
+    },
+    "processingFunTranslating2": "Ychwanegu ychydig o ramadeg cywir…",
+    "@processingFunTranslating2": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam cyfieithu."
+    },
+    "processingFunTranslating3": "Rhoi acen bonheddig i'ch rysáit…",
+    "@processingFunTranslating3": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam cyfieithu."
+    },
+    "processingFunTranslating4": "Bragu cyfieithiad…",
+    "@processingFunTranslating4": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam cyfieithu."
+    },
+    "processingFunFormatting1": "Mae ChatGPT yn gwisgo het gogydd…",
+    "@processingFunFormatting1": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam fformatio."
+    },
+    "processingFunFormatting2": "Chwipio'ch testun i mewn i rysáit flasus…",
+    "@processingFunFormatting2": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam fformatio."
+    },
+    "processingFunFormatting3": "Taclo eich cyfarwyddiadau gyda hud AI…",
+    "@processingFunFormatting3": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam fformatio."
+    },
+    "processingFunFormatting4": "Addurno'ch camau gyda manylder…",
+    "@processingFunFormatting4": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam fformatio."
+    },
+    "processingFunCompleted1": "Cerdyn rysáit yn barod! Gadewch i ni fwyta. 🍽️",
+    "@processingFunCompleted1": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam gorffen."
+    },
+    "processingFunCompleted2": "Voilà! Mae eich pryd digidol wedi'i weini.",
+    "@processingFunCompleted2": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam gorffen."
+    },
+    "processingFunCompleted3": "Wedi gorffen — mwynhewch, arddull AI!",
+    "@processingFunCompleted3": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam gorffen."
+    },
+    "processingFunCompleted4": "Mae eich rysáit wedi'i goginio ac yn barod i'w weini!",
+    "@processingFunCompleted4": {
+        "description": "Llinell hwyliog a ddangosir yn ystod y cam gorffen."
     }
 }

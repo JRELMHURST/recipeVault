@@ -1346,5 +1346,117 @@
   "@localCacheCleared": {
     "description": "Snackbar/toast text shown after local cache is successfully cleared.",
     "type": "text"
+  },
+  "processingTitle": "Processing Your Recipe",
+  "@processingTitle": {
+    "description": "Title of the processing overlay."
+  },
+  "processingStepUploading": "Uploading Images",
+  "@processingStepUploading": {
+    "description": "Step: uploading images."
+  },
+  "processingStepTranslating": "Translating",
+  "@processingStepTranslating": {
+    "description": "Step: translating text."
+  },
+  "processingStepFormatting": "Extracting & Formatting",
+  "@processingStepFormatting": {
+    "description": "Step: extracting & formatting recipe."
+  },
+  "processingStepFinishing": "Finishing Up",
+  "@processingStepFinishing": {
+    "description": "Step: finishing up."
+  },
+  "processingFunUploading": "Crunching screenshots like cornflakes…",
+  "@processingFunUploading": {
+    "description": "Fun line shown during upload step."
+  },
+  "processingFunFormatting": "Plating your recipe nicely…",
+  "@processingFunFormatting": {
+    "description": "Fun line shown during formatting step."
+  },
+  "processingFunCompleted": "Adding the final garnish…",
+  "@processingFunCompleted": {
+    "description": "Fun line shown during finishing step."
+  },
+  "processingFunUploading1": "Uploading your screenshots…",
+  "@processingFunUploading1": {
+    "description": "Fun line shown during uploading step."
+  },
+  "processingFunUploading2": "Beaming ingredients to the cloud kitchen…",
+  "@processingFunUploading2": {
+    "description": "Fun line shown during uploading step."
+  },
+  "processingFunUploading3": "Crunching screenshots like cornflakes…",
+  "@processingFunUploading3": {
+    "description": "Fun line shown during uploading step."
+  },
+  "processingFunUploading4": "Stirring up your upload potion…",
+  "@processingFunUploading4": {
+    "description": "Fun line shown during uploading step."
+  },
+  "processingFunExtracting1": "Reading your handwritten scribbles…",
+  "@processingFunExtracting1": {
+    "description": "Fun line shown during extraction step."
+  },
+  "processingFunExtracting2": "Summoning the OCR gnomes…",
+  "@processingFunExtracting2": {
+    "description": "Fun line shown during extraction step."
+  },
+  "processingFunExtracting3": "Extracting delicious details from pixels…",
+  "@processingFunExtracting3": {
+    "description": "Fun line shown during extraction step."
+  },
+  "processingFunExtracting4": "Finding recipe gold in the noise…",
+  "@processingFunExtracting4": {
+    "description": "Fun line shown during extraction step."
+  },
+  "processingFunTranslating1": "Converting culinary secrets into British English…",
+  "@processingFunTranslating1": {
+    "description": "Fun line shown during translation step."
+  },
+  "processingFunTranslating2": "Adding a dash of proper grammar…",
+  "@processingFunTranslating2": {
+    "description": "Fun line shown during translation step."
+  },
+  "processingFunTranslating3": "Giving your recipe a posh accent…",
+  "@processingFunTranslating3": {
+    "description": "Fun line shown during translation step."
+  },
+  "processingFunTranslating4": "Brewing up a translation…",
+  "@processingFunTranslating4": {
+    "description": "Fun line shown during translation step."
+  },
+  "processingFunFormatting1": "ChatGPT is donning a chef’s hat…",
+  "@processingFunFormatting1": {
+    "description": "Fun line shown during formatting step."
+  },
+  "processingFunFormatting2": "Whipping your text into a tasty recipe…",
+  "@processingFunFormatting2": {
+    "description": "Fun line shown during formatting step."
+  },
+  "processingFunFormatting3": "Tidying your instructions with AI magic…",
+  "@processingFunFormatting3": {
+    "description": "Fun line shown during formatting step."
+  },
+  "processingFunFormatting4": "Garnishing your steps with precision…",
+  "@processingFunFormatting4": {
+    "description": "Fun line shown during formatting step."
+  },
+  "processingFunCompleted1": "Recipe card ready! Let’s dig in. 🍽️",
+  "@processingFunCompleted1": {
+    "description": "Fun line shown during finishing step."
+  },
+  "processingFunCompleted2": "Voilà! Your digital dish is served.",
+  "@processingFunCompleted2": {
+    "description": "Fun line shown during finishing step."
+  },
+  "processingFunCompleted3": "All done — bon appétit, AI style!",
+  "@processingFunCompleted3": {
+    "description": "Fun line shown during finishing step."
+  },
+  "processingFunCompleted4": "Your recipe is cooked and ready to go!",
+  "@processingFunCompleted4": {
+    "description": "Fun line shown during finishing step."
   }
 }

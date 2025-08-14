@@ -1346,5 +1346,117 @@
   "@localCacheCleared": {
     "description": "Snackbar/toast text shown after local cache is successfully cleared.",
     "type": "text"
+  },
+  "processingTitle": "Traitement de votre recette",
+  "@processingTitle": {
+    "description": "Titre de la superposition de traitement."
+  },
+  "processingStepUploading": "Téléversement des images",
+  "@processingStepUploading": {
+    "description": "Étape : téléversement des images."
+  },
+  "processingStepTranslating": "Traduction",
+  "@processingStepTranslating": {
+    "description": "Étape : traduction du texte."
+  },
+  "processingStepFormatting": "Extraction et mise en forme",
+  "@processingStepFormatting": {
+    "description": "Étape : extraction et mise en forme de la recette."
+  },
+  "processingStepFinishing": "Finalisation",
+  "@processingStepFinishing": {
+    "description": "Étape : finalisation."
+  },
+  "processingFunUploading": "Croque les captures d’écran comme des cornflakes…",
+  "@processingFunUploading": {
+    "description": "Phrase amusante affichée pendant l’étape de téléversement."
+  },
+  "processingFunFormatting": "Dresse votre recette avec soin…",
+  "@processingFunFormatting": {
+    "description": "Phrase amusante affichée pendant l’étape de mise en forme."
+  },
+  "processingFunCompleted": "Ajoute la touche finale…",
+  "@processingFunCompleted": {
+    "description": "Phrase amusante affichée pendant l’étape finale."
+  },
+  "processingFunUploading1": "Téléchargement de vos captures d’écran…",
+  "@processingFunUploading1": {
+    "description": "Texte amusant affiché pendant l'étape de téléchargement."
+  },
+  "processingFunUploading2": "Envoi des ingrédients vers la cuisine du cloud…",
+  "@processingFunUploading2": {
+    "description": "Texte amusant affiché pendant l'étape de téléchargement."
+  },
+  "processingFunUploading3": "Croquer les captures d’écran comme des cornflakes…",
+  "@processingFunUploading3": {
+    "description": "Texte amusant affiché pendant l'étape de téléchargement."
+  },
+  "processingFunUploading4": "Mélange de votre potion de téléchargement…",
+  "@processingFunUploading4": {
+    "description": "Texte amusant affiché pendant l'étape de téléchargement."
+  },
+  "processingFunExtracting1": "Lecture de vos gribouillages manuscrits…",
+  "@processingFunExtracting1": {
+    "description": "Texte amusant affiché pendant l'étape d'extraction."
+  },
+  "processingFunExtracting2": "Appel aux lutins OCR…",
+  "@processingFunExtracting2": {
+    "description": "Texte amusant affiché pendant l'étape d'extraction."
+  },
+  "processingFunExtracting3": "Extraction de délicieux détails à partir des pixels…",
+  "@processingFunExtracting3": {
+    "description": "Texte amusant affiché pendant l'étape d'extraction."
+  },
+  "processingFunExtracting4": "Recherche d’or culinaire dans le bruit…",
+  "@processingFunExtracting4": {
+    "description": "Texte amusant affiché pendant l'étape d'extraction."
+  },
+  "processingFunTranslating1": "Conversion des secrets culinaires en anglais britannique…",
+  "@processingFunTranslating1": {
+    "description": "Texte amusant affiché pendant l'étape de traduction."
+  },
+  "processingFunTranslating2": "Ajout d’une pincée de grammaire correcte…",
+  "@processingFunTranslating2": {
+    "description": "Texte amusant affiché pendant l'étape de traduction."
+  },
+  "processingFunTranslating3": "Donner un accent chic à votre recette…",
+  "@processingFunTranslating3": {
+    "description": "Texte amusant affiché pendant l'étape de traduction."
+  },
+  "processingFunTranslating4": "Préparation d’une traduction aux petits oignons…",
+  "@processingFunTranslating4": {
+    "description": "Texte amusant affiché pendant l'étape de traduction."
+  },
+  "processingFunFormatting1": "ChatGPT enfile la toque du chef…",
+  "@processingFunFormatting1": {
+    "description": "Texte amusant affiché pendant l'étape de mise en forme."
+  },
+  "processingFunFormatting2": "Fouetter votre texte pour en faire une recette savoureuse…",
+  "@processingFunFormatting2": {
+    "description": "Texte amusant affiché pendant l'étape de mise en forme."
+  },
+  "processingFunFormatting3": "Mettre en ordre vos instructions avec la magie de l’IA…",
+  "@processingFunFormatting3": {
+    "description": "Texte amusant affiché pendant l'étape de mise en forme."
+  },
+  "processingFunFormatting4": "Garnir vos étapes avec précision…",
+  "@processingFunFormatting4": {
+    "description": "Texte amusant affiché pendant l'étape de mise en forme."
+  },
+  "processingFunCompleted1": "Carte de recette prête ! À table ! 🍽️",
+  "@processingFunCompleted1": {
+    "description": "Texte amusant affiché pendant l'étape finale."
+  },
+  "processingFunCompleted2": "Voilà ! Votre plat numérique est servi.",
+  "@processingFunCompleted2": {
+    "description": "Texte amusant affiché pendant l'étape finale."
+  },
+  "processingFunCompleted3": "Terminé — bon appétit version IA !",
+  "@processingFunCompleted3": {
+    "description": "Texte amusant affiché pendant l'étape finale."
+  },
+  "processingFunCompleted4": "Votre recette est prête à être dégustée !",
+  "@processingFunCompleted4": {
+    "description": "Texte amusant affiché pendant l'étape finale."
   }
 }

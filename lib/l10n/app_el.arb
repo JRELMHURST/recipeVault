@@ -1342,5 +1342,117 @@
   "onboardingScan": "Σαρώστε συνταγές εύκολα",
   "@onboardingScan": {
     "description": "Onboarding step title for scanning recipes."
+  },
+  "processingTitle": "Επεξεργασία της συνταγής σας",
+  "@processingTitle": {
+    "description": "Title of the processing overlay."
+  },
+  "processingStepUploading": "Μεταφόρτωση εικόνων",
+  "@processingStepUploading": {
+    "description": "Step: uploading images."
+  },
+  "processingStepTranslating": "Μετάφραση",
+  "@processingStepTranslating": {
+    "description": "Step: translating text."
+  },
+  "processingStepFormatting": "Εξαγωγή & Μορφοποίηση",
+  "@processingStepFormatting": {
+    "description": "Step: extracting & formatting recipe."
+  },
+  "processingStepFinishing": "Ολοκλήρωση",
+  "@processingStepFinishing": {
+    "description": "Step: finishing up."
+  },
+  "processingFunUploading": "Τραγανίζουμε τα στιγμιότυπα σαν κορν φλέικς…",
+  "@processingFunUploading": {
+    "description": "Fun line shown during upload step."
+  },
+  "processingFunFormatting": "Σερβίρουμε όμορφα τη συνταγή σας…",
+  "@processingFunFormatting": {
+    "description": "Fun line shown during formatting step."
+  },
+  "processingFunCompleted": "Προσθέτουμε την τελευταία πινελιά…",
+  "@processingFunCompleted": {
+    "description": "Fun line shown during finishing step."
+  },
+  "processingFunUploading1": "Μεταφόρτωση των στιγμιότυπων οθόνης σας…",
+  "@processingFunUploading1": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση μεταφόρτωσης."
+  },
+  "processingFunUploading2": "Στέλνουμε τα υλικά στην κουζίνα του cloud…",
+  "@processingFunUploading2": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση μεταφόρτωσης."
+  },
+  "processingFunUploading3": "Τραγανίζουμε στιγμιότυπα σαν κορνφλέικς…",
+  "@processingFunUploading3": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση μεταφόρτωσης."
+  },
+  "processingFunUploading4": "Ανακατεύοντας το φίλτρο μεταφόρτωσής σας…",
+  "@processingFunUploading4": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση μεταφόρτωσης."
+  },
+  "processingFunExtracting1": "Διαβάζουμε τις χειρόγραφες σημειώσεις σας…",
+  "@processingFunExtracting1": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση εξαγωγής."
+  },
+  "processingFunExtracting2": "Καλούμε τα ξωτικά OCR…",
+  "@processingFunExtracting2": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση εξαγωγής."
+  },
+  "processingFunExtracting3": "Εξαγωγή νόστιμων λεπτομερειών από τα pixel…",
+  "@processingFunExtracting3": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση εξαγωγής."
+  },
+  "processingFunExtracting4": "Βρίσκουμε χρυσό συνταγής μέσα στον θόρυβο…",
+  "@processingFunExtracting4": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση εξαγωγής."
+  },
+  "processingFunTranslating1": "Μετατρέπουμε τα γαστρονομικά μυστικά σε βρετανικά αγγλικά…",
+  "@processingFunTranslating1": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση μετάφρασης."
+  },
+  "processingFunTranslating2": "Προσθέτουμε μια πρέζα σωστής γραμματικής…",
+  "@processingFunTranslating2": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση μετάφρασης."
+  },
+  "processingFunTranslating3": "Δίνουμε στη συνταγή σας μια κομψή προφορά…",
+  "@processingFunTranslating3": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση μετάφρασης."
+  },
+  "processingFunTranslating4": "Ετοιμάζουμε μια λαχταριστή μετάφραση…",
+  "@processingFunTranslating4": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση μετάφρασης."
+  },
+  "processingFunFormatting1": "Το ChatGPT φοράει τον σκούφο του σεφ…",
+  "@processingFunFormatting1": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση μορφοποίησης."
+  },
+  "processingFunFormatting2": "Χτυπάει το κείμενό σας σε μια νόστιμη συνταγή…",
+  "@processingFunFormatting2": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση μορφοποίησης."
+  },
+  "processingFunFormatting3": "Τακτοποιεί τις οδηγίες σας με μαγεία AI…",
+  "@processingFunFormatting3": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση μορφοποίησης."
+  },
+  "processingFunFormatting4": "Διακοσμεί τα βήματά σας με ακρίβεια…",
+  "@processingFunFormatting4": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά τη φάση μορφοποίησης."
+  },
+  "processingFunCompleted1": "Η κάρτα συνταγής είναι έτοιμη! Καλή σας όρεξη. 🍽️",
+  "@processingFunCompleted1": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά την τελική φάση."
+  },
+  "processingFunCompleted2": "Voilà! Το ψηφιακό σας πιάτο είναι σερβιρισμένο.",
+  "@processingFunCompleted2": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά την τελική φάση."
+  },
+  "processingFunCompleted3": "Όλα έτοιμα — καλή όρεξη σε στυλ AI!",
+  "@processingFunCompleted3": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά την τελική φάση."
+  },
+  "processingFunCompleted4": "Η συνταγή σας είναι μαγειρεμένη και έτοιμη!",
+  "@processingFunCompleted4": {
+    "description": "Αστείο κείμενο που εμφανίζεται κατά την τελική φάση."
   }
 }

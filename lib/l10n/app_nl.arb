@@ -1346,5 +1346,117 @@
   "@localCacheCleared": {
     "description": "Snackbar/toast text shown after local cache is successfully cleared.",
     "type": "text"
+  },
+  "processingTitle": "Je recept wordt verwerkt",
+  "@processingTitle": {
+    "description": "Titel van de verwerkingsoverlay."
+  },
+  "processingStepUploading": "Afbeeldingen uploaden",
+  "@processingStepUploading": {
+    "description": "Stap: afbeeldingen uploaden."
+  },
+  "processingStepTranslating": "Vertalen",
+  "@processingStepTranslating": {
+    "description": "Stap: tekst vertalen."
+  },
+  "processingStepFormatting": "Uitlezen en opmaken",
+  "@processingStepFormatting": {
+    "description": "Stap: recept uitlezen en opmaken."
+  },
+  "processingStepFinishing": "Afronden",
+  "@processingStepFinishing": {
+    "description": "Stap: afronden."
+  },
+  "processingFunUploading": "Screenshots kraken als cornflakes…",
+  "@processingFunUploading": {
+    "description": "Grappige zin tijdens de uploadstap."
+  },
+  "processingFunFormatting": "Je recept mooi opmaken…",
+  "@processingFunFormatting": {
+    "description": "Grappige zin tijdens de opmaakstap."
+  },
+  "processingFunCompleted": "De laatste garnering toevoegen…",
+  "@processingFunCompleted": {
+    "description": "Grappige zin tijdens de laatste stap."
+  },
+  "processingFunUploading1": "Je screenshots worden geüpload…",
+  "@processingFunUploading1": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de uploadstap."
+  },
+  "processingFunUploading2": "Ingrediënten naar de cloudkeuken sturen…",
+  "@processingFunUploading2": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de uploadstap."
+  },
+  "processingFunUploading3": "Screenshots knapperen als cornflakes…",
+  "@processingFunUploading3": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de uploadstap."
+  },
+  "processingFunUploading4": "Je uploadtoversoep roeren…",
+  "@processingFunUploading4": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de uploadstap."
+  },
+  "processingFunExtracting1": "Je handgeschreven krabbels lezen…",
+  "@processingFunExtracting1": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de extractiestap."
+  },
+  "processingFunExtracting2": "De OCR-kabouters oproepen…",
+  "@processingFunExtracting2": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de extractiestap."
+  },
+  "processingFunExtracting3": "Heerlijke details uit pixels halen…",
+  "@processingFunExtracting3": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de extractiestap."
+  },
+  "processingFunExtracting4": "Receptgoud vinden in de ruis…",
+  "@processingFunExtracting4": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de extractiestap."
+  },
+  "processingFunTranslating1": "Culinaire geheimen naar Brits Engels vertalen…",
+  "@processingFunTranslating1": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de vertaalstap."
+  },
+  "processingFunTranslating2": "Een snufje correcte grammatica toevoegen…",
+  "@processingFunTranslating2": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de vertaalstap."
+  },
+  "processingFunTranslating3": "Je recept een chique accent geven…",
+  "@processingFunTranslating3": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de vertaalstap."
+  },
+  "processingFunTranslating4": "Een vertaalbrouwsel bereiden…",
+  "@processingFunTranslating4": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de vertaalstap."
+  },
+  "processingFunFormatting1": "ChatGPT zet een koksmuts op…",
+  "@processingFunFormatting1": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de formatteerstap."
+  },
+  "processingFunFormatting2": "Je tekst opkloppen tot een smakelijk recept…",
+  "@processingFunFormatting2": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de formatteerstap."
+  },
+  "processingFunFormatting3": "Je instructies netjes maken met AI-magie…",
+  "@processingFunFormatting3": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de formatteerstap."
+  },
+  "processingFunFormatting4": "Je stappen met precisie garneren…",
+  "@processingFunFormatting4": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de formatteerstap."
+  },
+  "processingFunCompleted1": "Receptkaart klaar! Aan tafel! 🍽️",
+  "@processingFunCompleted1": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de laatste stap."
+  },
+  "processingFunCompleted2": "Voilà! Je digitale gerecht is geserveerd.",
+  "@processingFunCompleted2": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de laatste stap."
+  },
+  "processingFunCompleted3": "Klaar — smakelijk eten, AI-stijl!",
+  "@processingFunCompleted3": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de laatste stap."
+  },
+  "processingFunCompleted4": "Je recept is gekookt en klaar om te serveren!",
+  "@processingFunCompleted4": {
+    "description": "Grappige tekst die wordt weergegeven tijdens de laatste stap."
   }
 }

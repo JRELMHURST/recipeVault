@@ -1346,5 +1346,117 @@
   "@localCacheCleared": {
     "description": "Snackbar/toast text shown after local cache is successfully cleared.",
     "type": "text"
+  },
+  "processingTitle": "Zpracovávání vašeho receptu",
+  "@processingTitle": {
+    "description": "Title of the processing overlay."
+  },
+  "processingStepUploading": "Nahrávání obrázků",
+  "@processingStepUploading": {
+    "description": "Step: uploading images."
+  },
+  "processingStepTranslating": "Překládání",
+  "@processingStepTranslating": {
+    "description": "Step: translating text."
+  },
+  "processingStepFormatting": "Extrahování a formátování",
+  "@processingStepFormatting": {
+    "description": "Step: extracting & formatting recipe."
+  },
+  "processingStepFinishing": "Dokončování",
+  "@processingStepFinishing": {
+    "description": "Step: finishing up."
+  },
+  "processingFunUploading": "Zpracováváme snímky obrazovky jako cornflakes…",
+  "@processingFunUploading": {
+    "description": "Fun line shown during upload step."
+  },
+  "processingFunFormatting": "Servírujeme váš recept pěkně na talíř…",
+  "@processingFunFormatting": {
+    "description": "Fun line shown during formatting step."
+  },
+  "processingFunCompleted": "Přidáváme poslední ozdobu…",
+  "@processingFunCompleted": {
+    "description": "Fun line shown during finishing step."
+  },
+  "processingFunUploading1": "Nahrávání vašich snímků obrazovky…",
+  "@processingFunUploading1": {
+    "description": "Vtipná hláška zobrazená během kroku nahrávání."
+  },
+  "processingFunUploading2": "Odesílání ingrediencí do cloudové kuchyně…",
+  "@processingFunUploading2": {
+    "description": "Vtipná hláška zobrazená během kroku nahrávání."
+  },
+  "processingFunUploading3": "Křupání snímků obrazovky jako cornflakes…",
+  "@processingFunUploading3": {
+    "description": "Vtipná hláška zobrazená během kroku nahrávání."
+  },
+  "processingFunUploading4": "Míchání vašeho uploadového lektvaru…",
+  "@processingFunUploading4": {
+    "description": "Vtipná hláška zobrazená během kroku nahrávání."
+  },
+  "processingFunExtracting1": "Čtení vašich ručně psaných poznámek…",
+  "@processingFunExtracting1": {
+    "description": "Vtipná hláška zobrazená během kroku extrakce."
+  },
+  "processingFunExtracting2": "Přivolávání skřítků OCR…",
+  "@processingFunExtracting2": {
+    "description": "Vtipná hláška zobrazená během kroku extrakce."
+  },
+  "processingFunExtracting3": "Vytahování lahodných detailů z pixelů…",
+  "@processingFunExtracting3": {
+    "description": "Vtipná hláška zobrazená během kroku extrakce."
+  },
+  "processingFunExtracting4": "Hledání receptového zlata v šumu…",
+  "@processingFunExtracting4": {
+    "description": "Vtipná hláška zobrazená během kroku extrakce."
+  },
+  "processingFunTranslating1": "Převádění kulinářských tajemství do britské angličtiny…",
+  "@processingFunTranslating1": {
+    "description": "Vtipná hláška zobrazená během kroku překladu."
+  },
+  "processingFunTranslating2": "Přidávání špetky správné gramatiky…",
+  "@processingFunTranslating2": {
+    "description": "Vtipná hláška zobrazená během kroku překladu."
+  },
+  "processingFunTranslating3": "Dodávání vašemu receptu noblesní přízvuk…",
+  "@processingFunTranslating3": {
+    "description": "Vtipná hláška zobrazená během kroku překladu."
+  },
+  "processingFunTranslating4": "Vaření překladu…",
+  "@processingFunTranslating4": {
+    "description": "Vtipná hláška zobrazená během kroku překladu."
+  },
+  "processingFunFormatting1": "ChatGPT si nasazuje kuchařskou čepici…",
+  "@processingFunFormatting1": {
+    "description": "Vtipná hláška zobrazená během kroku formátování."
+  },
+  "processingFunFormatting2": "Šlehání vašeho textu do chutného receptu…",
+  "@processingFunFormatting2": {
+    "description": "Vtipná hláška zobrazená během kroku formátování."
+  },
+  "processingFunFormatting3": "Uklízení vašich instrukcí s kouzlem AI…",
+  "@processingFunFormatting3": {
+    "description": "Vtipná hláška zobrazená během kroku formátování."
+  },
+  "processingFunFormatting4": "Ozdobení vašich kroků s přesností…",
+  "@processingFunFormatting4": {
+    "description": "Vtipná hláška zobrazená během kroku formátování."
+  },
+  "processingFunCompleted1": "Karta receptu připravena! Pojďme na to. 🍽️",
+  "@processingFunCompleted1": {
+    "description": "Vtipná hláška zobrazená během kroku dokončení."
+  },
+  "processingFunCompleted2": "Voilà! Váš digitální pokrm je podáván.",
+  "@processingFunCompleted2": {
+    "description": "Vtipná hláška zobrazená během kroku dokončení."
+  },
+  "processingFunCompleted3": "Hotovo — dobrou chuť ve stylu AI!",
+  "@processingFunCompleted3": {
+    "description": "Vtipná hláška zobrazená během kroku dokončení."
+  },
+  "processingFunCompleted4": "Váš recept je uvařen a připraven k podávání!",
+  "@processingFunCompleted4": {
+    "description": "Vtipná hláška zobrazená během kroku dokončení."
   }
 }

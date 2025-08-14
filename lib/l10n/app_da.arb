@@ -1346,5 +1346,117 @@
   "@localCacheCleared": {
     "description": "Snackbar/toast text shown after local cache is successfully cleared.",
     "type": "text"
+  },
+  "processingTitle": "Behandler Din Opskrift",
+  "@processingTitle": {
+    "description": "Title of the processing overlay."
+  },
+  "processingStepUploading": "Uploader billeder",
+  "@processingStepUploading": {
+    "description": "Step: uploading images."
+  },
+  "processingStepTranslating": "Oversætter",
+  "@processingStepTranslating": {
+    "description": "Step: translating text."
+  },
+  "processingStepFormatting": "Udtrækker og formaterer",
+  "@processingStepFormatting": {
+    "description": "Step: extracting & formatting recipe."
+  },
+  "processingStepFinishing": "Afslutter",
+  "@processingStepFinishing": {
+    "description": "Step: finishing up."
+  },
+  "processingFunUploading": "Knuser skærmbilleder som cornflakes…",
+  "@processingFunUploading": {
+    "description": "Fun line shown during upload step."
+  },
+  "processingFunFormatting": "Anretter din opskrift pænt…",
+  "@processingFunFormatting": {
+    "description": "Fun line shown during formatting step."
+  },
+  "processingFunCompleted": "Tilføjer den sidste pynt…",
+  "@processingFunCompleted": {
+    "description": "Fun line shown during finishing step."
+  },
+  "processingFunUploading1": "Uploader dine skærmbilleder…",
+  "@processingFunUploading1": {
+    "description": "Sjov tekst, der vises under upload-trinnet."
+  },
+  "processingFunUploading2": "Sender ingredienser til sky-køkkenet…",
+  "@processingFunUploading2": {
+    "description": "Sjov tekst, der vises under upload-trinnet."
+  },
+  "processingFunUploading3": "Knaser skærmbilleder som cornflakes…",
+  "@processingFunUploading3": {
+    "description": "Sjov tekst, der vises under upload-trinnet."
+  },
+  "processingFunUploading4": "Rører i din upload-bryg…",
+  "@processingFunUploading4": {
+    "description": "Sjov tekst, der vises under upload-trinnet."
+  },
+  "processingFunExtracting1": "Læser dine håndskrevne kruseduller…",
+  "@processingFunExtracting1": {
+    "description": "Sjov tekst, der vises under udtræknings-trinnet."
+  },
+  "processingFunExtracting2": "Kalder på OCR-nisserne…",
+  "@processingFunExtracting2": {
+    "description": "Sjov tekst, der vises under udtræknings-trinnet."
+  },
+  "processingFunExtracting3": "Udtrækker lækre detaljer fra pixlerne…",
+  "@processingFunExtracting3": {
+    "description": "Sjov tekst, der vises under udtræknings-trinnet."
+  },
+  "processingFunExtracting4": "Finder opskrift-guld i støjen…",
+  "@processingFunExtracting4": {
+    "description": "Sjov tekst, der vises under udtræknings-trinnet."
+  },
+  "processingFunTranslating1": "Oversætter kulinariske hemmeligheder til britisk engelsk…",
+  "@processingFunTranslating1": {
+    "description": "Sjov tekst, der vises under oversættelses-trinnet."
+  },
+  "processingFunTranslating2": "Tilføjer et strejf af korrekt grammatik…",
+  "@processingFunTranslating2": {
+    "description": "Sjov tekst, der vises under oversættelses-trinnet."
+  },
+  "processingFunTranslating3": "Giver din opskrift en fin accent…",
+  "@processingFunTranslating3": {
+    "description": "Sjov tekst, der vises under oversættelses-trinnet."
+  },
+  "processingFunTranslating4": "Brygger en oversættelse…",
+  "@processingFunTranslating4": {
+    "description": "Sjov tekst, der vises under oversættelses-trinnet."
+  },
+  "processingFunFormatting1": "ChatGPT tager kokkehatten på…",
+  "@processingFunFormatting1": {
+    "description": "Sjov tekst, der vises under formaterings-trinnet."
+  },
+  "processingFunFormatting2": "Pisker din tekst til en lækker opskrift…",
+  "@processingFunFormatting2": {
+    "description": "Sjov tekst, der vises under formaterings-trinnet."
+  },
+  "processingFunFormatting3": "Pynter dine instruktioner med AI-magi…",
+  "@processingFunFormatting3": {
+    "description": "Sjov tekst, der vises under formaterings-trinnet."
+  },
+  "processingFunFormatting4": "Garnérer dine trin med præcision…",
+  "@processingFunFormatting4": {
+    "description": "Sjov tekst, der vises under formaterings-trinnet."
+  },
+  "processingFunCompleted1": "Opskriftskort klar! Lad os spise. 🍽️",
+  "@processingFunCompleted1": {
+    "description": "Sjov tekst, der vises under det afsluttende trin."
+  },
+  "processingFunCompleted2": "Voilà! Din digitale ret er serveret.",
+  "@processingFunCompleted2": {
+    "description": "Sjov tekst, der vises under det afsluttende trin."
+  },
+  "processingFunCompleted3": "Alt færdigt — velbekomme, AI-stil!",
+  "@processingFunCompleted3": {
+    "description": "Sjov tekst, der vises under det afsluttende trin."
+  },
+  "processingFunCompleted4": "Din opskrift er tilberedt og klar til servering!",
+  "@processingFunCompleted4": {
+    "description": "Sjov tekst, der vises under det afsluttende trin."
   }
 }

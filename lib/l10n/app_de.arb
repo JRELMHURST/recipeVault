@@ -1346,5 +1346,117 @@
   "@localCacheCleared": {
     "description": "Snackbar/toast text shown after local cache is successfully cleared.",
     "type": "text"
+  },
+  "processingTitle": "Rezept wird verarbeitet",
+  "@processingTitle": {
+    "description": "Title of the processing overlay."
+  },
+  "processingStepUploading": "Bilder hochladen",
+  "@processingStepUploading": {
+    "description": "Step: uploading images."
+  },
+  "processingStepTranslating": "Übersetzen",
+  "@processingStepTranslating": {
+    "description": "Step: translating text."
+  },
+  "processingStepFormatting": "Extrahieren & Formatieren",
+  "@processingStepFormatting": {
+    "description": "Step: extracting & formatting recipe."
+  },
+  "processingStepFinishing": "Fertigstellen",
+  "@processingStepFinishing": {
+    "description": "Step: finishing up."
+  },
+  "processingFunUploading": "Zerknirscht Screenshots wie Cornflakes…",
+  "@processingFunUploading": {
+    "description": "Fun line shown during upload step."
+  },
+  "processingFunFormatting": "Richtet dein Rezept schön an…",
+  "@processingFunFormatting": {
+    "description": "Fun line shown during formatting step."
+  },
+  "processingFunCompleted": "Fügt die letzte Garnitur hinzu…",
+  "@processingFunCompleted": {
+    "description": "Fun line shown during finishing step."
+  },
+  "processingFunUploading1": "Lade deine Screenshots hoch…",
+  "@processingFunUploading1": {
+    "description": "Lustiger Text, der während des Upload-Schritts angezeigt wird."
+  },
+  "processingFunUploading2": "Sende Zutaten an die Cloud-Küche…",
+  "@processingFunUploading2": {
+    "description": "Lustiger Text, der während des Upload-Schritts angezeigt wird."
+  },
+  "processingFunUploading3": "Knuspere Screenshots wie Cornflakes…",
+  "@processingFunUploading3": {
+    "description": "Lustiger Text, der während des Upload-Schritts angezeigt wird."
+  },
+  "processingFunUploading4": "Rühre deinen Upload-Zaubertrank…",
+  "@processingFunUploading4": {
+    "description": "Lustiger Text, der während des Upload-Schritts angezeigt wird."
+  },
+  "processingFunExtracting1": "Lese deine handschriftlichen Kritzeleien…",
+  "@processingFunExtracting1": {
+    "description": "Lustiger Text, der während des Extraktions-Schritts angezeigt wird."
+  },
+  "processingFunExtracting2": "Rufe die OCR-Zwerge herbei…",
+  "@processingFunExtracting2": {
+    "description": "Lustiger Text, der während des Extraktions-Schritts angezeigt wird."
+  },
+  "processingFunExtracting3": "Extrahiere köstliche Details aus den Pixeln…",
+  "@processingFunExtracting3": {
+    "description": "Lustiger Text, der während des Extraktions-Schritts angezeigt wird."
+  },
+  "processingFunExtracting4": "Finde Rezept-Gold im Rauschen…",
+  "@processingFunExtracting4": {
+    "description": "Lustiger Text, der während des Extraktions-Schritts angezeigt wird."
+  },
+  "processingFunTranslating1": "Übersetze kulinarische Geheimnisse ins britische Englisch…",
+  "@processingFunTranslating1": {
+    "description": "Lustiger Text, der während des Übersetzungs-Schritts angezeigt wird."
+  },
+  "processingFunTranslating2": "Füge eine Prise korrekter Grammatik hinzu…",
+  "@processingFunTranslating2": {
+    "description": "Lustiger Text, der während des Übersetzungs-Schritts angezeigt wird."
+  },
+  "processingFunTranslating3": "Gib deinem Rezept einen vornehmen Akzent…",
+  "@processingFunTranslating3": {
+    "description": "Lustiger Text, der während des Übersetzungs-Schritts angezeigt wird."
+  },
+  "processingFunTranslating4": "Braue eine Übersetzung zusammen…",
+  "@processingFunTranslating4": {
+    "description": "Lustiger Text, der während des Übersetzungs-Schritts angezeigt wird."
+  },
+  "processingFunFormatting1": "ChatGPT setzt sich die Kochmütze auf…",
+  "@processingFunFormatting1": {
+    "description": "Lustiger Text, der während des Formatierungs-Schritts angezeigt wird."
+  },
+  "processingFunFormatting2": "Peitscht deinen Text zu einem leckeren Rezept auf…",
+  "@processingFunFormatting2": {
+    "description": "Lustiger Text, der während des Formatierungs-Schritts angezeigt wird."
+  },
+  "processingFunFormatting3": "Richtet deine Anweisungen mit KI-Magie her…",
+  "@processingFunFormatting3": {
+    "description": "Lustiger Text, der während des Formatierungs-Schritts angezeigt wird."
+  },
+  "processingFunFormatting4": "Garnierst deine Schritte mit Präzision…",
+  "@processingFunFormatting4": {
+    "description": "Lustiger Text, der während des Formatierungs-Schritts angezeigt wird."
+  },
+  "processingFunCompleted1": "Rezeptkarte fertig! Lass es dir schmecken. 🍽️",
+  "@processingFunCompleted1": {
+    "description": "Lustiger Text, der während des letzten Schritts angezeigt wird."
+  },
+  "processingFunCompleted2": "Voilà! Dein digitales Gericht ist serviert.",
+  "@processingFunCompleted2": {
+    "description": "Lustiger Text, der während des letzten Schritts angezeigt wird."
+  },
+  "processingFunCompleted3": "Alles erledigt — guten Appetit auf KI-Art!",
+  "@processingFunCompleted3": {
+    "description": "Lustiger Text, der während des letzten Schritts angezeigt wird."
+  },
+  "processingFunCompleted4": "Dein Rezept ist gekocht und servierfertig!",
+  "@processingFunCompleted4": {
+    "description": "Lustiger Text, der während des letzten Schritts angezeigt wird."
   }
 }

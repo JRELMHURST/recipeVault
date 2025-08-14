@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // ✅ NEW
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -16,6 +17,16 @@ class AuthService {
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
   bool get isLoggedIn => _auth.currentUser != null;
+
+  /// Reads the locally saved preferred recipe locale (set by LanguageProvider)
+  Future<String?> _getPreferredRecipeLocale() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('preferredRecipeLocale'); // e.g. 'en-GB', 'pl'
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// 🔐 Email sign-in
   Future<UserCredential> signInWithEmail(String email, String password) async {
@@ -143,7 +154,7 @@ class AuthService {
     await UserPreferencesService.clearAllPreferences(uid);
   }
 
-  /// 🔧 Ensure Firestore user doc exists and sync tier/entitlement
+  /// 🔧 Ensure Firestore user doc exists and sync tier/entitlement + preferred locale
   Future<void> _ensureUserDocument(User user) async {
     final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final doc = await docRef.get();
@@ -153,17 +164,21 @@ class AuthService {
         customerInfo.entitlements.active.values.firstOrNull?.identifier;
     final resolvedTier = resolveTier(entitlementId ?? 'free');
 
-    final updateData = {
+    // pull preferred locale from device prefs (written by LanguageProvider)
+    final preferredLocale = await _getPreferredRecipeLocale();
+
+    final updateData = <String, dynamic>{
       'email': user.email,
       'entitlementId': entitlementId ?? 'none',
       'tier': resolvedTier,
+      if (preferredLocale != null) 'preferredRecipeLocale': preferredLocale,
       if (!doc.exists) 'createdAt': FieldValue.serverTimestamp(),
     };
 
     if (!doc.exists) {
       await docRef.set(updateData);
       debugPrint(
-        '📝 Created Firestore user doc → Tier: $resolvedTier, Entitlement: $entitlementId',
+        '📝 Created Firestore user doc → Tier: $resolvedTier, Entitlement: $entitlementId, PrefLocale: ${preferredLocale ?? '(none)'}',
       );
       try {
         await UserPreferencesService.markAsNewUser();
@@ -175,18 +190,21 @@ class AuthService {
       final existing = doc.data() ?? {};
       final needsUpdate =
           existing['tier'] != resolvedTier ||
-          existing['entitlementId'] != entitlementId;
+          existing['entitlementId'] != entitlementId ||
+          (preferredLocale != null &&
+              existing['preferredRecipeLocale'] != preferredLocale);
 
       if (needsUpdate) {
         await docRef.set(updateData, SetOptions(merge: true));
         debugPrint(
-          '♻️ Updated Firestore user doc → Tier: $resolvedTier, Entitlement: $entitlementId',
+          '♻️ Updated Firestore user doc → Tier: $resolvedTier, Entitlement: $entitlementId, PrefLocale: ${preferredLocale ?? '(unchanged)'}',
         );
       } else {
         debugPrint('ℹ️ Firestore user doc already up to date.');
       }
     }
 
+    // Optionally refresh seeded/global recipes to ensure user's vault is current
     try {
       final callable = FirebaseFunctions.instanceFor(
         region: 'europe-west2',
@@ -210,17 +228,25 @@ class AuthService {
         customerInfo.entitlements.active.values.firstOrNull?.identifier;
     final resolvedTier = resolveTier(entitlementId ?? 'free');
 
+    // read the local preferred locale
+    String? preferredLocale;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      preferredLocale = prefs.getString('preferredRecipeLocale');
+    } catch (_) {}
+
     if (!doc.exists) {
-      final updateData = {
+      final updateData = <String, dynamic>{
         'email': user.email,
         'entitlementId': entitlementId ?? 'none',
         'tier': resolvedTier,
+        if (preferredLocale != null) 'preferredRecipeLocale': preferredLocale,
         'createdAt': FieldValue.serverTimestamp(),
       };
 
       await docRef.set(updateData);
       debugPrint(
-        '📝 Created Firestore user doc → Tier: $resolvedTier, Entitlement: $entitlementId',
+        '📝 Created Firestore user doc → Tier: $resolvedTier, Entitlement: $entitlementId, PrefLocale: ${preferredLocale ?? '(none)'}',
       );
       try {
         await UserPreferencesService.markAsNewUser();
@@ -247,15 +273,18 @@ class AuthService {
       final existing = doc.data() ?? {};
       final needsUpdate =
           existing['tier'] != resolvedTier ||
-          existing['entitlementId'] != entitlementId;
+          existing['entitlementId'] != entitlementId ||
+          (preferredLocale != null &&
+              existing['preferredRecipeLocale'] != preferredLocale);
 
       if (needsUpdate) {
         await docRef.set({
           'tier': resolvedTier,
           'entitlementId': entitlementId ?? 'none',
+          if (preferredLocale != null) 'preferredRecipeLocale': preferredLocale,
         }, SetOptions(merge: true));
         debugPrint(
-          '♻️ Updated Firestore user doc → Tier: $resolvedTier, Entitlement: $entitlementId',
+          '♻️ Updated Firestore user doc → Tier: $resolvedTier, Entitlement: $entitlementId, PrefLocale: ${preferredLocale ?? '(unchanged)'}',
         );
       } else {
         debugPrint('ℹ️ Firestore user doc already up to date.');

@@ -9,6 +9,10 @@ import 'package:recipe_vault/services/user_session_service.dart';
 import 'package:hive/hive.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 
+// 👇 Add these
+import 'package:provider/provider.dart';
+import 'package:recipe_vault/core/language_provider.dart';
+
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
 
@@ -24,6 +28,12 @@ class AccountSettingsScreen extends StatelessWidget {
 
     final email = user.email ?? '';
     final displayName = user.displayName ?? t.noName;
+
+    final langProvider = context
+        .watch<LanguageProvider>(); // 👈 watch current language
+    final currentLangKey = langProvider.selected;
+    final currentLangLabel =
+        LanguageProvider.displayNames[currentLangKey] ?? currentLangKey;
 
     return Scaffold(
       appBar: AppBar(title: Text(t.accountSettingsTitle), centerTitle: true),
@@ -70,6 +80,8 @@ class AccountSettingsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
+
+              // ===== Security Section =====
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -134,12 +146,54 @@ class AccountSettingsScreen extends StatelessWidget {
                   ],
                 ),
               ),
+
+              // ===== Language Section (added) =====
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8, bottom: 4),
+                      child: Text(
+                        'LANGUAGE',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                    Card(
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.language),
+                        title: const Text('Recipe language'),
+                        subtitle: Text(currentLangLabel),
+                        trailing: const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 16,
+                        ),
+                        onTap: () => _showLanguagePicker(context, langProvider),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
   }
+
+  // ===== Dialogs & actions =====
 
   Future<void> _confirmSignOut(BuildContext context) async {
     final t = AppLocalizations.of(context);
@@ -260,5 +314,49 @@ class AccountSettingsScreen extends StatelessWidget {
         }
       }
     }
+  }
+
+  // ===== Language picker bottom sheet =====
+  void _showLanguagePicker(BuildContext context, LanguageProvider provider) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        final current = provider.selected;
+        final items = LanguageProvider.supported;
+
+        return SafeArea(
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const Divider(height: 0),
+            itemBuilder: (_, i) {
+              final key = items[i];
+              final label = LanguageProvider.displayNames[key] ?? key;
+              final selected = key == current;
+
+              return ListTile(
+                leading: Icon(
+                  selected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off,
+                ),
+                title: Text(label),
+                onTap: () async {
+                  await provider.setSelected(key);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Recipe language set to $label')),
+                  );
+                },
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 }

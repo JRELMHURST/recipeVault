@@ -8,6 +8,9 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+// ✅ Fixed import (was .dart.dart)
+import 'package:recipe_vault/core/daily_message_bubble.dart.dart';
+
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
@@ -27,8 +30,7 @@ import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/widgets/empty_vault_placeholder.dart';
-import 'package:recipe_vault/widgets/processing_overlay.dart'; // ⬅️ NEW
-// (removed: placeholder_logo import since it isn’t used here)
+import 'package:recipe_vault/widgets/processing_overlay.dart';
 
 /// Drives which onboarding bubble is visible (top-level — not inside a class)
 enum _OnboardingStep { none, viewToggle, longPress, scan, done }
@@ -554,6 +556,13 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                   ),
                 ],
               ),
+            ),
+
+            // ✅ Daily tip overlay (does not push layout)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              right: 16,
+              child: const DailyMessageBubble(),
             ),
 
             // Onboarding bubbles overlay

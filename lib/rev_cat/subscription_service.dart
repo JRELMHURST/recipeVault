@@ -1,5 +1,5 @@
-// Full updated SubscriptionService.dart
-// [Refreshed August 2025] - fixes brand-new user showing "Trial Ended" prematurely
+// SubscriptionService.dart
+// Refreshed August 2025 — removes "free" as a tier; "none" now means no subscription.
 
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -14,10 +14,11 @@ class SubscriptionService extends ChangeNotifier {
   factory SubscriptionService() => _instance;
   SubscriptionService._internal();
 
-  final ValueNotifier<String> tierNotifier = ValueNotifier('free');
+  // ── State ──────────────────────────────────────────────────────────────────
+  final ValueNotifier<String> tierNotifier = ValueNotifier('none');
 
-  String _tier = 'free';
-  String _entitlementId = 'none';
+  String _tier = 'none'; // 'none' | 'home_chef' | 'master_chef'
+  String _entitlementId = 'none'; // productIdentifier or 'none'
   bool _hasSpecialAccess = false;
   bool _isLoadingTier = false;
   bool _isInitialising = false;
@@ -35,28 +36,26 @@ class SubscriptionService extends ChangeNotifier {
     'translationUsage': {},
   };
 
-  // ───── Public Getters ─────
+  // ── Public getters ─────────────────────────────────────────────────────────
   String get tier => _tier;
   String get entitlementId => _entitlementId;
   bool get isLoaded => _customerInfo != null;
 
-  bool get isFree => _tier == 'free';
   bool get isHomeChef => _tier == 'home_chef';
   bool get isMasterChef => _tier == 'master_chef';
-
   bool get hasActiveSubscription => isHomeChef || isMasterChef;
 
   bool get allowTranslation => hasActiveSubscription;
   bool get allowImageUpload => hasActiveSubscription;
-  bool get allowSaveToVault => !isFree;
-
+  bool get allowSaveToVault => hasActiveSubscription;
   bool get allowCategoryCreation => hasActiveSubscription;
+
   bool get hasSpecialAccess => _hasSpecialAccess;
 
   String get tierIcon => switch (_tier) {
     'master_chef' => '👑',
     'home_chef' => '👨‍🍳',
-    'free' => '🆓',
+    'none' => '🚫',
     _ => '❓',
   };
 
@@ -64,14 +63,15 @@ class SubscriptionService extends ChangeNotifier {
     'master_chef_monthly' => 'Master Chef – Monthly',
     'master_chef_yearly' => 'Master Chef – Yearly',
     'home_chef_monthly' => 'Home Chef – Monthly',
-    _ => 'Free Plan',
+    _ => 'No active subscription',
   };
 
   bool get isYearly => _entitlementId.endsWith('_yearly');
+
   String get billingCycle {
     if (_entitlementId.contains('yearly')) return 'Yearly';
     if (_entitlementId.contains('monthly')) return 'Monthly';
-    return 'Free';
+    return 'None';
   }
 
   DateTime? get trialEndDate {
@@ -88,7 +88,7 @@ class SubscriptionService extends ChangeNotifier {
     return d != null ? DateFormat('d/M/yyyy').format(d) : 'N/A';
   }
 
-  // True when the active entitlement is a trial that hasn't expired yet
+  /// True when active entitlement is a trial that hasn't expired yet.
   bool get isInTrial {
     final e = _activeEntitlement;
     if (e == null || e.periodType != PeriodType.trial) return false;
@@ -113,7 +113,7 @@ class SubscriptionService extends ChangeNotifier {
     return _usageData['translationUsage']?[key] ?? 0;
   }
 
-  // ───── Lifecycle Methods ─────
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   Future<void> init() async {
     if (_isInitialising) return;
@@ -139,7 +139,7 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   Future<void> reset() async {
-    _tier = 'free';
+    _tier = 'none';
     _entitlementId = 'none';
     _activeEntitlement = null;
     _customerInfo = null;
@@ -155,14 +155,14 @@ class SubscriptionService extends ChangeNotifier {
       _tier = newTier;
       tierNotifier.value = newTier;
 
-      if (newTier != 'free') {
+      if (newTier != 'none') {
         _logTierOnce(source: 'updateTier');
       }
       notifyListeners();
     }
   }
 
-  // ───── Subscription Loading ─────
+  // ── Status loading ─────────────────────────────────────────────────────────
 
   Future<void> loadSubscriptionStatus() async {
     if (_isLoadingTier) return;
@@ -172,7 +172,7 @@ class SubscriptionService extends ChangeNotifier {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      // New accounts sometimes need a moment for RC to provision entitlements.
+      // New accounts sometimes need a short retry to provision entitlements.
       _customerInfo = await _getCustomerInfoWithRetry(
         preferRetry: _isBrandNewUser(user),
       );
@@ -189,7 +189,7 @@ class SubscriptionService extends ChangeNotifier {
 
       _logTierOnce(source: 'loadSubscriptionStatus');
 
-      // Firestore override check (admin override / special access)
+      // Firestore override (admin / special access)
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -198,14 +198,14 @@ class SubscriptionService extends ChangeNotifier {
 
       if (data != null) {
         final fsTier = data['tier'];
-        if (fsTier != null && fsTier != _tier && fsTier != 'free') {
+        if (fsTier != null && fsTier != _tier && fsTier != 'none') {
           debugPrint('📄 Firestore override → $fsTier');
           _tier = fsTier;
           tierNotifier.value = _tier;
         }
 
         _hasSpecialAccess = data['specialAccess'] == true;
-        if (_hasSpecialAccess && _tier == 'free') {
+        if (_hasSpecialAccess && _tier == 'none') {
           _tier = 'home_chef';
           tierNotifier.value = _tier;
           debugPrint('🎁 Special Access: forcing Home Chef tier');
@@ -214,7 +214,7 @@ class SubscriptionService extends ChangeNotifier {
 
       await _loadUsageData(user.uid);
 
-      // ✅ Onboarding bubbles are now decoupled from tier. Initialize flags consistently.
+      // Onboarding bubbles decoupled from tier. Initialize flags consistently.
       await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible();
 
       notifyListeners();
@@ -253,7 +253,7 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
-  // ───── RevenueCat Package Logic ─────
+  // ── RevenueCat package lookups ─────────────────────────────────────────────
 
   Future<void> _loadAvailablePackages() async {
     try {
@@ -276,19 +276,19 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
-  // ───── Helper Logic ─────
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
   String _resolveTierFromEntitlements(
     Map<String, EntitlementInfo> entitlements,
   ) {
     for (final entry in entitlements.entries) {
       final id = entry.value.productIdentifier;
-      if (['master_chef_monthly', 'master_chef_yearly'].contains(id)) {
+      if (id == 'home_chef_monthly') return 'home_chef';
+      if (id == 'master_chef_monthly' || id == 'master_chef_yearly') {
         return 'master_chef';
       }
-      if (id == 'home_chef_monthly') return 'home_chef';
     }
-    return 'free';
+    return 'none';
   }
 
   EntitlementInfo? _getActiveEntitlement(
@@ -341,19 +341,19 @@ class SubscriptionService extends ChangeNotifier {
       await Future.delayed(delay);
       info = await Purchases.getCustomerInfo();
       attempts--;
-      delay *= 2;
+      delay *= 2; // ✅ multiply by a num, not a Duration
       debugPrint('⏳ Retrying RevenueCat fetch… remaining=$attempts');
     }
     return info;
   }
 
-  // ───── Tier Resolution Public Method ─────
+  // ── Tier resolution (public) ───────────────────────────────────────────────
 
   Future<String> getResolvedTier({bool forceRefresh = false}) async {
-    if (!forceRefresh && _tier != 'free') return _tier;
+    if (!forceRefresh && _tier != 'none') return _tier;
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return 'free';
+    if (user == null) return 'none';
 
     final uid = user.uid;
     final firestore = FirebaseFirestore.instance;
@@ -368,9 +368,9 @@ class SubscriptionService extends ChangeNotifier {
         'none';
 
     final doc = await firestore.collection('users').doc(uid).get();
-    final fsTier = doc.data()?['tier'] ?? 'free';
+    final fsTier = doc.data()?['tier'] ?? 'none';
 
-    final resolved = fsTier != 'free' ? fsTier : rcTier;
+    final resolved = fsTier != 'none' ? fsTier : rcTier;
     updateTier(resolved);
 
     await firestore.collection('users').doc(uid).set({
@@ -383,7 +383,7 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   Future<void> syncRevenueCatEntitlement({bool forceRefresh = false}) async {
-    if (!forceRefresh && _tier != 'free') return;
+    if (!forceRefresh && _tier != 'none') return;
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -414,8 +414,8 @@ class SubscriptionService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ───── Usage Visibility & Tracking ─────
+  // ── Usage visibility & tracking ────────────────────────────────────────────
 
-  bool get showUsageWidget => isHomeChef || isMasterChef;
+  bool get showUsageWidget => hasActiveSubscription;
   bool get trackUsage => hasActiveSubscription;
 }

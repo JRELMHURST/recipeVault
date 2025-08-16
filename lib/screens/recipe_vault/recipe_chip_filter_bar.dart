@@ -1,9 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
-import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class RecipeChipFilterBar extends StatelessWidget {
@@ -48,14 +46,9 @@ class RecipeChipFilterBar extends StatelessWidget {
     );
   }
 
-  bool _isProtectedCategory(String canonicalKey, bool isFreeUser) {
+  bool _isProtectedCategory(String canonicalKey) {
     // Always protect All, Favourites, Translated
-    if (_systemCategories.contains(canonicalKey)) return true;
-
-    // Example: could protect certain defaults for free tier only
-    // if (isFreeUser && _protectedDefaults.contains(canonicalKey)) return true;
-
-    return false;
+    return _systemCategories.contains(canonicalKey);
   }
 
   String _localizedCategory(AppLocalizations l10n, String canonicalKey) {
@@ -74,8 +67,6 @@ class RecipeChipFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final subscriptionService = Provider.of<SubscriptionService>(context);
-    final isFreeUser = subscriptionService.tier == 'free';
 
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
@@ -91,7 +82,7 @@ class RecipeChipFilterBar extends StatelessWidget {
           final key = _canonicalCategory(l10n, rawCategory);
 
           final isSelected = key == selectedKey;
-          final isProtected = _isProtectedCategory(key, isFreeUser);
+          final isProtected = _isProtectedCategory(key);
           final isDeletable = !isProtected && !_isCategoryUsed(l10n, key);
           final labelText = _localizedCategory(l10n, key);
 

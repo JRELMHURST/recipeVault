@@ -28,7 +28,6 @@ import 'settings/faq_screen.dart';
 
 // Subscription
 import 'rev_cat/paywall_screen.dart';
-import 'rev_cat/trial_ended_screen.dart';
 import 'package:recipe_vault/paywall_gate.dart';
 
 /// Global Navigator Key
@@ -139,12 +138,6 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case '/paywall':
       return MaterialPageRoute(
         builder: (_) => const PaywallScreen(),
-        settings: settings,
-      );
-
-    case '/trial-ended':
-      return MaterialPageRoute(
-        builder: (_) => const TrialEndedScreen(),
         settings: settings,
       );
 

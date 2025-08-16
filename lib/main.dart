@@ -20,19 +20,16 @@ void main() async {
   FirebaseAuth.instance.authStateChanges().listen((user) async {
     if (user != null && !user.isAnonymous) {
       debugPrint('🧍 FirebaseAuth: User signed in with UID = ${user.uid}');
-
       try {
-        await Purchases.logOut(); // Avoid stale RevenueCat session
-        await Purchases.logIn(user.uid);
+        await Purchases.logIn(user.uid); // no logOut first
         debugPrint('🛒 RevenueCat logged in as ${user.uid}');
       } catch (e) {
         debugPrint('❌ RevenueCat login failed: $e');
       }
-
       await UserSessionService.init();
     } else {
       debugPrint('👋 FirebaseAuth: User signed out or null');
-      await UserSessionService.logoutReset(); // Full reset incl. Hive + RevenueCat
+      await UserSessionService.logoutReset();
     }
   });
 

@@ -34,7 +34,6 @@ class AuthService {
       email: email,
       password: password,
     );
-    await Purchases.logIn(credential.user!.uid);
     await _ensureUserDocument(credential.user!);
     return credential;
   }
@@ -48,7 +47,6 @@ class AuthService {
       email: email,
       password: password,
     );
-    await Purchases.logIn(credential.user!.uid);
     await _ensureUserDocument(credential.user!);
     return credential;
   }
@@ -66,7 +64,6 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
-      await Purchases.logIn(userCredential.user!.uid);
       await _ensureUserDocument(userCredential.user!);
       return userCredential;
     } catch (e, stack) {
@@ -92,7 +89,6 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(oauthCredential);
-      await Purchases.logIn(userCredential.user!.uid);
       await _ensureUserDocument(userCredential.user!);
       return userCredential;
     } catch (e, stack) {

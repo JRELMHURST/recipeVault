@@ -23,7 +23,8 @@ class PlanCard extends StatelessWidget {
           return Text(t.unknownError);
         }
 
-        final actualTier = snapshot.data ?? 'free';
+        // Default now is "none" instead of "free"
+        final actualTier = snapshot.data ?? 'none';
         final entitlementId = subscriptionService.entitlementId;
 
         // Subtitle for Master Chef (Yearly/Monthly)
@@ -38,8 +39,7 @@ class PlanCard extends StatelessWidget {
         final label = switch (actualTier) {
           'master_chef' => '👑 ${t.planMasterChef}$masterChefSubtitle',
           'home_chef' => '👨‍🍳 ${t.planHomeChef}',
-          'free' => '🔓 ${t.planFree}',
-          _ => '🔓 ${t.planFree}',
+          _ => '🔒 No active plan', // <-- no i18n key required
         };
 
         // Description
@@ -49,7 +49,6 @@ class PlanCard extends StatelessWidget {
                 ? t.planMasterChefDescriptionAnnual
                 : t.planMasterChefDescriptionMonthly,
           'home_chef' => t.planHomeChefDescription,
-          'free' => t.planDefaultDescription,
           _ => t.planDefaultDescription,
         };
 
@@ -73,7 +72,6 @@ class PlanCard extends StatelessWidget {
             t.featureHomeChef4,
             t.featureHomeChef5,
           ],
-          // No specific free-plan list defined in ARB; omit benefits section.
           _ => [],
         };
 

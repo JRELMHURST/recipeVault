@@ -23,10 +23,10 @@ class TierBadge extends StatelessWidget {
     return ValueListenableBuilder<String>(
       valueListenable: subscriptionService.tierNotifier,
       builder: (context, tier, _) {
-        final isFreeTier = tier.isEmpty || tier == 'none' || tier == 'free';
+        final isNoneTier = tier.isEmpty || tier == 'none';
         final isSpecial = subscriptionService.hasSpecialAccess;
 
-        if (isFreeTier) {
+        if (isNoneTier) {
           return showAsTitle
               ? Text(
                   loc.appTitle,

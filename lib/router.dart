@@ -29,6 +29,7 @@ import 'settings/faq_screen.dart';
 // Subscription
 import 'rev_cat/paywall_screen.dart';
 import 'rev_cat/trial_ended_screen.dart';
+import 'package:recipe_vault/paywall_gate.dart';
 
 /// Global Navigator Key
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -39,29 +40,39 @@ Route<dynamic> generateRoute(RouteSettings settings) {
   switch (settings.name) {
     case '/':
       return MaterialPageRoute(
-        builder: (_) => user == null ? const LoginScreen() : const HomeScreen(),
+        builder: (_) {
+          if (user == null) return const LoginScreen();
+          // ⬇️ Gate the first screen after login
+          return const PaywallGate(child: HomeScreen());
+        },
         settings: settings,
       );
+
     case '/login':
       return MaterialPageRoute(
         builder: (_) => const LoginScreen(),
         settings: settings,
       );
+
     case '/register':
       return MaterialPageRoute(
         builder: (_) => const RegisterScreen(),
         settings: settings,
       );
+
     case '/home':
       return MaterialPageRoute(
-        builder: (_) => const HomeScreen(),
+        // ⬇️ Always gate access to Home
+        builder: (_) => const PaywallGate(child: HomeScreen()),
         settings: settings,
       );
+
     case '/results':
       return MaterialPageRoute(
         builder: (_) => const ResultsScreen(),
         settings: settings,
       );
+
     case '/edit-recipe':
       final recipe = settings.arguments as RecipeCardModel;
       return MaterialPageRoute(
@@ -75,16 +86,19 @@ Route<dynamic> generateRoute(RouteSettings settings) {
         builder: (_) => const SettingsScreen(),
         settings: settings,
       );
+
     case '/settings/account':
       return MaterialPageRoute(
         builder: (_) => const AccountSettingsScreen(),
         settings: settings,
       );
+
     case '/settings/account/change-password':
       return MaterialPageRoute(
         builder: (_) => const ChangePasswordScreen(),
         settings: settings,
       );
+
     case '/settings/appearance':
       return MaterialPageRoute(
         builder: (context) => AppearanceSettingsScreen(
@@ -96,21 +110,25 @@ Route<dynamic> generateRoute(RouteSettings settings) {
         ),
         settings: settings,
       );
+
     case '/settings/notifications':
       return MaterialPageRoute(
         builder: (_) => const NotificationsSettingsScreen(),
         settings: settings,
       );
+
     case '/settings/storage':
       return MaterialPageRoute(
         builder: (_) => const StorageSyncScreen(),
         settings: settings,
       );
+
     case '/settings/about':
       return MaterialPageRoute(
         builder: (_) => const AboutSettingsScreen(),
         settings: settings,
       );
+
     case '/settings/faqs':
       return MaterialPageRoute(
         builder: (_) => FaqsScreen(),
@@ -123,6 +141,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
         builder: (_) => const PaywallScreen(),
         settings: settings,
       );
+
     case '/trial-ended':
       return MaterialPageRoute(
         builder: (_) => const TrialEndedScreen(),

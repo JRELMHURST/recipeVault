@@ -6,10 +6,9 @@ import admin from "./firebase.js";
 import dayjs from "dayjs";
 
 import { extractTextFromImages } from "./ocr.js";
-import { detectLanguage } from "./detect.js"; // returns { languageCode, confidence, flutterLocale }
-import { translateText } from "./translate.js"; // generic translator "src -> target"
+import { detectLanguage } from "./detect.js";
+import { translateText } from "./translate.js";
 import { generateFormattedRecipe } from "./gpt_logic.js";
-import { cleanText, previewText } from "./text_utils.js";
 import {
   getResolvedTier,
   enforceTranslationPolicy,
@@ -39,7 +38,6 @@ function toFlutterLocaleTag(lang?: string, region?: string | null): string {
   return reg ? `${base}_${reg}` : base;
 }
 
-// Delete a single uploaded image by its signed URL
 async function deleteUploadedImage(url: string) {
   try {
     const match = url.match(/\/o\/([^?]+)\?/);
@@ -84,6 +82,16 @@ export const extractAndFormatRecipe = onCall(
       throw new HttpsError("unauthenticated", "User must be authenticated.");
     }
 
+    // 🔐 HARD GATE before expensive work
+    const tier = await getResolvedTier(uid); // 'home_chef' | 'master_chef' | 'none'
+    if (tier === "none") {
+      throw new HttpsError(
+        "permission-denied",
+        "A free trial or subscription is required to process screenshots."
+      );
+    }
+    console.log(`🎟️ Subscription tier resolved as: ${tier}`);
+
     const projectId =
       process.env.GCLOUD_PROJECT ||
       process.env.FUNCTIONS_PROJECT_ID ||
@@ -97,12 +105,8 @@ export const extractAndFormatRecipe = onCall(
     // —— Target locale from frontend (defaults preserved)
     const targetLanguage = (request.data?.targetLanguage || "en").toLowerCase();
     const targetRegion = (request.data?.targetRegion || "GB") || undefined;
-    const targetLanguageTag = toBcp47(targetLanguage, targetRegion);              // e.g. "pl" / "en-GB"
-    const targetFlutterLocale = toFlutterLocaleTag(targetLanguage, targetRegion); // e.g. "pl" / "en_GB"
-
-    const tier = await getResolvedTier(uid);
-    console.log(`🎟️ Subscription tier resolved as: ${tier}`);
-    console.log(`🎯 Target: ${targetLanguageTag} (flutter: ${targetFlutterLocale})`);
+    const targetLanguageTag = toBcp47(targetLanguage, targetRegion);
+    const targetFlutterLocale = toFlutterLocaleTag(targetLanguage, targetRegion);
 
     // We always try to clean up uploaded images even if processing fails
     try {
@@ -114,8 +118,8 @@ export const extractAndFormatRecipe = onCall(
         throw new HttpsError("invalid-argument", "No text detected in provided images.");
       }
 
-      const cleanInput = cleanText(ocrText);
-      previewText("🔎 Raw OCR text", ocrText);
+      const cleanInput = ocrText.replace(/[ \t]+\n/g, "\n").trim();
+      console.log("🔎 OCR done (preview omitted for brevity)");
 
       // —— Language detection
       let detectedLanguage = "unknown";
@@ -153,18 +157,14 @@ export const extractAndFormatRecipe = onCall(
             targetLanguageTag,
             projectId
           );
-          const cleanedTranslated = cleanText(translated || "");
+          const cleanedTranslated = (translated || "").trim();
           if (cleanedTranslated) {
             usedText = cleanedTranslated;
             translationUsed = true;
-            previewText("📝 Translated preview", usedText);
 
-            if (cleanText(cleanInput) !== cleanedTranslated) {
-              await enforceTranslationPolicy(uid);
-              await incrementTranslationUsage(uid);
-            } else {
-              console.log("⚠️ Translation minimal — skipping usage enforcement.");
-            }
+            // Enforce + count only when we actually translated meaningful text
+            await enforceTranslationPolicy(uid);
+            await incrementTranslationUsage(uid);
           } else {
             console.warn("⚠️ Translation returned empty or null. Continuing with original text.");
           }
@@ -176,33 +176,24 @@ export const extractAndFormatRecipe = onCall(
         console.log(`🟢 Skipping translation – already ${targetLanguageTag}`);
       }
 
-      // —— Normalise whitespace and HTML entities
-      const finalText = decode(usedText.trim())
-        .replace(/(?:\r\n|\r|\n){2,}/g, "\n\n")
-        .trim();
-
-      previewText("🧠 GPT input preview", finalText);
-
-      // —— GPT formatting
+      // —— GPT formatting (enforce policy first)
       await enforceGptRecipePolicy(uid);
 
-      // Source language for prompt context:
-      // if we translated, pass the detected source base; else pass the target base
-      const sourceLangForPrompt = translationUsed ? (srcBase || "unknown") : (tgtBase || "en");
+      // Decode HTML entities & trim before sending to GPT
+      const finalText = decode(usedText.trim());
 
       const formattedRecipe = await generateFormattedRecipe(
         finalText,
-        sourceLangForPrompt,
-        targetFlutterLocale   // ensure labels & output in the app’s language
+        translationUsed ? (srcBase || "unknown") : (tgtBase || "en"),
+        targetFlutterLocale
       );
 
-      console.log("✅ GPT formatting complete.");
       await incrementGptRecipeUsage(uid);
+      console.log("✅ GPT formatting complete.");
 
       // —— Usage metrics (month bucket)
       try {
         const monthKey = dayjs().format("YYYY-MM");
-
         await admin.firestore().doc(`users/${uid}/aiUsage/usage`).set(
           {
             [monthKey]: admin.firestore.FieldValue.increment(1),
@@ -234,7 +225,7 @@ export const extractAndFormatRecipe = onCall(
         flutterLocale,             // detected source locale for reference
         translationUsed,
         targetLanguageTag,         // e.g. "pl" or "en-GB"
-        targetFlutterLocale,       // e.g. "pl" or "en_GB" (matches Flutter)
+        targetFlutterLocale,       // e.g. "pl" or "en_GB"
         imageUrls,
         isTranslated: translationUsed,
         translatedFromLanguage: translationUsed ? detectedLanguage : null,
@@ -251,7 +242,7 @@ export const extractAndFormatRecipe = onCall(
         `❌ Failed to process recipe: ${err?.message || "Unknown error"}`
       );
     } finally {
-      // —— Always attempt to clean up uploaded images, success or fail
+      // always try to clean up uploaded images
       try {
         await Promise.all((request.data?.imageUrls ?? []).map(deleteUploadedImage));
       } catch (e) {

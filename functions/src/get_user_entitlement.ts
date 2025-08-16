@@ -1,7 +1,8 @@
 import fetch from "node-fetch";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
-type Tier = "free" | "home_chef" | "master_chef";
+/** 🔐 Internal tiers */
+export type Tier = "home_chef" | "master_chef" | "none";
 
 interface RevenueCatEntitlement {
   product_identifier: string;
@@ -16,14 +17,18 @@ interface RevenueCatResponse {
 }
 
 // Map RC products -> internal tiers
-const ENTITLEMENT_TIER_MAP: Record<string, 'home_chef' | 'master_chef'> = {
+const ENTITLEMENT_TIER_MAP: Record<string, Exclude<Tier, "none">> = {
   home_chef_monthly: "home_chef",
   master_chef_monthly: "master_chef",
   master_chef_yearly: "master_chef",
 };
 
 // Simple priority so we pick the highest tier if multiple
-const TIER_PRIORITY: Record<Tier, number> = { free: 0, home_chef: 1, master_chef: 2 };
+const TIER_PRIORITY: Record<Tier, number> = {
+  none: 0,
+  home_chef: 1,
+  master_chef: 2,
+};
 
 function isActive(expires: string | null | undefined): boolean {
   if (!expires) return true; // non-expiring or lifetime
@@ -41,7 +46,7 @@ export async function getUserEntitlementFromRevenueCat(uid: string): Promise<Tie
   const url = `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(uid)}`;
   console.log(`📡 RevenueCat lookup → UID: ${uid}`);
 
-  let tier: Tier = "free";
+  let tier: Tier = "none";
   let entitlementId: string | null = null;
 
   try {
@@ -62,7 +67,7 @@ export async function getUserEntitlementFromRevenueCat(uid: string): Promise<Tie
     const entitlements = data.subscriber?.entitlements;
 
     if (!entitlements || Object.keys(entitlements).length === 0) {
-      console.log("ℹ️ No entitlements on account — defaulting to 'free'");
+      console.log("ℹ️ No entitlements on account — defaulting to 'none'");
       await saveToFirestore(uid, tier, entitlementId);
       return tier;
     }
@@ -85,8 +90,8 @@ export async function getUserEntitlementFromRevenueCat(uid: string): Promise<Tie
       }
     }
 
-    if (tier === "free") {
-      console.warn("⚠️ No active, recognized entitlements — falling back to 'free'");
+    if (tier === "none") {
+      console.warn("⚠️ No active, recognized entitlements — falling back to 'none'");
     } else {
       console.log(`🎯 Resolved UID ${uid} → tier=${tier} via ${entitlementId}`);
     }

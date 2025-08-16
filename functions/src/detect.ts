@@ -3,52 +3,45 @@ import { TranslationServiceClient } from "@google-cloud/translate";
 
 const client = new TranslationServiceClient();
 
-// Keep punctuation & units useful for recipes; strip weird glyphs.
+/** Unicode-friendly cleanup: keep diacritics, normalize, collapse whitespace */
 function cleanText(input: string): string {
   return input
-    .replace(/[^\w\s.,:;()&%/-]/g, "")
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/\r/g, "")
+    .replace(/[ \t]+\n/g, "\n")
     .replace(/\s{2,}/g, " ")
     .trim();
 }
 
-// Truncate to keep request size sane (Google limits + cost).
+/** Keep request size reasonable for detection */
 function truncate(input: string, max = 5000): string {
   return input.length > max ? input.slice(0, max) : input;
 }
 
-// Map GCP language codes to your Flutter supported locales
-// Prefer British English as your default. Add more mappings as needed.
+// Map GCP language codes to your Flutter supported locales (underscored)
 function mapToFlutterLocale(code: string): string {
   const base = code.toLowerCase(); // e.g. "en", "pl", "ga"
 
-  // Full matches you listed in l10n.yaml
   const exact = new Set([
     "en", "en-gb", "bg", "cs", "da", "de", "el", "es", "fr", "ga", "it", "nl", "pl", "cy",
   ]);
 
-  // If Google returns a regional subtag, passthrough (we’ll normalise underscore later)
-  if (exact.has(base) || /^[a-z]{2}(-[a-z]{2})$/i.test(code)) {
-    return base.replace("-", "_"); // Flutter likes underscores
+  if (exact.has(base) || /^[a-z]{2}-[a-z]{2}$/i.test(code)) {
+    return base.replace("-", "_");
   }
 
-  // Fallbacks: coerce base languages to your supported set
-  switch (base) {
-    case "en":
-      return "en_GB"; // your preferred English
-    case "pt":
-      return "pt_PT"; // example if you later add PT; otherwise fall through
-    default:
-      return "en_GB"; // safe default
-  }
+  // sensible fallback: your app defaults to British English
+  return "en_GB";
 }
 
 export async function detectLanguage(
   text: string,
   projectId?: string
 ): Promise<{
-  languageCode: string;      // e.g. "pl", "en", "fr"
-  confidence: number;        // 0..1
-  flutterLocale: string;     // e.g. "pl", "en_GB", "fr"
+  languageCode: string;   // e.g. "pl", "en", "fr"
+  confidence: number;     // 0..1
+  flutterLocale: string;  // e.g. "pl", "en_GB", "fr"
 }> {
   if (!text?.trim()) {
     throw new Error("❌ No text provided for language detection.");
@@ -61,9 +54,7 @@ export async function detectLanguage(
     process.env.GCP_PROJECT ||
     "";
 
-  if (!pid) {
-    throw new Error("❌ No projectId available for Translate API.");
-  }
+  if (!pid) throw new Error("❌ No projectId available for Translate API.");
 
   const cleaned = truncate(cleanText(text));
 
@@ -80,7 +71,7 @@ export async function detectLanguage(
     });
 
     const language = response.languages?.[0];
-    const languageCode = (language?.languageCode || "unknown").toLowerCase(); // e.g. "pl"
+    const languageCode = (language?.languageCode || "unknown").toLowerCase();
     const confidence = language?.confidence ?? 0;
 
     if (confidence < 0.5) {
@@ -88,7 +79,6 @@ export async function detectLanguage(
     }
 
     const flutterLocale = mapToFlutterLocale(languageCode);
-
     console.log(`🌍 Detected: ${languageCode} (conf=${confidence}) → flutter=${flutterLocale}`);
 
     return { languageCode, confidence, flutterLocale };

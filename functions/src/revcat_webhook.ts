@@ -10,9 +10,12 @@ const ENTITLEMENT_TIER_MAP: Record<string, 'home_chef' | 'master_chef'> = {
   master_chef_yearly: 'master_chef',
 };
 
+// Internal union incl. “no access”
+type TierOrNone = 'home_chef' | 'master_chef' | 'none';
+
 export const revenueCatWebhook = https.onRequest(async (req, res) => {
   try {
-    // Optional basic CORS allow (adjust origin as needed)
+    // Basic CORS (adjust as needed)
     res.set('Access-Control-Allow-Origin', '*');
     if (req.method === 'OPTIONS') {
       res.set('Access-Control-Allow-Headers', 'authorization, content-type');
@@ -20,6 +23,7 @@ export const revenueCatWebhook = https.onRequest(async (req, res) => {
       return;
     }
 
+    // 🔐 Verify secret
     const secret =
       process.env.REVENUECAT_WEBHOOK_SECRET ||
       functions.config().revenuecat?.webhook_secret;
@@ -32,14 +36,22 @@ export const revenueCatWebhook = https.onRequest(async (req, res) => {
     }
 
     const event = req.body ?? {};
-    const { event: eventType, app_user_id, aliases, ...data } = event as any;
+    const {
+      event: eventType,
+      app_user_id,
+      aliases,
+      ...data
+    } = event as any;
 
     const uid: string | undefined = app_user_id || aliases?.[0];
+
+    // RevenueCat may send a single entitlement or an array depending on event
     const entitlementId: string | undefined =
       data?.entitlement_id || data?.entitlement_ids?.[0];
 
-    const resolvedTier =
-      (entitlementId && ENTITLEMENT_TIER_MAP[entitlementId]) ?? 'free';
+    // Map entitlement → internal tier, default to “none”
+    const resolvedTier: TierOrNone =
+      (entitlementId && ENTITLEMENT_TIER_MAP[entitlementId]) || 'none';
 
     console.log(
       `📦 RevenueCat event: ${eventType ?? 'unknown'} | uid=${uid ?? 'unknown'} | entitlement=${entitlementId ?? 'n/a'} → tier=${resolvedTier}`
@@ -73,8 +85,8 @@ export const revenueCatWebhook = https.onRequest(async (req, res) => {
       case 'TRIAL_STARTED':
       case 'TRIAL_CONVERTED':
       case 'UNCANCELLATION': {
-        // If no entitlement was provided on an "upgrade-ish" event, do nothing
-        if (!entitlementId || resolvedTier === 'free') {
+        // If no entitlement (or unmapped), don’t overwrite to “none” on an upgrade-ish event
+        if (!entitlementId || resolvedTier === 'none') {
           console.warn(
             `⚠️ ${eventType}: missing or unmapped entitlementId → leaving user tier unchanged`
           );
@@ -82,8 +94,8 @@ export const revenueCatWebhook = https.onRequest(async (req, res) => {
         }
         await userRef.set(
           {
-            tier: resolvedTier,
-            entitlementId,
+            tier: resolvedTier,           // 'home_chef' | 'master_chef'
+            entitlementId,                // keep the concrete product id
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           { merge: true }
@@ -92,24 +104,24 @@ export const revenueCatWebhook = https.onRequest(async (req, res) => {
         break;
       }
 
-      // 🔻 Events that should drop the user to free
+      // 🔻 Events that should remove access (hard gate → "none")
       case 'CANCELLATION':
       case 'NON_RENEWING_PURCHASE':
       case 'EXPIRATION':
       case 'TRIAL_EXPIRED': {
         await userRef.set(
           {
-            tier: 'free',
+            tier: 'none',
             entitlementId: null,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           { merge: true }
         );
-        console.log(`🔄 Downgraded to "free" tier for ${uid}`);
+        console.log(`🔄 Downgraded to "none" for ${uid}`);
         break;
       }
 
-      // ℹ️ Informational / no‑op events
+      // ℹ️ Informational / no-op events
       case 'BILLING_ISSUE':
       case 'SUBSCRIBER_ALIAS':
       default: {

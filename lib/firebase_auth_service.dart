@@ -162,7 +162,9 @@ class AuthService {
     final customerInfo = await Purchases.getCustomerInfo();
     final entitlementId =
         customerInfo.entitlements.active.values.firstOrNull?.identifier;
-    final resolvedTier = resolveTier(entitlementId ?? 'free');
+
+    // ⬇️ CHANGED: default to 'none' (hard-gate world)
+    final resolvedTier = resolveTier(entitlementId ?? 'none');
 
     // pull preferred locale from device prefs (written by LanguageProvider)
     final preferredLocale = await _getPreferredRecipeLocale();
@@ -214,7 +216,9 @@ class AuthService {
     final customerInfo = await Purchases.getCustomerInfo();
     final entitlementId =
         customerInfo.entitlements.active.values.firstOrNull?.identifier;
-    final resolvedTier = resolveTier(entitlementId ?? 'free');
+
+    // ⬇️ CHANGED: default to 'none' (hard-gate world)
+    final resolvedTier = resolveTier(entitlementId ?? 'none');
 
     // read the local preferred locale
     String? preferredLocale;

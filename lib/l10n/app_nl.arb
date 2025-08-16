@@ -80,6 +80,14 @@
   "@noRecipesFound": {
     "description": "Shown when a recipe search returns no results."
   },
+  "emptyVaultTitle": "Je receptenkluis is leeg",
+  "@emptyVaultTitle": {
+    "description": "Title shown when the vault has no recipes"
+  },
+  "emptyVaultBody": "Begin met het bouwen van je persoonlijke kookboek! ✨\n\nVoeg je favoriete maaltijden, familierecepten of nieuwe ideeën toe.\nElke kaart kan ingrediënten, stappen en foto’s bevatten.",
+  "@emptyVaultBody": {
+    "description": "Body text encouraging the user to create their first recipe"
+  },
   "addCategory": "Categorie toevoegen",
   "@addCategory": {
     "description": "Action to create a new category."

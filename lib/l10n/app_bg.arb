@@ -80,6 +80,14 @@
   "@noRecipesFound": {
     "description": "Shown when a recipe search returns no results."
   },
+  "emptyVaultTitle": "Вашият кулинарен архив е празен",
+  "@emptyVaultTitle": {
+    "description": "Title shown when the vault has no recipes"
+  },
+  "emptyVaultBody": "Започнете да изграждате своя лична готварска книга! ✨\n\nДобавете любимите си ястия, семейни рецепти или нови идеи.\nВсяка карта може да съдържа съставки, стъпки и снимки.",
+  "@emptyVaultBody": {
+    "description": "Body text encouraging the user to create their first recipe"
+  },
   "addCategory": "Добави категория",
   "@addCategory": {
     "description": "Action to create a new category."

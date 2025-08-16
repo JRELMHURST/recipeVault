@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart'; // ✅ NEW
 import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/rev_cat/tier_utils.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -205,19 +204,7 @@ class AuthService {
       }
     }
 
-    // Optionally refresh seeded/global recipes to ensure user's vault is current
-    try {
-      final callable = FirebaseFunctions.instanceFor(
-        region: 'europe-west2',
-      ).httpsCallable('refreshGlobalRecipesForUser');
-      final result = await callable();
-      debugPrint(
-        '🍽 Global recipes refreshed: ${result.data['copiedCount']} item(s) copied',
-      );
-    } catch (e, stack) {
-      debugPrint('⚠️ Failed to refresh global recipes: $e');
-      debugPrint(stack.toString());
-    }
+    // ✅ Global/seeded recipe refresh removed.
   }
 
   static Future<bool> ensureUserDocumentIfMissing(User user) async {
@@ -256,19 +243,7 @@ class AuthService {
         debugPrint('⚠️ Failed to mark user as new in preferences: $e');
       }
 
-      try {
-        final callable = FirebaseFunctions.instanceFor(
-          region: 'europe-west2',
-        ).httpsCallable('refreshGlobalRecipesForUser');
-        final result = await callable();
-        debugPrint(
-          '🍽 Global recipes refreshed: ${result.data['copiedCount']} item(s) copied',
-        );
-      } catch (e, stack) {
-        debugPrint('⚠️ Failed to refresh global recipes: $e');
-        debugPrint(stack.toString());
-      }
-
+      // ✅ Global/seeded recipe refresh removed.
       return true;
     } else {
       final existing = doc.data() ?? {};

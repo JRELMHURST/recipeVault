@@ -1,3 +1,5 @@
+// RecipeVaultScreen.dart
+
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -24,6 +26,9 @@ import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
+import 'package:recipe_vault/widgets/empty_vault_placeholder.dart';
+import 'package:recipe_vault/widgets/processing_overlay.dart'; // ⬅️ NEW
+// (removed: placeholder_logo import since it isn’t used here)
 
 /// Drives which onboarding bubble is visible (top-level — not inside a class)
 enum _OnboardingStep { none, viewToggle, longPress, scan, done }
@@ -191,6 +196,86 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     await _loadCustomCategories();
   }
 
+  // ---------- Create flow from empty state ----------
+  Future<void> _startCreateFlow() async {
+    final loc = AppLocalizations.of(context);
+    final sub = Provider.of<SubscriptionService>(context, listen: false);
+
+    // Gate: image uploads on paid tiers only?
+    if (!sub.allowImageUpload) {
+      await showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (_) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 40,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.lock_outline_rounded, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  loc.upgradeToUnlockTitle,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  loc.createFromImagesPaid,
+                  style: const TextStyle(fontSize: 15),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  loc.upgradeToUnlockBody,
+                  style: const TextStyle(fontSize: 14, color: Colors.black54),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/paywall');
+                    },
+                    child: Text(
+                      loc.seePlanOptions,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(loc.cancel),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Choose images and launch processing overlay
+    final files = await ImageProcessingService.pickAndCompressImages();
+    if (!mounted || files.isEmpty) return;
+
+    ProcessingOverlay.show(context, files);
+  }
+
   // ---------- Onboarding flow ----------
   Future<void> _initVault() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -290,34 +375,14 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         .snapshots()
         .listen((snapshot) async {
           try {
+            // only the user's recipes
             final userRecipes = snapshot.docs
                 .map((doc) => RecipeCardModel.fromJson(doc.data()))
                 .toList();
 
-            final hiddenSnapshot = await FirebaseFirestore.instance
-                .collection('users')
-                .doc(userId)
-                .collection('hiddenGlobalRecipes')
-                .get();
-
-            final hiddenGlobalIds = hiddenSnapshot.docs
-                .map((doc) => doc.id)
-                .toSet();
-
-            final globalSnapshot = await FirebaseFirestore.instance
-                .collection('global_recipes')
-                .orderBy('createdAt', descending: true)
-                .get();
-
-            final globalRecipes = globalSnapshot.docs
-                .where((doc) => !hiddenGlobalIds.contains(doc.id))
-                .map((doc) => RecipeCardModel.fromJson(doc.data()))
-                .toList();
-
+            // keep local favourites/categories in sync
             final localRecipes = await HiveRecipeService.getAll();
-
             final Map<String, RecipeCardModel> mergedMap = {
-              for (final r in globalRecipes) r.id: r,
               for (final r in userRecipes) r.id: r,
             };
 
@@ -415,9 +480,9 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                         child: RecipeChipFilterBar(
                           categories: displayedCategories,
                           selectedCategory: displayedSelected,
-                          onCategorySelected: (label) => setState(() {
-                            _selectedCategory = _keyFor(label, t);
-                          }),
+                          onCategorySelected: (label) => setState(
+                            () => _selectedCategory = _keyFor(label, t),
+                          ),
                           onCategoryDeleted: (label) => _removeCategory(label),
                           allRecipes: _allRecipes,
                         ),
@@ -439,7 +504,18 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                     child: KeyedSubtree(
                       key: _keyFirstCardArea,
                       child: _filteredRecipes.isEmpty
-                          ? Center(child: Text(t.noRecipesFound))
+                          ? (_allRecipes.isEmpty
+                                ? EmptyVaultPlaceholder(
+                                    onCreate: _startCreateFlow,
+                                  )
+                                : Center(
+                                    child: Text(
+                                      t.noRecipesFound,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyLarge,
+                                    ),
+                                  ))
                           : AnimatedSwitcher(
                               duration: const Duration(milliseconds: 300),
                               child: ResponsiveWrapper(
@@ -488,8 +564,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               onDismissScan: _advanceOnboarding,
               onDismissViewToggle: _advanceOnboarding,
               onDismissLongPress: _advanceOnboarding,
-              // Future: pass anchors when supported by the widget:
-              // keyFab: _keyFab, keyViewToggle: _keyViewToggle, keyFirstCard: _keyFirstCardArea,
             ),
           ],
         ),

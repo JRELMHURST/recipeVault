@@ -80,6 +80,14 @@
   "@noRecipesFound": {
     "description": "Shown when a recipe search returns no results."
   },
+  "emptyVaultTitle": "Twój skarbiec przepisów jest pusty",
+  "@emptyVaultTitle": {
+    "description": "Title shown when the vault has no recipes"
+  },
+  "emptyVaultBody": "Zacznij budować swoją osobistą książkę kucharską! ✨\n\nDodaj ulubione dania, rodzinne przepisy lub nowe pomysły.\nKażda karta może zawierać składniki, kroki przygotowania i zdjęcia.",
+  "@emptyVaultBody": {
+    "description": "Body text encouraging the user to create their first recipe"
+  },
   "addCategory": "Dodaj kategorię",
   "@addCategory": {
     "description": "Action to create a new category."

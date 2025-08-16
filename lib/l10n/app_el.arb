@@ -80,6 +80,14 @@
   "@noRecipesFound": {
     "description": "Message when no recipes match the search"
   },
+  "emptyVaultTitle": "Το βιβλίο συνταγών σου είναι άδειο",
+  "@emptyVaultTitle": {
+    "description": "Title shown when the vault has no recipes"
+  },
+  "emptyVaultBody": "Ξεκίνα να δημιουργείς το προσωπικό σου βιβλίο μαγειρικής! ✨\n\nΠρόσθεσε τα αγαπημένα σου πιάτα, οικογενειακές συνταγές ή νέες ιδέες.\nΚάθε κάρτα μπορεί να περιλαμβάνει υλικά, βήματα και φωτογραφίες.",
+  "@emptyVaultBody": {
+    "description": "Body text encouraging the user to create their first recipe"
+  },
   "addCategory": "Προσθήκη κατηγορίας",
   "@addCategory": {
     "description": "Button text to add a category"

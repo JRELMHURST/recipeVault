@@ -80,6 +80,14 @@
   "@noRecipesFound": {
     "description": "Shown when a recipe search returns no results."
   },
+  "emptyVaultTitle": "Dein Rezept-Tresor ist leer",
+  "@emptyVaultTitle": {
+    "description": "Title shown when the vault has no recipes"
+  },
+  "emptyVaultBody": "Beginne mit dem Aufbau deines persönlichen Kochbuchs! ✨\n\nFüge deine Lieblingsgerichte, Familienrezepte oder neue Ideen hinzu.\nJede Karte kann Zutaten, Schritte und Fotos enthalten.",
+  "@emptyVaultBody": {
+    "description": "Body text encouraging the user to create their first recipe"
+  },
   "addCategory": "Kategorie hinzufügen",
   "@addCategory": {
     "description": "Action to create a new category."

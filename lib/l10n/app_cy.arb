@@ -80,6 +80,14 @@
     "@noRecipesFound": {
         "description": "Shown when a recipe search returns no results."
     },
+    "emptyVaultTitle": "Mae eich Vault Ryseitiau yn Wag",
+    "@emptyVaultTitle": {
+        "description": "Title shown when the vault has no recipes"
+    },
+    "emptyVaultBody": "Dechreuwch adeiladu eich llyfr coginio personol! ✨\n\nYchwanegwch eich prydau hoff, ryseitiau teulu neu syniadau newydd.\nGall pob cerdyn gynnwys cynhwysion, camau a lluniau.",
+    "@emptyVaultBody": {
+        "description": "Body text encouraging the user to create their first recipe"
+    },
     "addCategory": "Ychwanegu Categori",
     "@addCategory": {
         "description": "Action to create a new category."

@@ -80,6 +80,14 @@
   "@noRecipesFound": {
     "description": "Shown when a recipe search returns no results."
   },
+  "emptyVaultTitle": "Il tuo Ricettario è Vuoto",
+  "@emptyVaultTitle": {
+    "description": "Title shown when the vault has no recipes"
+  },
+  "emptyVaultBody": "Inizia a creare il tuo ricettario personale! ✨\n\nAggiungi i tuoi piatti preferiti, ricette di famiglia o nuove idee.\nOgni scheda può includere ingredienti, passaggi e foto.",
+  "@emptyVaultBody": {
+    "description": "Body text encouraging the user to create their first recipe"
+  },
   "addCategory": "Aggiungi categoria",
   "@addCategory": {
     "description": "Action to create a new category."

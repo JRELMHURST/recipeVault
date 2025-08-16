@@ -80,6 +80,14 @@
   "@noRecipesFound": {
     "description": "Shown when a recipe search returns no results."
   },
+  "emptyVaultTitle": "Tá Do Chistean Oideas Folamh",
+  "@emptyVaultTitle": {
+    "description": "Title shown when the vault has no recipes"
+  },
+  "emptyVaultBody": "Tosaigh ag tógáil do chócaireleabhar pearsanta! ✨\n\nCuir do bhéilí is fearr leat, oidis teaghlaigh, nó smaointe nua leis.\nIs féidir le gach cárta comhábhair, céimeanna agus grianghraif a áireamh.",
+  "@emptyVaultBody": {
+    "description": "Body text encouraging the user to create their first recipe"
+  },
   "addCategory": "Cuir catagóir leis",
   "@addCategory": {
     "description": "Action to create a new category."

@@ -84,9 +84,9 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Beginne mit dem Aufbau deines persönlichen Kochbuchs! ✨\n\nFüge deine Lieblingsgerichte, Familienrezepte oder neue Ideen hinzu.\nJede Karte kann Zutaten, Schritte und Fotos enthalten.",
+  "emptyVaultBody": "Speichere deine Rezept-Screenshots an einem Ort ✨\n\nWandle chaotische Fotos in organisierte Rezeptkarten um oder übersetze sie.",
   "@emptyVaultBody": {
-    "description": "Body text encouraging the user to create their first recipe"
+    "description": "Text, der den Benutzer dazu ermutigt, Screenshots zu importieren und sein erstes Rezept zu erstellen"
   },
   "addCategory": "Kategorie hinzufügen",
   "@addCategory": {

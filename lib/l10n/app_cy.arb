@@ -84,9 +84,9 @@
     "@emptyVaultTitle": {
         "description": "Title shown when the vault has no recipes"
     },
-    "emptyVaultBody": "Dechreuwch adeiladu eich llyfr coginio personol! ✨\n\nYchwanegwch eich prydau hoff, ryseitiau teulu neu syniadau newydd.\nGall pob cerdyn gynnwys cynhwysion, camau a lluniau.",
+    "emptyVaultBody": "Cadwch eich sgrinluniau ryseitiau mewn un lle ✨\n\nTrowch neu gyfieithwch luniau anniben yn gardiau ryseitiau trefnus.",
     "@emptyVaultBody": {
-        "description": "Body text encouraging the user to create their first recipe"
+        "description": "Testun yn annog y defnyddiwr i fewnforio sgrinluniau a chreu'r rysáit cyntaf"
     },
     "addCategory": "Ychwanegu Categori",
     "@addCategory": {

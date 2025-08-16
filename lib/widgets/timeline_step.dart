@@ -1,34 +1,36 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 
 class TimelineStep extends StatelessWidget {
   final String label;
   final bool isCurrent;
   final bool isCompleted;
+  final bool isLast;
 
   const TimelineStep({
     super.key,
     required this.label,
     required this.isCurrent,
     required this.isCompleted,
+    this.isLast = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final Color dotColor = isCompleted
+    final dotColor = isCompleted
         ? theme.colorScheme.primary
         : isCurrent
-        ? theme.colorScheme.primary.withAlpha((0.9 * 255).toInt())
+        ? theme.colorScheme.primary.withOpacity(0.9)
         : theme.disabledColor;
 
-    final double dotSize = isCurrent ? 18 : 12;
+    final lineColor = (isCompleted || isCurrent)
+        ? theme.colorScheme.primary.withOpacity(0.6)
+        : theme.disabledColor.withOpacity(0.4);
 
-    final Color lineColor = isCompleted || isCurrent
-        ? theme.colorScheme.primary.withAlpha((0.6 * 255).toInt())
-        : theme.disabledColor.withAlpha((0.4 * 255).toInt());
-
-    final TextStyle textStyle = theme.textTheme.bodyLarge!.copyWith(
+    final textStyle = theme.textTheme.bodyLarge?.copyWith(
       fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
       color: isCompleted || isCurrent
           ? theme.colorScheme.onSurface
@@ -40,29 +42,42 @@ class TimelineStep extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Timeline Dot + Line
+          // Dot + Line
           Column(
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: dotSize,
-                height: dotSize,
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                width: isCurrent ? 18 : 12,
+                height: isCurrent ? 18 : 12,
                 decoration: BoxDecoration(
                   color: dotColor,
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(height: 4),
-              Container(width: 2, height: 32, color: lineColor),
+              if (!isLast) ...[
+                const SizedBox(height: 4),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  width: 2,
+                  height: 32,
+                  color: lineColor,
+                ),
+              ],
             ],
           ),
           const SizedBox(width: 16),
-          // Step Label
+          // Label
           Expanded(
-            child: AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: textStyle,
-              child: Text(label),
+            child: Semantics(
+              label: label,
+              selected: isCurrent,
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: textStyle ?? const TextStyle(),
+                child: Text(label),
+              ),
             ),
           ),
         ],

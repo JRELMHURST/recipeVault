@@ -84,9 +84,9 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Begin met het bouwen van je persoonlijke kookboek! ✨\n\nVoeg je favoriete maaltijden, familierecepten of nieuwe ideeën toe.\nElke kaart kan ingrediënten, stappen en foto’s bevatten.",
+  "emptyVaultBody": "Bewaar je recept-schermafbeeldingen op één plek ✨\n\nZet rommelige foto’s om of vertaal ze naar georganiseerde receptkaarten.",
   "@emptyVaultBody": {
-    "description": "Body text encouraging the user to create their first recipe"
+    "description": "Tekst die de gebruiker aanmoedigt om schermafbeeldingen te importeren en zijn eerste recept te maken"
   },
   "addCategory": "Categorie toevoegen",
   "@addCategory": {

@@ -1,5 +1,6 @@
 // daily_message_bubble.dart
 // ignore_for_file: file_names, deprecated_member_use, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/core/daily_message_service.dart';
@@ -7,6 +8,7 @@ import 'package:recipe_vault/core/daily_tip_banner_controller.dart';
 
 class DailyMessageBubble extends StatefulWidget {
   const DailyMessageBubble({super.key});
+
   @override
   State<DailyMessageBubble> createState() => _DailyMessageBubbleState();
 }
@@ -18,7 +20,12 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
   Future<void> _showTipBanner() async {
     // Always reopen for every tap
     await _controller.close();
-    await Future.microtask(() {});
+
+    // Let the overlay fully clean up in this frame before re-inserting.
+    // A short post-frame wait is more reliable than a microtask here.
+    if (mounted) {
+      await Future.delayed(const Duration(milliseconds: 1));
+    }
 
     final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
@@ -30,8 +37,8 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
     await _controller.show(
       context: context,
       vsync: this,
-      autoCloseAfter: const Duration(seconds: 6), // set to null to persist
-      topMargin: 16, // ⬅️ opens just below the app bar; tweak if needed
+      autoCloseAfter: const Duration(seconds: 6),
+      topMargin: 64,
       maxWidth: 480,
       content: _BannerBody(
         title: t.dailyTipTitle,
@@ -80,7 +87,7 @@ class _BannerBody extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Round gradient chip
+          // 🔆 Round gradient icon
           Container(
             width: 36,
             height: 36,
@@ -96,7 +103,7 @@ class _BannerBody extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // Text + actions
+          // 📝 Text + actions
           Expanded(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -153,7 +160,7 @@ class _BannerBody extends StatelessWidget {
             ),
           ),
 
-          // Close "X"
+          // ❌ Close icon
           IconButton(
             padding: const EdgeInsets.only(left: 4),
             constraints: const BoxConstraints(),

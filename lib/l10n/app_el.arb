@@ -84,9 +84,9 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Ξεκίνα να δημιουργείς το προσωπικό σου βιβλίο μαγειρικής! ✨\n\nΠρόσθεσε τα αγαπημένα σου πιάτα, οικογενειακές συνταγές ή νέες ιδέες.\nΚάθε κάρτα μπορεί να περιλαμβάνει υλικά, βήματα και φωτογραφίες.",
+  "emptyVaultBody": "Αποθήκευσε τα στιγμιότυπα συνταγών σου σε ένα μέρος ✨\n\nΜετέτρεψε / μετέφρασε ακατάστατες φωτογραφίες σε οργανωμένες κάρτες συνταγών.",
   "@emptyVaultBody": {
-    "description": "Body text encouraging the user to create their first recipe"
+    "description": "Κείμενο που ενθαρρύνει τον χρήστη να εισάγει screenshots και να δημιουργήσει την πρώτη του συνταγή"
   },
   "addCategory": "Προσθήκη κατηγορίας",
   "@addCategory": {

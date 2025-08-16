@@ -20,16 +20,12 @@ import 'package:recipe_vault/screens/recipe_vault/recipe_dialog.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_search_bar.dart';
-// REMOVED: import 'package:recipe_vault/screens/recipe_vault/recipe_vault_bubbles.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
-// REMOVED (bubbles only): import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/widgets/empty_vault_placeholder.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
-
-// REMOVED: enum _OnboardingStep { none, viewToggle, longPress, scan, done }
 
 class RecipeVaultScreen extends StatefulWidget {
   final ViewMode viewMode;
@@ -64,19 +60,14 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     kDessert,
   ];
 
-  List<String> _allCategories = const [kAll, kFav, kTranslated];
+  // Start minimal; loaders will populate the rest.
+  List<String> _allCategories = const [kAll];
   List<RecipeCardModel> _allRecipes = [];
 
-  // REMOVED onboarding state:
-  // _OnboardingStep _step = _OnboardingStep.none;
-  // bool _hasLoadedBubbles = false;
-
-  // Keys (kept; harmless and useful later)
+  // FAB key only (useful for future interactions)
   final GlobalKey _keyFab = GlobalKey();
-  final GlobalKey _keyViewToggle = GlobalKey();
-  final GlobalKey _keyFirstCardArea = GlobalKey();
 
-  // ✅ Search: title, ingredients, instructions, hints
+  // Search + filter
   List<RecipeCardModel> get _filteredRecipes {
     final q = _searchQuery.trim();
     return _allRecipes.where((recipe) {
@@ -90,7 +81,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     }).toList();
   }
 
-  // --- Localisation mapping helpers (keys <-> labels) ---
+  // Localisation mapping helpers (keys <-> labels)
   String _labelFor(String key, AppLocalizations t) {
     switch (key) {
       case kAll:
@@ -194,7 +185,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     await _loadCustomCategories();
   }
 
-  // ---------- Create flow from empty state ----------
+  // Create flow from empty state
   Future<void> _startCreateFlow() async {
     final loc = AppLocalizations.of(context);
     final sub = Provider.of<SubscriptionService>(context, listen: false);
@@ -272,7 +263,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     ProcessingOverlay.show(context, files);
   }
 
-  // ---------- Data/bootstrap ----------
+  // Data/bootstrap
   Future<void> _initVault() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.isAnonymous) {
@@ -287,17 +278,13 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         .doc(userId)
         .collection('recipes');
 
-    // small delay to allow layout + session prep
     await Future.delayed(const Duration(milliseconds: 100));
 
     await Future.wait([
       _initializeDefaultCategories(),
       _loadCustomCategories(),
       Future(_startRecipeListener),
-      // REMOVED: UserPreferencesService.waitForBubbleFlags(),
     ]);
-
-    // REMOVED: onboarding/tier checks & bubble state
   }
 
   void _startRecipeListener() {
@@ -377,112 +364,93 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         data: MediaQuery.of(
           context,
         ).copyWith(textScaler: TextScaler.linear(scale)),
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 12.0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox.shrink(),
+              const SizedBox(height: 8),
+
+              // Search bar
+              RecipeSearchBar(
+                initialValue: _searchQuery,
+                onChanged: (value) => setState(() => _searchQuery = value),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox.shrink(),
-                  const SizedBox(height: 8),
 
-                  // Search bar
-                  RecipeSearchBar(
-                    initialValue: _searchQuery,
-                    onChanged: (value) => setState(() => _searchQuery = value),
+              const SizedBox(height: 12),
+
+              // Filter chips row
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 6.0),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: RecipeChipFilterBar(
+                    categories: displayedCategories,
+                    selectedCategory: displayedSelected,
+                    onCategorySelected: (label) =>
+                        setState(() => _selectedCategory = _keyFor(label, t)),
+                    onCategoryDeleted: (label) => _removeCategory(label),
+                    allRecipes: _allRecipes,
                   ),
+                ),
+              ),
 
-                  const SizedBox(height: 12),
-
-                  // Filter chips row
-                  KeyedSubtree(
-                    key: _keyViewToggle,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 6.0),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: RecipeChipFilterBar(
-                          categories: displayedCategories,
-                          selectedCategory: displayedSelected,
-                          onCategorySelected: (label) => setState(
-                            () => _selectedCategory = _keyFor(label, t),
-                          ),
-                          onCategoryDeleted: (label) => _removeCategory(label),
-                          allRecipes: _allRecipes,
+              // Results area
+              Expanded(
+                child: _filteredRecipes.isEmpty
+                    ? (_allRecipes.isEmpty
+                          ? EmptyVaultPlaceholder(onCreate: _startCreateFlow)
+                          : Center(
+                              child: Text(
+                                t.noRecipesFound,
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                            ))
+                    : AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: ResponsiveWrapper(
+                          child: switch (view) {
+                            ViewMode.list => RecipeListView(
+                              recipes: _filteredRecipes,
+                              onDelete: _deleteRecipe,
+                              onTap: (r) => showRecipeDialog(context, r),
+                              onToggleFavourite: _toggleFavourite,
+                              categories: _allCategories,
+                              onAssignCategories: _assignCategories,
+                              onAddOrUpdateImage: _addOrUpdateImage,
+                            ),
+                            ViewMode.grid => RecipeGridView(
+                              recipes: _filteredRecipes,
+                              onTap: (r) => showRecipeDialog(context, r),
+                              onToggleFavourite: _toggleFavourite,
+                              onAssignCategories: _assignCategories,
+                              categories: _allCategories,
+                              onDelete: _deleteRecipe,
+                              onAddOrUpdateImage: _addOrUpdateImage,
+                            ),
+                            ViewMode.compact => RecipeCompactView(
+                              recipes: _filteredRecipes,
+                              onTap: (r) => showRecipeDialog(context, r),
+                              onToggleFavourite: _toggleFavourite,
+                              onDelete: _deleteRecipe,
+                              categories: _allCategories,
+                              onAssignCategories: _assignCategories,
+                              onAddOrUpdateImage: _addOrUpdateImage,
+                            ),
+                          },
                         ),
                       ),
-                    ),
-                  ),
-
-                  // Results area
-                  Expanded(
-                    child: KeyedSubtree(
-                      key: _keyFirstCardArea,
-                      child: _filteredRecipes.isEmpty
-                          ? (_allRecipes.isEmpty
-                                ? EmptyVaultPlaceholder(
-                                    onCreate: _startCreateFlow,
-                                  )
-                                : Center(
-                                    child: Text(
-                                      t.noRecipesFound,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodyLarge,
-                                    ),
-                                  ))
-                          : AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              child: ResponsiveWrapper(
-                                child: switch (view) {
-                                  ViewMode.list => RecipeListView(
-                                    recipes: _filteredRecipes,
-                                    onDelete: _deleteRecipe,
-                                    onTap: (r) => showRecipeDialog(context, r),
-                                    onToggleFavourite: _toggleFavourite,
-                                    categories: _allCategories,
-                                    onAssignCategories: _assignCategories,
-                                    onAddOrUpdateImage: _addOrUpdateImage,
-                                  ),
-                                  ViewMode.grid => RecipeGridView(
-                                    recipes: _filteredRecipes,
-                                    onTap: (r) => showRecipeDialog(context, r),
-                                    onToggleFavourite: _toggleFavourite,
-                                    onAssignCategories: _assignCategories,
-                                    categories: _allCategories,
-                                    onDelete: _deleteRecipe,
-                                    onAddOrUpdateImage: _addOrUpdateImage,
-                                  ),
-                                  ViewMode.compact => RecipeCompactView(
-                                    recipes: _filteredRecipes,
-                                    onTap: (r) => showRecipeDialog(context, r),
-                                    onToggleFavourite: _toggleFavourite,
-                                    onDelete: _deleteRecipe,
-                                    categories: _allCategories,
-                                    onAssignCategories: _assignCategories,
-                                    onAddOrUpdateImage: _addOrUpdateImage,
-                                  ),
-                                },
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
               ),
-            ),
-
-            // REMOVED: RecipeVaultBubbles overlay
-          ],
+            ],
+          ),
         ),
       ),
 
-      // FAB (wrapped for future anchoring)
+      // FAB
       floatingActionButton: Builder(
+        key: _keyFab,
         builder: (context) {
           final subService = Provider.of<SubscriptionService>(context);
           final count = _allCategories
@@ -492,12 +460,9 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               subService.allowCategoryCreation ||
               (subService.isHomeChef && count < 3);
 
-          return KeyedSubtree(
-            key: _keyFab,
-            child: CategorySpeedDial(
-              onCategoryChanged: _loadCustomCategories,
-              allowCreation: allow,
-            ),
+          return CategorySpeedDial(
+            onCategoryChanged: _loadCustomCategories,
+            allowCreation: allow,
           );
         },
       ),

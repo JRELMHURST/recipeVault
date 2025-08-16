@@ -1,5 +1,5 @@
 // Full updated SubscriptionService.dart
-// [Refreshed August 2025] - fixes brand‑new user showing "Trial Ended" prematurely
+// [Refreshed August 2025] - fixes brand-new user showing "Trial Ended" prematurely
 
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -214,8 +214,8 @@ class SubscriptionService extends ChangeNotifier {
 
       await _loadUsageData(user.uid);
 
-      // Ensure onboarding bubbles state is set up consistently for the current tier.
-      await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(_tier);
+      // ✅ Onboarding bubbles are now decoupled from tier. Initialize flags consistently.
+      await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible();
 
       notifyListeners();
     } catch (e) {
@@ -329,7 +329,7 @@ class SubscriptionService extends ChangeNotifier {
     return created != null && last != null && created.isAtSameMomentAs(last);
   }
 
-  // Light retry to avoid "no entitlement" on brand‑new accounts
+  // Light retry to avoid "no entitlement" on brand-new accounts
   Future<CustomerInfo> _getCustomerInfoWithRetry({
     required bool preferRetry,
   }) async {

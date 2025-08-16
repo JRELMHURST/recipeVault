@@ -18,14 +18,15 @@ import 'package:recipe_vault/services/category_service.dart';
 import 'package:hive/hive.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 
+// ✅ Feature flags
+import 'package:recipe_vault/core/feature_flags.dart';
+
 class UserSessionService {
   static bool _isInitialised = false;
   static Completer<void>? _bubbleFlagsReady;
   static StreamSubscription<DocumentSnapshot>? _userDocSubscription;
   static StreamSubscription<DocumentSnapshot>? _aiUsageSub;
   static StreamSubscription<DocumentSnapshot>? _translationSub;
-
-  // Note: the vault listener lives inside VaultRecipeService; we call its cancel method on teardown.
 
   static bool get isInitialised => _isInitialised;
 
@@ -35,26 +36,19 @@ class UserSessionService {
 
   static Future<bool> shouldShowTrialEndedScreen() async {
     try {
-      // 1) Prefer our in‑app snapshot first
       final sub = SubscriptionService();
-      await sub.refresh(); // light refresh; no-op if already loading
+      await sub.refresh();
 
-      // If user is in an active trial or on any paid plan → do NOT show
       if (sub.isInTrial || sub.hasActiveSubscription) return false;
 
-      // 2) Fallback: ask RevenueCat directly
       final info = await Purchases.getCustomerInfo();
 
-      // No active entitlements at all → play it safe for brand‑new users
       if (info.entitlements.active.isEmpty) return false;
 
-      // Check the first active entitlement
       final e = info.entitlements.active.values.first;
 
-      // Active and not a trial → do NOT show
       if (e.isActive && e.periodType != PeriodType.trial) return false;
 
-      // Trial entitlement → only show when it actually ended AND won't renew
       if (e.periodType == PeriodType.trial) {
         final expiryStr = e.expirationDate;
         if (expiryStr == null) return false;
@@ -66,7 +60,6 @@ class UserSessionService {
         return trialEnded && wontRenew;
       }
 
-      // Default: do NOT show
       return false;
     } catch (e) {
       _logDebug(
@@ -114,11 +107,11 @@ class UserSessionService {
       final resolvedTier = await SubscriptionService().getResolvedTier();
       _logDebug('🧾 Tier resolved via getResolvedTier(): $resolvedTier');
 
+      // Will be true only on first login/creation of the user doc
       final isNewUser = await AuthService.ensureUserDocumentIfMissing(user);
       if (isNewUser) {
         try {
           await UserPreferencesService.markAsNewUser();
-          // Ensure onboarding is clean for a fresh account
           await UserPreferencesService.resetBubbles();
         } catch (e, stack) {
           _logDebug('⚠️ Failed to mark user as new: $e');
@@ -197,10 +190,28 @@ class UserSessionService {
       final tier = SubscriptionService().tier;
       _logDebug('🎟️ Tier resolved: $tier');
 
-      _logDebug('🫧 Checking onboarding bubble trigger...');
-      await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible(tier);
+      // ✅ New logic: onboarding bubbles (if enabled) are NEW-USER only
+      if (kOnboardingBubblesEnabled) {
+        _logDebug('🫧 Checking onboarding bubble trigger (new-user only)…');
+        final hasShownOnce = await UserPreferencesService.hasShownBubblesOnce;
+        final tutorialComplete =
+            await UserPreferencesService.hasCompletedVaultTutorial();
+
+        if (isNewUser && !hasShownOnce && !tutorialComplete) {
+          // Whatever your “first-show” flag is — set it here.
+          await UserPreferencesService.markBubblesShown();
+          _logDebug('🌟 Onboarding flagged for first show (new user)');
+        } else {
+          _logDebug(
+            '🫧 Skipping onboarding: isNewUser=$isNewUser, '
+            'hasShownOnce=$hasShownOnce, tutorialComplete=$tutorialComplete',
+          );
+        }
+      } else {
+        _logDebug('🚫 Onboarding bubbles disabled via feature flag');
+      }
+      // Always complete to unblock any awaiters
       _bubbleFlagsReady?.complete();
-      _logDebug('✅ Bubble trigger check complete');
 
       _logDebug('📂 Loading categories...');
       await CategoryService.load();
@@ -210,7 +221,6 @@ class UserSessionService {
 
       _logDebug('📡 Starting vault listener...');
       if (FirebaseAuth.instance.currentUser?.uid == uid) {
-        // The service owns its subscription; we just start it.
         VaultRecipeService.listenToVaultChanges(() {
           debugPrint('📡 Vault changed!');
         });
@@ -243,7 +253,7 @@ class UserSessionService {
     _logDebug('👋 Logging out and resetting session...');
 
     try {
-      await Purchases.logOut(); // ✅ Ensure RC session is cleared
+      await Purchases.logOut();
       _logDebug('🛒 RevenueCat logged out');
     } catch (e) {
       _logDebug('❌ RevenueCat logout failed: $e');
@@ -285,7 +295,6 @@ class UserSessionService {
 
     await CategoryService.clearCache();
     await SubscriptionService().reset();
-    // Ensure the internal vault listener is stopped.
     VaultRecipeService.cancelVaultListener();
 
     _isInitialised = false;
@@ -317,15 +326,11 @@ class UserSessionService {
     await SubscriptionService().refresh();
     await syncRevenueCatEntitlement();
 
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final tier = SubscriptionService().tier;
-      final hasShown = await UserPreferencesService.hasShownBubblesOnce;
-      _logDebug('🎟️ Tier after retry: $tier, HasShownBubblesOnce: $hasShown');
-      if (tier == 'free' && !hasShown) {
-        _logDebug('🧪 Marking bubbles shown after retry');
-        await UserPreferencesService.markBubblesShown();
-      }
+    // ✅ Onboarding is new-user only; nothing to do here anymore
+    if (kOnboardingBubblesEnabled) {
+      _logDebug(
+        'ℹ️ Onboarding is new-user only; entitlement retry does nothing.',
+      );
     }
   }
 

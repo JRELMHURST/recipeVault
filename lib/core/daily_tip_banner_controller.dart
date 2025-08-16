@@ -3,14 +3,14 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/router.dart'; // ⬅️ for navigatorKey
 
 class DailyTipBannerController {
   OverlayEntry? _entry;
   AnimationController? _anim;
   Timer? _autoClose;
-  bool _isShowing = false;
 
-  bool get isShowing => _isShowing;
+  bool get isShowing => _entry != null;
 
   Future<void> show({
     required BuildContext context,
@@ -19,15 +19,15 @@ class DailyTipBannerController {
     Duration inDuration = const Duration(milliseconds: 260),
     Duration outDuration = const Duration(milliseconds: 180),
     Duration? autoCloseAfter = const Duration(seconds: 6),
-    Color scrimColor = const Color(0x14000000), // subtle ~8% black
+    Color scrimColor = const Color(0x14000000),
     double maxWidth = 480,
     double radius = 20,
-    double topMargin = kToolbarHeight + 12, // ⬅️ opens lower (below AppBar)
+    double topMargin = kToolbarHeight + 12,
   }) async {
-    // Close any existing instance first so a tap always shows a fresh one
-    await close();
+    // Always start with a clean slate so a tap always shows a fresh banner
+    await close(immediate: true);
 
-    final overlay = Overlay.maybeOf(context, rootOverlay: true);
+    final overlay = navigatorKey.currentState?.overlay; // ⬅️ root overlay
     if (overlay == null) return;
 
     _anim = AnimationController(
@@ -41,37 +41,55 @@ class DailyTipBannerController {
       begin: const Offset(0, -0.06),
       end: Offset.zero,
     ).animate(curved);
-    final fade = curved;
     final scale = Tween<double>(begin: 0.985, end: 1).animate(curved);
+    final fade = curved;
 
-    Future<void> closeInternal() async {
+    Future<void> closeInternal({bool immediate = false}) async {
       _autoClose?.cancel();
+      _autoClose = null;
+
+      final anim = _anim; // capture
+      final entry = _entry;
+      _anim = null;
+      _entry = null;
+
+      if (immediate) {
+        try {
+          anim?.stop();
+        } catch (_) {}
+        try {
+          anim?.dispose();
+        } catch (_) {}
+        try {
+          entry?.remove();
+        } catch (_) {}
+        return;
+      }
+
       try {
-        if (_anim != null && _anim!.status != AnimationStatus.dismissed) {
-          await _anim!.reverse();
+        if (anim != null && anim.status != AnimationStatus.dismissed) {
+          await anim.reverse();
         }
       } catch (_) {}
       try {
-        _anim?.dispose();
+        anim?.dispose();
       } catch (_) {}
-      _anim = null;
-
-      _entry?.remove();
-      _entry = null;
-      _isShowing = false;
+      try {
+        entry?.remove();
+      } catch (_) {}
     }
 
     _entry = OverlayEntry(
       builder: (ctx) {
         final sysTop = MediaQuery.of(ctx).padding.top;
-        final double padTop = math.max(sysTop + topMargin, 0).toDouble();
+        final double padTop = math.max(sysTop + topMargin, 0.0);
         return Positioned.fill(
           child: Stack(
             children: [
-              // Subtle scrim; tap outside to close
+              // scrim (tap to dismiss)
               Positioned.fill(
                 child: GestureDetector(
-                  onTap: closeInternal,
+                  onTap: () => closeInternal(),
                   child: ColoredBox(color: scrimColor),
                 ),
               ),
@@ -114,7 +132,6 @@ class DailyTipBannerController {
     );
 
     overlay.insert(_entry!);
-    _isShowing = true;
     await _anim!.forward();
 
     if (autoCloseAfter != null) {
@@ -125,23 +142,42 @@ class DailyTipBannerController {
     }
   }
 
-  Future<void> close() async {
+  Future<void> close({bool immediate = false}) async {
+    if (_entry == null && _anim == null) return;
+
     _autoClose?.cancel();
     _autoClose = null;
+
+    final anim = _anim; // capture
+    final entry = _entry;
+    _anim = null;
+    _entry = null;
+
+    if (immediate) {
+      try {
+        anim?.stop();
+      } catch (_) {}
+      try {
+        anim?.dispose();
+      } catch (_) {}
+      try {
+        entry?.remove();
+      } catch (_) {}
+      return;
+    }
+
     try {
-      if (_anim != null && _anim!.status != AnimationStatus.dismissed) {
-        await _anim!.reverse();
+      if (anim != null && anim.status != AnimationStatus.dismissed) {
+        await anim.reverse();
       }
     } catch (_) {}
     try {
-      _anim?.dispose();
+      anim?.dispose();
     } catch (_) {}
-    _anim = null;
-
-    _entry?.remove();
-    _entry = null;
-    _isShowing = false;
+    try {
+      entry?.remove();
+    } catch (_) {}
   }
 
-  Future<void> dispose() async => close();
+  Future<void> dispose() async => close(immediate: true);
 }

@@ -84,9 +84,9 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Commencez à créer votre propre livre de cuisine personnel ! ✨\n\nAjoutez vos plats préférés, recettes de famille ou nouvelles idées.\nChaque fiche peut inclure des ingrédients, des étapes et des photos.",
+  "emptyVaultBody": "Enregistrez vos captures d’écran de recettes en un seul endroit ✨\n\nTransformez ou traduisez des photos désordonnées en fiches de recettes organisées.",
   "@emptyVaultBody": {
-    "description": "Body text encouraging the user to create their first recipe"
+    "description": "Texte encourageant l’utilisateur à importer des captures d’écran et à créer sa première recette"
   },
   "addCategory": "Ajouter une catégorie",
   "@addCategory": {

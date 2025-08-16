@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:recipe_vault/core/feature_flags.dart'; // ⬅️ feature flags
 
 /// 🛍 User-facing view modes
 enum ViewMode { list, grid, compact }
@@ -155,26 +156,42 @@ class UserPreferencesService {
     }
   }
 
-  /// Prepare bubble state for the given tier.
-  /// NOTE: This no longer marks "shown once" – that happens when UI actually shows the first bubble.
-  static Future<void> ensureBubbleFlagTriggeredIfEligible(String tier) async {
+  /// Prepare bubble state for onboarding.
+  /// No longer tied to subscription tier – only cares if the user hasn’t seen/completed onboarding.
+  /// If feature flag disables onboarding, we mark as shown & completed immediately.
+  static Future<void> ensureBubbleFlagTriggeredIfEligible() async {
     final box = await _ensureBox();
+    if (box == null) return;
+
+    // If bubbles are globally disabled, short-circuit and mark as completed.
+    if (!kOnboardingBubblesEnabled) {
+      await box.put(_keyBubblesShownOnce, true);
+      await box.put(_keyVaultTutorialComplete, true);
+      if (kDebugMode) {
+        print(
+          '🧪 Onboarding disabled via feature flag – marking as completed.',
+        );
+      }
+      return;
+    }
+
     final hasShownBubblesOnce =
-        box?.get(_keyBubblesShownOnce, defaultValue: false) as bool? ?? false;
+        box.get(_keyBubblesShownOnce, defaultValue: false) as bool? ?? false;
     final tutorialComplete =
-        box?.get(_keyVaultTutorialComplete, defaultValue: false) as bool? ??
+        box.get(_keyVaultTutorialComplete, defaultValue: false) as bool? ??
         false;
 
     if (kDebugMode) {
       print(
-        '📊 Bubble trigger check: tier=$tier, bubblesShownOnce=$hasShownBubblesOnce, vaultTutorialCompleted=$tutorialComplete',
+        '📊 Bubble trigger check: bubblesShownOnce=$hasShownBubblesOnce, '
+        'vaultTutorialCompleted=$tutorialComplete',
       );
     }
 
-    if (tier == 'free' && !hasShownBubblesOnce && !tutorialComplete) {
-      await resetBubbles(); // prepare clean slate; do NOT set _keyBubblesShownOnce here
+    if (!hasShownBubblesOnce && !tutorialComplete) {
+      await resetBubbles(); // prepare clean slate; UI will call markBubblesShown() when actually shown
       if (kDebugMode) {
-        print('🌟 Bubbles prepared for free tier (first show pending)');
+        print('🌟 Bubbles prepared for new user (first show pending)');
       }
     }
   }

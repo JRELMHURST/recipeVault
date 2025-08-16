@@ -55,24 +55,17 @@ class VaultRecipeService {
     }
   }
 
-  /// ⬇ Load all recipes (user + global), merge and cache in Hive.
+  /// ⬇ Load all **user** recipes and cache in Hive (no global/community).
   static Future<List<RecipeCardModel>> loadAndMergeAllRecipes() async {
     try {
       await HiveRecipeService.init(); // ensure box is open
 
       final userRecipes = await _loadUserRecipes();
-      final globalRecipes = await _loadGlobalRecipes();
-
-      // Merge: global first, then user overrides (keeps global fallbacks)
-      final mergedMap = <String, RecipeCardModel>{
-        for (final r in globalRecipes) r.id: r,
-        for (final r in userRecipes) r.id: r,
-      };
 
       final box = await HiveRecipeService.getBox();
       final mergedList = <RecipeCardModel>[];
 
-      for (final recipe in mergedMap.values) {
+      for (final recipe in userRecipes) {
         final local = box.get(recipe.id);
         final enriched = recipe.copyWith(
           isFavourite: local?.isFavourite ?? recipe.isFavourite,
@@ -94,7 +87,7 @@ class VaultRecipeService {
     debugPrint('📦 VaultRecipeService.load complete');
   }
 
-  /// 📡 Listen to Firestore recipe changes and trigger a refresh callback.
+  /// 📡 Listen to **user** recipe changes and trigger a refresh callback.
   static void listenToVaultChanges(void Function() onUpdate) {
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
@@ -104,11 +97,14 @@ class VaultRecipeService {
 
     _vaultSub?.cancel();
     try {
-      _vaultSub = _userRecipeCollection.snapshots().listen(
-        (_) => onUpdate(),
-        onError: (err) => debugPrint('⚠️ Vault snapshot error: $err'),
-        cancelOnError: true,
-      );
+      _vaultSub = _userRecipeCollection
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .listen(
+            (_) => onUpdate(),
+            onError: (err) => debugPrint('⚠️ Vault snapshot error: $err'),
+            cancelOnError: true,
+          );
       debugPrint('📡 Firestore vault listener started');
     } catch (e) {
       debugPrint("⚠️ Failed to start vault listener: $e");
@@ -185,39 +181,7 @@ class VaultRecipeService {
     }
   }
 
-  static Future<List<RecipeCardModel>> _loadGlobalRecipes() async {
-    try {
-      final uid = _auth.currentUser?.uid;
-      if (uid == null) return [];
-
-      // Find hidden global recipe IDs for this user
-      final hiddenIds =
-          (await _firestore
-                  .collection('users')
-                  .doc(uid)
-                  .collection('hiddenGlobalRecipes')
-                  .get())
-              .docs
-              .map((doc) => doc.id)
-              .toSet();
-
-      final snapshot = await _firestore
-          .collection('global_recipes')
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      return snapshot.docs.where((doc) => !hiddenIds.contains(doc.id)).map((
-        doc,
-      ) {
-        final json = doc.data();
-        json['isGlobal'] = true; // mark so we can treat it differently later
-        return RecipeCardModel.fromJson(json);
-      }).toList();
-    } catch (e) {
-      debugPrint("⚠️ Failed to fetch global recipes: $e");
-      return [];
-    }
-  }
+  // ❌ Removed: _loadGlobalRecipes (and any global/community merging)
 
   static Future<void> _closeAndDeleteBox<T>(String name) async {
     try {

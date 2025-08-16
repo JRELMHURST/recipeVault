@@ -84,9 +84,9 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Begynd at opbygge din personlige kogebog! ✨\n\nTilføj dine yndlingsretter, familieretter eller nye idéer.\nHvert kort kan indeholde ingredienser, trin og billeder.",
+  "emptyVaultBody": "Gem dine opskrifts-screenshots ét sted ✨\n\nGør rodede billeder til organiserede opskriftskort – oversæt dem også, hvis du har brug for det.",
   "@emptyVaultBody": {
-    "description": "Body text encouraging the user to create their first recipe"
+    "description": "Tekst der opfordrer brugeren til at importere screenshots og oprette sin første opskrift"
   },
   "addCategory": "Tilføj kategori",
   "@addCategory": {

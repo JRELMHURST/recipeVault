@@ -5,25 +5,33 @@ import 'package:recipe_vault/model/recipe_card_model.dart';
 String formatRecipeMarkdown(BuildContext context, RecipeCardModel recipe) {
   final t = AppLocalizations.of(context);
 
+  // Escape all Markdown-reserved characters
   String mdEscape(String s) => s.replaceAllMapped(
-    RegExp(r'([\\`*_{}$begin:math:display$$end:math:display$()#+\-.!|>])'),
+    RegExp(
+      r'([\\`*_{}$begin:math:display$$end:math:display$$begin:math:text$$end:math:text$#\+\-\.\!|>])',
+    ),
     (m) => '\\${m[1]}',
   );
 
   String bulletify(Iterable<String> items) =>
       items.map((e) => "- ${mdEscape(e.trim())}").join("\n");
 
-  final numberPrefix = RegExp(r'^\s*(?:\d+|[•\-*])[\.\)\-]?\s+');
+  // Strip "1. ", "1) ", "-", "*", "•" etc. at the start of an instruction line
+  final numberPrefix = RegExp(r'^\s*(?:\d+|[•\-\*])[\.\)\-]?\s+');
+
+  // Title
+  final title = recipe.title.trim().isEmpty ? "Untitled" : recipe.title.trim();
 
   // Ingredients
   final ingredientsList = recipe.ingredients
-      .where((e) => e.trim().isNotEmpty)
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
       .toList();
   final ingredients = ingredientsList.isEmpty
       ? "- ${t.noAdditionalTips}"
       : bulletify(ingredientsList);
 
-  // Instructions
+  // Instructions (normalize numbers/bullets to 1., 2., ...)
   final instructionList = recipe.instructions
       .map((e) => e.replaceFirst(numberPrefix, '').trim())
       .where((e) => e.isNotEmpty)
@@ -37,29 +45,33 @@ String formatRecipeMarkdown(BuildContext context, RecipeCardModel recipe) {
             .join("\n");
 
   // Hints
-  final hintsList = recipe.hints.where((e) => e.trim().isNotEmpty).toList();
+  final hintsList = recipe.hints
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
   final hints = hintsList.isEmpty
       ? "- ${t.noAdditionalTips}"
       : bulletify(hintsList);
 
   // Categories (optional)
   final categoriesLine = recipe.categories.isNotEmpty
-      ? "\n${t.categories}: ${mdEscape(recipe.categories.join(', '))}"
+      ? "${t.categories}: ${mdEscape(recipe.categories.join(', '))}\n\n"
       : "";
 
-  return """
-${mdEscape(t.title)}: ${mdEscape(recipe.title.trim().isEmpty ? "Untitled" : recipe.title)}
+  // Build final markdown
+  final buffer = StringBuffer();
+  buffer.writeln("# ${mdEscape(title)}\n");
+  if (categoriesLine.isNotEmpty) buffer.write(categoriesLine);
 
-$categoriesLine
+  buffer
+    ..writeln("${mdEscape(t.ingredients)}:")
+    ..writeln(ingredients)
+    ..writeln()
+    ..writeln("${mdEscape(t.instructions)}:")
+    ..writeln(instructions)
+    ..writeln()
+    ..writeln("${mdEscape(t.hintsAndTips)}:")
+    ..writeln(hints);
 
-${mdEscape(t.ingredients)}:
-$ingredients
-
-${mdEscape(t.instructions)}:
-$instructions
-
-${mdEscape(t.hintsAndTips)}:
-$hints
-"""
-      .trim();
+  return buffer.toString().trim();
 }

@@ -84,9 +84,9 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Start building your personal cookbook! ✨\n\nAdd your favourite meals, family recipes, or new ideas.\nEach card can include ingredients, steps, and photos.",
+  "emptyVaultBody": "Save your recipe screenshots in one place ✨\n\nTurn or translate messy photos into organised recipe cards.",
   "@emptyVaultBody": {
-    "description": "Body text encouraging the user to create their first recipe"
+    "description": "Body text encouraging the user to import screenshots and create their first recipe"
   },
   "addCategory": "Add Category",
   "@addCategory": {

@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart'; // <-- needed for PlatformException
+import 'package:flutter/services.dart'; // PlatformException
 import 'package:purchases_flutter/purchases_flutter.dart';
 
-import 'package:recipe_vault/rev_cat/tier_utils.dart'; // ✅ Shared tier logic
+import 'package:recipe_vault/rev_cat/tier_utils.dart'; // resolveTier(productId)
 
 class PurchaseHelper {
   /// Initialise RevenueCat with the public API key
@@ -48,37 +48,57 @@ class PurchaseHelper {
     return customerInfo;
   }
 
-  /// Check if a given entitlement is active
-  static bool hasActiveEntitlement(CustomerInfo info, String entitlementId) {
-    return info.entitlements.active.containsKey(entitlementId);
+  /// Check if a given entitlement KEY is active (e.g. "pro", "premium")
+  static bool hasActiveEntitlement(CustomerInfo info, String entitlementKey) {
+    return info.entitlements.active.containsKey(entitlementKey);
   }
 
-  /// Get the currently active entitlement ID (if any)
-  static String? getActiveEntitlementId(CustomerInfo info) {
+  /// Get the currently active **product id** (e.g. "home_chef_monthly")
+  /// This is what the rest of the app expects for tier resolution.
+  static String? getActiveProductId(CustomerInfo info) {
     if (info.entitlements.active.isEmpty) return null;
-    return info.entitlements.active.values.first.identifier;
+    // Pick the first active entitlement; adapt if you manage multiple keys.
+    final EntitlementInfo e = info.entitlements.active.values.first;
+    return e.productIdentifier; // <-- product id (what resolveTier expects)
   }
 
-  /// 🔄 Sync entitlementId and tier to Firestore (used for backend resolution)
+  /// (Kept for backward compatibility) – previously returned the entitlement key.
+  /// Now returns the product id so existing callers keep working.
+  static String? getActiveEntitlementId(CustomerInfo info) {
+    return getActiveProductId(info);
+  }
+
+  /// 🔄 Sync entitlement to Firestore for backend/analytics.
+  ///
+  /// Fields written:
+  /// - entitlementId:  PRODUCT ID (e.g. "home_chef_monthly")  ✅ used by your app
+  /// - entitlementKey: ENTITLEMENT KEY (e.g. "pro")           📝 optional, informational
+  /// - tier:           resolved from product id
   static Future<void> syncEntitlementToFirestore(CustomerInfo info) async {
-    final entitlement = info.entitlements.active.values.isNotEmpty
+    final EntitlementInfo? e = info.entitlements.active.values.isNotEmpty
         ? info.entitlements.active.values.first
         : null;
 
-    final entitlementId = entitlement?.identifier ?? 'none';
-    final tier = resolveTier(entitlementId);
-    final userId = info.originalAppUserId;
+    final String entitlementKey = e?.identifier ?? 'none'; // RC entitlement key
+    final String productId = e?.productIdentifier ?? 'none'; // RC product id
+    final String tier = resolveTier(productId); // your mapping
+    final String userId = info.originalAppUserId; // must be set in configure()
 
     if (userId.isEmpty) return;
 
     final updateData = {
-      'entitlementId': entitlementId,
+      // Keep this name for compatibility: your code expects product id here.
+      'entitlementId': productId,
+      // Also store the RC entitlement key (nice to have).
+      'entitlementKey': entitlementKey,
+
       'tier': tier,
-      'willRenew': entitlement?.willRenew ?? false,
-      'originalPurchaseDate': entitlement?.originalPurchaseDate,
-      'expirationDate': entitlement?.expirationDate,
-      'store': entitlement?.store,
-      'periodType': entitlement?.periodType.name, // "trial", "intro", "normal"
+      'willRenew': e?.willRenew ?? false,
+      'originalPurchaseDate': e?.originalPurchaseDate,
+      'expirationDate': e?.expirationDate,
+      'store': e?.store,
+      'periodType': e?.periodType.name, // "trial", "intro", "normal"
+      'lastSyncedAt': FieldValue.serverTimestamp(),
     };
 
     try {
@@ -89,9 +109,10 @@ class PurchaseHelper {
 
       if (kDebugMode) {
         print(
-          '✅ Synced entitlementId "$entitlementId", tier "$tier", '
+          '✅ Synced RC → {entitlementId(product)="$productId", '
+          'entitlementKey="$entitlementKey", tier="$tier", '
           'willRenew=${updateData['willRenew']}, '
-          'periodType=${updateData['periodType']}',
+          'periodType=${updateData['periodType']}}',
         );
       }
     } catch (e) {

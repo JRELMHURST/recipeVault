@@ -84,9 +84,9 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Започнете да изграждате своя лична готварска книга! ✨\n\nДобавете любимите си ястия, семейни рецепти или нови идеи.\nВсяка карта може да съдържа съставки, стъпки и снимки.",
+  "emptyVaultBody": "Запазете вашите снимки на рецепти на едно място ✨\n\nПревърнете или преведете разхвърляни снимки в организирани картi с рецепти.",
   "@emptyVaultBody": {
-    "description": "Body text encouraging the user to create their first recipe"
+    "description": "Текст, който насърчава потребителя да импортира снимки/екранни снимки и да създаде първата си рецепта"
   },
   "addCategory": "Добави категория",
   "@addCategory": {

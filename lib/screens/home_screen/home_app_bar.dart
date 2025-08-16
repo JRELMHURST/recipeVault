@@ -84,11 +84,10 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       },
 
       // 💡 Daily message trigger in place of Upgrade button
-      // 💡 Daily message trigger in place of Upgrade button
-      actions: const [
+      actions: [
         Padding(
-          padding: EdgeInsets.only(right: 12.0),
-          child: DailyMessageBubble(),
+          padding: const EdgeInsets.only(right: 12.0),
+          child: DailyMessageBubble(), // ← not const
         ),
       ],
     );

@@ -84,9 +84,9 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Začněte si budovat svou osobní kuchařku! ✨\n\nPřidejte svá oblíbená jídla, rodinné recepty nebo nové nápady.\nKaždá karta může obsahovat suroviny, postupy a fotografie.",
+  "emptyVaultBody": "Uložte si své screenshoty receptů na jednom místě ✨\n\nPřeveďte nebo přeložte nepořádné fotky na uspořádané receptové karty.",
   "@emptyVaultBody": {
-    "description": "Body text encouraging the user to create their first recipe"
+    "description": "Text povzbuzující uživatele, aby importoval screenshoty a vytvořil svůj první recept"
   },
   "addCategory": "Přidat kategorii",
   "@addCategory": {

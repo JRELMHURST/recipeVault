@@ -84,9 +84,9 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Zapisz swoje zrzuty ekranu z przepisami w jednym miejscu ✨\n\nZamień lub przetłumacz chaotyczne zdjęcia na uporządkowane karty przepisów.",
+  "emptyVaultBody": "Zapisz swoje zrzuty ekranu z przepisami w jednym miejscu ✨\n\nPrzekształć lub przetłumacz chaotyczne zrzuty ekranu w uporządkowane karty przepisów.",
   "@emptyVaultBody": {
-    "description": "Tekst zachęcający użytkownika do importowania zrzutów ekranu i tworzenia pierwszego przepisu"
+    "description": "Tekst zachęcający użytkownika do zaimportowania zrzutów ekranu i stworzenia swojego pierwszego przepisu"
   },
   "addCategory": "Dodaj kategorię",
   "@addCategory": {

@@ -84,9 +84,9 @@
     "@emptyVaultTitle": {
         "description": "Title shown when the vault has no recipes"
     },
-    "emptyVaultBody": "Cadwch eich sgrinluniau ryseitiau mewn un lle ✨\n\nTrowch neu gyfieithwch luniau anniben yn gardiau ryseitiau trefnus.",
+    "emptyVaultBody": "Cadwch eich sgrinluniau ryseitiau mewn un lle ✨\n\nTrowch neu gyfieithwch sgrinluniau blêr yn gardiau ryseitiau trefnus.",
     "@emptyVaultBody": {
-        "description": "Testun yn annog y defnyddiwr i fewnforio sgrinluniau a chreu'r rysáit cyntaf"
+        "description": "Testun yn annog y defnyddiwr i fewnforio sgrinluniau a chreu ei rysáit cyntaf"
     },
     "addCategory": "Ychwanegu Categori",
     "@addCategory": {

@@ -84,7 +84,7 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Enregistrez vos captures d’écran de recettes en un seul endroit ✨\n\nTransformez ou traduisez des photos désordonnées en fiches de recettes organisées.",
+  "emptyVaultBody": "Enregistrez vos captures d’écran de recettes en un seul endroit ✨\n\nTransformez ou traduisez des captures d’écran brouillonnes en fiches de recettes organisées.",
   "@emptyVaultBody": {
     "description": "Texte encourageant l’utilisateur à importer des captures d’écran et à créer sa première recette"
   },

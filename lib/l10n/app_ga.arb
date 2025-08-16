@@ -84,9 +84,9 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Sábháil do screenshots oidis in aon áit amháin ✨\n\nTiontaigh / aistrigh grianghraif mhíshlachtmhara go cártaí oidis eagraithe.",
+  "emptyVaultBody": "Sábháil do screenshots oidis in aon áit amháin ✨\n\nAthraigh nó aistrigh screenshots mearbhallacha go cártaí oidis eagraithe.",
   "@emptyVaultBody": {
-    "description": "Téacs a spreagann an t-úsáideoir screenshots a iompórtáil agus a chéad oideas a chruthú"
+    "description": "Téacs ag spreagadh an úsáideora chun screenshots a iompórtáil agus a chéad oideas a chruthú"
   },
   "addCategory": "Cuir catagóir leis",
   "@addCategory": {

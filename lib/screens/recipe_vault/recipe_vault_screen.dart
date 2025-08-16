@@ -8,15 +8,11 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// ✅ Fixed import (was .dart.dart)
-import 'package:recipe_vault/core/daily_message_bubble.dart.dart';
-
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
-import 'package:recipe_vault/rev_cat/upgrade_banner.dart';
 import 'package:recipe_vault/screens/recipe_vault/category_speed_dial.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_chip_filter_bar.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
@@ -24,16 +20,16 @@ import 'package:recipe_vault/screens/recipe_vault/recipe_dialog.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_search_bar.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_vault_bubbles.dart';
+// REMOVED: import 'package:recipe_vault/screens/recipe_vault/recipe_vault_bubbles.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
+// REMOVED (bubbles only): import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/widgets/empty_vault_placeholder.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 
-/// Drives which onboarding bubble is visible (top-level — not inside a class)
-enum _OnboardingStep { none, viewToggle, longPress, scan, done }
+// REMOVED: enum _OnboardingStep { none, viewToggle, longPress, scan, done }
 
 class RecipeVaultScreen extends StatefulWidget {
   final ViewMode viewMode;
@@ -71,11 +67,11 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   List<String> _allCategories = const [kAll, kFav, kTranslated];
   List<RecipeCardModel> _allRecipes = [];
 
-  // ---------- Onboarding bubbles: state machine ----------
-  _OnboardingStep _step = _OnboardingStep.none;
-  bool _hasLoadedBubbles = false;
+  // REMOVED onboarding state:
+  // _OnboardingStep _step = _OnboardingStep.none;
+  // bool _hasLoadedBubbles = false;
 
-  // ---------- Anchors for future bubble positioning ----------
+  // Keys (kept; harmless and useful later)
   final GlobalKey _keyFab = GlobalKey();
   final GlobalKey _keyViewToggle = GlobalKey();
   final GlobalKey _keyFirstCardArea = GlobalKey();
@@ -102,7 +98,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       case kFav:
         return t.favourites;
       case kTranslated:
-        return t.translated; // or t.systemTranslated if you use that
+        return t.translated;
       case kBreakfast:
         return t.defaultBreakfast;
       case kMain:
@@ -117,7 +113,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   String _keyFor(String label, AppLocalizations t) {
     if (label == t.systemAll) return kAll;
     if (label == t.favourites) return kFav;
-    if (label == t.translated) return kTranslated; // match above mapping
+    if (label == t.translated) return kTranslated;
     if (label == t.defaultBreakfast) return kBreakfast;
     if (label == t.defaultMain) return kMain;
     if (label == t.defaultDessert) return kDessert;
@@ -203,7 +199,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     final loc = AppLocalizations.of(context);
     final sub = Provider.of<SubscriptionService>(context, listen: false);
 
-    // Gate: image uploads on paid tiers only?
     if (!sub.allowImageUpload) {
       await showDialog(
         context: context,
@@ -271,14 +266,13 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       return;
     }
 
-    // Choose images and launch processing overlay
     final files = await ImageProcessingService.pickAndCompressImages();
     if (!mounted || files.isEmpty) return;
 
     ProcessingOverlay.show(context, files);
   }
 
-  // ---------- Onboarding flow ----------
+  // ---------- Data/bootstrap ----------
   Future<void> _initVault() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.isAnonymous) {
@@ -293,9 +287,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         .doc(userId)
         .collection('recipes');
 
-    final subService = Provider.of<SubscriptionService>(context, listen: false);
-    final tier = subService.tier;
-
     // small delay to allow layout + session prep
     await Future.delayed(const Duration(milliseconds: 100));
 
@@ -303,86 +294,22 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       _initializeDefaultCategories(),
       _loadCustomCategories(),
       Future(_startRecipeListener),
-      UserPreferencesService.waitForBubbleFlags(),
+      // REMOVED: UserPreferencesService.waitForBubbleFlags(),
     ]);
 
-    final hasShownOnce = await UserPreferencesService.hasShownBubblesOnce;
-    final tutorialComplete =
-        await UserPreferencesService.hasCompletedVaultTutorial();
-
-    // Show only if NOT shown before and NOT completed and free tier
-    final shouldShowBubbles =
-        !_hasLoadedBubbles &&
-        tier == 'free' &&
-        !tutorialComplete &&
-        !hasShownOnce;
-
-    if (shouldShowBubbles) {
-      // mark the first actual show (not at trigger time)
-      await UserPreferencesService.markBubblesShown();
-      if (!mounted) return;
-      setState(() => _step = _OnboardingStep.viewToggle);
-      debugPrint('🫧 Onboarding bubbles: showing first step (viewToggle)');
-    }
-
-    _hasLoadedBubbles = true;
+    // REMOVED: onboarding/tier checks & bubble state
   }
 
-  void _advanceOnboarding() async {
-    if (!mounted) return;
-
-    // Mark dismissal for the bubble we’re leaving
-    switch (_step) {
-      case _OnboardingStep.viewToggle:
-        await UserPreferencesService.markBubbleDismissed('viewToggle');
-        break;
-      case _OnboardingStep.longPress:
-        await UserPreferencesService.markBubbleDismissed('longPress');
-        break;
-      case _OnboardingStep.scan:
-        await UserPreferencesService.markBubbleDismissed('scan');
-        break;
-      case _OnboardingStep.none:
-      case _OnboardingStep.done:
-        break;
-    }
-
-    setState(() {
-      switch (_step) {
-        case _OnboardingStep.viewToggle:
-          _step = _OnboardingStep.longPress;
-          break;
-        case _OnboardingStep.longPress:
-          _step = _OnboardingStep.scan;
-          break;
-        case _OnboardingStep.scan:
-          _step = _OnboardingStep.done;
-          break;
-        case _OnboardingStep.none:
-        case _OnboardingStep.done:
-          break;
-      }
-    });
-
-    if (_step == _OnboardingStep.done) {
-      await UserPreferencesService.markVaultTutorialCompleted();
-      debugPrint('🎉 Onboarding bubbles completed');
-    }
-  }
-
-  // ---------- Data/bootstrap ----------
   void _startRecipeListener() {
     _recipeStreamSubscription = recipeCollection
         .orderBy('createdAt', descending: true)
         .snapshots()
         .listen((snapshot) async {
           try {
-            // only the user's recipes
             final userRecipes = snapshot.docs
                 .map((doc) => RecipeCardModel.fromJson(doc.data()))
                 .toList();
 
-            // keep local favourites/categories in sync
             final localRecipes = await HiveRecipeService.getAll();
             final Map<String, RecipeCardModel> mergedMap = {
               for (final r in userRecipes) r.id: r,
@@ -492,15 +419,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                     ),
                   ),
 
-                  // Upgrade banner
-                  ValueListenableBuilder<String?>(
-                    valueListenable:
-                        ImageProcessingService.upgradeBannerMessage,
-                    builder: (_, message, __) => message == null
-                        ? const SizedBox.shrink()
-                        : UpgradeBanner(message: message),
-                  ),
-
                   // Results area
                   Expanded(
                     child: KeyedSubtree(
@@ -558,22 +476,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
               ),
             ),
 
-            // ✅ Daily tip overlay (does not push layout)
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 8,
-              right: 16,
-              child: const DailyMessageBubble(),
-            ),
-
-            // Onboarding bubbles overlay
-            RecipeVaultBubbles(
-              showScan: _step == _OnboardingStep.scan,
-              showViewToggle: _step == _OnboardingStep.viewToggle,
-              showLongPress: _step == _OnboardingStep.longPress,
-              onDismissScan: _advanceOnboarding,
-              onDismissViewToggle: _advanceOnboarding,
-              onDismissLongPress: _advanceOnboarding,
-            ),
+            // REMOVED: RecipeVaultBubbles overlay
           ],
         ),
       ),

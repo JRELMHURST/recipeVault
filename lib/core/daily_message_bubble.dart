@@ -14,39 +14,45 @@ class DailyMessageBubble extends StatefulWidget {
 }
 
 class _DailyMessageBubbleState extends State<DailyMessageBubble>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final _controller = DailyTipBannerController();
+  bool _busy = false;
 
   Future<void> _showTipBanner() async {
-    // Always reopen for every tap
-    await _controller.close();
+    if (!mounted || _busy) return;
+    _busy = true;
 
-    // Let the overlay fully clean up in this frame before re-inserting.
-    // A short post-frame wait is more reliable than a microtask here.
-    if (mounted) {
-      await Future.delayed(const Duration(milliseconds: 1));
+    try {
+      // Always close before reopening
+      await _controller.close();
+
+      // Let the overlay clean up before reinserting
+      await Future.delayed(const Duration(milliseconds: 16));
+      if (!mounted) return;
+
+      final t = AppLocalizations.of(context);
+      final theme = Theme.of(context);
+      final isDark = theme.brightness == Brightness.dark;
+
+      final msg = DailyMessageService.getTodayMessage(context);
+      final body = msg.isEmpty ? t.dailyMessagePlaceholder : msg;
+
+      await _controller.show(
+        context: context,
+        vsync: this,
+        autoCloseAfter: const Duration(seconds: 6),
+        topMargin: 64,
+        maxWidth: 480,
+        content: _BannerBody(
+          title: t.dailyTipTitle,
+          body: body,
+          isDark: isDark,
+          onClose: _controller.close,
+        ),
+      );
+    } finally {
+      _busy = false;
     }
-
-    final t = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    final msg = DailyMessageService.getTodayMessage(context);
-    final body = msg.isEmpty ? t.dailyMessagePlaceholder : msg;
-
-    await _controller.show(
-      context: context,
-      vsync: this,
-      autoCloseAfter: const Duration(seconds: 6),
-      topMargin: 64,
-      maxWidth: 480,
-      content: _BannerBody(
-        title: t.dailyTipTitle,
-        body: body,
-        isDark: isDark,
-        onClose: _controller.close,
-      ),
-    );
   }
 
   @override

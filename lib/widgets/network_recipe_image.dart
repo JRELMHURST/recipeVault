@@ -35,9 +35,7 @@ class NetworkRecipeImage extends StatelessWidget {
     final hasUrl = url != null && url.isNotEmpty;
 
     final img = _buildImage(context, theme, url, hasUrl);
-
     final clipped = ClipRRect(borderRadius: borderRadius, child: img);
-
     final wrapped = heroTag != null
         ? Hero(tag: heroTag!, child: clipped)
         : clipped;
@@ -70,8 +68,12 @@ class NetworkRecipeImage extends StatelessWidget {
       );
     }
 
-    // Hint cache size based on device pixel ratio to balance sharpness/memory.
-    final dpr = MediaQuery.of(context).devicePixelRatio.clamp(1.0, 3.0);
+    // DPR-aware cache sizing to balance sharpness and memory.
+    MediaQuery.of(
+      context,
+    ).textScaler.scale(1.0); // stable factor we already clamp elsewhere
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final dpr = devicePixelRatio.clamp(1.0, 3.0);
     final memW = (width * dpr).round();
     final memH = (height * dpr).round();
 
@@ -85,6 +87,7 @@ class NetworkRecipeImage extends StatelessWidget {
       fadeInDuration: fadeInDuration,
       fadeOutDuration: const Duration(milliseconds: 120),
       placeholderFadeInDuration: const Duration(milliseconds: 120),
+      filterQuality: FilterQuality.medium,
       placeholder: (context, _) =>
           _placeholderBox(theme, showSpinner: true, icon: Icons.image_outlined),
       errorWidget: (context, _, __) => _placeholderBox(

@@ -6,19 +6,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/screens/recipe_vault/category_speed_dial.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_chip_filter_bar.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_dialog.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_search_bar.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
@@ -27,9 +25,18 @@ import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/widgets/empty_vault_placeholder.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 
+// ⚠️ Alias each view to avoid ambiguous symbols.
+import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart'
+    as list_view;
+import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart'
+    as grid_view;
+import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart'
+    as compact_view;
+
 class RecipeVaultScreen extends StatefulWidget {
-  final ViewMode viewMode;
-  const RecipeVaultScreen({super.key, required this.viewMode});
+  /// Optional starting view mode (router can override); otherwise we pull from prefs.
+  final ViewMode? viewMode;
+  const RecipeVaultScreen({super.key, this.viewMode});
 
   @override
   State<RecipeVaultScreen> createState() => _RecipeVaultScreenState();
@@ -40,6 +47,9 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   late final CollectionReference<Map<String, dynamic>> recipeCollection;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
   _recipeStreamSubscription;
+
+  // Source of truth for this widget
+  late ViewMode _viewMode;
 
   // Internal category keys
   static const String kAll = 'All';
@@ -64,10 +74,11 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   List<String> _allCategories = const [kAll];
   List<RecipeCardModel> _allRecipes = [];
 
-  // FAB key only (useful for future interactions)
+  // FAB key (optional future use)
   final GlobalKey _keyFab = GlobalKey();
 
-  // Search + filter
+  // ---------- Filtering ----------
+
   List<RecipeCardModel> get _filteredRecipes {
     final q = _searchQuery.trim();
     return _allRecipes.where((recipe) {
@@ -81,7 +92,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     }).toList();
   }
 
-  // Localisation mapping helpers (keys <-> labels)
+  // ---------- Localisation helpers (keys <-> labels) ----------
+
   String _labelFor(String key, AppLocalizations t) {
     switch (key) {
       case kAll:
@@ -89,7 +101,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       case kFav:
         return t.favourites;
       case kTranslated:
-        return t.translated;
+        return t.systemTranslated; // ← keep consistent with chip bar
       case kBreakfast:
         return t.defaultBreakfast;
       case kMain:
@@ -104,17 +116,30 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   String _keyFor(String label, AppLocalizations t) {
     if (label == t.systemAll) return kAll;
     if (label == t.favourites) return kFav;
-    if (label == t.translated) return kTranslated;
+    if (label == t.systemTranslated) return kTranslated;
     if (label == t.defaultBreakfast) return kBreakfast;
     if (label == t.defaultMain) return kMain;
     if (label == t.defaultDessert) return kDessert;
     return label;
   }
 
+  // ---------- Lifecycle ----------
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initVault());
+
+    // Start with router override or a sane default.
+    _viewMode = widget.viewMode ?? ViewMode.grid;
+
+    // Then load the saved preference (non-blocking).
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final saved = await UserPreferencesService.getSavedViewMode();
+      if (mounted && widget.viewMode == null && _viewMode != saved) {
+        setState(() => _viewMode = saved);
+      }
+      await _initVault();
+    });
   }
 
   @override
@@ -122,6 +147,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     _recipeStreamSubscription?.cancel();
     super.dispose();
   }
+
+  // ---------- Mutations ----------
 
   Future<void> _deleteRecipe(RecipeCardModel recipe) async {
     setState(() => _allRecipes.removeWhere((r) => r.id == recipe.id));
@@ -185,7 +212,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     await _loadCustomCategories();
   }
 
-  // Create flow from empty state
+  // ---------- Create flow from empty state ----------
+
   Future<void> _startCreateFlow() async {
     final loc = AppLocalizations.of(context);
     final sub = Provider.of<SubscriptionService>(context, listen: false);
@@ -234,7 +262,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, '/paywall');
+                      context.go('/paywall');
                     },
                     child: Text(
                       loc.seePlanOptions,
@@ -259,11 +287,11 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
     final files = await ImageProcessingService.pickAndCompressImages();
     if (!mounted || files.isEmpty) return;
-
     ProcessingOverlay.show(context, files);
   }
 
-  // Data/bootstrap
+  // ---------- Data/bootstrap ----------
+
   Future<void> _initVault() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.isAnonymous) {
@@ -298,6 +326,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                 .toList();
 
             final localRecipes = await HiveRecipeService.getAll();
+
             final Map<String, RecipeCardModel> mergedMap = {
               for (final r in userRecipes) r.id: r,
             };
@@ -348,9 +377,10 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     });
   }
 
+  // ---------- Build ----------
+
   @override
   Widget build(BuildContext context) {
-    final view = widget.viewMode;
     final scale = Provider.of<TextScaleNotifier>(context).scaleFactor;
     final t = AppLocalizations.of(context);
 
@@ -411,8 +441,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                     : AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         child: ResponsiveWrapper(
-                          child: switch (view) {
-                            ViewMode.list => RecipeListView(
+                          child: switch (_viewMode) {
+                            ViewMode.list => list_view.RecipeListView(
                               recipes: _filteredRecipes,
                               onDelete: _deleteRecipe,
                               onTap: (r) => showRecipeDialog(context, r),
@@ -421,7 +451,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                               onAssignCategories: _assignCategories,
                               onAddOrUpdateImage: _addOrUpdateImage,
                             ),
-                            ViewMode.grid => RecipeGridView(
+                            ViewMode.grid => grid_view.RecipeGridView(
                               recipes: _filteredRecipes,
                               onTap: (r) => showRecipeDialog(context, r),
                               onToggleFavourite: _toggleFavourite,
@@ -430,7 +460,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                               onDelete: _deleteRecipe,
                               onAddOrUpdateImage: _addOrUpdateImage,
                             ),
-                            ViewMode.compact => RecipeCompactView(
+                            ViewMode.compact => compact_view.RecipeCompactView(
                               recipes: _filteredRecipes,
                               onTap: (r) => showRecipeDialog(context, r),
                               onToggleFavourite: _toggleFavourite,
@@ -456,6 +486,8 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           final count = _allCategories
               .where((c) => !_defaultCategories.contains(c) && c != kAll)
               .length;
+
+          // Limit category creation if desired for certain tiers.
           final allow =
               subService.allowCategoryCreation ||
               (subService.isHomeChef && count < 3);

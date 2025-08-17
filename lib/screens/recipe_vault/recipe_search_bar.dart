@@ -37,6 +37,20 @@ class _RecipeSearchBarState extends State<RecipeSearchBar> {
   }
 
   @override
+  void didUpdateWidget(covariant RecipeSearchBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If parent updates the initial value, reflect it here.
+    if (widget.initialValue != null &&
+        widget.initialValue != oldWidget.initialValue &&
+        widget.initialValue != _controller.text) {
+      _controller.text = widget.initialValue!;
+      _controller.selection = TextSelection.collapsed(
+        offset: _controller.text.length,
+      );
+    }
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
@@ -53,7 +67,7 @@ class _RecipeSearchBarState extends State<RecipeSearchBar> {
     final l = AppLocalizations.of(context);
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
+      duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
@@ -68,22 +82,29 @@ class _RecipeSearchBarState extends State<RecipeSearchBar> {
             child: TextField(
               controller: _controller,
               decoration: InputDecoration(
-                hintText: l.searchRecipes, // Always "Search recipes"
+                hintText: l.searchRecipes,
                 border: InputBorder.none,
                 isDense: true,
               ),
               style: theme.textTheme.bodyMedium,
               textInputAction: TextInputAction.search,
+              onSubmitted: (v) => widget.onChanged(v.trim()),
+              autocorrect: false,
+              textCapitalization: TextCapitalization.none,
             ),
           ),
           if (_showClear)
-            IconButton(
-              tooltip: l.clearSearch,
-              onPressed: _clearSearch,
-              icon: const Icon(LucideIcons.x, size: 18),
-              padding: const EdgeInsets.all(4),
-              constraints: const BoxConstraints(),
-              splashRadius: 20,
+            Semantics(
+              label: l.clearSearch,
+              button: true,
+              child: IconButton(
+                tooltip: l.clearSearch,
+                onPressed: _clearSearch,
+                icon: const Icon(LucideIcons.x, size: 18),
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(),
+                splashRadius: 20,
+              ),
             ),
         ],
       ),

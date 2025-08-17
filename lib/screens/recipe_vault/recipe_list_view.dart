@@ -34,6 +34,11 @@ class RecipeListView extends StatelessWidget {
     final theme = Theme.of(context);
     final l = AppLocalizations.of(context);
 
+    // Fallback text in case the ARB key hasn't landed yet
+    final tapHint = l.tapToViewRecipe.isEmpty
+        ? 'Tap to view'
+        : l.tapToViewRecipe;
+
     return ListView.builder(
       padding: const EdgeInsets.all(12),
       itemCount: recipes.length,
@@ -41,14 +46,14 @@ class RecipeListView extends StatelessWidget {
         final recipe = recipes[index];
 
         return Dismissible(
-          key: Key(recipe.id),
+          key: ValueKey(recipe.id),
 
-          // Ask BEFORE dismissing
+          // Confirm BEFORE dismissing so we don't animate an accidental delete
           confirmDismiss: (direction) async {
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (ctx) => AlertDialog(
-                title: Text(l.delete), // keep it short; localized
+                title: Text(l.delete),
                 content: Text(l.deleteConfirmation),
                 actions: [
                   TextButton(
@@ -57,7 +62,8 @@ class RecipeListView extends StatelessWidget {
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
+                      backgroundColor: theme.colorScheme.error,
+                      foregroundColor: theme.colorScheme.onError,
                     ),
                     onPressed: () => Navigator.of(ctx).pop(true),
                     child: Text(l.delete),
@@ -65,6 +71,7 @@ class RecipeListView extends StatelessWidget {
                 ],
               ),
             );
+
             if (confirmed == true) {
               onDelete(recipe);
               return true;
@@ -72,13 +79,13 @@ class RecipeListView extends StatelessWidget {
             return false;
           },
 
+          direction: DismissDirection.endToStart,
           background: Container(
-            color: Colors.red,
             alignment: Alignment.centerRight,
             padding: const EdgeInsets.only(right: 20),
-            child: const Icon(Icons.delete, color: Colors.white),
+            color: theme.colorScheme.error,
+            child: Icon(Icons.delete, color: theme.colorScheme.onError),
           ),
-          direction: DismissDirection.endToStart,
 
           child: GestureDetector(
             onTap: () => onTap(recipe),
@@ -91,69 +98,58 @@ class RecipeListView extends StatelessWidget {
               onAddOrUpdateImage: () => onAddOrUpdateImage(recipe),
               categories: categories,
             ),
-            child: Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: theme.colorScheme.primary.withOpacity(0.25),
-                  width: 2,
+            child: Semantics(
+              button: true,
+              label: '${recipe.title}. $tapHint',
+              child: Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: theme.colorScheme.primary.withOpacity(0.20),
+                    width: 1.5,
+                  ),
                 ),
-              ),
-              elevation: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
-                        ? NetworkRecipeImage(
-                            imageUrl: recipe.imageUrl!,
-                            width: 56,
-                            height: 56,
-                          )
-                        : _fallbackIcon(),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            recipe.title,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          // Add a small localized hint
-                          Text(
-                            l.tapToViewRecipe, // <-- add this key to ARB
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
+                color: theme.cardColor,
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
+                          ? NetworkRecipeImage(
+                              imageUrl: recipe.imageUrl!,
+                              width: 56,
+                              height: 56,
+                            )
+                          : _fallbackIcon(),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _TitleAndHint(
+                          title: recipe.title,
+                          hint: tapHint,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      onPressed: () => onToggleFavourite(recipe),
-                      tooltip: l.favourites, // neutral tooltip
-                      icon: Icon(
-                        recipe.isFavourite
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color: recipe.isFavourite
-                            ? Colors.redAccent
-                            : Colors.grey,
-                        size: 20,
+                      const SizedBox(width: 12),
+                      IconButton(
+                        onPressed: () => onToggleFavourite(recipe),
+                        tooltip: recipe.isFavourite
+                            ? l.menuUnfavourite
+                            : l.menuFavourite,
+                        icon: Icon(
+                          recipe.isFavourite
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: recipe.isFavourite
+                              ? Colors.redAccent
+                              : theme.hintColor,
+                          size: 20,
+                        ),
+                        splashRadius: 22,
                       ),
-                      splashRadius: 22,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -174,6 +170,37 @@ class RecipeListView extends StatelessWidget {
         size: 20,
         color: Colors.deepPurple,
       ),
+    );
+  }
+}
+
+class _TitleAndHint extends StatelessWidget {
+  final String title;
+  final String hint;
+
+  const _TitleAndHint({required this.title, required this.hint});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          hint,
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+        ),
+      ],
     );
   }
 }

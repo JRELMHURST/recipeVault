@@ -2,7 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
@@ -12,6 +14,8 @@ import 'package:recipe_vault/rev_cat/subscription_service.dart';
 
 class CategorySpeedDial extends StatefulWidget {
   final VoidCallback onCategoryChanged;
+
+  /// Caller can hard-disable creation (e.g. view-only contexts).
   final bool allowCreation;
 
   const CategorySpeedDial({
@@ -32,13 +36,11 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(l.addCategoryTitle), // “Add New Category”
+        title: Text(l.addCategoryTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: InputDecoration(
-            hintText: l.addCategoryHint,
-          ), // “e.g. Snacks”
+          decoration: InputDecoration(hintText: l.addCategoryHint),
         ),
         actions: [
           TextButton(
@@ -51,7 +53,7 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
               if (newCategory.isNotEmpty) {
                 await CategoryService.saveCategory(newCategory);
                 if (!mounted) return;
-                widget.onCategoryChanged(); // Trigger UI update
+                widget.onCategoryChanged();
               }
               if (!mounted) return;
               Navigator.pop(context);
@@ -65,11 +67,24 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
 
   Future<void> _startCreateFlow(BuildContext context) async {
     final l = AppLocalizations.of(context);
+    final sub = context.read<SubscriptionService>();
 
+    // Caller-level switch (e.g. view-only screens)
     if (!widget.allowCreation) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l.recipeCreationLimited)));
+      // Nudge to paywall
+      context.push('/paywall');
+      return;
+    }
+
+    // Service-level permission (current tier)
+    if (!sub.allowImageUpload) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l.upgradeToCreateRecipe)));
+      context.push('/paywall');
       return;
     }
 
@@ -102,8 +117,8 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final subscription = Provider.of<SubscriptionService>(context);
     final l = AppLocalizations.of(context);
+    final subscription = context.watch<SubscriptionService>();
 
     return SpeedDial(
       icon: Icons.add,
@@ -126,6 +141,7 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(l.categoryCreationLimited)),
                   );
+                  context.push('/paywall');
                 },
         ),
         SpeedDialChild(

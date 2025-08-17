@@ -1,6 +1,9 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
+
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
@@ -19,11 +22,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
-  Future<void> _safeNavigate(String route) async {
+  Future<void> _safeGo(String route) async {
     FocusManager.instance.primaryFocus?.unfocus();
     await Future.delayed(const Duration(milliseconds: 50));
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, route);
+    context.go(route);
   }
 
   @override
@@ -53,8 +56,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      // Let PaywallGate decide (new users will be sent to paywall)
-      await _safeNavigate('/home');
+      await _safeGo('/home'); // router will redirect to paywall if needed
     } catch (e) {
       _showError('${loc.registrationFailed}: $e');
     } finally {
@@ -76,7 +78,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      await _safeNavigate('/home');
+      await _safeGo('/home');
     } catch (e) {
       _showError('${loc.googleSignupFailed}: $e');
     } finally {
@@ -98,7 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      await _safeNavigate('/home');
+      await _safeGo('/home');
     } catch (e) {
       _showError('${loc.appleSignupFailed}: $e');
     } finally {
@@ -106,7 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  void _goToLogin() => _safeNavigate('/login');
+  void _goToLogin() => _safeGo('/login');
 
   void _showError(String message) {
     if (!mounted) return;
@@ -120,6 +122,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final wide = MediaQuery.of(context).size.width > 600;
 
     return Scaffold(
       backgroundColor: const Color(0xFFE6E2FF),
@@ -129,9 +132,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: SingleChildScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: EdgeInsets.fromLTRB(
-              MediaQuery.of(context).size.width > 600 ? 48 : 24,
+              wide ? 48 : 24,
               32,
-              MediaQuery.of(context).size.width > 600 ? 48 : 24,
+              wide ? 48 : 24,
               32 + bottomInset,
             ),
             child: ResponsiveWrapper(
@@ -253,8 +256,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 onPressed: _signUpWithGoogle,
                               ),
                               const SizedBox(height: 12),
-                              if (Theme.of(context).platform ==
-                                  TargetPlatform.iOS)
+                              if (defaultTargetPlatform == TargetPlatform.iOS)
                                 OutlinedButton.icon(
                                   icon: const Icon(
                                     Icons.apple,

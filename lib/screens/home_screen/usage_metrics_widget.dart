@@ -1,9 +1,9 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/core/theme.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
@@ -17,17 +17,20 @@ class UsageMetricsWidget extends StatefulWidget {
 
 class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
     with SingleTickerProviderStateMixin {
-  int recipesUsed = 0;
-  int translationsUsed = 0;
-  bool loading = true;
-  bool isMasterChef = false;
-
   late final AnimationController _controller;
   late Animation<double> _recipeAnimation;
   late Animation<double> _translationAnimation;
 
-  int maxRecipes = 20;
-  int maxTranslations = 5;
+  // Track last values so we can re-run the animation only when something changed.
+  int _lastRecipesUsed = -1;
+  int _lastTranslationsUsed = -1;
+  bool _lastIsMasterChef = false;
+
+  // Cache current computed limits to build the bars.
+  int _maxRecipes = 20;
+  int _maxTranslations = 5;
+
+  bool _firstFrameDone = false;
 
   @override
   void initState() {
@@ -41,35 +44,51 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
       begin: 0,
       end: 0,
     ).animate(_controller);
-    _loadUsageFromSubscriptionService();
   }
 
-  Future<void> _loadUsageFromSubscriptionService() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (!mounted || user == null || user.isAnonymous) return;
-
-    final subscription = Provider.of<SubscriptionService>(
-      context,
-      listen: false,
-    );
-
-    if (!subscription.trackUsage) return;
-
-    setState(() {
-      recipesUsed = subscription.aiUsage;
-      translationsUsed = subscription.translationUsage;
-      isMasterChef = subscription.isMasterChef;
-      maxRecipes = isMasterChef ? 100 : 20;
-      maxTranslations = isMasterChef ? 20 : 5;
-      loading = false;
-    });
-
-    _updateAnimation();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Kick an initial refresh of subscription data if needed.
+    final sub = context.read<SubscriptionService>();
+    if (!sub.isLoaded) {
+      // Fire and forget; widget will rebuild when provider notifies.
+      unawaited(sub.refreshAndNotify());
+    }
   }
 
-  void _updateAnimation() {
-    final recipePercent = (recipesUsed / maxRecipes).clamp(0.0, 1.0);
-    final translationPercent = (translationsUsed / maxTranslations).clamp(
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _refreshAnimationIfNeeded({
+    required int recipesUsed,
+    required int translationsUsed,
+    required bool isMasterChef,
+  }) {
+    final limitsChanged =
+        (_lastIsMasterChef != isMasterChef) || (!_firstFrameDone);
+
+    // Update limits from tier.
+    _maxRecipes = isMasterChef ? 100 : 20;
+    _maxTranslations = isMasterChef ? 20 : 5;
+
+    final usageChanged =
+        (_lastRecipesUsed != recipesUsed) ||
+        (_lastTranslationsUsed != translationsUsed) ||
+        limitsChanged;
+
+    if (!usageChanged) return;
+
+    _lastRecipesUsed = recipesUsed;
+    _lastTranslationsUsed = translationsUsed;
+    _lastIsMasterChef = isMasterChef;
+    _firstFrameDone = true;
+
+    final recipePercent = (recipesUsed / _maxRecipes).clamp(0.0, 1.0);
+    final translationPercent = (translationsUsed / _maxTranslations).clamp(
       0.0,
       1.0,
     );
@@ -88,20 +107,25 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final subscription = context.watch<SubscriptionService>();
+    final sub = context.watch<SubscriptionService>();
     final loc = AppLocalizations.of(context);
 
-    if ((!subscription.trackUsage && !subscription.showUsageWidget) ||
-        loading) {
+    // Respect visibility flags from SubscriptionService.
+    if (!sub.showUsageWidget || !sub.trackUsage) {
       return const SizedBox.shrink();
     }
+
+    final recipesUsed = sub.aiUsage;
+    final translationsUsed = sub.translationUsage;
+    final isMasterChef = sub.isMasterChef;
+
+    // Update bars/animation when numbers or tier change.
+    _refreshAnimationIfNeeded(
+      recipesUsed: recipesUsed,
+      translationsUsed: translationsUsed,
+      isMasterChef: isMasterChef,
+    );
 
     return Container(
       constraints: const BoxConstraints(maxWidth: 280, minWidth: 240),
@@ -140,19 +164,19 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
                     icon: Icons.auto_awesome,
                     label: loc.labelAiRecipes,
                     used: recipesUsed,
-                    max: maxRecipes,
+                    max: _maxRecipes,
                     colour: AppColours.turquoise,
                     percent: _recipeAnimation.value,
-                    subtitle: loc.usageOutOfThisMonth(maxRecipes),
+                    subtitle: loc.usageOutOfThisMonth(_maxRecipes),
                   ),
                   _usageMetric(
                     icon: Icons.translate,
                     label: loc.labelTranslations,
                     used: translationsUsed,
-                    max: maxTranslations,
+                    max: _maxTranslations,
                     colour: AppColours.lavender,
                     percent: _translationAnimation.value,
-                    subtitle: loc.usageMonthlyLimit(maxTranslations),
+                    subtitle: loc.usageMonthlyLimit(_maxTranslations),
                   ),
                 ],
               );

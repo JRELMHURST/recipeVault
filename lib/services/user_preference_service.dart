@@ -44,47 +44,77 @@ class UserPreferencesService {
   static String get _uid => FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
   static String get _boxName => 'userPrefs_$_uid';
 
-  static bool get isBoxOpen => Hive.isBoxOpen(_boxName);
+  static Box? _box;
+  static String? _boxForUid;
 
-  static Box? get _safeBox {
-    if (!Hive.isBoxOpen(_boxName)) return null;
-    try {
-      return Hive.box(_boxName);
-    } catch (e) {
-      debugPrint('⚠️ _safeBox access failed: $e');
-      return null;
-    }
-  }
+  static bool get isBoxOpen => _box?.isOpen == true;
 
-  /// Call this after sign-in and on app start (if a user is already signed in).
+  static Box? get _safeBox => _box?.isOpen == true ? _box : null;
+
+  // ── Lifecycle / user switching ─────────────────────────────────────────────
+
+  /// Call this after sign-in and at app start (if already signed in).
   static Future<void> init() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+    if (_uid == 'unknown') {
       if (kDebugMode) {
-        print('🟡 Skipping UserPreferencesService.init() – no user signed in');
+        debugPrint('🟡 UserPreferencesService.init() skipped – no user');
       }
       return;
     }
+    await _ensureBoxForCurrentUser();
+  }
 
+  /// Ensures the correct box is open for the current signed-in user.
+  static Future<void> _ensureBoxForCurrentUser() async {
+    // If open for another user, close it first.
+    if (_box?.isOpen == true && _boxForUid != _uid) {
+      try {
+        await _box!.close();
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Failed closing previous prefs box: $e');
+        }
+      }
+      _box = null;
+      _boxForUid = null;
+    }
+
+    // Open or reuse
     if (!Hive.isBoxOpen(_boxName)) {
-      await Hive.openBox(_boxName);
-      if (kDebugMode) print('📦 Hive box opened: $_boxName');
+      try {
+        _box = await Hive.openBox(_boxName);
+        _boxForUid = _uid;
+        if (kDebugMode) debugPrint('📦 Hive prefs box opened: $_boxName');
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Failed to open prefs box $_boxName: $e');
+        }
+      }
     } else {
-      if (kDebugMode) print('📦 Hive box reused: $_boxName');
+      _box = Hive.box(_boxName);
+      _boxForUid = _uid;
+      if (kDebugMode) debugPrint('📦 Hive prefs box reused: $_boxName');
     }
   }
 
-  /// Ensures the box is open before any read/write.
+  /// Ensures the box is ready before any read/write.
   static Future<Box?> _ensureBox() async {
-    if (!Hive.isBoxOpen(_boxName)) {
-      try {
-        await Hive.openBox(_boxName);
-      } catch (e) {
-        debugPrint('⚠️ Failed to open Hive box $_boxName: $e');
-        return null;
+    if (_box?.isOpen == true && _boxForUid == _uid) return _box;
+    await _ensureBoxForCurrentUser();
+    return _safeBox;
+  }
+
+  /// Optional: call on logout to fully close references.
+  static Future<void> close() async {
+    try {
+      if (_box?.isOpen == true) await _box!.close();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Error closing prefs box $_boxName: $e');
       }
     }
-    return _safeBox;
+    _box = null;
+    _boxForUid = null;
   }
 
   // ── View mode ──────────────────────────────────────────────────────────────
@@ -93,17 +123,17 @@ class UserPreferencesService {
     final box = await _ensureBox();
     if (box != null) {
       await box.put(_keyViewMode, mode.index);
-      if (kDebugMode) print('📂 Saved view mode: ${mode.name}');
+      if (kDebugMode) debugPrint('📂 Saved view mode: ${mode.name}');
     }
   }
 
   static Future<ViewMode> getSavedViewMode() async {
     final box = await _ensureBox();
     final index = box?.get(_keyViewMode) as int?;
-    final mode = index != null && index >= 0 && index < ViewMode.values.length
+    final mode = (index != null && index >= 0 && index < ViewMode.values.length)
         ? ViewMode.values[index]
         : ViewMode.grid;
-    if (kDebugMode) print('📅 Loaded view mode: ${mode.name}');
+    if (kDebugMode) debugPrint('📅 Loaded view mode: ${mode.name}');
     return mode;
   }
 
@@ -143,7 +173,7 @@ class UserPreferencesService {
 
   static Future<bool> shouldShowBubble(String key) async {
     final dismissed = await hasDismissedBubble(key);
-    if (kDebugMode) print('👀 Bubble "$key" dismissed? $dismissed');
+    if (kDebugMode) debugPrint('👀 Bubble "$key" dismissed? $dismissed');
     return !dismissed;
   }
 
@@ -156,19 +186,17 @@ class UserPreferencesService {
     }
   }
 
-  /// Prepare bubble state for onboarding.
-  /// No longer tied to subscription tier – only cares if the user hasn’t seen/completed onboarding.
-  /// If feature flag disables onboarding, we mark as shown & completed immediately.
+  /// Prepare onboarding bubble flags (feature-flag aware).
   static Future<void> ensureBubbleFlagTriggeredIfEligible() async {
     final box = await _ensureBox();
     if (box == null) return;
 
-    // If bubbles are globally disabled, short-circuit and mark as completed.
+    // If globally disabled, mark as done immediately.
     if (!kOnboardingBubblesEnabled) {
       await box.put(_keyBubblesShownOnce, true);
       await box.put(_keyVaultTutorialComplete, true);
       if (kDebugMode) {
-        print(
+        debugPrint(
           '🧪 Onboarding disabled via feature flag – marking as completed.',
         );
       }
@@ -182,16 +210,16 @@ class UserPreferencesService {
         false;
 
     if (kDebugMode) {
-      print(
-        '📊 Bubble trigger check: bubblesShownOnce=$hasShownBubblesOnce, '
-        'vaultTutorialCompleted=$tutorialComplete',
+      debugPrint(
+        '📊 Bubble trigger check: shownOnce=$hasShownBubblesOnce, '
+        'completed=$tutorialComplete',
       );
     }
 
     if (!hasShownBubblesOnce && !tutorialComplete) {
-      await resetBubbles(); // prepare clean slate; UI will call markBubblesShown() when actually shown
+      await resetBubbles(); // clean slate; UI will call markBubblesShown() later
       if (kDebugMode) {
-        print('🌟 Bubbles prepared for new user (first show pending)');
+        debugPrint('🌟 Bubbles prepared for first-time user');
       }
     }
   }
@@ -202,13 +230,13 @@ class UserPreferencesService {
         false;
   }
 
-  /// Call this at the moment you actually show the first bubble.
+  /// Call when the first bubble actually becomes visible.
   static Future<void> markBubblesShown() async {
     final box = await _ensureBox();
     if (box != null) await box.put(_keyBubblesShownOnce, true);
   }
 
-  /// Clear all onboarding flags for (re)onboarding.
+  /// Clear all onboarding flags (simulate new user).
   static Future<void> markAsNewUser() async {
     final box = await _ensureBox();
     if (box != null) {
@@ -218,7 +246,7 @@ class UserPreferencesService {
         await box.delete('bubbleDismissed_$key');
       }
       if (kDebugMode) {
-        print('🎯 User marked as new → all onboarding flags cleared');
+        debugPrint('🎯 Onboarding flags cleared (new user mode)');
       }
     }
   }
@@ -238,7 +266,7 @@ class UserPreferencesService {
         await box.put(_keyTranslationUsage, translations);
       }
       if (kDebugMode) {
-        print('📂 Cached usage: AI=$ai, Translations=$translations');
+        debugPrint('📂 Cached usage: AI=$ai, Translations=$translations');
       }
     }
   }
@@ -253,12 +281,26 @@ class UserPreferencesService {
     return box?.get(_keyTranslationUsage, defaultValue: 0) as int? ?? 0;
   }
 
-  // ── Clearing helpers ───────────────────────────────────────────────────────
+  // ── Misc get/set helpers ──────────────────────────────────────────────────
+
+  static dynamic get(String key) => _safeBox?.get(key);
+
+  static Future<void> set(String key, dynamic value) async {
+    final box = await _ensureBox();
+    if (box != null) await box.put(key, value);
+  }
+
+  static Future<void> setBool(String key, bool value) async {
+    final box = await _ensureBox();
+    if (box != null) await box.put(key, value);
+  }
+
+  // ── Clearing helpers (logout / delete account) ─────────────────────────────
 
   static Future<void> clearAllUserData(String uid) async {
     await deleteLocalDataForUser(uid);
     await clearAllPreferences(uid);
-    if (kDebugMode) print('🧼 All local user data cleared for $uid');
+    if (kDebugMode) debugPrint('🧼 All local user prefs cleared for $uid');
   }
 
   static Future<void> deleteLocalDataForUser(String uid) async {
@@ -278,24 +320,12 @@ class UserPreferencesService {
       for (final key in keysToRemove) {
         await prefs.remove(key);
       }
-      if (kDebugMode) print('🧹 SharedPreferences cleared for $uid');
+      if (kDebugMode) debugPrint('🧹 SharedPreferences cleared for $uid');
     } catch (e) {
       if (kDebugMode) {
-        print('⚠️ Failed to clear SharedPreferences for $uid: $e');
+        debugPrint('⚠️ Failed to clear SharedPreferences for $uid: $e');
       }
     }
-  }
-
-  static dynamic get(String key) => _safeBox?.get(key);
-
-  static Future<void> set(String key, dynamic value) async {
-    final box = await _ensureBox();
-    if (box != null) await box.put(key, value);
-  }
-
-  static Future<void> setBool(String key, bool value) async {
-    final box = await _ensureBox();
-    if (box != null) await box.put(key, value);
   }
 
   /// 🔒 Internal: close and delete a Hive box
@@ -306,9 +336,11 @@ class UserPreferencesService {
         if (box.isOpen) await box.close();
       }
       await Hive.deleteBoxFromDisk(name);
-      if (kDebugMode) print('📦 Cleared Hive box "$name"');
+      if (kDebugMode) debugPrint('📦 Cleared Hive box "$name"');
     } catch (e) {
-      if (kDebugMode) print('⚠️ Hive box deletion failed for "$name": $e');
+      if (kDebugMode) {
+        debugPrint('⚠️ Hive box deletion failed for "$name": $e');
+      }
     }
   }
 }

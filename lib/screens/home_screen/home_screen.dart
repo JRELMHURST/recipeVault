@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart'; // ✅ use go_router for navigation
+
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_vault_screen.dart';
 import 'package:recipe_vault/screens/home_screen/home_app_bar.dart';
@@ -10,7 +12,7 @@ import 'package:recipe_vault/services/user_preference_service.dart';
 import 'package:recipe_vault/settings/settings_screen.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:recipe_vault/l10n/app_localizations.dart'; // ⬅️ add this
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -40,18 +42,12 @@ class _HomeScreenState extends State<HomeScreen> {
     await _subscriptionService.refresh();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
   void _toggleViewMode() {
     setState(() {
       final currentIndex = ViewMode.values.indexOf(_viewMode);
       final nextIndex = (currentIndex + 1) % ViewMode.values.length;
       _viewMode = ViewMode.values[nextIndex];
     });
-
     UserPreferencesService.saveViewMode(_viewMode);
   }
 
@@ -89,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    loc.upgradeToUnlockTitle, // "Upgrade to Unlock"
+                    loc.upgradeToUnlockTitle,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.deepPurple,
@@ -98,13 +94,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    loc.createFromImagesPaid, // "Creating recipes from images…"
+                    loc.createFromImagesPaid,
                     style: const TextStyle(fontSize: 15, color: Colors.black87),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    loc.upgradeToUnlockBody, // "Upgrade to unlock this feature."
+                    loc.upgradeToUnlockBody,
                     style: const TextStyle(fontSize: 14, color: Colors.black54),
                     textAlign: TextAlign.center,
                   ),
@@ -114,7 +110,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        Navigator.pushNamed(context, '/paywall');
+                        // ✅ GoRouter navigation
+                        context.push('/paywall');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepPurple,
@@ -124,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       child: Text(
-                        loc.seePlanOptions, // reuse
+                        loc.seePlanOptions,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -205,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? theme.colorScheme.primary
                   : theme.iconTheme.color?.withOpacity(0.5) ?? Colors.grey,
             ),
-            label: loc.tabCreate, // "Create"
+            label: loc.tabCreate,
           ),
           NavigationDestination(
             icon: Icon(
@@ -214,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? theme.colorScheme.primary
                   : theme.iconTheme.color?.withOpacity(0.5) ?? Colors.grey,
             ),
-            label: loc.tabVault, // "Vault"
+            label: loc.tabVault,
           ),
           NavigationDestination(
             icon: Icon(
@@ -223,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? theme.colorScheme.primary
                   : theme.iconTheme.color?.withOpacity(0.5) ?? Colors.grey,
             ),
-            label: loc.tabProfile, // "Profile"
+            label: loc.tabProfile,
           ),
         ],
       ),

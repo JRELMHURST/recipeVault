@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -23,10 +25,11 @@ class AppBootstrap {
   );
   static final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+  /// Call once at app start (idempotent).
   static Future<void> ensureReady() async {
     if (_isReady) return;
 
-    // 1️⃣ Firebase Init
+    // 1) Firebase Init
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
@@ -36,15 +39,18 @@ class AppBootstrap {
         print('❌ Firebase initialisation failed: $e');
         print(stack);
       }
+      // Hard stop: nothing else works without Firebase.
       return;
     }
 
-    // 2️⃣ Firebase App Check
+    // 2) Firebase App Check (only on mobile; debug providers here)
     try {
-      await FirebaseAppCheck.instance.activate(
-        androidProvider: AndroidProvider.debug,
-        appleProvider: AppleProvider.debug,
-      );
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        await FirebaseAppCheck.instance.activate(
+          androidProvider: AndroidProvider.debug,
+          appleProvider: AppleProvider.debug,
+        );
+      }
     } catch (e, stack) {
       if (kDebugMode) {
         print('⚠️ Firebase App Check failed: $e');
@@ -52,8 +58,11 @@ class AppBootstrap {
       }
     }
 
-    // 3️⃣ RevenueCat Setup
+    // 3) RevenueCat Setup
     try {
+      if (kDebugMode) {
+        await Purchases.setLogLevel(LogLevel.debug);
+      }
       await Purchases.configure(
         PurchasesConfiguration('appl_oqbgqmtmctjzzERpEkswCejmukh'),
       );
@@ -62,9 +71,10 @@ class AppBootstrap {
         print('❌ RevenueCat config failed: $e');
         print(stack);
       }
+      // Don’t return; AccessController will fall back to Firestore.
     }
 
-    // 4️⃣ Push Notifications
+    // 4) Push Notifications (tokens/permissions handled in your service)
     try {
       await NotificationService.init();
     } catch (e, stack) {
@@ -74,33 +84,55 @@ class AppBootstrap {
       }
     }
 
-    // 5️⃣ Hive Init + Migrations
+    // 5) Hive Init + Adapters + CategoryService bootstrap
+    //    IMPORTANT: don’t open generic boxes here; services/screens open per-user boxes when needed.
     bool hasLocalData = false;
     try {
       await Hive.initFlutter();
-      Hive.registerAdapter(RecipeCardModelAdapter());
-      Hive.registerAdapter(CategoryModelAdapter());
+      if (!Hive.isAdapterRegistered(0)) {
+        Hive.registerAdapter(
+          RecipeCardModelAdapter(),
+        ); // adjust typeIds as per your g.dart
+      }
+      if (!Hive.isAdapterRegistered(1)) {
+        Hive.registerAdapter(CategoryModelAdapter());
+      }
 
-      final recipeBox = await Hive.openBox<RecipeCardModel>('recipes');
-      final categoryBox = await Hive.openBox<CategoryModel>('categories');
+      // Optional: detect legacy boxes without opening them.
+      // Keep this best-effort so we don’t block startup.
+      try {
+        final legacyRecipes = await Hive.boxExists('recipes');
+        final legacyCategories = await Hive.boxExists('categories');
+        hasLocalData = legacyRecipes || legacyCategories;
+      } catch (_) {}
 
-      hasLocalData = recipeBox.isNotEmpty || categoryBox.isNotEmpty;
+      // Migrate legacy String categories to CategoryModel **only if the legacy box exists**.
+      // (If you no longer ship those boxes, this will just noop.)
+      try {
+        if (await Hive.boxExists('categories')) {
+          final catBox = await Hive.openBox('categories');
+          final legacyKeys = catBox.keys
+              .where((k) => catBox.get(k) is String)
+              .toList();
 
-      // Migrate legacy String categories to CategoryModel
-      final legacyKeys = categoryBox.keys
-          .where((k) => categoryBox.get(k) is String)
-          .toList();
-
-      for (final key in legacyKeys) {
-        final oldValue = categoryBox.get(key) as String;
-        final migrated = CategoryModel(id: key.toString(), name: oldValue);
-        await categoryBox.put(key, migrated);
-
+          for (final key in legacyKeys) {
+            final oldValue = catBox.get(key) as String;
+            final migrated = CategoryModel(id: key.toString(), name: oldValue);
+            await catBox.put(key, migrated);
+            if (kDebugMode) {
+              print('🔁 Migrated legacy category "$oldValue" to CategoryModel');
+            }
+          }
+          await catBox.close();
+        }
+      } catch (e, stack) {
         if (kDebugMode) {
-          print('🔁 Migrated legacy category "$oldValue" to CategoryModel');
+          print('⚠️ Legacy category migration failed: $e');
+          print(stack);
         }
       }
 
+      // Initialise any static caches/indices your CategoryService needs.
       await CategoryService.init();
     } catch (e, stack) {
       if (kDebugMode) {
@@ -109,7 +141,7 @@ class AppBootstrap {
       }
     }
 
-    // 6️⃣ User preferences
+    // 6) User preferences
     try {
       await UserPreferencesService.init();
     } catch (e, stack) {
@@ -119,7 +151,9 @@ class AppBootstrap {
       }
     }
 
-    // 7️⃣ Check new user status (Firestore + Hive)
+    // 7) New-user heuristic (non-blocking)
+    //    We don’t *route* on this directly anymore (router handles access),
+    //    but you might still use it for onboarding hints.
     try {
       final user = FirebaseAuth.instance.currentUser;
       bool isNew = false;
@@ -133,11 +167,13 @@ class AppBootstrap {
         isNew = true;
       }
 
-      if (isNew) {
-        await UserPreferencesService.setBool('is_new_user', true);
-        if (kDebugMode) print('🆕 New user detected — onboarding enabled');
-      } else {
-        await UserPreferencesService.setBool('is_new_user', false);
+      await UserPreferencesService.setBool('is_new_user', isNew);
+      if (kDebugMode) {
+        print(
+          isNew
+              ? '🆕 New user detected — onboarding enabled'
+              : 'ℹ️ Existing user — onboarding disabled',
+        );
       }
     } catch (e, stack) {
       if (kDebugMode) {
@@ -146,7 +182,7 @@ class AppBootstrap {
       }
     }
 
-    // 8️⃣ Auth state logging (for dev)
+    // 8) Dev auth logging (harmless in prod)
     if (kDebugMode) {
       FirebaseAuth.instance.authStateChanges().listen((user) {
         if (user == null) {

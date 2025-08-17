@@ -42,7 +42,7 @@ class NotificationService {
     // ---- Local notifications init ----
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
-      // Display alert/badge/sound when a local notif triggers while app is in foreground
+      // Show alert/badge/sound when local notif fires in foreground
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
@@ -61,6 +61,7 @@ class NotificationService {
         if (kDebugMode) {
           debugPrint('🔔 Local notification tapped: ${resp.payload}');
         }
+        // No navigation here—route handling stays in your GoRouter layer.
       },
     );
 
@@ -72,7 +73,7 @@ class NotificationService {
       alert: true,
       badge: true,
       sound: true,
-      provisional: false, // flip to true if you want Quiet delivery on iOS
+      provisional: false,
     );
     if (kDebugMode) {
       debugPrint('🔐 Notification permission: ${settings.authorizationStatus}');
@@ -107,7 +108,26 @@ class NotificationService {
     // (Optional) app opened from a terminated/background state via a push
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
       if (kDebugMode) debugPrint('🚪 Notification opened app: ${message.data}');
+      // Keep any deep-link routing in your GoRouter layer (e.g., via a top-level handler).
     });
+  }
+
+  /// Re-requests notification permissions (useful from settings screen).
+  static Future<AuthorizationStatus> requestPermissions() async {
+    final settings = await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+    if (Platform.isIOS) {
+      await _messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    }
+    return settings.authorizationStatus;
   }
 
   /// Schedules a weekly reminder for Sunday at [hour]:[minute] local time.
@@ -179,7 +199,8 @@ class NotificationService {
 
   static Future<void> _showForegroundRemote(RemoteMessage m) async {
     final notif = m.notification;
-    // If the remote includes Android channel id, prefer it; otherwise use our default.
+
+    // If the remote specifies a channel id, prefer it; otherwise use our default.
     final androidDetails = AndroidNotificationDetails(
       notif?.android?.channelId ?? _weeklyChannelId,
       notif?.android?.channelId == null ? _weeklyChannelName : 'Remote channel',
@@ -189,7 +210,7 @@ class NotificationService {
     );
 
     await _plugin.show(
-      // Use a transient id to avoid collisions; you can hash messageId if you like
+      // Transient id to avoid collisions
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
       notif?.title ?? 'RecipeVault',
       notif?.body ?? '',
@@ -235,7 +256,7 @@ class NotificationService {
       minute,
     );
 
-    // Move forward to requested weekday
+    // Move forward to requested weekday at/after now
     while (scheduled.weekday != weekday || !scheduled.isAfter(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }

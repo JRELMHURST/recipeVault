@@ -1,12 +1,15 @@
-// ignore_for_file: deprecated_member_use, unrelated_type_equality_checks, use_build_context_synchronously
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:recipe_vault/widgets/processing_messages.dart';
 
 class ProcessingOverlay {
@@ -31,7 +34,6 @@ class ProcessingOverlay {
 
 class _ProcessingOverlayView extends StatefulWidget {
   final List<File> imageFiles;
-
   const _ProcessingOverlayView({required this.imageFiles});
 
   @override
@@ -127,6 +129,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
       final needsTranslation = result.translationUsed;
 
+      // If translation was used, insert the translation step/messages
       if (mounted && needsTranslation) {
         final t = AppLocalizations.of(context);
         _currentSteps = [
@@ -143,7 +146,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
           ProcessingMessages.pickRandom(ProcessingMessages.formatting(context)),
           ProcessingMessages.pickRandom(ProcessingMessages.completed(context)),
         ];
-        setState(() {});
+        setState(() {}); // refresh the UI with the additional step
       }
 
       if (needsTranslation) {
@@ -162,7 +165,9 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
       if (!mounted) return;
       ProcessingOverlay.hide();
-      Navigator.pushNamed(context, '/results', arguments: result);
+
+      // go_router navigation (aligned with app-wide router usage)
+      context.push('/results', extra: result);
     } catch (e, st) {
       debugPrint('❌ Processing failed: $e\n$st');
 
@@ -194,7 +199,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
   }
 
   IconData _currentStepIcon(AppLocalizations t) {
-    final label = _currentSteps[_currentStep];
+    final label = _currentSteps[_safeIndex(_currentStep, _currentSteps.length)];
     if (label == t.processingStepUploading) {
       return Icons.cloud_upload_rounded;
     } else if (label == t.processingStepTranslating) {
@@ -211,6 +216,9 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     final theme = Theme.of(context);
     final accent = theme.colorScheme.primary;
     final t = AppLocalizations.of(context);
+
+    final stepIdx = _safeIndex(_currentStep, _currentSteps.length);
+    final funIdx = _safeIndex(_currentStep, _currentFunMessages.length);
 
     return Material(
       color: Colors.black.withOpacity(0.1),
@@ -254,7 +262,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _currentFunMessages[_currentStep],
+                    _currentFunMessages[funIdx],
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[700],
@@ -268,10 +276,10 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
                     transitionBuilder: (child, animation) =>
                         ScaleTransition(scale: animation, child: child),
                     child: Column(
-                      key: ValueKey<int>(_currentStep),
+                      key: ValueKey<int>(stepIdx),
                       children: [
                         Text(
-                          _currentSteps[_currentStep],
+                          _currentSteps[stepIdx],
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
@@ -320,4 +328,6 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       ),
     );
   }
+
+  int _safeIndex(int i, int len) => len == 0 ? 0 : (i.clamp(0, len - 1));
 }

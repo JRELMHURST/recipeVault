@@ -8,42 +8,43 @@ class EmptyVaultPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final t = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: Card(
-            elevation: 8,
+            elevation: 2,
+            color: theme.colorScheme.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Logo (20% bigger, no background, accessible)
+                    // Logo (accessible)
                     Semantics(
                       label: t.emptyVaultTitle,
                       image: true,
                       child: Image.asset(
-                        "assets/icon/round_vaultLogo.png",
-                        width: 67,
-                        height: 67,
+                        'assets/icon/round_vaultLogo.png',
+                        width: 72,
+                        height: 72,
                         fit: BoxFit.contain,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                    // Body text only (title removed)
+                    // Body
                     Text(
                       t.emptyVaultBody,
                       textAlign: TextAlign.center,
@@ -53,32 +54,36 @@ class EmptyVaultPlaceholder extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 20),
 
-                    // Primary action
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: onCreate,
-                        icon: const Icon(Icons.add),
-                        label: Text(
-                          t.createRecipe,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                    // Primary CTA
+                    Semantics(
+                      button: true,
+                      label: t.createRecipe,
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: onCreate,
+                          icon: const Icon(Icons.add),
+                          label: Text(
+                            t.createRecipe,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
                           ),
-                          elevation: 3,
                         ),
                       ),
                     ),
 
-                    // Extra breathing room at bottom
+                    // Breathing room for devices with gesture bars
                     SizedBox(height: 10 + bottomInset),
                   ],
                 ),

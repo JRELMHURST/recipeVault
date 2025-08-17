@@ -1,6 +1,9 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter/foundation.dart';
+
 import 'package:recipe_vault/firebase_auth_service.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
@@ -36,11 +39,11 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _safeNavigate(String route) async {
+  Future<void> _safeGo(String route) async {
     FocusManager.instance.primaryFocus?.unfocus();
     await Future.delayed(const Duration(milliseconds: 50));
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, route);
+    context.go(route); // go_router replacement for pushReplacementNamed
   }
 
   Future<void> _signInWithEmail() async {
@@ -49,11 +52,13 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final email = emailController.text.trim();
       final password = passwordController.text.trim();
+
       await AuthService().signInWithEmail(email, password);
+
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      await _safeNavigate('/home'); // let PaywallGate decide
+      await _safeGo('/home'); // router will redirect if needed
     } catch (e) {
       if (!mounted) return;
       _showError(_friendlyAuthError(e));
@@ -71,9 +76,11 @@ class _LoginScreenState extends State<LoginScreen> {
         _showError(AppLocalizations.of(context).cancel);
         return;
       }
+
       await VaultRecipeService.loadAndMergeAllRecipes();
+
       if (!mounted) return;
-      await _safeNavigate('/home'); // let PaywallGate decide
+      await _safeGo('/home'); // router will redirect if needed
     } catch (e) {
       if (!mounted) return;
       _showError(_friendlyAuthError(e));
@@ -91,9 +98,11 @@ class _LoginScreenState extends State<LoginScreen> {
         _showError(AppLocalizations.of(context).cancel);
         return;
       }
+
       await VaultRecipeService.loadAndMergeAllRecipes();
+
       if (!mounted) return;
-      await _safeNavigate('/home'); // let PaywallGate decide
+      await _safeGo('/home'); // router will redirect if needed
     } catch (e) {
       if (!mounted) return;
       _showError(_friendlyAuthError(e));
@@ -119,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return loc.unknownError;
   }
 
-  void _goToRegister() => _safeNavigate('/register');
+  void _goToRegister() => _safeGo('/register');
 
   @override
   Widget build(BuildContext context) {
@@ -235,8 +244,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: _signInWithGoogle,
                             ),
                             const SizedBox(height: 12),
-                            if (Theme.of(context).platform ==
-                                TargetPlatform.iOS)
+                            if (defaultTargetPlatform == TargetPlatform.iOS)
                               OutlinedButton.icon(
                                 icon: const Icon(
                                   Icons.apple,

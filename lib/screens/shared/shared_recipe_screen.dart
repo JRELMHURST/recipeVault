@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 
@@ -50,7 +51,7 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
         _recipe = recipe;
         _loading = false;
       });
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _error = AppLocalizations.of(context).sharedRecipeLoadError;
         _loading = false;
@@ -59,33 +60,89 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
   }
 
   Future<Uint8List> _generateRecipePdf(RecipeCardModel recipe) async {
+    final t = AppLocalizations.of(context);
+
+    // Use built-in Helvetica fonts from the `pdf` package (no extra deps).
     final pdf = pw.Document();
+    final theme = pw.ThemeData.withFont(
+      base: pw.Font.helvetica(),
+      bold: pw.Font.helveticaBold(),
+    );
+
+    String bulletify(Iterable<String> items) =>
+        items.map((e) => '• ${e.trim()}').join('\n');
+
+    final ingredients = (recipe.ingredients.isEmpty)
+        ? '—'
+        : bulletify(recipe.ingredients);
+
+    final instructions = (recipe.instructions.isEmpty)
+        ? '—'
+        : recipe.instructions
+              .asMap()
+              .entries
+              .map((e) => '${e.key + 1}. ${e.value.trim()}')
+              .join('\n');
+
+    final hints = (recipe.hints.isEmpty) ? '—' : bulletify(recipe.hints);
 
     pdf.addPage(
       pw.Page(
         pageTheme: pw.PageTheme(
           margin: const pw.EdgeInsets.all(32),
-          theme: pw.ThemeData.withFont(
-            base: await PdfGoogleFonts.robotoRegular(),
-            bold: await PdfGoogleFonts.robotoBold(),
-          ),
+          theme: theme, // <- not const
         ),
-        build: (context) {
+        build: (ctx) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
-                recipe.title,
+                recipe.title.isEmpty ? 'Untitled' : recipe.title,
                 style: pw.TextStyle(
                   fontSize: 24,
                   fontWeight: pw.FontWeight.bold,
                 ),
               ),
-              pw.SizedBox(height: 12),
+              if (recipe.categories.isNotEmpty) ...[
+                pw.SizedBox(height: 6),
+                pw.Text(
+                  '${t.categories}: ${recipe.categories.join(', ')}',
+                  style: const pw.TextStyle(fontSize: 12),
+                ),
+              ],
+              pw.SizedBox(height: 18),
+
               pw.Text(
-                recipe.formattedText,
-                style: const pw.TextStyle(fontSize: 14),
+                t.ingredients,
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
+                ),
               ),
+              pw.SizedBox(height: 6),
+              pw.Text(ingredients, style: const pw.TextStyle(fontSize: 13)),
+              pw.SizedBox(height: 14),
+
+              pw.Text(
+                t.instructions,
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Text(instructions, style: const pw.TextStyle(fontSize: 13)),
+              pw.SizedBox(height: 14),
+
+              pw.Text(
+                t.hintsAndTips,
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Text(hints, style: const pw.TextStyle(fontSize: 13)),
             ],
           );
         },
@@ -113,14 +170,17 @@ class _SharedRecipeScreenState extends State<SharedRecipeScreen> {
     final recipe = _recipe!;
 
     return Scaffold(
-      appBar: AppBar(title: Text(recipe.title)),
+      appBar: AppBar(
+        title: Text(recipe.title.isEmpty ? t.sharedRecipeTitle : recipe.title),
+      ),
       body: PdfPreview(
-        build: (format) => _generateRecipePdf(recipe),
+        build: (_) => _generateRecipePdf(recipe),
         canChangePageFormat: false,
         canChangeOrientation: false,
         allowPrinting: true,
         allowSharing: true,
-        pdfFileName: '${recipe.title.replaceAll(' ', '_')}.pdf',
+        pdfFileName:
+            '${(recipe.title.isEmpty ? "recipe" : recipe.title).replaceAll(' ', '_')}.pdf',
       ),
     );
   }

@@ -12,17 +12,17 @@ class HiveRecipeService {
   static String get _boxName => 'recipes_$_uid';
 
   static Box<RecipeCardModel>? _box;
-  static String? _boxForUid; // tracks which UID the current box belongs to
+  static String? _boxForUid; // which UID the current box belongs to
   static bool _hasLoggedReuse = false;
 
-  /// 📦 True if box has been opened successfully
+  /// True if box has been opened successfully.
   static bool get isBoxOpen => _box?.isOpen == true;
 
   /// Ensure that the currently opened box matches the signed-in user.
   static Future<void> _reopenIfUserChanged() async {
     if (_box != null && _boxForUid == _uid && _box!.isOpen) return;
 
-    // If a different user's box is open, close it before opening the new one.
+    // Close previous user's box if necessary
     if (_box?.isOpen == true && _boxForUid != _uid) {
       try {
         await _box!.close();
@@ -34,10 +34,15 @@ class HiveRecipeService {
     }
 
     // Open (or reuse) the correct box for the current user.
+    if (_uid == 'unknown') return; // no signed-in user → don't open a box
     if (!Hive.isBoxOpen(_boxName)) {
-      _box = await Hive.openBox<RecipeCardModel>(_boxName);
-      _boxForUid = _uid;
-      debugPrint('📦 Hive box opened: $_boxName');
+      try {
+        _box = await Hive.openBox<RecipeCardModel>(_boxName);
+        _boxForUid = _uid;
+        debugPrint('📦 Hive box opened: $_boxName');
+      } catch (e) {
+        debugPrint('⚠️ Error opening Hive box $_boxName: $e');
+      }
     } else {
       _box = Hive.box<RecipeCardModel>(_boxName);
       _boxForUid = _uid;
@@ -122,12 +127,14 @@ class HiveRecipeService {
     _hasLoggedReuse = false;
   }
 
-  // ───────── Cloud sync helpers ─────────
-  // Use MERGE writes so first-time docs don’t fail (update() would throw).
+  // ───────── Cloud sync helpers (user-owned only) ─────────
+  // Merge writes so first-time docs don’t fail.
 
   static Future<void> syncFavouriteToCloud(RecipeCardModel recipe) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null || recipe.isGlobal) return;
+    if (uid == null) return;
+    // Only sync if the recipe belongs to the current user
+    if (recipe.userId != uid) return;
 
     try {
       await FirebaseFirestore.instance
@@ -145,7 +152,8 @@ class HiveRecipeService {
 
   static Future<void> syncCategoriesToCloud(RecipeCardModel recipe) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null || recipe.isGlobal) return;
+    if (uid == null) return;
+    if (recipe.userId != uid) return;
 
     try {
       await FirebaseFirestore.instance
@@ -161,7 +169,7 @@ class HiveRecipeService {
     }
   }
 
-  // ───────── Cleanup (used by logout flows) ─────────
+  // ───────── Cleanup (used by logout/account-deletion) ─────────
 
   static Future<void> deleteLocalDataForUser(String uid) async {
     final userBoxName = 'recipes_$uid';

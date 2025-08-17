@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
@@ -38,6 +40,7 @@ class RecipeCompactView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
 
     return GridView.builder(
       padding: const EdgeInsets.all(8),
@@ -50,6 +53,7 @@ class RecipeCompactView extends StatelessWidget {
       itemCount: recipes.length,
       itemBuilder: (context, index) {
         final recipe = recipes[index];
+        final hasImage = recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty;
 
         return Semantics(
           label: '${l10n.appTitle}: ${recipe.title}',
@@ -61,30 +65,27 @@ class RecipeCompactView extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
+                  child: hasImage
                       ? Image.network(
                           recipe.imageUrl!,
                           fit: BoxFit.cover,
                           width: double.infinity,
                           height: double.infinity,
+                          gaplessPlayback: true,
                           errorBuilder: (context, error, stackTrace) =>
-                              _fallbackIcon(),
+                              _fallbackTile(theme),
                           loadingBuilder: (context, child, progress) {
                             if (progress == null) return child;
                             return Semantics(
                               label: l10n.loading,
-                              child: Container(
-                                color: Colors.deepPurple.shade50,
-                                alignment: Alignment.center,
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
+                              child: _loadingTile(theme),
                             );
                           },
                         )
-                      : _fallbackIcon(),
+                      : _fallbackTile(theme),
                 ),
+
+                // Favourite toggle
                 Positioned(
                   top: 4,
                   right: 4,
@@ -99,7 +100,7 @@ class RecipeCompactView extends StatelessWidget {
                             : Icons.favorite_border,
                         color: recipe.isFavourite
                             ? Colors.redAccent
-                            : Colors.white,
+                            : theme.colorScheme.onPrimary,
                         size: 26,
                       ),
                       onPressed: () => onToggleFavourite(recipe),
@@ -109,6 +110,14 @@ class RecipeCompactView extends StatelessWidget {
                     ),
                   ),
                 ),
+
+                // Title overlay (helps when thumbnails are busy)
+                Positioned(
+                  left: 6,
+                  right: 6,
+                  bottom: 6,
+                  child: _titlePill(theme, recipe.title),
+                ),
               ],
             ),
           ),
@@ -117,13 +126,52 @@ class RecipeCompactView extends StatelessWidget {
     );
   }
 
-  Widget _fallbackIcon() {
+  // --- Small helpers ---------------------------------------------------------
+
+  Widget _fallbackTile(ThemeData theme) {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: Colors.deepPurple.shade50,
+      color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
       alignment: Alignment.center,
-      child: Icon(LucideIcons.chefHat, size: 28, color: Colors.deepPurple),
+      child: Icon(
+        LucideIcons.chefHat,
+        size: 28,
+        color: theme.colorScheme.primary,
+      ),
+    );
+  }
+
+  Widget _loadingTile(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: theme.colorScheme.surfaceVariant.withOpacity(0.25),
+      alignment: Alignment.center,
+      child: const SizedBox(
+        height: 22,
+        width: 22,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    );
+  }
+
+  Widget _titlePill(ThemeData theme, String title) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }

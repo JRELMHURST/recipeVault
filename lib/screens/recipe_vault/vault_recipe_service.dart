@@ -6,13 +6,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
+
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 
+/// User-only Vault data layer (no global/community).
+/// - Persists to Hive for instant UI + offline
+/// - Mirrors to Firestore (merge)
+/// - Optional Storage cleanup on delete
 class VaultRecipeService {
   static final _auth = FirebaseAuth.instance;
   static final _firestore = FirebaseFirestore.instance;
-  static StreamSubscription? _vaultSub;
+  static StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _vaultSub;
 
   static CollectionReference<Map<String, dynamic>> get _userRecipeCollection {
     final uid = _auth.currentUser?.uid;
@@ -24,21 +29,24 @@ class VaultRecipeService {
 
   // ─────────────────────────────── public API ───────────────────────────────
 
-  /// 🗑 Delete recipe from Hive, Firestore, and optionally Firebase Storage.
+  /// 🗑 Delete recipe from Hive, Firestore, and (if present) Firebase Storage.
   static Future<void> delete(RecipeCardModel recipe) async {
     await HiveRecipeService.delete(recipe.id);
+
     try {
       await _userRecipeCollection.doc(recipe.id).delete();
     } catch (e) {
-      debugPrint("⚠️ Firestore deletion failed: $e");
+      debugPrint('⚠️ Firestore deletion failed for ${recipe.id}: $e');
     }
 
-    if (recipe.imageUrl?.isNotEmpty == true) {
+    final url = recipe.imageUrl;
+    if (url != null && url.isNotEmpty) {
       try {
-        final ref = FirebaseStorage.instance.refFromURL(recipe.imageUrl!);
+        final ref = FirebaseStorage.instance.refFromURL(url);
         await ref.delete();
-      } catch (_) {
-        // ignore storage deletion errors
+      } catch (e) {
+        // Swallow storage errors (file may already be gone / not ours)
+        debugPrint('ℹ️ Storage delete skipped for ${recipe.id}: $e');
       }
     }
   }
@@ -51,20 +59,20 @@ class VaultRecipeService {
           .doc(recipe.id)
           .set(recipe.toJson(), SetOptions(merge: true));
     } catch (e) {
-      debugPrint("⚠️ Firestore save failed: $e");
+      debugPrint('⚠️ Firestore save failed for ${recipe.id}: $e');
     }
   }
 
-  /// ⬇ Load all **user** recipes and cache in Hive (no global/community).
+  /// ⬇ Loads **user** recipes from Firestore, merges with local (favourites/categories),
+  /// writes merged back to Hive, and returns the merged list.
   static Future<List<RecipeCardModel>> loadAndMergeAllRecipes() async {
     try {
-      await HiveRecipeService.init(); // ensure box is open
+      await HiveRecipeService.init(); // ensure the box is open
 
       final userRecipes = await _loadUserRecipes();
-
       final box = await HiveRecipeService.getBox();
-      final mergedList = <RecipeCardModel>[];
 
+      final mergedList = <RecipeCardModel>[];
       for (final recipe in userRecipes) {
         final local = box.get(recipe.id);
         final enriched = recipe.copyWith(
@@ -77,11 +85,12 @@ class VaultRecipeService {
 
       return mergedList;
     } catch (e) {
-      debugPrint("⚠️ Firestore fetch failed, falling back to Hive: $e");
+      debugPrint('⚠️ Firestore fetch failed, falling back to Hive: $e');
       return HiveRecipeService.getAll();
     }
   }
 
+  /// Convenience boot method used by screens.
   static Future<void> load() async {
     await loadAndMergeAllRecipes();
     debugPrint('📦 VaultRecipeService.load complete');
@@ -91,7 +100,7 @@ class VaultRecipeService {
   static void listenToVaultChanges(void Function() onUpdate) {
     final uid = _auth.currentUser?.uid;
     if (uid == null) {
-      debugPrint("⚠️ Cannot listen to vault changes – no user signed in");
+      debugPrint('⚠️ Cannot listen to vault changes – no user signed in');
       return;
     }
 
@@ -105,9 +114,9 @@ class VaultRecipeService {
             onError: (err) => debugPrint('⚠️ Vault snapshot error: $err'),
             cancelOnError: true,
           );
-      debugPrint('📡 Firestore vault listener started');
+      debugPrint('📡 Firestore vault listener started for $uid');
     } catch (e) {
-      debugPrint("⚠️ Failed to start vault listener: $e");
+      debugPrint('⚠️ Failed to start vault listener: $e');
     }
   }
 
@@ -117,12 +126,14 @@ class VaultRecipeService {
     debugPrint('📡 Firestore vault listener cancelled');
   }
 
+  /// Clears the per-user Hive cache box.
   static Future<void> clearCache() async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
     await _closeAndDeleteBox<RecipeCardModel>('recipes_$uid');
   }
 
+  /// Update text content only (title/ingredients/instructions) for an existing recipe.
   static Future<void> updateTextContent({
     required String recipeId,
     required String title,
@@ -130,10 +141,11 @@ class VaultRecipeService {
     required List<String> instructions,
   }) async {
     try {
+      await HiveRecipeService.init();
       final box = await HiveRecipeService.getBox();
       final recipe = box.get(recipeId);
       if (recipe == null) {
-        debugPrint("⚠️ Recipe not found in Hive: $recipeId");
+        debugPrint('⚠️ Recipe not found in Hive: $recipeId');
         return;
       }
 
@@ -157,7 +169,7 @@ class VaultRecipeService {
 
       debugPrint('✅ Recipe text updated: $recipeId');
     } catch (e) {
-      debugPrint("⚠️ Failed to update recipe text: $e");
+      debugPrint('⚠️ Failed to update recipe text: $e');
     }
   }
 
@@ -176,12 +188,12 @@ class VaultRecipeService {
           .map((doc) => RecipeCardModel.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      debugPrint("⚠️ Failed to fetch user recipes: $e");
+      debugPrint('⚠️ Failed to fetch user recipes: $e');
       return [];
     }
   }
 
-  // ❌ Removed: _loadGlobalRecipes (and any global/community merging)
+  // No global/community merges by design.
 
   static Future<void> _closeAndDeleteBox<T>(String name) async {
     try {
@@ -190,9 +202,13 @@ class VaultRecipeService {
         if (box.isOpen) await box.close();
       }
       await Hive.deleteBoxFromDisk(name);
-      if (kDebugMode) print('📦 Cleared Hive box: $name');
+      if (kDebugMode) {
+        print('📦 Cleared Hive box: $name');
+      }
     } catch (e) {
-      if (kDebugMode) print('⚠️ Error clearing Hive box $name: $e');
+      if (kDebugMode) {
+        print('⚠️ Error clearing Hive box $name: $e');
+      }
     }
   }
 }

@@ -1,7 +1,9 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
@@ -21,35 +23,70 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  String _friendlyError(FirebaseAuthException e, AppLocalizations l10n) {
+    switch (e.code) {
+      case 'wrong-password':
+      case 'invalid-credential':
+        return l10n.enterCurrentPassword;
+      case 'user-mismatch':
+      case 'user-not-found':
+        return l10n.no;
+      case 'weak-password':
+        return l10n.passwordMinLength;
+      case 'requires-recent-login':
+        return l10n
+            .error; // or a dedicated string like "Please reauthenticate and try again."
+      case 'network-request-failed':
+        return l10n.networkError;
+      default:
+        return l10n.unknownError;
+    }
+  }
+
   Future<void> _changePassword() async {
     if (!_formKey.currentState!.validate()) return;
 
+    FocusScope.of(context).unfocus();
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    final l10n = AppLocalizations.of(context);
 
-    final cred = EmailAuthProvider.credential(
-      email: user.email!,
-      password: _currentPasswordController.text,
-    );
+    if (user == null) {
+      // Not signed in anymore; bounce to login.
+      context.go('/login');
+      return;
+    }
 
     try {
+      final cred = EmailAuthProvider.credential(
+        email: user.email ?? '',
+        password: _currentPasswordController.text,
+      );
+
       await user.reauthenticateWithCredential(cred);
       await user.updatePassword(_newPasswordController.text);
 
-      if (mounted) {
-        final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.passwordUpdated)));
-        Navigator.pop(context);
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.passwordUpdated)));
+      context.pop(); // go_router-safe back
     } on FirebaseAuthException catch (e) {
-      setState(() => _errorMessage = e.message);
+      setState(() => _errorMessage = _friendlyError(e, l10n));
+    } catch (_) {
+      setState(() => _errorMessage = l10n.unknownError);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -61,13 +98,22 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final user = FirebaseAuth.instance.currentUser;
     final l10n = AppLocalizations.of(context);
 
+    // If somehow reached while signed out, guard here too.
+    if (user == null) {
+      // Immediate redirect keeps UI consistent.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go('/login');
+      });
+      return const SizedBox.shrink();
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(l10n.changePasswordTitle), centerTitle: true),
       body: ResponsiveWrapper(
         child: ListView(
           padding: const EdgeInsets.only(bottom: 24),
           children: [
-            // 🔮 Simplified Gradient Header
+            // Header
             Container(
               width: double.infinity,
               padding: const EdgeInsets.only(top: 32, bottom: 24),
@@ -87,10 +133,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               child: Column(
                 children: [
                   const Icon(Icons.lock, size: 48, color: Colors.white),
-                  if (user?.email != null) ...[
+                  if (user.email != null) ...[
                     const SizedBox(height: 12),
                     Text(
-                      user!.email!,
+                      user.email!,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.white70,
                       ),
@@ -134,7 +180,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             labelText: l10n.currentPasswordLabel,
                           ),
                           obscureText: true,
-                          validator: (value) => value == null || value.isEmpty
+                          enabled: !_isLoading,
+                          autofillHints: const [AutofillHints.password],
+                          validator: (value) => (value == null || value.isEmpty)
                               ? l10n.enterCurrentPassword
                               : null,
                         ),
@@ -145,8 +193,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             labelText: l10n.newPasswordLabel,
                           ),
                           obscureText: true,
+                          enabled: !_isLoading,
+                          autofillHints: const [AutofillHints.newPassword],
                           validator: (value) =>
-                              value != null && value.length >= 6
+                              (value != null && value.length >= 6)
                               ? null
                               : l10n.passwordMinLength,
                         ),
@@ -157,10 +207,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             labelText: l10n.confirmPasswordLabel,
                           ),
                           obscureText: true,
+                          enabled: !_isLoading,
                           validator: (value) =>
                               value == _newPasswordController.text
                               ? null
                               : l10n.passwordsDoNotMatch,
+                          onFieldSubmitted: (_) => _changePassword(),
                         ),
                         const SizedBox(height: 30),
                         SizedBox(

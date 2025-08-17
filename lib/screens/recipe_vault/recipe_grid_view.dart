@@ -29,6 +29,9 @@ class RecipeGridView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final surface = theme.colorScheme.surface;
+    final surfaceVariant = theme.colorScheme.surfaceVariant;
 
     return GridView.builder(
       padding: const EdgeInsets.all(12),
@@ -42,116 +45,147 @@ class RecipeGridView extends StatelessWidget {
       itemBuilder: (context, index) {
         final recipe = recipes[index];
 
-        return GestureDetector(
-          onTap: () => onTap(recipe),
-          onLongPress: () => RecipeLongPressMenu.show(
-            context: context,
-            recipe: recipe,
-            onDelete: () => onDelete(recipe),
-            onAssignCategory: (selected) =>
-                onAssignCategories(recipe, selected),
-            onAddOrUpdateImage: () => onAddOrUpdateImage(recipe),
-            categories: categories,
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
-              ],
+        return Semantics(
+          label: '${l.appTitle}: ${recipe.title}',
+          button: true,
+          child: GestureDetector(
+            onTap: () => onTap(recipe),
+            onLongPress: () => RecipeLongPressMenu.show(
+              context: context,
+              recipe: recipe,
+              onDelete: () => onDelete(recipe),
+              onAssignCategory: (selected) =>
+                  onAssignCategories(recipe, selected),
+              onAddOrUpdateImage: () => onAddOrUpdateImage(recipe),
+              categories: categories,
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Stack(
-                children: [
-                  // Image (with loader + fallback)
-                  recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
-                      ? Image.network(
-                          recipe.imageUrl!,
-                          width: double.infinity,
-                          height: double.infinity,
-                          fit: BoxFit.cover,
-                          loadingBuilder: (context, child, progress) {
-                            if (progress == null) return child;
-                            return Container(
-                              color: Colors.deepPurple.shade50,
-                              alignment: Alignment.center,
-                              child: Semantics(
-                                label: l.loading,
-                                child: const CircularProgressIndicator(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  children: [
+                    // Image (with loader + fallback)
+                    if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty)
+                      Image.network(
+                        recipe.imageUrl!,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        gaplessPlayback: true,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Container(
+                            color: surfaceVariant.withOpacity(0.25),
+                            alignment: Alignment.center,
+                            child: Semantics(
+                              label: l.loading,
+                              child: const SizedBox(
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                 ),
                               ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) =>
-                              _fallbackIcon(),
-                        )
-                      : _fallbackIcon(),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) =>
+                            _fallbackIcon(theme),
+                        semanticLabel: recipe.title,
+                      )
+                    else
+                      _fallbackIcon(theme),
 
-                  // Title overlay
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [Colors.black87, Colors.transparent],
+                    // Title overlay
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
                         ),
-                      ),
-                      child: Text(
-                        recipe.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-
-                  // Favourite icon button
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: IconButton(
-                      onPressed: () => onToggleFavourite(recipe),
-                      icon: Icon(
-                        recipe.isFavourite
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color: recipe.isFavourite
-                            ? Colors.redAccent
-                            : Colors.white.withOpacity(0.9),
-                        size: 24,
-                        shadows: const [
-                          Shadow(
-                            offset: Offset(0, 1),
-                            blurRadius: 2,
-                            color: Colors.black45,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.85),
+                              Colors.black.withOpacity(0.0),
+                            ],
                           ),
-                        ],
+                        ),
+                        child: Text(
+                          recipe.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      tooltip: l.favourites, // neutral, no new ARB keys needed
-                      splashRadius: 22,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
                     ),
-                  ),
-                ],
+
+                    // Favourite icon button
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: IconButton(
+                        onPressed: () => onToggleFavourite(recipe),
+                        icon: Icon(
+                          recipe.isFavourite
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: recipe.isFavourite
+                              ? Colors.redAccent
+                              : Colors.white.withOpacity(0.95),
+                          size: 24,
+                          shadows: const [
+                            Shadow(
+                              offset: Offset(0, 1),
+                              blurRadius: 2,
+                              color: Colors.black45,
+                            ),
+                          ],
+                        ),
+                        tooltip: recipe.isFavourite
+                            ? l.removeFromFavourites
+                            : l.addToFavourites,
+                        splashRadius: 22,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ),
+
+                    // Subtle border for contrast on light images
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: surface.withOpacity(0.04),
+                              width: 1,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -160,14 +194,14 @@ class RecipeGridView extends StatelessWidget {
     );
   }
 
-  Widget _fallbackIcon() {
+  Widget _fallbackIcon(ThemeData theme) {
     return Container(
-      color: Colors.deepPurple.shade50,
+      color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
       alignment: Alignment.center,
       child: Icon(
         LucideIcons.chefHat,
         size: 36,
-        color: Colors.deepPurple.shade200,
+        color: theme.colorScheme.primary,
       ),
     );
   }

@@ -1,16 +1,16 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class DismissibleBubble extends StatefulWidget {
   final String message;
 
-  /// Absolute position (in global coordinates) fallback if no anchorKey is provided.
+  /// Absolute position (global) used when no [anchorKey] is provided.
   final Offset? position;
 
-  /// Anchor widget to position the bubble near. If provided, we’ll place the bubble
-  /// just below the anchor with a small gap.
+  /// If provided, the bubble will be positioned just below this widget.
   final GlobalKey? anchorKey;
 
   final VoidCallback onDismiss;
@@ -35,10 +35,10 @@ class _DismissibleBubbleState extends State<DismissibleBubble>
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
 
-  // Where we’ll place the bubble (in this Stack’s coordinate space)
+  // Bubble’s top-left in the parent Stack’s local coordinate space.
   Offset _offset = const Offset(16, 80);
 
-  // We measure our own size so clamping is accurate
+  // Track our own size for clamping.
   final GlobalKey _bubbleKey = GlobalKey();
 
   @override
@@ -52,16 +52,20 @@ class _DismissibleBubbleState extends State<DismissibleBubble>
       reverseDuration: const Duration(milliseconds: 180),
     );
 
-    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+    final curved = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+    _fade = curved;
     _slide = Tween<Offset>(
       begin: const Offset(0, 0.06),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    ).animate(curved);
 
-    // Initial position after first layout
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _recalculatePosition();
-      _controller.forward();
+    // Defer initial measure until after first layout.
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
+      await _recalculatePosition();
+      if (mounted) _controller.forward();
     });
   }
 
@@ -70,7 +74,7 @@ class _DismissibleBubbleState extends State<DismissibleBubble>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.anchorKey != widget.anchorKey ||
         oldWidget.position != widget.position) {
-      WidgetsBinding.instance.addPostFrameCallback(
+      SchedulerBinding.instance.addPostFrameCallback(
         (_) => _recalculatePosition(),
       );
     }
@@ -79,7 +83,9 @@ class _DismissibleBubbleState extends State<DismissibleBubble>
   @override
   void didChangeMetrics() {
     // Orientation/keyboard/safe-area changes → reposition
-    WidgetsBinding.instance.addPostFrameCallback((_) => _recalculatePosition());
+    SchedulerBinding.instance.addPostFrameCallback(
+      (_) => _recalculatePosition(),
+    );
   }
 
   @override
@@ -90,58 +96,67 @@ class _DismissibleBubbleState extends State<DismissibleBubble>
   }
 
   Future<void> _recalculatePosition() async {
-    final stackBox = context.findRenderObject() as RenderBox?;
-    if (stackBox == null || !mounted) return;
+    if (!mounted) return;
+
+    final stackRender = context.findRenderObject();
+    if (stackRender is! RenderBox) return;
 
     // 1) Determine a base *global* position
-    Offset baseGlobal;
+    Offset baseGlobal = widget.position ?? const Offset(16, 80);
     double belowGap = 8.0;
 
-    if (widget.anchorKey?.currentContext != null) {
-      final anchorBox =
-          widget.anchorKey!.currentContext!.findRenderObject() as RenderBox?;
-      if (anchorBox != null) {
-        final anchorTopLeft = anchorBox.localToGlobal(Offset.zero);
-        baseGlobal = anchorTopLeft;
-        belowGap += anchorBox.size.height; // drop just below the anchor
-      } else {
-        baseGlobal = widget.position ?? const Offset(16, 80);
-      }
-    } else {
-      baseGlobal = widget.position ?? const Offset(16, 80);
+    final anchorCtx = widget.anchorKey?.currentContext;
+    final anchorRender = anchorCtx?.findRenderObject();
+    if (anchorRender is RenderBox) {
+      final topLeft = anchorRender.localToGlobal(Offset.zero);
+      baseGlobal = topLeft;
+      belowGap += anchorRender.size.height; // place just below anchor
     }
 
-    // 2) Convert to this Stack’s local coordinates and add the gap
-    final baseLocal = stackBox.globalToLocal(baseGlobal) + Offset(0, belowGap);
+    // 2) Convert to this Stack’s local space + gap
+    final baseLocal =
+        stackRender.globalToLocal(baseGlobal) + Offset(0, belowGap);
 
-    // 3) Measure our own size (fallback to reasonable default)
-    final Size bubbleSize =
-        (_bubbleKey.currentContext?.findRenderObject() as RenderBox?)?.size ??
-        const Size(240, 80);
-
-    final Size stackSize = stackBox.size;
+    // 3) Measure our own size (fallback default)
+    final bubbleRender = _bubbleKey.currentContext?.findRenderObject();
+    final bubbleSize = (bubbleRender is RenderBox)
+        ? bubbleRender.size
+        : const Size(240, 80);
+    final stackSize = stackRender.size;
 
     // 4) Clamp inside the visible area of this Stack
-    final double margin = 8.0;
-    final dx = baseLocal.dx.clamp(
-      margin,
-      stackSize.width - bubbleSize.width - margin,
-    );
-    final dy = baseLocal.dy.clamp(
-      margin,
-      stackSize.height - bubbleSize.height - margin,
-    );
+    const margin = 8.0;
+    double clampX(double v) =>
+        v.clamp(margin, stackSize.width - bubbleSize.width - margin);
+    double clampY(double v) =>
+        v.clamp(margin, stackSize.height - bubbleSize.height - margin);
 
-    setState(() => _offset = Offset(dx.toDouble(), dy.toDouble()));
+    final dx = clampX(baseLocal.dx);
+    final dy = clampY(baseLocal.dy);
+
+    if (!mounted) return;
+    setState(() => _offset = Offset(dx, dy));
   }
 
-  void _dismiss() {
-    _controller.reverse().then((_) => widget.onDismiss());
+  Future<void> _dismiss() async {
+    try {
+      await _controller.reverse();
+    } finally {
+      if (mounted) widget.onDismiss();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    // Version-agnostic clamped text scaling:
+    final currentScale = MediaQuery.of(
+      context,
+    ).textScaler.scale(1.0); // -> double
+    final clampedScale = currentScale.clamp(0.9, 1.4).toDouble();
+    final clampedTextScaler = TextScaler.linear(clampedScale);
 
     return Positioned(
       left: _offset.dx,
@@ -150,60 +165,73 @@ class _DismissibleBubbleState extends State<DismissibleBubble>
         opacity: _fade,
         child: SlideTransition(
           position: _slide,
-          child: Material(
-            key: _bubbleKey,
-            color: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              constraints: const BoxConstraints(maxWidth: 260),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.88),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black38,
-                    offset: Offset(0, 6),
-                    blurRadius: 14,
-                  ),
-                ],
-              ),
-              child: DefaultTextStyle(
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  height: 1.4,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(widget.message),
-                    if (widget.showButton) ...[
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: TextButton(
-                          onPressed: _dismiss,
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            minimumSize: const Size(0, 0),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                            textStyle: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                          child: Text(t.gotIt),
-                        ),
-                      ),
-                    ],
+          child: MediaQuery(
+            // Constrain extreme system text scales for layout stability.
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: clampedTextScaler),
+            child: Material(
+              key: _bubbleKey,
+              color: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                constraints: const BoxConstraints(maxWidth: 260),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withOpacity(0.88),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black38,
+                      offset: Offset(0, 6),
+                      blurRadius: 14,
+                    ),
                   ],
+                ),
+                child: DefaultTextStyle(
+                  style:
+                      theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.surface,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        height: 1.4,
+                      ) ??
+                      const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        height: 1.4,
+                      ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(widget.message),
+                      if (widget.showButton) ...[
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: TextButton(
+                            onPressed: _dismiss,
+                            style: TextButton.styleFrom(
+                              foregroundColor: theme.colorScheme.surface,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              minimumSize: const Size(0, 0),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: VisualDensity.compact,
+                              textStyle: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                            child: Text(t.gotIt),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),

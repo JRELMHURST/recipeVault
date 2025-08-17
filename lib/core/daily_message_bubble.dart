@@ -2,6 +2,8 @@
 // ignore_for_file: file_names, deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/core/daily_message_service.dart';
 import 'package:recipe_vault/core/daily_tip_banner_controller.dart';
@@ -18,13 +20,40 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
   final _controller = DailyTipBannerController();
   bool _busy = false;
 
+  GoRouter? _router;
+  VoidCallback? _routerListener;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final r = GoRouter.of(context);
+    if (_router != r) {
+      _detachRouterListener();
+      _router = r;
+      _routerListener = () {
+        // Close any open banner immediately on route change
+        _controller.close(immediate: true);
+      };
+      // ✅ Listen on the routerDelegate (ChangeNotifier)
+      _router!.routerDelegate.addListener(_routerListener!);
+    }
+  }
+
+  void _detachRouterListener() {
+    if (_router != null && _routerListener != null) {
+      _router!.routerDelegate.removeListener(_routerListener!);
+    }
+    _router = null;
+    _routerListener = null;
+  }
+
   Future<void> _showTipBanner() async {
     if (!mounted || _busy) return;
     _busy = true;
 
     try {
       // Always close before reopening
-      await _controller.close();
+      await _controller.close(immediate: true);
 
       // Let the overlay clean up before reinserting
       await Future.delayed(const Duration(milliseconds: 16));
@@ -47,7 +76,7 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
           title: t.dailyTipTitle,
           body: body,
           isDark: isDark,
-          onClose: _controller.close,
+          onClose: () => _controller.close(), // lightweight close
         ),
       );
     } finally {
@@ -57,6 +86,7 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
 
   @override
   void dispose() {
+    _detachRouterListener();
     _controller.dispose();
     super.dispose();
   }
@@ -75,7 +105,7 @@ class _BannerBody extends StatelessWidget {
   final String title;
   final String body;
   final bool isDark;
-  final Future<void> Function() onClose;
+  final VoidCallback onClose;
 
   const _BannerBody({
     required this.title,

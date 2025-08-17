@@ -36,13 +36,17 @@ class RecipeCard extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Accent top bar
                   Container(height: 4, color: colour.primary),
+
+                  // Content
                   Container(
                     color: theme.cardColor,
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // Title
                         Text(
                           parsed.title,
                           style: theme.textTheme.headlineSmall?.copyWith(
@@ -52,18 +56,24 @@ class RecipeCard extends StatelessWidget {
                           softWrap: true,
                         ),
                         const SizedBox(height: 12),
+
+                        // Ingredients
                         if (parsed.ingredients.isNotEmpty) ...[
                           _sectionHeader('🛒 Ingredients', theme),
                           const SizedBox(height: 6),
                           ...parsed.ingredients.map((i) => _bullet(i)),
                           const SizedBox(height: 16),
                         ],
+
+                        // Instructions
                         if (parsed.instructions.isNotEmpty) ...[
                           _sectionHeader('👨‍🍳 Instructions', theme),
                           const SizedBox(height: 6),
                           ...parsed.instructions.map((step) => _numbered(step)),
                           const SizedBox(height: 16),
                         ],
+
+                        // Hints
                         if (parsed.hints.isNotEmpty) ...[
                           _sectionHeader('💡 Hints & Tips', theme),
                           const SizedBox(height: 6),
@@ -120,19 +130,19 @@ class RecipeCard extends StatelessWidget {
     final lines = text.trim().split('\n');
     String title = 'Untitled';
     final Set<String> ingredients = {};
-    List<String> instructions = [];
-    List<String> hints = [];
+    final List<String> instructions = [];
+    final List<String> hints = [];
 
     bool inIngredients = false;
     bool inInstructions = false;
     bool inHints = false;
 
-    for (final line in lines) {
-      final trimmed = line.trim();
-      final lower = trimmed.toLowerCase();
+    for (final raw in lines) {
+      final line = raw.trim();
+      final lower = line.toLowerCase();
 
       if (lower.startsWith('title:')) {
-        title = trimmed.split(':').skip(1).join(':').trim();
+        title = line.split(':').skip(1).join(':').trim();
         continue;
       }
 
@@ -158,15 +168,16 @@ class RecipeCard extends StatelessWidget {
         continue;
       }
 
-      if (inIngredients && trimmed.startsWith('-')) {
-        ingredients.add(trimmed.substring(1).trim());
-      } else if (inInstructions && RegExp(r'^\d+[\).]').hasMatch(trimmed)) {
-        instructions.add(trimmed);
+      if (inIngredients && line.startsWith('-')) {
+        final ing = line.substring(1).trim();
+        if (ing.isNotEmpty) ingredients.add(ing);
+      } else if (inInstructions && RegExp(r'^\d+[\).]').hasMatch(line)) {
+        instructions.add(line);
       } else if (inHints) {
-        final cleanHint = trimmed.replaceFirst(RegExp(r'^[-•]+\s*'), '').trim();
-        if (cleanHint.isEmpty) continue;
-        if (cleanHint.toLowerCase().contains('no additional tips')) continue;
-        hints.add(cleanHint);
+        final clean = line.replaceFirst(RegExp(r'^[-•]+\s*'), '').trim();
+        if (clean.isEmpty) continue;
+        if (clean.toLowerCase().contains('no additional tips')) continue;
+        hints.add(clean);
       }
     }
 

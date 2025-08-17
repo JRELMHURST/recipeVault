@@ -6,23 +6,21 @@ class RecipePdfGenerator {
   static Future<void> sharePdf(RecipeCardModel recipe) async {
     final pdf = pw.Document();
 
-    final robotoRegular = await PdfGoogleFonts.robotoRegular();
-    final robotoBold = await PdfGoogleFonts.robotoBold();
-
+    // Optional remote image
     pw.ImageProvider? pdfImage;
-    if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty) {
+    final imageUrl = recipe.imageUrl;
+    if (imageUrl != null && imageUrl.isNotEmpty) {
       try {
-        pdfImage = await networkImage(recipe.imageUrl!);
+        pdfImage = await networkImage(imageUrl);
       } catch (_) {
-        pdfImage = null;
+        pdfImage = null; // fail gracefully
       }
     }
 
     pdf.addPage(
       pw.MultiPage(
-        pageTheme: pw.PageTheme(
-          theme: pw.ThemeData.withFont(base: robotoRegular, bold: robotoBold),
-          margin: const pw.EdgeInsets.symmetric(horizontal: 30, vertical: 40),
+        pageTheme: const pw.PageTheme(
+          margin: pw.EdgeInsets.symmetric(horizontal: 30, vertical: 40),
         ),
         build: (context) => [
           if (pdfImage != null)
@@ -34,35 +32,46 @@ class RecipePdfGenerator {
                   image: pdfImage,
                   fit: pw.BoxFit.cover,
                 ),
-                borderRadius: pw.BorderRadius.circular(12),
+                borderRadius: pw.BorderRadius.all(pw.Radius.circular(12)),
               ),
             ),
+
+          // Title
           pw.Text(
             recipe.title,
             style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
           ),
-          pw.SizedBox(height: 12),
-          if (recipe.formattedText.contains('## Ingredients'))
-            _buildSection(
-              'Ingredients',
-              _extractSection(recipe.formattedText, 'Ingredients'),
-            ),
-          if (recipe.formattedText.contains('## Instructions'))
-            _buildSection(
-              'Instructions',
-              _extractSection(recipe.formattedText, 'Instructions'),
-            ),
+          pw.SizedBox(height: 16),
+
+          // Ingredients (bulleted)
+          if (recipe.ingredients.isNotEmpty)
+            _buildBulletedSection('Ingredients', recipe.ingredients),
+
+          // Instructions (numbered)
+          if (recipe.instructions.isNotEmpty)
+            _buildNumberedSection('Instructions', recipe.instructions),
+
+          // Hints (optional, bulleted)
+          if (recipe.hints.isNotEmpty)
+            _buildBulletedSection('Hints & Tips', recipe.hints),
         ],
       ),
     );
 
-    await Printing.sharePdf(
-      bytes: await pdf.save(),
-      filename: '${recipe.title}.pdf',
-    );
+    final safeName = _safeFileName('${recipe.title}.pdf');
+    await Printing.sharePdf(bytes: await pdf.save(), filename: safeName);
   }
 
-  static pw.Widget _buildSection(String title, String content) {
+  // ---- Helpers ----
+
+  static pw.Widget _buildBulletedSection(String title, List<String> lines) {
+    final items = lines
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    if (items.isEmpty) return pw.SizedBox();
+
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -71,19 +80,71 @@ class RecipePdfGenerator {
           style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
         ),
         pw.SizedBox(height: 6),
-        pw.Text(content.trim(), style: const pw.TextStyle(fontSize: 12)),
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: items
+              .map(
+                (e) =>
+                    pw.Bullet(text: e, style: const pw.TextStyle(fontSize: 12)),
+              )
+              .toList(),
+        ),
         pw.SizedBox(height: 16),
       ],
     );
   }
 
-  static String _extractSection(String text, String section) {
-    final start = text.indexOf('## $section');
-    if (start == -1) return '';
+  static pw.Widget _buildNumberedSection(String title, List<String> lines) {
+    final steps = lines
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
 
-    final nextSectionStart = text.indexOf('## ', start + 1);
-    final end = nextSectionStart != -1 ? nextSectionStart : text.length;
+    if (steps.isEmpty) return pw.SizedBox();
 
-    return text.substring(start + section.length + 4, end).trim();
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          title,
+          style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.SizedBox(height: 6),
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            for (var i = 0; i < steps.length; i++)
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 4),
+                child: pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      '${i + 1}. ',
+                      style: const pw.TextStyle(fontSize: 12),
+                    ),
+                    pw.Expanded(
+                      child: pw.Text(
+                        steps[i],
+                        style: const pw.TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        pw.SizedBox(height: 16),
+      ],
+    );
+  }
+
+  static String _safeFileName(String input) {
+    // Remove characters that are often problematic in filenames
+    final sanitized = input.replaceAll(RegExp(r'[\/\\:*?"<>|]+'), '_').trim();
+    // Avoid super-long filenames
+    return sanitized.length > 120
+        ? '${sanitized.substring(0, 120)}.pdf'
+        : sanitized;
   }
 }

@@ -1,9 +1,12 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/rev_cat/pricing_card.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
@@ -40,9 +43,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     // If tier flips from free → paid while we’re on this screen, redirect.
     _tierListener = () {
       final tier = _subscriptionService.tierNotifier.value;
-      if (tier != 'free' && mounted) {
-        _redirectHome();
-      }
+      if (tier != 'free' && mounted) _redirectHome();
     };
     _subscriptionService.tierNotifier.addListener(_tierListener!);
   }
@@ -64,6 +65,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       final packages = <Package>[];
       final seen = <String>{};
 
+      // De-dup across all offerings
       offerings.all.forEach((_, offering) {
         for (final pkg in offering.availablePackages) {
           final id = pkg.storeProduct.identifier;
@@ -71,31 +73,32 @@ class _PaywallScreenState extends State<PaywallScreen> {
         }
       });
 
+      // Sort: current entitlement first, then by our priority order.
       packages.sort((a, b) {
-        final priority = [
+        const priority = [
           'home_chef_monthly',
           'master_chef_monthly',
           'master_chef_yearly',
         ];
 
-        bool isCurrent(Package pkg) =>
-            entitlementId.isNotEmpty &&
-            (pkg.storeProduct.identifier == entitlementId ||
-                pkg.identifier == entitlementId ||
-                pkg.offeringIdentifier == entitlementId);
+        bool isCurrent(Package p) {
+          final id = entitlementId.toLowerCase();
+          if (id.isEmpty) return false;
+          return p.storeProduct.identifier.toLowerCase() == id ||
+              p.identifier.toLowerCase() == id ||
+              p.offeringIdentifier.toLowerCase() == id;
+        }
 
         if (isCurrent(a) && !isCurrent(b)) return -1;
         if (!isCurrent(a) && isCurrent(b)) return 1;
 
-        int aIndex = priority.indexWhere(
-          (id) => a.storeProduct.identifier.toLowerCase().contains(id),
-        );
-        int bIndex = priority.indexWhere(
-          (id) => b.storeProduct.identifier.toLowerCase().contains(id),
-        );
-        if (aIndex == -1) aIndex = priority.length;
-        if (bIndex == -1) bIndex = priority.length;
-        return aIndex.compareTo(bIndex);
+        int ix(String s) =>
+            priority.indexWhere((key) => s.toLowerCase().contains(key));
+        int aIx = ix(a.storeProduct.identifier);
+        int bIx = ix(b.storeProduct.identifier);
+        if (aIx == -1) aIx = priority.length;
+        if (bIx == -1) bIx = priority.length;
+        return aIx.compareTo(bIx);
       });
 
       _availablePackages = packages;
@@ -109,7 +112,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
   Future<void> _handlePurchase(Package package) async {
     setState(() => _isPurchasing = true);
     LoadingOverlay.show(context);
-
     try {
       final info = await Purchases.purchasePackage(package);
 
@@ -120,29 +122,25 @@ class _PaywallScreenState extends State<PaywallScreen> {
       if (!mounted) return;
       LoadingOverlay.hide();
 
-      // If entitlement is already active, go home. If not, the tier listener will catch the flip.
       final hasEntitlement =
           info.entitlements.active.isNotEmpty ||
           _subscriptionService.hasActiveSubscription;
-      if (hasEntitlement) {
-        _redirectHome();
-      }
+
+      if (hasEntitlement) _redirectHome(); // go_router
     } on PlatformException {
       if (!mounted) return;
-      LoadingOverlay.hide(); // Silent: no snackbars
+      LoadingOverlay.hide(); // silent cancel
     } catch (_) {
       if (!mounted) return;
-      LoadingOverlay.hide(); // Silent: no snackbars
+      LoadingOverlay.hide(); // silent errors
     } finally {
       if (mounted) setState(() => _isPurchasing = false);
     }
   }
 
   void _redirectHome() {
-    Navigator.of(
-      context,
-      rootNavigator: true,
-    ).pushNamedAndRemoveUntil('/home', (r) => false);
+    // With go_router, this replaces the stack and lands in Home.
+    context.go('/home');
   }
 
   @override
@@ -156,88 +154,89 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
     final entitlementId = _subscriptionService.entitlementId;
 
-    return Stack(
-      children: [
-        Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
-          appBar: AppBar(title: Text(loc.chefModeTitle)),
-          body: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  loc.paywallHeader,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontSize: 16,
-                    height: 1.4,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(title: Text(loc.chefModeTitle)),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              loc.paywallHeader,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontSize: 16,
+                height: 1.4,
               ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                  children: [
-                    ResponsiveWrapper(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 24),
-                          ..._availablePackages.map((pkg) {
-                            final isCurrent =
-                                entitlementId.isNotEmpty &&
-                                (pkg.storeProduct.identifier == entitlementId ||
-                                    pkg.identifier == entitlementId ||
-                                    pkg.offeringIdentifier == entitlementId);
-
-                            final badge = isCurrent
-                                ? loc.badgeCurrentPlan
-                                : (pkg.storeProduct.subscriptionPeriod == 'P1Y'
-                                      ? loc.badgeBestValue
-                                      : loc.badgeFreeTrial);
-
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: PricingCard(
-                                package: pkg,
-                                onTap: () {
-                                  if (!isCurrent && !_isPurchasing) {
-                                    _handlePurchase(pkg);
-                                  }
-                                },
-                                isDisabled: isCurrent,
-                                badge: badge,
-                              ),
-                            );
-                          }),
-                          if (_availablePackages.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 24),
-                              child: Text(
-                                loc.noPlans,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.grey),
-                              ),
-                            ),
-                          const SizedBox(height: 32),
-                          Center(child: _buildLegalNotice(context)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              textAlign: TextAlign.center,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              children: [
+                ResponsiveWrapper(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 24),
+                      ..._availablePackages.map((pkg) {
+                        final isCurrent =
+                            entitlementId.isNotEmpty &&
+                            (pkg.storeProduct.identifier == entitlementId ||
+                                pkg.identifier == entitlementId ||
+                                pkg.offeringIdentifier == entitlementId);
+
+                        final isYearly =
+                            pkg.storeProduct.subscriptionPeriod
+                                ?.toUpperCase() ==
+                            'P1Y';
+
+                        final badge = isCurrent
+                            ? loc.badgeCurrentPlan
+                            : (isYearly
+                                  ? loc.badgeBestValue
+                                  : loc.badgeFreeTrial);
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: PricingCard(
+                            package: pkg,
+                            onTap: () {
+                              if (!isCurrent && !_isPurchasing) {
+                                _handlePurchase(pkg);
+                              }
+                            },
+                            isDisabled: isCurrent,
+                            badge: badge,
+                          ),
+                        );
+                      }),
+                      if (_availablePackages.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 24),
+                          child: Text(
+                            loc.noPlans,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      const SizedBox(height: 32),
+                      Center(child: _buildLegalNotice(context)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -259,6 +258,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 recognizer: TapGestureRecognizer()
                   ..onTap = () => launchUrl(
                     Uri.parse('https://badger-creations.co.uk/terms'),
+                    mode: LaunchMode.externalApplication,
                   ),
               ),
               TextSpan(text: loc.legalAnd),
@@ -268,6 +268,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 recognizer: TapGestureRecognizer()
                   ..onTap = () => launchUrl(
                     Uri.parse('https://badger-creations.co.uk/privacy'),
+                    mode: LaunchMode.externalApplication,
                   ),
               ),
               const TextSpan(text: '.'),
@@ -296,11 +297,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
         TextButton.icon(
           onPressed: () async {
             const url = 'https://support.apple.com/en-gb/HT202039';
-            if (await canLaunchUrl(Uri.parse(url))) {
-              await launchUrl(
-                Uri.parse(url),
-                mode: LaunchMode.externalApplication,
-              );
+            final uri = Uri.parse(url);
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
             }
           },
           icon: const Icon(Icons.cancel_outlined),

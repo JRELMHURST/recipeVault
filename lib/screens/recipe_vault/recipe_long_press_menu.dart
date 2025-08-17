@@ -7,7 +7,7 @@ import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/screens/recipe_vault/edit_recipe_screen.dart';
 
 class RecipeLongPressMenu {
-  /// Localize only the built‑in category names; keep user categories as typed.
+  /// Localize only built-in category names; keep user categories as typed.
   static String localizeCategoryLabel(String raw, AppLocalizations t) {
     final v = raw.trim().toLowerCase();
     switch (v) {
@@ -32,17 +32,18 @@ class RecipeLongPressMenu {
     required void Function(List<String>) onAssignCategory,
   }) async {
     final l = AppLocalizations.of(context);
+    final theme = Theme.of(context);
 
     // Treat these as "system chips" and hide them from assignment.
     final systemChips = <String>{
-      // canonical English fallbacks
+      // canonical fallbacks
       'Favourites',
       'All',
       'Translated',
-      // localized labels
+      // localized labels (use the same keys you standardized elsewhere)
       l.favourites,
-      l.all,
-      l.translated,
+      l.systemAll,
+      l.systemTranslated,
     };
 
     final filteredCategories = categories
@@ -61,9 +62,7 @@ class RecipeLongPressMenu {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
-              color: Theme.of(
-                context,
-              ).scaffoldBackgroundColor.withOpacity(0.95),
+              color: theme.scaffoldBackgroundColor.withOpacity(0.95),
               child: SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -71,6 +70,7 @@ class RecipeLongPressMenu {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // grab handle
                         Container(
                           width: 40,
                           height: 4,
@@ -80,14 +80,12 @@ class RecipeLongPressMenu {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        // ✅ Localized title
                         Text(
                           l.recipeOptions,
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.3,
-                              ),
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.3,
+                          ),
                         ),
                         const SizedBox(height: 16),
 
@@ -103,13 +101,15 @@ class RecipeLongPressMenu {
                                       width: 48,
                                       height: 48,
                                       fit: BoxFit.cover,
+                                      semanticLabel: recipe.title,
                                     )
                                   : Container(
                                       width: 48,
                                       height: 48,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.surfaceContainerHighest,
+                                      color: theme
+                                          .colorScheme
+                                          .surfaceContainerHighest,
+                                      alignment: Alignment.center,
                                       child: const Icon(Icons.restaurant_menu),
                                     ),
                             ),
@@ -120,9 +120,7 @@ class RecipeLongPressMenu {
                                 children: [
                                   Text(
                                     recipe.title,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodyLarge,
+                                    style: theme.textTheme.bodyLarge,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -133,18 +131,20 @@ class RecipeLongPressMenu {
                                         spacing: 6,
                                         runSpacing: -4,
                                         children: recipe.categories.map((c) {
-                                          // ✅ Localize built‑in category chips & system chips
+                                          // Show system chips localized; user chips as-is (with a few built-ins localized)
                                           final shown = systemChips.contains(c)
                                               ? (c == 'Translated' ||
-                                                        c == l.translated
-                                                    ? l.translated
+                                                        c == l.systemTranslated
+                                                    ? l.systemTranslated
                                                     : c == 'Favourites' ||
                                                           c == l.favourites
                                                     ? l.favourites
-                                                    : c == 'All' || c == l.all
-                                                    ? l.all
+                                                    : c == 'All' ||
+                                                          c == l.systemAll
+                                                    ? l.systemAll
                                                     : c)
                                               : localizeCategoryLabel(c, l);
+
                                           return Container(
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 8,
@@ -152,9 +152,7 @@ class RecipeLongPressMenu {
                                             ),
                                             decoration: BoxDecoration(
                                               border: Border.all(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .outline
+                                                color: theme.colorScheme.outline
                                                     .withOpacity(0.4),
                                               ),
                                               borderRadius:
@@ -162,12 +160,10 @@ class RecipeLongPressMenu {
                                             ),
                                             child: Text(
                                               shown,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelSmall
+                                              style: theme.textTheme.labelSmall
                                                   ?.copyWith(
                                                     fontSize: 10,
-                                                    color: Theme.of(context)
+                                                    color: theme
                                                         .colorScheme
                                                         .onSurface
                                                         .withOpacity(0.6),
@@ -186,14 +182,14 @@ class RecipeLongPressMenu {
 
                         if (filteredCategories.isNotEmpty)
                           Theme(
-                            data: Theme.of(
-                              context,
-                            ).copyWith(dividerColor: Colors.transparent),
+                            data: theme.copyWith(
+                              dividerColor: Colors.transparent,
+                            ),
                             child: ExpansionTile(
                               tilePadding: EdgeInsets.zero,
                               title: Text(
-                                l.menuAssignCategories, // ✅ use existing key
-                                style: Theme.of(context).textTheme.bodyMedium,
+                                l.menuAssignCategories,
+                                style: theme.textTheme.bodyMedium,
                               ),
                               childrenPadding: EdgeInsets.zero,
                               children: filteredCategories.map((category) {
@@ -203,7 +199,7 @@ class RecipeLongPressMenu {
                                 final label = localizeCategoryLabel(
                                   category,
                                   l,
-                                ); // ✅
+                                );
                                 return CheckboxListTile(
                                   dense: true,
                                   contentPadding: EdgeInsets.zero,
@@ -236,7 +232,6 @@ class RecipeLongPressMenu {
                             Expanded(
                               child: OutlinedButton.icon(
                                 icon: const Icon(Icons.image_rounded, size: 18),
-                                // ✅ Localized
                                 label: Text(
                                   l.updateImage,
                                   style: const TextStyle(fontSize: 13),
@@ -249,13 +244,10 @@ class RecipeLongPressMenu {
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 12,
                                   ),
-                                  foregroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
+                                  foregroundColor: theme.colorScheme.primary,
                                   side: BorderSide(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary.withOpacity(0.5),
+                                    color: theme.colorScheme.primary
+                                        .withOpacity(0.5),
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
@@ -285,12 +277,8 @@ class RecipeLongPressMenu {
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 12,
                                   ),
-                                  backgroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
-                                  foregroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimary,
+                                  backgroundColor: theme.colorScheme.primary,
+                                  foregroundColor: theme.colorScheme.onPrimary,
                                   elevation: 2,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
@@ -331,12 +319,9 @@ class RecipeLongPressMenu {
                                           color: Colors.redAccent,
                                         ),
                                         const SizedBox(height: 12),
-                                        // Title: reuse the generic delete label
                                         Text(
                                           l.delete,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleMedium
+                                          style: theme.textTheme.titleMedium
                                               ?.copyWith(
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -344,11 +329,9 @@ class RecipeLongPressMenu {
                                         const SizedBox(height: 12),
                                         Text(
                                           l.deleteConfirmation,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
+                                          style: theme.textTheme.bodyMedium
                                               ?.copyWith(
-                                                color: Theme.of(context)
+                                                color: theme
                                                     .colorScheme
                                                     .onSurface
                                                     .withOpacity(0.7),
@@ -364,9 +347,8 @@ class RecipeLongPressMenu {
                                                   ctx,
                                                 ).pop(false),
                                                 style: OutlinedButton.styleFrom(
-                                                  foregroundColor: Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
+                                                  foregroundColor:
+                                                      theme.colorScheme.primary,
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(

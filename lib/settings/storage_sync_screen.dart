@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
@@ -15,7 +16,7 @@ class StorageSyncScreen extends StatefulWidget {
 }
 
 class _StorageSyncScreenState extends State<StorageSyncScreen> {
-  late String _uid;
+  late final String _uid;
 
   @override
   void initState() {
@@ -23,36 +24,50 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
     _uid = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
   }
 
-  Future<Box> getSafeBox(String name) async {
-    if (Hive.isBoxOpen(name)) {
-      return Hive.box(name); // already opened, assume correct type
-    }
-    return await Hive.openBox<dynamic>(name);
+  Future<Box<dynamic>> _openAnyBox(String name) async {
+    if (Hive.isBoxOpen(name)) return Hive.box<dynamic>(name);
+    return Hive.openBox<dynamic>(name);
+  }
+
+  Future<Box<String>> _openStringBox(String name) async {
+    if (Hive.isBoxOpen(name)) return Hive.box<String>(name);
+    return Hive.openBox<String>(name);
   }
 
   Future<void> _clearCache() async {
     final t = AppLocalizations.of(context);
+
     final confirm = await _showClearCacheDialog(context);
-    if (confirm == true) {
+    if (confirm != true) return;
+
+    try {
+      // Ensure recipe box is ready for the active user
+      await HiveRecipeService.init();
       final recipeBox = await HiveRecipeService.getBox();
-      final categoryBox = await getSafeBox('customCategories_$_uid');
-      final prefsBox = await getSafeBox('userPrefs_$_uid');
 
-      // Use strict open logic for String-only box
-      final hiddenBox = Hive.isBoxOpen('hiddenDefaultCategories_$_uid')
-          ? Hive.box<String>('hiddenDefaultCategories_$_uid')
-          : await Hive.openBox<String>('hiddenDefaultCategories_$_uid');
+      // User-scoped boxes
+      final categoriesBox = await _openAnyBox('customCategories_$_uid');
+      final hiddenDefaultsBox = await _openStringBox(
+        'hiddenDefaultCategories_$_uid',
+      );
+      final prefsBox = await _openAnyBox('userPrefs_$_uid');
 
-      await recipeBox.clear();
-      await categoryBox.clear();
-      await hiddenBox.clear();
-      await prefsBox.clear();
+      await Future.wait([
+        recipeBox.clear(),
+        categoriesBox.clear(),
+        hiddenDefaultsBox.clear(),
+        prefsBox.clear(),
+      ]);
 
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(t.localCacheCleared)));
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t.localCacheCleared)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${t.error}: $e')));
     }
   }
 
@@ -81,6 +96,7 @@ class _StorageSyncScreenState extends State<StorageSyncScreen> {
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(

@@ -18,23 +18,23 @@ class RecipeCardMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return PopupMenuButton<_RecipeCardMenuAction>(
+    return PopupMenuButton<RecipeCardMenuAction>(
       icon: const Icon(LucideIcons.moreHorizontal),
-      tooltip: l10n.menuMoreOptions, // optional but helpful
+      tooltip: l10n.menuMoreOptions,
       onSelected: (action) {
         switch (action) {
-          case _RecipeCardMenuAction.favourite:
+          case RecipeCardMenuAction.favourite:
             onToggleFavourite();
             break;
-          case _RecipeCardMenuAction.assignCategories:
+          case RecipeCardMenuAction.assignCategories:
             onAssignCategories?.call();
             break;
         }
       },
       itemBuilder: (context) {
-        final items = <PopupMenuEntry<_RecipeCardMenuAction>>[
+        final items = <PopupMenuEntry<RecipeCardMenuAction>>[
           PopupMenuItem(
-            value: _RecipeCardMenuAction.favourite,
+            value: RecipeCardMenuAction.favourite,
             child: Text(
               isFavourite ? l10n.menuUnfavourite : l10n.menuFavourite,
             ),
@@ -44,7 +44,7 @@ class RecipeCardMenu extends StatelessWidget {
         if (onAssignCategories != null) {
           items.add(
             PopupMenuItem(
-              value: _RecipeCardMenuAction.assignCategories,
+              value: RecipeCardMenuAction.assignCategories,
               child: Text(l10n.menuAssignCategories),
             ),
           );
@@ -56,4 +56,5 @@ class RecipeCardMenu extends StatelessWidget {
   }
 }
 
-enum _RecipeCardMenuAction { favourite, assignCategories }
+/// Public so it can be referenced in parent widgets, tests, etc.
+enum RecipeCardMenuAction { favourite, assignCategories }

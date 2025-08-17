@@ -4,7 +4,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:recipe_vault/router.dart'; // ⬅️ for navigatorKey
 import 'package:recipe_vault/core/feature_flags.dart';
 
 class DailyTipBannerController {
@@ -45,7 +44,8 @@ class DailyTipBannerController {
       // Ensure a clean slate so we don't reuse a ticker
       await close(immediate: true);
 
-      final overlay = navigatorKey.currentState?.overlay; // ⬅️ root overlay
+      // ✅ Use Flutter's root overlay; works with go_router and nested navigators
+      final overlay = Overlay.maybeOf(context, rootOverlay: true);
       if (overlay == null) {
         if (kDailyTipDebugLogging) {
           // ignore: avoid_print

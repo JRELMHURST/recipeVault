@@ -109,7 +109,7 @@ class RecipeVaultBubbles extends StatelessWidget {
     final localTopLeft = targetGlobal - selfGlobal;
 
     // Clamp within the current widget’s bounds with some bubble width/height margin.
-    final size = (selfRenderObject).size;
+    final size = selfRenderObject.size;
     final x = (localTopLeft.dx + nudge.dx).clamp(8.0, size.width - 288.0);
     final y = (localTopLeft.dy + nudge.dy).clamp(8.0, size.height - 120.0);
 
@@ -117,7 +117,7 @@ class RecipeVaultBubbles extends StatelessWidget {
   }
 
   /// Helper to place bubbles using either absolute (top/left/right/bottom)
-  /// or screen‑fraction positions (backwards‑compatible fallback).
+  /// or screen-fraction positions (backwards-compatible fallback).
   Offset _posFrom(
     BuildContext context, {
     double? top,
@@ -141,7 +141,7 @@ class RecipeVaultBubbles extends StatelessWidget {
             ? (size.height - bottom - 80)
             : (topFraction != null ? size.height * topFraction : 80));
 
-    // Clamp so it stays on‑screen
+    // Clamp so it stays on-screen
     final clampedLeft = resolvedLeft.clamp(8.0, size.width - 288.0);
     final clampedTop = resolvedTop.clamp(8.0, size.height - 120.0);
 

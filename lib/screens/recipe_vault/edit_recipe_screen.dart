@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart'; // ✅ use go_router pop
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
@@ -41,26 +42,28 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   Future<void> _saveChanges() async {
     setState(() => _isSaving = true);
 
+    // Normalize multi-line fields → list of non-empty trimmed lines
+    List<String> parseLines(String raw) => raw
+        .split('\n')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
     final updatedRecipe = widget.recipe.copyWith(
-      title: _titleController.text.trim(),
-      ingredients: _ingredientsController.text
-          .trim()
-          .split('\n')
-          .where((line) => line.trim().isNotEmpty)
-          .toList(),
-      instructions: _instructionsController.text
-          .trim()
-          .split('\n')
-          .where((line) => line.trim().isNotEmpty)
-          .toList(),
+      title: _titleController.text.trim().isEmpty
+          ? widget.recipe.title
+          : _titleController.text.trim(),
+      ingredients: parseLines(_ingredientsController.text),
+      instructions: parseLines(_instructionsController.text),
     );
 
     await VaultRecipeService.save(updatedRecipe);
 
-    if (mounted) {
-      setState(() => _isSaving = false);
-      Navigator.pop(context, updatedRecipe);
-    }
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    // ✅ go_router-friendly result return
+    context.pop<RecipeCardModel>(updatedRecipe);
   }
 
   Widget _buildTextField({
@@ -69,6 +72,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     required int maxLines,
     TextInputAction action = TextInputAction.newline,
   }) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -76,7 +80,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
           padding: const EdgeInsets.only(left: 8, bottom: 6),
           child: Text(
             label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: theme.textTheme.bodyMedium?.copyWith(
               fontSize: 15,
               fontWeight: FontWeight.w500,
               color: Colors.grey[600],
@@ -95,7 +99,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
               controller: controller,
               textInputAction: action,
               maxLines: maxLines,
-              style: Theme.of(context).textTheme.bodyLarge,
+              style: theme.textTheme.bodyLarge,
               decoration: const InputDecoration.collapsed(hintText: ''),
             ),
           ),
@@ -107,7 +111,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.editRecipeTitle)),
@@ -115,7 +119,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
           child: SingleChildScrollView(
-            padding: EdgeInsets.only(bottom: bottom + 120),
+            padding: EdgeInsets.only(bottom: bottomInset + 120),
             physics: const BouncingScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -145,10 +149,10 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isSaving ? null : _saveChanges,
+        icon: const Icon(Icons.save),
         label: Text(
           _isSaving ? l10n.editRecipeSaving : l10n.editRecipeSaveChanges,
         ),
-        icon: const Icon(Icons.save),
       ),
     );
   }

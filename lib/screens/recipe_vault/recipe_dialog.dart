@@ -54,15 +54,15 @@ class _ShareableRecipeCard extends StatefulWidget {
 }
 
 class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
-  Color iconColor = Colors.black;
+  Color iconColor = Colors.white;
   bool _iconReady = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAndUpdateIconColor();
-    });
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _loadAndUpdateIconColor(),
+    );
   }
 
   @override
@@ -112,6 +112,52 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    final header = (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
+        ? ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Image.network(
+              widget.imageUrl!,
+              height: 200,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!_iconReady) _loadAndUpdateIconColor();
+                  });
+                  return child;
+                }
+                return Semantics(
+                  label: l10n.loading,
+                  child: Container(
+                    height: 200,
+                    color: theme.colorScheme.surfaceVariant.withOpacity(0.25),
+                    alignment: Alignment.center,
+                    child: const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (_, __, ___) => Container(
+                height: 200,
+                color: theme.colorScheme.surfaceVariant.withOpacity(0.35),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.broken_image,
+                  size: 40,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              semanticLabel: widget.title,
+            ),
+          )
+        : const SizedBox.shrink();
 
     return Stack(
       children: [
@@ -119,44 +165,7 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                  child: Image.network(
-                    widget.imageUrl!,
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (!_iconReady) _loadAndUpdateIconColor();
-                        });
-                        return child;
-                      }
-                      return Semantics(
-                        label: l10n.loading,
-                        child: Container(
-                          height: 200,
-                          color: Colors.deepPurple.shade50,
-                          alignment: Alignment.center,
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      );
-                    },
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 200,
-                      color: Colors.deepPurple.shade50,
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.broken_image, size: 40),
-                    ),
-                    semanticLabel: widget.title, // a11y: describe the image
-                  ),
-                ),
+              header,
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: RecipeCard(recipeText: widget.markdown),
@@ -164,60 +173,57 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
             ],
           ),
         ),
-        if (_iconReady)
-          Positioned(
-            top: 8,
-            right: 8,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.black.withOpacity(0.4),
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.share,
-                      color: iconColor,
-                      shadows: const [
-                        Shadow(
-                          blurRadius: 4,
-                          offset: Offset(1, 1),
-                          color: Colors.black45,
-                        ),
-                      ],
-                    ),
-                    tooltip: l10n.shareAsPdf,
-                    onPressed: () => _shareAsPdf(context),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.black.withOpacity(0.4),
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.close,
-                      color: iconColor,
-                      shadows: const [
-                        Shadow(
-                          blurRadius: 4,
-                          offset: Offset(1, 1),
-                          color: Colors.black45,
-                        ),
-                      ],
-                    ),
-                    tooltip: l10n.close, // already in your ARB
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ),
-              ],
-            ),
+        // Controls float over the image; if no image, we still show them in the top-right.
+        Positioned(
+          top: 8,
+          right: 8,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _roundIconButton(
+                context: context,
+                icon: Icons.share,
+                tooltip: l10n.shareAsPdf,
+                onPressed: () => _shareAsPdf(context),
+              ),
+              const SizedBox(width: 4),
+              _roundIconButton(
+                context: context,
+                icon: Icons.close,
+                tooltip: l10n.close,
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
           ),
+        ),
       ],
+    );
+  }
+
+  Widget _roundIconButton({
+    required BuildContext context,
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    // Use current computed iconColor if ready; otherwise ensure visibility.
+    final Color fg = _iconReady ? iconColor : Colors.white;
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.black.withOpacity(0.4),
+      ),
+      child: IconButton(
+        icon: Icon(
+          icon,
+          color: fg,
+          shadows: const [
+            Shadow(blurRadius: 4, offset: Offset(1, 1), color: Colors.black45),
+          ],
+        ),
+        tooltip: tooltip,
+        onPressed: onPressed,
+      ),
     );
   }
 }

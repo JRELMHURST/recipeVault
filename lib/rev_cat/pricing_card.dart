@@ -21,222 +21,245 @@ class PricingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final loc = AppLocalizations.of(context);
     final product = package.storeProduct;
-    final price = product.priceString;
 
-    final title = _getTitle(loc, package);
-    final subtitle = _getSubtitle(loc, package);
-    final description = _getDescription(loc, package);
-    final features = _getFeatures(loc, package);
+    final title = _titleFor(loc, package);
+    final subtitle = _subtitleFor(loc, package);
+    final description = _descriptionFor(loc, package);
+    final features = _featuresFor(loc, package);
 
-    final isAnnual = _isAnnual(package);
-    final isMonthly =
-        !isAnnual &&
-        product.subscriptionPeriod?.toLowerCase().contains('m') == true;
-    final hasFreeTrial = isMonthly;
+    final isAnnual = _isAnnual(product);
+    final hasFreeTrial = _hasFreeTrial(product);
+
+    final cardColor = theme.cardTheme.color ?? cs.surface;
+    final cardShape =
+        theme.cardTheme.shape ??
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16));
+    final cardElevation = theme.cardTheme.elevation ?? 2;
+
+    final effectiveBadge =
+        badge ??
+        (hasFreeTrial
+            ? loc.badgeFreeTrial
+            : (isAnnual ? loc.badgeBestValue : null));
 
     return Opacity(
       opacity: isDisabled ? 0.6 : 1.0,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return GestureDetector(
-            onTap: isDisabled ? null : onTap,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Card(
-                  elevation: theme.cardTheme.elevation,
-                  shape: theme.cardTheme.shape,
-                  margin: EdgeInsets.zero,
-                  color: theme.cardTheme.color,
-                  shadowColor: theme.cardTheme.shadowColor,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            if (subtitle != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: Text(
-                                  subtitle,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.textTheme.bodySmall?.color
-                                        ?.withOpacity(0.6),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(description, style: theme.textTheme.bodyMedium),
-                        const SizedBox(height: 12),
-                        Text(
-                          price,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                        if (isAnnual)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              '🏷️ ${loc.badgeBestValue}',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                fontWeight: FontWeight.w500,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 16),
-                        ...features.map(
-                          (feature) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.check_circle,
-                                  size: 18,
-                                  color: Colors.green.shade700,
-                                ),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    feature,
-                                    style: theme.textTheme.bodySmall,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: isDisabled
-                              ? OutlinedButton.icon(
-                                  onPressed: null,
-                                  icon: const Icon(Icons.check_circle_outline),
-                                  label: Text(loc.badgeCurrentPlan),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.grey.shade600,
-                                  ),
-                                )
-                              : ElevatedButton(
-                                  onPressed: onTap,
-                                  child: Text(loc.upgradeNow),
-                                ),
-                        ),
-                      ],
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Card(
+            color: cardColor,
+            elevation: cardElevation,
+            shadowColor: theme.cardTheme.shadowColor,
+            margin: EdgeInsets.zero,
+            shape: cardShape,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title + subtitle
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-                if (badge != null || hasFreeTrial)
-                  Positioned(
-                    top: -12,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: badge != null
-                              ? Colors.amber.shade700
-                              : Colors.green.shade700,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          badge ?? loc.badgeFreeTrial,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                  if (subtitle != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.textTheme.bodySmall?.color?.withOpacity(
+                            0.7,
                           ),
                         ),
                       ),
                     ),
+
+                  const SizedBox(height: 8),
+
+                  // Description
+                  Text(description, style: theme.textTheme.bodyMedium),
+
+                  const SizedBox(height: 12),
+
+                  // Price
+                  Text(
+                    product.priceString,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: cs.primary,
+                    ),
                   ),
-              ],
+
+                  if (isAnnual && effectiveBadge == null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '🏷️ ${loc.badgeBestValue}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: cs.primary,
+                        ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 16),
+
+                  // Feature bullets
+                  ...features.map(
+                    (f) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            size: 18,
+                            color: Colors.green.shade700,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(f, style: theme.textTheme.bodySmall),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // CTA
+                  SizedBox(
+                    width: double.infinity,
+                    child: isDisabled
+                        ? OutlinedButton.icon(
+                            onPressed: null,
+                            icon: const Icon(Icons.check_circle_outline),
+                            label: Text(loc.badgeCurrentPlan),
+                          )
+                        : ElevatedButton(
+                            onPressed: onTap,
+                            child: Text(loc.upgradeNow),
+                          ),
+                  ),
+                ],
+              ),
             ),
-          );
-        },
+          ),
+
+          // Badge (free trial / current / best value)
+          if (effectiveBadge != null)
+            Positioned(
+              top: -12,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: hasFreeTrial
+                        ? Colors.green.shade700
+                        : Colors.amber.shade700,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    effectiveBadge,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  bool _isAnnual(Package package) {
-    final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
-    return package.offeringIdentifier == 'master_chef_plan' &&
-        period.contains('y');
+  // ---------- Helpers ----------
+
+  bool _isAnnual(StoreProduct p) {
+    final period = p.subscriptionPeriod?.toUpperCase() ?? '';
+    // RevenueCat uses ISO 8601 durations, e.g. P1M, P1Y
+    return period == 'P1Y' || period.endsWith('Y');
   }
 
-  String _getTitle(AppLocalizations loc, Package package) {
-    switch (package.offeringIdentifier) {
+  bool _hasFreeTrial(StoreProduct p) {
+    // Prefer explicit introductory eligibility if available; otherwise heuristic:
+    // many monthly plans offer trial; annual typically not.
+    // storeProduct.introductoryPrice?.price == 0 can also be used if provided.
+    final intro = p.introductoryPrice;
+    if (intro != null) {
+      // If there's an introductory price that is zero or has a free trial period.
+      final hasFree = intro.price == 0 || (intro.period.isNotEmpty);
+      return hasFree;
+    }
+    final period = p.subscriptionPeriod?.toUpperCase() ?? '';
+    return period == 'P1M' || period.endsWith('M');
+  }
+
+  String _titleFor(AppLocalizations loc, Package pkg) {
+    switch (pkg.offeringIdentifier) {
       case 'home_chef_plan':
         return loc.planHomeChef;
       case 'master_chef_plan':
         return loc.planMasterChef;
       default:
-        return package.storeProduct.title;
+        return pkg.storeProduct.title;
     }
   }
 
-  String? _getSubtitle(AppLocalizations loc, Package package) {
-    final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
-    if (package.offeringIdentifier == 'master_chef_plan') {
-      return period.contains('y')
-          ? loc.planMasterChefSubtitleAnnual
-          : loc.planMasterChefSubtitleMonthly;
+  String? _subtitleFor(AppLocalizations loc, Package pkg) {
+    final p = pkg.storeProduct;
+    final isAnnual = _isAnnual(p);
+    switch (pkg.offeringIdentifier) {
+      case 'master_chef_plan':
+        return isAnnual
+            ? loc.planMasterChefSubtitleAnnual
+            : loc.planMasterChefSubtitleMonthly;
+      case 'home_chef_plan':
+        return isAnnual
+            ? loc.planHomeChefSubtitleAnnual
+            : loc.planHomeChefSubtitleMonthly;
+      default:
+        return null;
     }
-    if (package.offeringIdentifier == 'home_chef_plan') {
-      // If Home Chef can be annual/monthly, localize accordingly; else return null.
-      return period.contains('y')
-          ? loc.planHomeChefSubtitleAnnual
-          : loc.planHomeChefSubtitleMonthly;
-    }
-    return null;
   }
 
-  String _getDescription(AppLocalizations loc, Package package) {
-    final offering = package.offeringIdentifier;
-    final period = package.storeProduct.subscriptionPeriod?.toLowerCase() ?? '';
-
-    switch (offering) {
+  String _descriptionFor(AppLocalizations loc, Package pkg) {
+    final p = pkg.storeProduct;
+    final isAnnual = _isAnnual(p);
+    switch (pkg.offeringIdentifier) {
       case 'home_chef_plan':
         return loc.planHomeChefDescription;
       case 'master_chef_plan':
-        return period.contains('y')
+        return isAnnual
             ? loc.planMasterChefDescriptionAnnual
             : loc.planMasterChefDescriptionMonthly;
       default:
-        // Optional: add a generic key if you want to localize this too.
         return 'Enjoy full access to RecipeVault features and AI-powered tools.';
     }
   }
 
-  List<String> _getFeatures(AppLocalizations loc, Package package) {
-    switch (package.offeringIdentifier) {
+  List<String> _featuresFor(AppLocalizations loc, Package pkg) {
+    switch (pkg.offeringIdentifier) {
       case 'home_chef_plan':
         return [
           loc.featureHomeChef1,

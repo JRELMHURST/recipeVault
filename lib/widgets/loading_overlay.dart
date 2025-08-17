@@ -3,6 +3,7 @@
 
 // ignore_for_file: deprecated_member_use
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
@@ -15,44 +16,61 @@ class LoadingOverlay {
     if (_isShowing) return;
     _isShowing = true;
 
-    // Use rootNavigator to ensure we’re on top of everything.
-    await showGeneralDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierLabel: 'Loading',
-      barrierColor: Colors.black.withOpacity(0.40),
-      useRootNavigator: true,
-      transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (ctx, _, __) {
-        _dialogContext = ctx;
-        return _LoadingDialog(message: message);
-      },
-      transitionBuilder: (ctx, anim, _, child) {
-        // Fade + gentle scale
-        final fade = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
-        final scale = Tween<double>(begin: 0.98, end: 1.0).animate(fade);
-        return FadeTransition(
-          opacity: fade,
-          child: ScaleTransition(scale: scale, child: child),
-        );
-      },
+    // Don’t await the dialog; we want show() to return immediately.
+    unawaited(
+      showGeneralDialog(
+        context: context,
+        barrierDismissible: false,
+        barrierLabel: AppLocalizations.of(context).loading,
+        barrierColor: Colors.black.withOpacity(0.40),
+        useRootNavigator: true,
+        transitionDuration: const Duration(milliseconds: 200),
+        pageBuilder: (ctx, _, __) {
+          _dialogContext = ctx;
+          return _LoadingDialog(message: message);
+        },
+        transitionBuilder: (ctx, anim, _, child) {
+          final fade = CurvedAnimation(
+            parent: anim,
+            curve: Curves.easeOutCubic,
+          );
+          final scale = Tween<double>(begin: 0.98, end: 1.0).animate(fade);
+          return FadeTransition(
+            opacity: fade,
+            child: ScaleTransition(scale: scale, child: child),
+          );
+        },
+      ).whenComplete(() {
+        // If the route is popped externally, make sure we reset our guards.
+        _isShowing = false;
+        _dialogContext = null;
+      }),
     );
-
-    // When dialog fully closes, reset guards
-    _isShowing = false;
-    _dialogContext = null;
   }
 
   /// Hide the overlay if it’s currently showing.
   static void hide() {
-    if (!_isShowing) return;
+    // If we have a dialog context, pop it regardless of _isShowing flag.
     final ctx = _dialogContext;
     if (ctx != null) {
-      // Pop the route hosting the dialog.
       Navigator.of(ctx, rootNavigator: true).pop();
     }
     _isShowing = false;
     _dialogContext = null;
+  }
+
+  /// Convenience helper to run an async task with the overlay shown.
+  static Future<T> runWithOverlay<T>(
+    BuildContext context,
+    Future<T> Function() task, {
+    String? message,
+  }) async {
+    await show(context, message: message);
+    try {
+      return await task();
+    } finally {
+      hide();
+    }
   }
 }
 
@@ -63,45 +81,59 @@ class _LoadingDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final localizations = AppLocalizations.of(context);
-    final displayMessage = message ?? localizations.loading;
+    final t = AppLocalizations.of(context);
+    final displayMessage = message ?? t.loading;
 
-    // Centered card with spinner + message
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 320),
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.10),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(
-                  width: 36,
-                  height: 36,
-                  child: CircularProgressIndicator(strokeWidth: 3),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  displayMessage,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+    // Constrain extreme text scales to keep layout stable.
+    final currentScale = MediaQuery.of(context).textScaler;
+    final clampedScale = TextScaler.linear(
+      currentScale.scale(1.0).clamp(0.9, 1.4),
+    );
+
+    final clamped = MediaQuery.of(context).copyWith(textScaler: clampedScale);
+
+    return MediaQuery(
+      data: clamped,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320),
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.10),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
                   ),
-                  textAlign: TextAlign.center,
+                ],
+              ),
+              child: Semantics(
+                liveRegion: true,
+                label: displayMessage,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: CircularProgressIndicator(strokeWidth: 3),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      displayMessage,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

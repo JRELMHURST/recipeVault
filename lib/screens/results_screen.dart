@@ -7,9 +7,10 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
-import 'package:recipe_vault/rev_cat/trial_prompt_helper.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
@@ -20,7 +21,10 @@ import 'package:recipe_vault/model/processed_recipe_result.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class ResultsScreen extends StatefulWidget {
-  const ResultsScreen({super.key});
+  /// Pass this when using GoRouter: `ResultsScreen(initialResult: state.extra as ProcessedRecipeResult?)`
+  final ProcessedRecipeResult? initialResult;
+
+  const ResultsScreen({super.key, this.initialResult});
 
   @override
   State<ResultsScreen> createState() => _ResultsScreenState();
@@ -65,7 +69,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception(t.notSignedIn); // NEW KEY
+      if (user == null) throw Exception(t.notSignedIn);
 
       final lines = formattedRecipe.trim().split('\n');
       String title = 'Untitled';
@@ -133,17 +137,18 @@ class _ResultsScreenState extends State<ResultsScreen> {
       await HiveRecipeService.save(recipe);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.recipeSaved)), // ✅ existing key
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t.recipeSaved)));
 
       await Future.delayed(const Duration(milliseconds: 1500));
-      if (mounted) Navigator.pushReplacementNamed(context, '/home');
-    } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t.unexpectedError)), // ✅ existing key
-      );
+      context.go('/home');
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t.unexpectedError)));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -153,13 +158,15 @@ class _ResultsScreenState extends State<ResultsScreen> {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
 
+    // Prefer constructor value (GoRouter), fallback to ModalRoute (Navigator 1.0)
     final result =
-        ModalRoute.of(context)?.settings.arguments as ProcessedRecipeResult?;
+        widget.initialResult ??
+        (ModalRoute.of(context)?.settings.arguments as ProcessedRecipeResult?);
 
     if (result == null || result.formattedRecipe.trim().isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: Text(t.recipeDetails)), // reuse existing
-        body: Center(child: Text(t.noRecipeDataFound)), // NEW KEY
+        appBar: AppBar(title: Text(t.recipeDetails)),
+        body: Center(child: Text(t.noRecipeDataFound)),
       );
     }
 
@@ -171,7 +178,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         backgroundColor: AppTheme.primaryColor,
         elevation: 0,
         title: Text(
-          t.recipeDetails, // reuse
+          t.recipeDetails,
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -183,12 +190,12 @@ class _ResultsScreenState extends State<ResultsScreen> {
           if (hasValidContent)
             IconButton(
               icon: const Icon(Icons.copy),
-              tooltip: t.copyToClipboard, // NEW KEY
+              tooltip: t.copyToClipboard,
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: formattedRecipe));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(t.copiedToClipboard)), // NEW KEY
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(t.copiedToClipboard)));
               },
             ),
         ],
@@ -199,9 +206,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   ? null
                   : () => _saveRecipe(formattedRecipe, result),
               icon: const Icon(Icons.save_alt_rounded),
-              label: Text(
-                _isSaving ? t.editRecipeSaving : t.saveToVault,
-              ), // reuse existing keys
+              label: Text(_isSaving ? t.editRecipeSaving : t.saveToVault),
               backgroundColor: AppTheme.primaryColor,
             )
           : null,
@@ -226,7 +231,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                     )
                                   : t.languageLabel(
                                       _mapLanguageCodeToLabel(result.language),
-                                    ), // NEW KEY
+                                    ),
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const Spacer(),
@@ -236,10 +241,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                   () => _showOriginalText = !_showOriginalText,
                                 ),
                                 child: Text(
-                                  _showOriginalText
-                                      ? t
-                                            .hideOcr // NEW KEY
-                                      : t.showOcr, // NEW KEY
+                                  _showOriginalText ? t.hideOcr : t.showOcr,
                                   style: const TextStyle(fontSize: 12),
                                 ),
                               ),
@@ -272,9 +274,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                               );
 
                           if (!subscriptionService.allowImageUpload) {
-                            await TrialPromptHelper.showIfTryingRestrictedFeature(
-                              context,
-                            );
+                            context.push('/paywall');
                             return '';
                           }
 
@@ -282,7 +282,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           if (user == null) {
                             ImageProcessingService.showError(
                               context,
-                              t.notSignedIn, // NEW KEY
+                              t.notSignedIn,
                             );
                             return '';
                           }
@@ -295,7 +295,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           if (croppedFile == null) {
                             ImageProcessingService.showError(
                               context,
-                              t.imageCropCancelled, // NEW KEY
+                              t.imageCropCancelled,
                             );
                             return '';
                           }
@@ -317,7 +317,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           } catch (e) {
                             ImageProcessingService.showError(
                               context,
-                              t.uploadFailed(e.toString()), // NEW KEY
+                              t.uploadFailed(e.toString()),
                             );
                             return '';
                           }
@@ -349,7 +349,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          t.formattingError, // NEW KEY
+                          t.formattingError,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 color: Colors.red[700],

@@ -24,6 +24,9 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     final loc = AppLocalizations.of(context);
     final tier = context.watch<SubscriptionService>().tier;
 
+    // Fallback for icon color in M3
+    final leadingIconColor = theme.appBarTheme.iconTheme?.color ?? Colors.white;
+
     return AppBar(
       elevation: 0,
       backgroundColor: theme.appBarTheme.backgroundColor,
@@ -57,7 +60,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           message: loc.appBarToggleViewMode,
           waitDuration: const Duration(milliseconds: 300),
           child: IconButton(
-            icon: Icon(viewModeIcon, color: theme.appBarTheme.iconTheme?.color),
+            icon: Icon(viewModeIcon, color: leadingIconColor),
             onPressed: onToggleViewMode,
           ),
         ),
@@ -65,10 +68,11 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           message: loc.appBarRefreshSubscription,
           waitDuration: const Duration(milliseconds: 300),
           child: IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: leadingIconColor),
             onPressed: () async {
               final subService = context.read<SubscriptionService>();
               await subService.syncRevenueCatEntitlement();
+              // BuildContext.mounted is available on modern Flutter; safe to use.
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -84,10 +88,10 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       },
 
       // 💡 Daily message trigger in place of Upgrade button
-      actions: [
+      actions: const [
         Padding(
-          padding: const EdgeInsets.only(right: 12.0),
-          child: DailyMessageBubble(), // ← not const
+          padding: EdgeInsets.only(right: 12.0),
+          child: DailyMessageBubble(),
         ),
       ],
     );

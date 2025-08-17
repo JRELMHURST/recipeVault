@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:go_router/go_router.dart';
+
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/services/user_session_service.dart';
@@ -29,8 +31,7 @@ class AccountSettingsScreen extends StatelessWidget {
     final email = user.email ?? '';
     final displayName = user.displayName ?? t.noName;
 
-    final langProvider = context
-        .watch<LanguageProvider>(); // 👈 watch current language
+    final langProvider = context.watch<LanguageProvider>();
     final currentLangKey = langProvider.selected;
     final currentLangLabel =
         LanguageProvider.displayNames[currentLangKey] ?? currentLangKey;
@@ -115,8 +116,7 @@ class AccountSettingsScreen extends StatelessWidget {
                               Icons.arrow_forward_ios_rounded,
                               size: 16,
                             ),
-                            onTap: () => Navigator.pushNamed(
-                              context,
+                            onTap: () => context.push(
                               '/settings/account/change-password',
                             ),
                           ),
@@ -147,7 +147,7 @@ class AccountSettingsScreen extends StatelessWidget {
                 ),
               ),
 
-              // ===== Language Section (added) =====
+              // ===== Language Section =====
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -234,7 +234,7 @@ class AccountSettingsScreen extends StatelessWidget {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(t.signedOut)));
-          Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
+          context.go('/login'); // ⬅️ replace pushNamedAndRemoveUntil
         }
       } catch (e) {
         Navigator.pop(context);
@@ -299,11 +299,11 @@ class AccountSettingsScreen extends StatelessWidget {
         }
 
         if (context.mounted) {
-          Navigator.pop(context);
+          Navigator.pop(context); // dismiss loading
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(t.deleteAccountSuccess)));
-          Navigator.pushNamedAndRemoveUntil(context, '/login', (r) => false);
+          context.go('/login'); // ⬅️ replace pushNamedAndRemoveUntil
         }
       } catch (e) {
         Navigator.pop(context);
@@ -326,7 +326,14 @@ class AccountSettingsScreen extends StatelessWidget {
       ),
       builder: (_) {
         final current = provider.selected;
-        final items = LanguageProvider.supported;
+
+        // 🔧 Convert the Set to a sorted List for stable UI & index access
+        final items = LanguageProvider.supported.toList()
+          ..sort((a, b) {
+            final la = LanguageProvider.displayNames[a] ?? a;
+            final lb = LanguageProvider.displayNames[b] ?? b;
+            return la.toLowerCase().compareTo(lb.toLowerCase());
+          });
 
         return SafeArea(
           child: ListView.separated(

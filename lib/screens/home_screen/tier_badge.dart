@@ -15,90 +15,90 @@ class TierBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context);
-    final subscriptionService = Provider.of<SubscriptionService>(
-      context,
-      listen: false,
-    );
+    final sub = context
+        .read<
+          SubscriptionService
+        >(); // read once; we’ll listen on the notifier below
 
     return ValueListenableBuilder<String>(
-      valueListenable: subscriptionService.tierNotifier,
+      valueListenable: sub.tierNotifier,
       builder: (context, tier, _) {
-        final isNoneTier = tier.isEmpty || tier == 'none';
-        final isSpecial = subscriptionService.hasSpecialAccess;
+        final isNone = tier.isEmpty || tier == 'none';
+        final isSpecial = sub.hasSpecialAccess;
 
-        if (isNoneTier) {
-          return showAsTitle
-              ? Text(
-                  loc.appTitle,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: overrideColor ?? Colors.white,
-                  ),
-                  textAlign: TextAlign.center,
-                )
-              : const SizedBox.shrink();
-        }
-
-        // Known entitlements mapped to localized labels
-        final tierStyles = {
-          'home_chef': (loc.planHomeChef, Colors.teal),
-          'master_chef': (loc.planMasterChef, Colors.amber),
+        // Map tiers to labels + base colours
+        final (label, color) = switch (tier) {
+          'home_chef' => (loc.planHomeChef, Colors.teal),
+          'master_chef' => (loc.planMasterChef, Colors.amber),
+          _ => (loc.appTitle, (overrideColor ?? Colors.white)),
         };
 
-        final style = tierStyles[tier];
-        String label = style?.$1 ?? '❓ ${loc.unknownError}';
-        final baseColour = overrideColor ?? style?.$2 ?? Colors.grey;
-
-        if (tier == 'home_chef' && isSpecial) {
-          label = '⭐ $label';
-        }
+        final baseColor = overrideColor ?? color;
+        final icon = isNone ? '' : sub.tierIcon; // 👑/👨‍🍳/…
 
         if (showAsTitle) {
-          final parts = label.split(' ');
-          final emoji = parts.first;
-          final text = parts.sublist(1).join(' ');
+          // Title-style badge for app bars/headers
+          final titleText = isNone
+              ? loc.appTitle
+              : '${isSpecial ? '⭐ ' : ''}$label';
 
-          return Center(
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
             child: Row(
+              key: ValueKey('title_$tier$isSpecial'),
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  emoji,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontSize: 24,
-                    height: 1,
-                    color: baseColour,
+                if (!isNone && icon.isNotEmpty)
+                  Text(
+                    icon,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontSize: 24,
+                      height: 1,
+                      color: baseColor,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
+                if (!isNone && icon.isNotEmpty) const SizedBox(width: 8),
                 Text(
-                  text,
+                  titleText,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                     fontSize: 20,
                     height: 1.2,
-                    color: baseColour,
+                    color: baseColor,
                     letterSpacing: 0.2,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
           );
         }
 
-        return Container(
-          key: ValueKey(tier),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: baseColour.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: baseColour.withOpacity(0.6)),
-          ),
-          child: Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: baseColour,
+        // Chip-style badge for inline usage
+        if (isNone) return const SizedBox.shrink();
+
+        final chipText = '${isSpecial ? '⭐ ' : ''}$label';
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: Container(
+            key: ValueKey('chip_$tier$isSpecial'),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: baseColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: baseColor.withOpacity(0.6)),
+            ),
+            child: Text(
+              chipText,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: baseColor,
+              ),
             ),
           ),
         );

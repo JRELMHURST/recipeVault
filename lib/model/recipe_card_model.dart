@@ -47,10 +47,7 @@ class RecipeCardModel extends HiveObject {
   @HiveField(12)
   final bool isGlobal;
 
-  /// Optional Firestore-only fields (NOT stored in Hive):
-  /// - `translations` holds per-locale formatted blocks (e.g. {'pl': {'formatted': '...'}})
-  /// - `availableLocales` lists locales the doc has
-  /// - `locale` the base/authoring locale of this doc (e.g. 'en-GB')
+  /// Firestore-only (NOT stored in Hive)
   final Map<String, dynamic>? translations;
   final List<String>? availableLocales;
   final String? locale;
@@ -59,8 +56,8 @@ class RecipeCardModel extends HiveObject {
     required this.id,
     required this.userId,
     required this.title,
-    required this.ingredients,
-    required this.instructions,
+    required List<String> ingredients,
+    required List<String> instructions,
     DateTime? createdAt,
     this.imageUrl,
     List<String>? categories,
@@ -73,17 +70,23 @@ class RecipeCardModel extends HiveObject {
     this.availableLocales,
     this.locale,
   }) : createdAt = createdAt ?? DateTime.now(),
-       categories = categories ?? const [],
-       originalImageUrls = originalImageUrls ?? const [],
-       hints = hints ?? const [];
+       // Freeze lists to avoid accidental mutation bugs in UI code.
+       ingredients = List.unmodifiable(ingredients),
+       instructions = List.unmodifiable(instructions),
+       categories = List.unmodifiable(categories ?? const []),
+       originalImageUrls = List.unmodifiable(originalImageUrls ?? const []),
+       hints = List.unmodifiable(hints ?? const []);
 
+  // ---------------- Serialization ----------------
+
+  /// Model → JSON (for Firestore). Use Timestamp for server-side ordering.
   Map<String, dynamic> toJson() => {
     'id': id,
     'userId': userId,
     'title': title,
     'ingredients': ingredients,
     'instructions': instructions,
-    'createdAt': createdAt.toIso8601String(),
+    'createdAt': Timestamp.fromDate(createdAt),
     if (imageUrl != null) 'imageUrl': imageUrl,
     'categories': categories,
     'isFavourite': isFavourite,
@@ -96,6 +99,7 @@ class RecipeCardModel extends HiveObject {
     if (locale != null) 'locale': locale,
   };
 
+  /// JSON/Firestore → Model (tolerant to both Timestamp and ISO strings).
   factory RecipeCardModel.fromJson(Map<String, dynamic> json) {
     final rawCreatedAt = json['createdAt'];
     DateTime parsedCreatedAt;
@@ -103,36 +107,56 @@ class RecipeCardModel extends HiveObject {
       parsedCreatedAt = rawCreatedAt.toDate();
     } else if (rawCreatedAt is String) {
       parsedCreatedAt = DateTime.tryParse(rawCreatedAt) ?? DateTime.now();
+    } else if (rawCreatedAt is num) {
+      // Fall back for epoch ms if ever present
+      parsedCreatedAt = DateTime.fromMillisecondsSinceEpoch(
+        rawCreatedAt.toInt(),
+      );
     } else {
       parsedCreatedAt = DateTime.now();
     }
 
-    // Allow translations to be either Map<String, dynamic> or null
     final Map<String, dynamic>? tr = (json['translations'] is Map)
         ? (json['translations'] as Map).cast<String, dynamic>()
         : null;
 
+    List<String> asStringList(dynamic v) => (v as List? ?? const <dynamic>[])
+        .whereType()
+        .map((e) => e.toString())
+        .toList(growable: false);
+
     return RecipeCardModel(
-      id: json['id'] ?? '',
-      userId: json['userId'] ?? '',
-      title: json['title'] ?? '',
-      ingredients: List<String>.from(json['ingredients'] ?? const []),
-      instructions: List<String>.from(json['instructions'] ?? const []),
+      id: (json['id'] ?? '').toString(),
+      userId: (json['userId'] ?? '').toString(),
+      title: (json['title'] ?? '').toString(),
+      ingredients: asStringList(json['ingredients']),
+      instructions: asStringList(json['instructions']),
       createdAt: parsedCreatedAt,
-      imageUrl: json['imageUrl'],
-      categories: List<String>.from(json['categories'] ?? const []),
-      isFavourite: json['isFavourite'] ?? false,
-      originalImageUrls: List<String>.from(
-        json['originalImageUrls'] ?? const [],
-      ),
-      hints: List<String>.from(json['hints'] ?? const []),
-      translationUsed: json['translationUsed'] ?? false,
-      isGlobal: json['isGlobal'] ?? false,
+      imageUrl: json['imageUrl'] as String?,
+      categories: asStringList(json['categories']),
+      isFavourite: (json['isFavourite'] ?? false) == true,
+      originalImageUrls: asStringList(json['originalImageUrls']),
+      hints: asStringList(json['hints']),
+      translationUsed: (json['translationUsed'] ?? false) == true,
+      isGlobal: (json['isGlobal'] ?? false) == true,
       translations: tr,
-      availableLocales: (json['availableLocales'] as List?)?.cast<String>(),
+      availableLocales: (json['availableLocales'] as List?)
+          ?.map((e) => e.toString())
+          .toList(),
       locale: json['locale'] as String?,
     );
   }
+
+  static RecipeCardModel fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+    SnapshotOptions? options,
+  ) => RecipeCardModel.fromJson(doc.data()!);
+
+  String toRawJson() => jsonEncode(toJson());
+  factory RecipeCardModel.fromRawJson(String str) =>
+      RecipeCardModel.fromJson(jsonDecode(str));
+
+  // ---------------- Convenience ----------------
 
   RecipeCardModel copyWith({
     String? imageUrl,
@@ -148,6 +172,7 @@ class RecipeCardModel extends HiveObject {
     Map<String, dynamic>? translations,
     List<String>? availableLocales,
     String? locale,
+    DateTime? createdAt,
   }) {
     return RecipeCardModel(
       id: id,
@@ -155,7 +180,7 @@ class RecipeCardModel extends HiveObject {
       title: title ?? this.title,
       ingredients: ingredients ?? this.ingredients,
       instructions: instructions ?? this.instructions,
-      createdAt: createdAt,
+      createdAt: createdAt ?? this.createdAt,
       imageUrl: imageUrl ?? this.imageUrl,
       isFavourite: isFavourite ?? this.isFavourite,
       originalImageUrls: originalImageUrls ?? this.originalImageUrls,
@@ -168,15 +193,6 @@ class RecipeCardModel extends HiveObject {
       locale: locale ?? this.locale,
     );
   }
-
-  static RecipeCardModel fromFirestore(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-    SnapshotOptions? options,
-  ) => RecipeCardModel.fromJson(doc.data()!);
-
-  String toRawJson() => jsonEncode(toJson());
-  factory RecipeCardModel.fromRawJson(String str) =>
-      RecipeCardModel.fromJson(jsonDecode(str));
 
   bool get hasImage => imageUrl?.isNotEmpty ?? false;
   bool get isTranslated => categories.contains('Translated');
@@ -203,7 +219,7 @@ class RecipeCardModel extends HiveObject {
 
   // ---------------- i18n helpers (UI usage) ----------------
 
-  /// Normalise a BCP‑47 tag from the device to keys we store.
+  /// Normalise a BCP-47 tag from the device to keys we store.
   /// e.g. 'pl-PL' → 'pl'. Keep 'en-GB' special.
   static String normaliseLocaleTag(String raw) {
     final lower = raw.toLowerCase();
@@ -211,8 +227,8 @@ class RecipeCardModel extends HiveObject {
     return lower.split('-').first;
   }
 
-  /// Return the localised formatted block (ingredients+instructions) for a device tag,
-  /// falling back to 'en-GB', 'en', or any first entry if necessary.
+  /// Return the localised formatted block for a device tag,
+  /// falling back to 'en-GB', 'en', or any first entry.
   String? formattedForLocaleTag(String bcp47) {
     final tr = translations;
     if (tr == null || tr.isEmpty) return null;
@@ -227,16 +243,13 @@ class RecipeCardModel extends HiveObject {
     if (candidate is Map && candidate['formatted'] is String) {
       return candidate['formatted'] as String;
     }
-    if (candidate is String) return candidate; // tolerate string storage
+    if (candidate is String) return candidate;
     return null;
   }
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is RecipeCardModel &&
-          runtimeType == other.runtimeType &&
-          id == other.id);
+      identical(this, other) || (other is RecipeCardModel && id == other.id);
 
   @override
   int get hashCode => id.hashCode;

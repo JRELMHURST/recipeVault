@@ -23,6 +23,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
   bool _isLoading = true;
   bool _isPurchasing = false;
   List<Package> _availablePackages = [];
+  VoidCallback? _tierListener;
 
   @override
   void initState() {
@@ -31,7 +32,27 @@ class _PaywallScreenState extends State<PaywallScreen> {
       context,
       listen: false,
     );
+    _attachTierListener();
     _loadSubscriptionData();
+  }
+
+  void _attachTierListener() {
+    // If tier flips from free → paid while we’re on this screen, redirect.
+    _tierListener = () {
+      final tier = _subscriptionService.tierNotifier.value;
+      if (tier != 'free' && mounted) {
+        _redirectHome();
+      }
+    };
+    _subscriptionService.tierNotifier.addListener(_tierListener!);
+  }
+
+  @override
+  void dispose() {
+    if (_tierListener != null) {
+      _subscriptionService.tierNotifier.removeListener(_tierListener!);
+    }
+    super.dispose();
   }
 
   Future<void> _loadSubscriptionData() async {
@@ -86,54 +107,42 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _handlePurchase(Package package) async {
-    final loc = AppLocalizations.of(context);
     setState(() => _isPurchasing = true);
     LoadingOverlay.show(context);
 
     try {
-      await Purchases.purchasePackage(package);
-      await _subscriptionService.syncRevenueCatEntitlement();
+      final info = await Purchases.purchasePackage(package);
+
+      // Sync local state + Firestore regardless.
+      await _subscriptionService.syncRevenueCatEntitlement(forceRefresh: true);
       await _subscriptionService.loadSubscriptionStatus();
 
       if (!mounted) return;
       LoadingOverlay.hide();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(loc.purchaseSuccess),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
-    } on PlatformException catch (e) {
+      // If entitlement is already active, go home. If not, the tier listener will catch the flip.
+      final hasEntitlement =
+          info.entitlements.active.isNotEmpty ||
+          _subscriptionService.hasActiveSubscription;
+      if (hasEntitlement) {
+        _redirectHome();
+      }
+    } on PlatformException {
       if (!mounted) return;
-      LoadingOverlay.hide();
-
-      final isCancelled =
-          e.code == '1' ||
-          (e.message?.toLowerCase().contains('cancelled') ?? false);
-
-      final message = isCancelled
-          ? loc.purchaseCancelled
-          : '${loc.purchaseFailed} ${e.message ?? loc.unknownError}';
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-      );
-    } catch (e) {
+      LoadingOverlay.hide(); // Silent: no snackbars
+    } catch (_) {
       if (!mounted) return;
-      LoadingOverlay.hide();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${loc.unexpectedError} ${e.toString()}'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      LoadingOverlay.hide(); // Silent: no snackbars
     } finally {
       if (mounted) setState(() => _isPurchasing = false);
     }
+  }
+
+  void _redirectHome() {
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).pushNamedAndRemoveUntil('/home', (r) => false);
   }
 
   @override

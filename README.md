@@ -27,11 +27,10 @@
 ## 🧑‍🍳 Subscription Tiers
 
 | Tier         | Features                                                                 |
-|--------------|--------------------------------------------------------------------------|
-| **Free**     | Offline saving only                                                     |
+|--------------|--------------------------------------------------------------------------|                                                  |
 | **Taster**   | 5 AI recipes + 1 translation (lifetime)                                 |
 | **Home Chef**| 20 AI recipes/mo, 5 translations/mo, cloud sync, categories             |
-| **Master Chef** | Unlimited recipes, translations, uploads, categories, and storage   |
+| **Master Chef** | 100 recipes, 20 translations, uploads, categories, and storage   |
 
 ---
 

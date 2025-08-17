@@ -1,50 +1,49 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, unnecessary_null_checks
 
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:hive/hive.dart';
-
-import 'package:recipe_vault/core/feature_flags.dart';
-import 'package:recipe_vault/firebase_auth_service.dart';
-import 'package:recipe_vault/model/recipe_card_model.dart';
+import 'package:recipe_vault/firebase_auth_service.dart'; // AuthService
 import 'package:recipe_vault/rev_cat/purchase_helper.dart';
-import 'package:recipe_vault/rev_cat/subscription_service.dart';
 import 'package:recipe_vault/rev_cat/tier_utils.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
-import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/user_preference_service.dart';
+import 'package:recipe_vault/rev_cat/subscription_service.dart';
+import 'package:recipe_vault/services/category_service.dart';
+import 'package:hive/hive.dart';
+import 'package:recipe_vault/model/recipe_card_model.dart';
+
+// ✅ Feature flags
+import 'package:recipe_vault/core/feature_flags.dart';
 
 class UserSessionService {
   static bool _isInitialised = false;
   static Completer<void>? _bubbleFlagsReady;
-
-  static StreamSubscription<DocumentSnapshot>? _userDocSub;
+  static StreamSubscription<DocumentSnapshot>? _userDocSubscription;
   static StreamSubscription<DocumentSnapshot>? _aiUsageSub;
   static StreamSubscription<DocumentSnapshot>? _translationSub;
 
   static bool get isInitialised => _isInitialised;
 
-  static bool get isSignedIn {
-    final u = FirebaseAuth.instance.currentUser;
-    return u != null && !u.isAnonymous;
-  }
+  static bool get isSignedIn =>
+      FirebaseAuth.instance.currentUser != null &&
+      !FirebaseAuth.instance.currentUser!.isAnonymous;
 
-  /// Trial ended screen: true only if user had an entitlement in trial which is now expired and not renewing.
   static Future<bool> shouldShowTrialEndedScreen() async {
     try {
       final sub = SubscriptionService();
       await sub.refresh();
+
       if (sub.isInTrial || sub.hasActiveSubscription) return false;
 
       final info = await Purchases.getCustomerInfo();
       if (info.entitlements.active.isEmpty) return false;
 
       final e = info.entitlements.active.values.first;
+
       if (e.isActive && e.periodType != PeriodType.trial) return false;
 
       if (e.periodType == PeriodType.trial) {
@@ -57,78 +56,82 @@ class UserSessionService {
         final wontRenew = e.willRenew == false;
         return trialEnded && wontRenew;
       }
+
       return false;
     } catch (e) {
-      _log('⚠️ trial check failed (default=false): $e');
+      _logDebug('⚠️ Error checking trial ended state (default=false): $e');
       return false;
     }
   }
 
   static Future<void> syncEntitlementAndRefreshSession() async {
-    _log('🔄 Manual entitlement sync + session refresh…');
+    _logDebug('🔄 Manually syncing entitlement + refreshing session...');
     await SubscriptionService().syncRevenueCatEntitlement();
     await init();
   }
 
-  /// Boot the signed-in user session (idempotent).
   static Future<void> init() async {
     if (_isInitialised) return;
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.isAnonymous) {
-      _log('⚠️ No valid signed-in user – skip init');
+      _logDebug('⚠️ No valid signed-in user – skipping session init');
       return;
     }
 
-    // prevent duplicate listeners
-    if (_userDocSub != null) {
-      _log('🛑 User doc listener already active – skip re-init');
+    if (_userDocSubscription != null) {
+      _logDebug('🛑 User doc listener already active – skipping re-init');
       return;
     }
+
+    _bubbleFlagsReady = Completer<void>();
+    _logDebug('👤 Initialising session for UID: ${user.uid}');
 
     await _cancelAllStreams();
-    _bubbleFlagsReady = Completer<void>();
 
     final uid = user.uid;
     final monthKey = DateFormat('yyyy-MM').format(DateTime.now());
-    _log('👤 Initialising session for $uid');
 
     try {
-      // Ensure user-scoped prefs box is ready
+      // Ensure prefs box is ready
       await UserPreferencesService.init();
+      if (!Hive.isBoxOpen('userPrefs_$uid')) {
+        await Hive.openBox('userPrefs_$uid');
+      }
 
-      // Ensure the Firestore user doc exists and detect "new user"
-      final isNewUser = await AuthService.ensureUserDocumentIfMissing(user);
+      final resolvedTier = await SubscriptionService().getResolvedTier();
+      _logDebug('🧾 Tier resolved via getResolvedTier(): $resolvedTier');
+
+      // ✅ Use unified AuthService
+      final isNewUser = await AuthService.ensureUserDocument(user);
       if (isNewUser) {
-        // Clean slate onboarding flags for brand new users
         try {
           await UserPreferencesService.markAsNewUser();
           await UserPreferencesService.resetBubbles();
-        } catch (e, st) {
-          _log('⚠️ Failed to mark new user: $e');
-          if (kDebugMode) print(st);
+        } catch (e, stack) {
+          _logDebug('⚠️ Failed to mark user as new: $e');
+          if (kDebugMode) print(stack);
         }
       }
 
-      // RevenueCat tier snapshot to log (service keeps source of truth)
-      final resolvedTier = await SubscriptionService().getResolvedTier();
-      _log('🧾 Resolved tier: $resolvedTier');
-
-      // User doc listener (lightweight; extend if needed later)
-      _userDocSub = FirebaseFirestore.instance
+      // ── User doc listener ──
+      _userDocSubscription = FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .snapshots()
-          .listen((snap) {
-            if (FirebaseAuth.instance.currentUser?.uid != uid) return;
-            if (!snap.exists || snap.data() == null) {
-              _log('⚠️ user doc missing/null');
-              return;
-            }
-            _log('📡 user doc update received');
-          }, onError: (e) => _log('⚠️ user doc stream error: $e'));
+          .listen(
+            (snapshot) {
+              if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+              if (!snapshot.exists || snapshot.data() == null) {
+                _logDebug('⚠️ User doc snapshot missing or null');
+                return;
+              }
+              _logDebug('📡 User doc listener received update');
+            },
+            onError: (error) => _logDebug('⚠️ User doc listener error: $error'),
+          );
 
-      // Usage: AI
+      // ── AI usage stream ──
       _aiUsageSub = FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -139,117 +142,138 @@ class UserSessionService {
             if (FirebaseAuth.instance.currentUser?.uid != uid) return;
             final data = doc.data();
             if (data == null) {
-              _log('⚠️ AI usage doc empty');
+              _logDebug('⚠️ AI usage doc has no data');
               return;
             }
             final used = (data[monthKey] ?? 0) as int;
-            _log('📊 AI usage [$monthKey]=$used');
-            await UserPreferencesService.setCachedUsage(ai: used);
-          }, onError: (e) => _log('⚠️ AI usage stream error: $e'));
+            _logDebug('📊 AI usage [$monthKey]: $used');
+            if (!UserPreferencesService.isBoxOpen) {
+              await UserPreferencesService.init();
+            }
+            await UserPreferencesService.setCachedUsage(
+              ai: used,
+              translations: null,
+            );
+          }, onError: (error) => _logDebug('⚠️ AI usage stream error: $error'));
 
-      // Usage: Translations
+      // ── Translation usage stream ──
       _translationSub = FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .collection('translationUsage')
           .doc('usage')
           .snapshots()
-          .listen((doc) async {
-            if (FirebaseAuth.instance.currentUser?.uid != uid) return;
-            final data = doc.data();
-            if (data == null) {
-              _log('⚠️ Translation usage doc empty');
-              return;
-            }
-            final used = (data[monthKey] ?? 0) as int;
-            _log('🌐 Translation usage [$monthKey]=$used');
-            await UserPreferencesService.setCachedUsage(translations: used);
-          }, onError: (e) => _log('⚠️ Translation usage stream error: $e'));
+          .listen(
+            (doc) async {
+              if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+              final data = doc.data();
+              if (data == null) {
+                _logDebug('⚠️ Translation usage doc has no data');
+                return;
+              }
+              final used = (data[monthKey] ?? 0) as int;
+              _logDebug('🌐 Translation usage [$monthKey]: $used');
+              if (!UserPreferencesService.isBoxOpen) {
+                await UserPreferencesService.init();
+              }
+              await UserPreferencesService.setCachedUsage(
+                ai: null,
+                translations: used,
+              );
+            },
+            onError: (error) =>
+                _logDebug('⚠️ Translation usage stream error: $error'),
+          );
 
-      // Onboarding bubbles – NEW USER ONLY (feature-flag driven)
+      final tier = SubscriptionService().tier;
+      _logDebug('🎟️ Tier resolved: $tier');
+
+      // ✅ Onboarding bubbles (only if new user + enabled)
       if (kOnboardingBubblesEnabled) {
+        _logDebug('🫧 Checking onboarding bubbles (new-user only)…');
         final hasShownOnce = await UserPreferencesService.hasShownBubblesOnce;
         final tutorialComplete =
             await UserPreferencesService.hasCompletedVaultTutorial();
 
         if (isNewUser && !hasShownOnce && !tutorialComplete) {
           await UserPreferencesService.markBubblesShown();
-          _log('🌟 Onboarding flagged for first show (new user)');
+          _logDebug('🌟 Onboarding flagged for first show (new user)');
         } else {
-          _log(
-            '🫧 Skip onboarding (isNew=$isNewUser shown=$hasShownOnce done=$tutorialComplete)',
+          _logDebug(
+            '🫧 Skipping onboarding: isNewUser=$isNewUser, '
+            'hasShownOnce=$hasShownOnce, tutorialComplete=$tutorialComplete',
           );
         }
       } else {
-        _log('🚫 Onboarding disabled by feature flag');
+        _logDebug('🚫 Onboarding bubbles disabled via feature flag');
       }
+
+      // Complete to unblock any awaiters
       _bubbleFlagsReady?.complete();
 
-      // Categories (local + sync)
-      _log('📂 Loading categories…');
+      // ── Data loading ──
+      _logDebug('📂 Loading categories...');
       await CategoryService.load();
 
-      // Vault load + live listener
-      _log('📂 Loading vault…');
+      _logDebug('📂 Loading vault recipes...');
       await VaultRecipeService.load();
 
-      _log('📡 Starting vault listener…');
+      _logDebug('📡 Starting vault listener...');
       if (FirebaseAuth.instance.currentUser?.uid == uid) {
         VaultRecipeService.listenToVaultChanges(() {
-          if (kDebugMode) debugPrint('📡 Vault changed!');
+          debugPrint('📡 Vault changed!');
         });
       }
 
       _isInitialised = true;
-      _log('✅ Session init complete');
-    } catch (e, st) {
-      _log('❌ Session init error: $e');
-      if (kDebugMode) print(st);
-      // Still complete the bubble future so callers don’t hang.
-      _bubbleFlagsReady?.complete();
+      _logDebug('✅ User session init complete');
+    } catch (e, stack) {
+      _logDebug('❌ Error during session init: $e');
+      if (kDebugMode) print(stack);
     }
   }
 
   static Future<void> logoutReset() async {
-    _log('👋 Logging out + resetting session…');
+    _logDebug('👋 Logging out + resetting session...');
 
     try {
       await Purchases.logOut();
-      _log('🛒 RevenueCat logged out');
+      _logDebug('🛒 RevenueCat logged out');
     } catch (e) {
-      _log('⚠️ RevenueCat logout failed: $e');
+      _logDebug('❌ RevenueCat logout failed: $e');
     }
 
     await _cancelAllStreams();
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      // Clear recipes_<uid>
       final boxName = 'recipes_$uid';
       if (Hive.isBoxOpen(boxName)) {
         try {
           final box = Hive.box<RecipeCardModel>(boxName);
           await box.clear();
           await box.close();
-          _log('📦 Cleared & closed $boxName');
-        } catch (e, st) {
-          _log('⚠️ Clear/close $boxName failed: $e');
-          if (kDebugMode) print(st);
+          _logDebug('📦 Cleared & closed box: $boxName');
+        } catch (e, stack) {
+          _logDebug('⚠️ Error clearing box $boxName: $e');
+          if (kDebugMode) print(stack);
         }
       } else {
         try {
           await Hive.deleteBoxFromDisk(boxName);
-          _log('🧹 Deleted unopened $boxName from disk');
+          _logDebug('🧹 Deleted unopened Hive box: $boxName');
         } catch (e) {
-          _log('⚠️ Delete unopened $boxName failed: $e');
+          _logDebug('⚠️ Failed to delete unopened Hive box: $e');
         }
       }
 
-      // Clear userPrefs_<uid>
       try {
+        if (!Hive.isBoxOpen('userPrefs_$uid')) {
+          await Hive.openBox('userPrefs_$uid');
+        }
         await UserPreferencesService.clearAllUserData(uid);
       } catch (e) {
-        _log('⚠️ Failed to clear userPrefs: $e');
+        _logDebug('⚠️ Failed to clear userPrefs: $e');
       }
     }
 
@@ -259,62 +283,73 @@ class UserSessionService {
 
     _isInitialised = false;
     _bubbleFlagsReady = null;
-    _log('🧹 Session fully cleared');
+    _logDebug('🧹 Session fully cleared');
   }
-
-  static Future<void> reset() async {
-    _isInitialised = false;
-    _bubbleFlagsReady = null;
-    _log('🔄 Session reset');
-  }
-
-  static Future<void> retryEntitlementSync() async {
-    _log('🔁 Retrying entitlement sync…');
-    await SubscriptionService().refresh();
-    await syncRevenueCatEntitlement();
-    // Onboarding remains new-user only.
-  }
-
-  static Future<void> syncRevenueCatEntitlement() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    final info = await Purchases.getCustomerInfo();
-    final entitlementId = PurchaseHelper.getActiveEntitlementId(info);
-    final tier = resolveTier(entitlementId);
-    SubscriptionService().updateTier(tier);
-
-    try {
-      final ref = FirebaseFirestore.instance.collection('users').doc(user.uid);
-      _log('☁️ Writing entitlement → Firestore: tier=$tier id=$entitlementId');
-      await ref.set({
-        'tier': tier,
-        'entitlementId': entitlementId ?? 'none',
-        'lastLogin': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-      _log('☁️ Entitlement synced');
-    } catch (e) {
-      _log('⚠️ Firestore entitlement sync failed: $e');
-    }
-  }
-
-  static Future<void> waitForBubbleFlags() =>
-      _bubbleFlagsReady?.future ?? Future.value();
-
-  // ── internals ──────────────────────────────────────────────────────────────
 
   static Future<void> _cancelAllStreams() async {
-    await _userDocSub?.cancel();
+    await _userDocSubscription?.cancel();
     await _aiUsageSub?.cancel();
     await _translationSub?.cancel();
-    _userDocSub = null;
+
+    _userDocSubscription = null;
     _aiUsageSub = null;
     _translationSub = null;
 
     VaultRecipeService.cancelVaultListener();
   }
 
-  static void _log(String msg) {
-    if (kDebugMode) print('🔐 [UserSessionService] $msg');
+  static Future<void> reset() async {
+    _isInitialised = false;
+    _bubbleFlagsReady = null;
+    _logDebug('🔄 Session reset');
+  }
+
+  static Future<void> retryEntitlementSync() async {
+    _logDebug('🔁 Retrying entitlement sync...');
+    await SubscriptionService().refresh();
+    await syncRevenueCatEntitlement();
+
+    if (kOnboardingBubblesEnabled) {
+      _logDebug('ℹ️ Onboarding is new-user only; retry does nothing.');
+    }
+  }
+
+  static Future<void> syncRevenueCatEntitlement() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final customerInfo = await Purchases.getCustomerInfo();
+    final entitlementId = PurchaseHelper.getActiveEntitlementId(customerInfo);
+    final tier = resolveTier(entitlementId);
+    SubscriptionService().updateTier(tier);
+
+    try {
+      final docRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
+
+      _logDebug(
+        '☁️ Updating Firestore with tier=$tier, entitlement=$entitlementId',
+      );
+
+      await docRef.set({
+        'tier': tier,
+        'entitlementId': entitlementId ?? 'none',
+        'lastLogin': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      _logDebug('☁️ Synced entitlement → Firestore');
+    } catch (e) {
+      _logDebug('⚠️ Failed to sync entitlement: $e');
+    }
+  }
+
+  static Future<void> waitForBubbleFlags() =>
+      _bubbleFlagsReady?.future ?? Future.value();
+
+  static void _logDebug(String message) {
+    if (kDebugMode) {
+      print('🔐 [UserSessionService] $message');
+    }
   }
 }

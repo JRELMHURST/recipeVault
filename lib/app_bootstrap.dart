@@ -1,11 +1,12 @@
+// lib/app_bootstrap.dart
 import 'dart:io' show Platform;
 
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
@@ -19,7 +20,7 @@ import 'services/user_preference_service.dart';
 class AppBootstrap {
   static bool _isReady = false;
 
-  /// Firebase & Cloud Functions globals
+  /// Cloud Functions / Firestore (shared singletons)
   static final FirebaseFunctions functions = FirebaseFunctions.instanceFor(
     region: 'europe-west2',
   );
@@ -36,19 +37,28 @@ class AppBootstrap {
       );
     } catch (e, stack) {
       if (kDebugMode) {
-        print('❌ Firebase initialisation failed: $e');
+        print('❌ Firebase initialization failed: $e');
         print(stack);
       }
-      // Hard stop: nothing else works without Firebase.
-      return;
+      return; // nothing else will work
     }
 
-    // 2) Firebase App Check (only on mobile; debug providers here)
+    // (Optional) Debug emulators — uncomment while developing backends.
+    // if (kDebugMode) {
+    //   functions.useFunctionsEmulator('localhost', 5001);
+    //   FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
+    // }
+
+    // 2) App Check
     try {
       if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
         await FirebaseAppCheck.instance.activate(
-          androidProvider: AndroidProvider.debug,
-          appleProvider: AppleProvider.debug,
+          androidProvider: kReleaseMode
+              ? AndroidProvider.playIntegrity
+              : AndroidProvider.debug,
+          appleProvider: kReleaseMode
+              ? AppleProvider.appAttest
+              : AppleProvider.debug,
         );
       }
     } catch (e, stack) {
@@ -60,21 +70,26 @@ class AppBootstrap {
 
     // 3) RevenueCat Setup
     try {
-      if (kDebugMode) {
-        await Purchases.setLogLevel(LogLevel.debug);
-      }
-      await Purchases.configure(
-        PurchasesConfiguration('appl_oqbgqmtmctjzzERpEkswCejmukh'),
+      if (kDebugMode) await Purchases.setLogLevel(LogLevel.debug);
+
+      // Use platform-specific keys if you have them (recommended).
+      // Replace with your own keys; your original single key is left as a fallback.
+      final rcConfig = PurchasesConfiguration(
+        Platform.isIOS
+            ? 'appl_oqbgqmtmctjzzERpEkswCejmukh' // iOS public SDK key
+            : 'goog_oqbgqmtmctjzzERpEkswCejmukh', // ANDROID key (example)
       );
+
+      await Purchases.configure(rcConfig);
     } catch (e, stack) {
       if (kDebugMode) {
-        print('❌ RevenueCat config failed: $e');
+        print('❌ RevenueCat configure failed: $e');
         print(stack);
       }
-      // Don’t return; AccessController will fall back to Firestore.
+      // Don’t return; access control can fall back to Firestore tier.
     }
 
-    // 4) Push Notifications (tokens/permissions handled in your service)
+    // 4) Notifications (permissions/tokens handled inside)
     try {
       await NotificationService.init();
     } catch (e, stack) {
@@ -84,43 +99,37 @@ class AppBootstrap {
       }
     }
 
-    // 5) Hive Init + Adapters + CategoryService bootstrap
-    //    IMPORTANT: don’t open generic boxes here; services/screens open per-user boxes when needed.
+    // 5) Hive init + adapters + (optional) legacy migration
     bool hasLocalData = false;
     try {
       await Hive.initFlutter();
+
       if (!Hive.isAdapterRegistered(0)) {
-        Hive.registerAdapter(
-          RecipeCardModelAdapter(),
-        ); // adjust typeIds as per your g.dart
+        Hive.registerAdapter(RecipeCardModelAdapter()); // keep your typeIds
       }
       if (!Hive.isAdapterRegistered(1)) {
         Hive.registerAdapter(CategoryModelAdapter());
       }
 
-      // Optional: detect legacy boxes without opening them.
-      // Keep this best-effort so we don’t block startup.
+      // Detect legacy boxes (best-effort; don’t block startup)
       try {
         final legacyRecipes = await Hive.boxExists('recipes');
         final legacyCategories = await Hive.boxExists('categories');
         hasLocalData = legacyRecipes || legacyCategories;
       } catch (_) {}
 
-      // Migrate legacy String categories to CategoryModel **only if the legacy box exists**.
-      // (If you no longer ship those boxes, this will just noop.)
+      // Migrate legacy 'categories' box string items -> CategoryModel JSON, if present.
       try {
         if (await Hive.boxExists('categories')) {
           final catBox = await Hive.openBox('categories');
           final legacyKeys = catBox.keys
               .where((k) => catBox.get(k) is String)
               .toList();
-
           for (final key in legacyKeys) {
-            final oldValue = catBox.get(key) as String;
-            final migrated = CategoryModel(id: key.toString(), name: oldValue);
-            await catBox.put(key, migrated);
+            final old = catBox.get(key) as String;
+            await catBox.put(key, CategoryModel(id: key.toString(), name: old));
             if (kDebugMode) {
-              print('🔁 Migrated legacy category "$oldValue" to CategoryModel');
+              print('🔁 Migrated legacy category "$old" → CategoryModel');
             }
           }
           await catBox.close();
@@ -132,7 +141,7 @@ class AppBootstrap {
         }
       }
 
-      // Initialise any static caches/indices your CategoryService needs.
+      // Bootstrap category storage (opens per-user boxes lazily later).
       await CategoryService.init();
     } catch (e, stack) {
       if (kDebugMode) {
@@ -141,19 +150,17 @@ class AppBootstrap {
       }
     }
 
-    // 6) User preferences
+    // 6) User preferences (opens per-user prefs lazily later too)
     try {
       await UserPreferencesService.init();
     } catch (e, stack) {
       if (kDebugMode) {
-        print('⚠️ Failed to initialise user preferences: $e');
+        print('⚠️ UserPreferencesService init failed: $e');
         print(stack);
       }
     }
 
-    // 7) New-user heuristic (non-blocking)
-    //    We don’t *route* on this directly anymore (router handles access),
-    //    but you might still use it for onboarding hints.
+    // 7) New-user heuristic (non-blocking; used for onboarding hints only)
     try {
       final user = FirebaseAuth.instance.currentUser;
       bool isNew = false;
@@ -177,12 +184,12 @@ class AppBootstrap {
       }
     } catch (e, stack) {
       if (kDebugMode) {
-        print('⚠️ Failed to determine new user status: $e');
+        print('⚠️ New-user heuristic failed: $e');
         print(stack);
       }
     }
 
-    // 8) Dev auth logging (harmless in prod)
+    // 8) Dev auth logging (safe in prod, just chatty)
     if (kDebugMode) {
       FirebaseAuth.instance.authStateChanges().listen((user) {
         if (user == null) {

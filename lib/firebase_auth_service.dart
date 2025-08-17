@@ -16,19 +16,19 @@ class AuthService {
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
-  bool get isLoggedIn => _auth.currentUser != null;
+  bool get isLoggedIn => currentUser != null;
 
-  /// Reads the locally saved preferred recipe locale (set by LanguageProvider)
+  /// Reads locally saved preferred recipe locale
   Future<String?> _getPreferredRecipeLocale() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getString('preferredRecipeLocale'); // e.g. 'en-GB', 'pl'
+      return prefs.getString('preferredRecipeLocale');
     } catch (_) {
       return null;
     }
   }
 
-  /// Safe RC entitlement fetch; returns null if RC call fails.
+  /// Safe RC entitlement fetch
   Future<String?> _getActiveEntitlementIdSafe() async {
     try {
       final info = await Purchases.getCustomerInfo();
@@ -39,7 +39,6 @@ class AuthService {
     }
   }
 
-  /// Ensures RevenueCat identifies this Firebase user.
   Future<void> _logInRevenueCat(String uid) async {
     try {
       await Purchases.logIn(uid);
@@ -48,7 +47,8 @@ class AuthService {
     }
   }
 
-  /// 🔐 Email sign-in
+  // ── SIGN IN & REGISTER ─────────────────────────────
+
   Future<UserCredential> signInWithEmail(String email, String password) async {
     final credential = await _auth.signInWithEmailAndPassword(
       email: email,
@@ -56,11 +56,10 @@ class AuthService {
     );
     final user = credential.user!;
     await _logInRevenueCat(user.uid);
-    await _ensureUserDocument(user);
+    await ensureUserDocument(user); // unified
     return credential;
   }
 
-  /// 🆕 Email registration
   Future<UserCredential> registerWithEmail(
     String email,
     String password,
@@ -71,11 +70,10 @@ class AuthService {
     );
     final user = credential.user!;
     await _logInRevenueCat(user.uid);
-    await _ensureUserDocument(user);
+    await ensureUserDocument(user); // unified
     return credential;
   }
 
-  /// 🔓 Google Sign-In
   Future<UserCredential?> signInWithGoogle() async {
     try {
       final googleUser = await _googleSignIn.signIn();
@@ -90,16 +88,14 @@ class AuthService {
       final userCredential = await _auth.signInWithCredential(credential);
       final user = userCredential.user!;
       await _logInRevenueCat(user.uid);
-      await _ensureUserDocument(user);
+      await ensureUserDocument(user); // unified
       return userCredential;
     } catch (e, stack) {
-      debugPrint('🔴 Google sign-in failed: $e');
-      debugPrint(stack.toString());
+      debugPrint('🔴 Google sign-in failed: $e\n$stack');
       return null;
     }
   }
 
-  /// 🍏 Apple Sign-In
   Future<UserCredential?> signInWithApple() async {
     try {
       final appleCredential = await SignInWithApple.getAppleIDCredential(
@@ -109,6 +105,11 @@ class AuthService {
         ],
       );
 
+      if (appleCredential.identityToken == null) {
+        debugPrint('🔴 Apple sign-in failed: identityToken is null');
+        return null;
+      }
+
       final oauthCredential = OAuthProvider("apple.com").credential(
         idToken: appleCredential.identityToken,
         accessToken: appleCredential.authorizationCode,
@@ -117,16 +118,16 @@ class AuthService {
       final userCredential = await _auth.signInWithCredential(oauthCredential);
       final user = userCredential.user!;
       await _logInRevenueCat(user.uid);
-      await _ensureUserDocument(user);
+      await ensureUserDocument(user); // unified
       return userCredential;
     } catch (e, stack) {
-      debugPrint('🔴 Apple sign-in failed: $e');
-      debugPrint(stack.toString());
+      debugPrint('🔴 Apple sign-in failed: $e\n$stack');
       return null;
     }
   }
 
-  /// 🚪 Sign out and RevenueCat logout
+  // ── SIGN OUT ─────────────────────────────
+
   Future<void> signOut() async {
     try {
       await Purchases.logOut();
@@ -139,9 +140,8 @@ class AuthService {
     await _auth.signOut();
   }
 
-  /// 🧹 Full logout + local storage reset (per user only)
   Future<void> fullLogout() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = currentUser?.uid;
     await signOut();
 
     if (uid != null) {
@@ -149,9 +149,7 @@ class AuthService {
         await _deleteLocalUserData(uid);
         debugPrint('✅ Signed out and cleared local data for $uid');
 
-        // Optional: this wipes ALL Hive boxes on disk.
-        // Keep only if that’s your intended behaviour across profiles.
-        await Hive.deleteFromDisk();
+        await Hive.deleteFromDisk(); // nukes all boxes
         debugPrint('🧹 All Hive data deleted from disk');
       } catch (e) {
         debugPrint('⚠️ Failed to clear local user data: $e');
@@ -159,7 +157,6 @@ class AuthService {
     }
   }
 
-  /// 🔄 Clears local Hive + user-specific prefs for a specific UID
   Future<void> _deleteLocalUserData(String uid) async {
     final boxNames = [
       'recipes_$uid',
@@ -168,29 +165,29 @@ class AuthService {
       'userPrefs_$uid',
     ];
 
-    for (final boxName in boxNames) {
-      if (Hive.isBoxOpen(boxName)) {
-        await Hive.box(boxName).close();
-        await Hive.box(boxName).deleteFromDisk();
-      } else if (await Hive.boxExists(boxName)) {
-        await Hive.deleteBoxFromDisk(boxName);
+    for (final name in boxNames) {
+      if (Hive.isBoxOpen(name)) {
+        final box = Hive.box(name);
+        await box.close();
+        await box.deleteFromDisk();
+      } else if (await Hive.boxExists(name)) {
+        await Hive.deleteBoxFromDisk(name);
       }
     }
 
     await UserPreferencesService.clearAllPreferences(uid);
   }
 
-  /// 🔧 Ensure Firestore user doc exists and sync tier/entitlement + preferred locale
-  Future<void> _ensureUserDocument(User user) async {
+  // ── FIRESTORE USER DOCUMENT (UNIFIED) ─────────────────────────────
+
+  static Future<bool> ensureUserDocument(User user) async {
     final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final doc = await docRef.get();
 
-    // Get entitlement from RC, but don't fail if RC is unavailable.
-    final entitlementId = await _getActiveEntitlementIdSafe();
+    final service = AuthService();
+    final entitlementId = await service._getActiveEntitlementIdSafe();
     final resolvedTier = resolveTier(entitlementId ?? 'none');
-
-    // pull preferred locale from device prefs (written by LanguageProvider)
-    final preferredLocale = await _getPreferredRecipeLocale();
+    final preferredLocale = await service._getPreferredRecipeLocale();
 
     final updateData = <String, dynamic>{
       'email': user.email,
@@ -202,73 +199,11 @@ class AuthService {
 
     if (!doc.exists) {
       await docRef.set(updateData);
-      debugPrint(
-        '📝 Created Firestore user doc → Tier: $resolvedTier, Entitlement: ${entitlementId ?? 'none'}, PrefLocale: ${preferredLocale ?? '(none)'}',
-      );
+      debugPrint('📝 Created Firestore user doc → $updateData');
       try {
         await UserPreferencesService.markAsNewUser();
-        debugPrint('🎈 Onboarding flags reset for new user');
       } catch (e) {
-        debugPrint('⚠️ Failed to mark user as new in preferences: $e');
-      }
-    } else {
-      final existing = doc.data() ?? {};
-      final needsUpdate =
-          existing['tier'] != resolvedTier ||
-          existing['entitlementId'] != entitlementId ||
-          (preferredLocale != null &&
-              existing['preferredRecipeLocale'] != preferredLocale);
-
-      if (needsUpdate) {
-        await docRef.set(updateData, SetOptions(merge: true));
-        debugPrint(
-          '♻️ Updated Firestore user doc → Tier: $resolvedTier, Entitlement: ${entitlementId ?? 'none'}, PrefLocale: ${preferredLocale ?? '(unchanged)'}',
-        );
-      } else {
-        debugPrint('ℹ️ Firestore user doc already up to date.');
-      }
-    }
-  }
-
-  /// Legacy helper kept for call sites — now uses safe RC fetch.
-  static Future<bool> ensureUserDocumentIfMissing(User user) async {
-    final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-    final doc = await docRef.get();
-
-    String? entitlementId;
-    try {
-      final info = await Purchases.getCustomerInfo();
-      entitlementId = info.entitlements.active.values.firstOrNull?.identifier;
-    } catch (_) {
-      entitlementId = null;
-    }
-    final resolvedTier = resolveTier(entitlementId ?? 'none');
-
-    // read the local preferred locale
-    String? preferredLocale;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      preferredLocale = prefs.getString('preferredRecipeLocale');
-    } catch (_) {}
-
-    if (!doc.exists) {
-      final updateData = <String, dynamic>{
-        'email': user.email,
-        'entitlementId': entitlementId ?? 'none',
-        'tier': resolvedTier,
-        if (preferredLocale != null) 'preferredRecipeLocale': preferredLocale,
-        'createdAt': FieldValue.serverTimestamp(),
-      };
-
-      await docRef.set(updateData);
-      debugPrint(
-        '📝 Created Firestore user doc → Tier: $resolvedTier, Entitlement: ${entitlementId ?? 'none'}, PrefLocale: ${preferredLocale ?? '(none)'}',
-      );
-      try {
-        await UserPreferencesService.markAsNewUser();
-        debugPrint('🎈 Onboarding flags reset for new user');
-      } catch (e) {
-        debugPrint('⚠️ Failed to mark user as new in preferences: $e');
+        debugPrint('⚠️ Failed to mark new user prefs: $e');
       }
       return true;
     } else {
@@ -280,20 +215,14 @@ class AuthService {
               existing['preferredRecipeLocale'] != preferredLocale);
 
       if (needsUpdate) {
-        await docRef.set({
-          'tier': resolvedTier,
-          'entitlementId': entitlementId ?? 'none',
-          if (preferredLocale != null) 'preferredRecipeLocale': preferredLocale,
-        }, SetOptions(merge: true));
-        debugPrint(
-          '♻️ Updated Firestore user doc → Tier: $resolvedTier, Entitlement: ${entitlementId ?? 'none'}, PrefLocale: ${preferredLocale ?? '(unchanged)'}',
-        );
-      } else {
-        debugPrint('ℹ️ Firestore user doc already up to date.');
+        await docRef.set(updateData, SetOptions(merge: true));
+        debugPrint('♻️ Updated Firestore user doc → $updateData');
       }
       return false;
     }
   }
+
+  // ── Debug helpers ─────────────────────────────
 
   void logCurrentUser() {
     final user = _auth.currentUser;

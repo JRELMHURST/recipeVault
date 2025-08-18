@@ -2,6 +2,8 @@
 import 'dart:math';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart' show DateUtils; // for dateOnly
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class DailyMessageService {
@@ -42,6 +44,29 @@ class DailyMessageService {
     if (msgs.isEmpty) return '';
     final rng = Random();
     return msgs[rng.nextInt(msgs.length)];
+  }
+
+  // ─────────────────────────── NEW: read/unread state ───────────────────────────
+
+  /// Whether today's daily message has been read (per-user, per-day).
+  static Future<bool> isTodayRead() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_todayReadKey()) ?? false;
+  }
+
+  /// Mark today's daily message as read (per-user, per-day).
+  static Future<void> markTodayRead() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_todayReadKey(), true);
+  }
+
+  static String _todayReadKey() {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final y = today.year.toString();
+    final m = today.month.toString().padLeft(2, '0');
+    final d = today.day.toString().padLeft(2, '0');
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? 'anon';
+    return 'daily_read_${uid}_$y$m$d';
   }
 
   // ---- helpers ----

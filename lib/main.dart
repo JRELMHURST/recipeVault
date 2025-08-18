@@ -24,7 +24,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         ChangeNotifierProvider(create: (_) => TextScaleNotifier()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
-        ChangeNotifierProvider(create: (_) => SubscriptionService()),
+        // 👇 initialise the subscription service on creation
+        ChangeNotifierProvider(create: (_) => SubscriptionService()..init()),
         ChangeNotifierProvider(create: (_) => VaultViewModeNotifier()),
         ChangeNotifierProvider.value(value: access),
 

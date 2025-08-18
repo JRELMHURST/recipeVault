@@ -71,8 +71,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
             icon: Icon(Icons.refresh, color: leadingIconColor),
             onPressed: () async {
               final subService = context.read<SubscriptionService>();
-              await subService.syncRevenueCatEntitlement();
-              // BuildContext.mounted is available on modern Flutter; safe to use.
+              await subService.syncRevenueCatEntitlement(forceRefresh: true);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -87,13 +86,12 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         _ => null,
       },
 
-      // 💡 Daily message trigger in place of Upgrade button
       // 💡 Only show DailyMessageBubble in Vault view
       actions: [
         if (selectedIndex == 1)
-          const Padding(
-            padding: EdgeInsets.only(right: 12.0),
-            child: DailyMessageBubble(),
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: DailyMessageBubble(), // ← no const (optional)
           ),
       ],
     );
@@ -109,8 +107,8 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     }
 
     return switch (tier) {
-      'home_chef' => '👨‍🍳 ${loc.planHomeChef}',
-      'master_chef' => '👑 ${loc.planMasterChef}',
+      'home_chef' => loc.planHomeChef,
+      'master_chef' => loc.planMasterChef,
       _ => loc.appTitle,
     };
   }

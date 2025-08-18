@@ -455,6 +455,7 @@ class SubscriptionService extends ChangeNotifier {
     final uid = user.uid;
     final firestore = FirebaseFirestore.instance;
 
+    // Get RC entitlements (source of truth for plan)
     final customerInfo = await _getCustomerInfoWithRetry(
       preferRetry: _isBrandNewUser(user),
     );
@@ -465,22 +466,28 @@ class SubscriptionService extends ChangeNotifier {
                 'none')
             .toLowerCase();
 
+    // Read server-controlled flags/overrides
     final doc = await firestore.collection('users').doc(uid).get();
-    final fsTier = (doc.data()?['tier'] as String?)?.trim() ?? 'none';
-    final special = doc.data()?['specialAccess'] == true;
+    final data = doc.data();
+    final fsTier = (data?['tier'] as String?)?.trim() ?? 'none';
+    _hasSpecialAccess = data?['specialAccess'] == true;
 
-    _hasSpecialAccess = special;
+    // Prefer server override if present, otherwise RC
     final resolved = fsTier != 'none' ? fsTier : rcTier;
+
+    // Update local state + cache
     updateTier(resolved);
-
-    await firestore.collection('users').doc(uid).set({
-      'tier': resolved,
-      'specialAccess': _hasSpecialAccess,
-      'productId': productId,
-      'lastLogin': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
+    _entitlementId = productId;
     await _saveCache(uid, resolved, active: resolved != 'none');
+
+    // 🔒 Respect your rules: only update allowed keys from client
+    try {
+      await firestore.collection('users').doc(uid).set({
+        'lastLogin': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('⚠️ Firestore safe lastLogin write failed: $e');
+    }
 
     return resolved;
   }
@@ -494,32 +501,40 @@ class SubscriptionService extends ChangeNotifier {
     final customerInfo = await _getCustomerInfoWithRetry(
       preferRetry: _isBrandNewUser(user),
     );
-    final entitlements = customerInfo.entitlements.active;
-    final rcTier = _resolveTierFromEntitlements(entitlements);
+    final ents = customerInfo.entitlements.active;
+    final rcTier = _resolveTierFromEntitlements(ents);
     final productId =
-        (_getActiveEntitlement(entitlements, rcTier)?.productIdentifier ??
-                'none')
+        (_getActiveEntitlement(ents, rcTier)?.productIdentifier ?? 'none')
             .toLowerCase();
 
     _tier = rcTier;
     _entitlementId = productId;
-    _activeEntitlement = _getActiveEntitlement(entitlements, rcTier);
+    _activeEntitlement = _getActiveEntitlement(ents, rcTier);
 
-    final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-    final doc = await docRef.get();
-    _hasSpecialAccess = doc.data()?['specialAccess'] == true;
+    // Read server-controlled specialAccess (do NOT write it)
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      _hasSpecialAccess = doc.data()?['specialAccess'] == true;
+    } catch (e) {
+      debugPrint('⚠️ Failed to read specialAccess: $e');
+    }
 
     tierNotifier.value = _tier;
 
-    await docRef.set({
-      'tier': _tier,
-      'specialAccess': _hasSpecialAccess,
-      'productId': productId,
-      'lastLogin': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
-    // Save local cache for hot restart
+    // Cache for hot restarts
     await _saveCache(user.uid, _tier, active: hasActiveSubscription);
+
+    // 🔒 Respect rules: only write allowed keys
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'lastLogin': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('⚠️ Firestore safe lastLogin write failed: $e');
+    }
 
     _logTierOnce(source: 'syncRevenueCatEntitlement');
     notifyListeners();

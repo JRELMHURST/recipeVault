@@ -20,8 +20,28 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
   final _controller = DailyTipBannerController();
   bool _busy = false;
 
+  // 🔔 unread state (blue when true)
+  bool _isUnread = false;
+
   GoRouter? _router;
   VoidCallback? _routerListener;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load today's read state (safe fallback if service method absent)
+    _loadReadState();
+  }
+
+  Future<void> _loadReadState() async {
+    try {
+      final read = await DailyMessageService.isTodayRead();
+      if (mounted) setState(() => _isUnread = !read);
+    } catch (_) {
+      // If service doesn't support the call yet, default to "read"
+      if (mounted) setState(() => _isUnread = false);
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -34,7 +54,6 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
         // Close any open banner immediately on route change
         _controller.close(immediate: true);
       };
-      // ✅ Listen on the routerDelegate (ChangeNotifier)
       _router!.routerDelegate.addListener(_routerListener!);
     }
   }
@@ -79,6 +98,14 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
           onClose: () => _controller.close(), // lightweight close
         ),
       );
+
+      // ✅ Mark as read once shown
+      try {
+        await DailyMessageService.markTodayRead();
+      } catch (_) {
+        // ignore if service doesn't support it yet
+      }
+      if (mounted) setState(() => _isUnread = false);
     } finally {
       _busy = false;
     }
@@ -93,10 +120,24 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
 
   @override
   Widget build(BuildContext context) {
+    Theme.of(context);
+
+    // Gold if unread; white if already read
+    final iconColor = _isUnread ? Colors.amber : Colors.white;
+
     return IconButton(
       tooltip: AppLocalizations.of(context).dailyTipTitle,
       onPressed: _showTipBanner,
-      icon: const Icon(Icons.emoji_objects_rounded),
+      icon: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        transitionBuilder: (child, anim) =>
+            ScaleTransition(scale: anim, child: child),
+        child: Icon(
+          Icons.lightbulb,
+          key: ValueKey<bool>(_isUnread),
+          color: iconColor,
+        ),
+      ),
     );
   }
 }
@@ -135,7 +176,7 @@ class _BannerBody extends StatelessWidget {
                     : [Colors.teal.shade600, Colors.teal.shade400],
               ),
             ),
-            child: const Icon(Icons.emoji_objects_rounded, color: Colors.white),
+            child: const Icon(Icons.lightbulb, color: Colors.white),
           ),
           const SizedBox(width: 12),
 

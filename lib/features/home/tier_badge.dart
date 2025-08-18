@@ -15,10 +15,7 @@ class TierBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context);
-    final sub = context
-        .read<
-          SubscriptionService
-        >(); // read once; we’ll listen on the notifier below
+    final sub = context.read<SubscriptionService>();
 
     return ValueListenableBuilder<String>(
       valueListenable: sub.tierNotifier,
@@ -34,7 +31,6 @@ class TierBadge extends StatelessWidget {
         };
 
         final baseColor = overrideColor ?? color;
-        final icon = isNone ? '' : sub.tierIcon; // 👑/👨‍🍳/…
 
         if (showAsTitle) {
           // Title-style badge for app bars/headers
@@ -46,32 +42,17 @@ class TierBadge extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             switchInCurve: Curves.easeOut,
             switchOutCurve: Curves.easeIn,
-            child: Row(
+            child: Text(
+              titleText,
               key: ValueKey('title_$tier$isSpecial'),
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!isNone && icon.isNotEmpty)
-                  Text(
-                    icon,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontSize: 24,
-                      height: 1,
-                      color: baseColor,
-                    ),
-                  ),
-                if (!isNone && icon.isNotEmpty) const SizedBox(width: 8),
-                Text(
-                  titleText,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 20,
-                    height: 1.2,
-                    color: baseColor,
-                    letterSpacing: 0.2,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 20,
+                height: 1.2,
+                color: baseColor,
+                letterSpacing: 0.2,
+              ),
+              textAlign: TextAlign.center,
             ),
           );
         }

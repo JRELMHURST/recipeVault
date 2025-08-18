@@ -44,15 +44,14 @@ class UserSessionService {
 
       final e = info.entitlements.active.values.first;
 
+      // If active and not a trial → no “trial ended” screen
       if (e.isActive && e.periodType != PeriodType.trial) return false;
 
       if (e.periodType == PeriodType.trial) {
-        final expiryStr = e.expirationDate;
-        if (expiryStr == null) return false;
-        final expiry = DateTime.tryParse(expiryStr);
+        final expiry = e.expirationDate; // already DateTime? now
         if (expiry == null) return false;
 
-        final trialEnded = DateTime.now().isAfter(expiry);
+        final trialEnded = DateTime.now().isAfter(expiry as DateTime);
         final wontRenew = e.willRenew == false;
         return trialEnded && wontRenew;
       }
@@ -319,8 +318,9 @@ class UserSessionService {
     if (user == null) return;
 
     final customerInfo = await Purchases.getCustomerInfo();
-    final entitlementId = PurchaseHelper.getActiveEntitlementId(customerInfo);
-    final tier = resolveTier(entitlementId);
+    final productId = PurchaseHelper.getActiveProductId(customerInfo);
+    final tier = resolveTier(productId);
+
     SubscriptionService().updateTier(tier);
 
     try {
@@ -328,13 +328,13 @@ class UserSessionService {
           .collection('users')
           .doc(user.uid);
 
-      _logDebug(
-        '☁️ Updating Firestore with tier=$tier, entitlement=$entitlementId',
-      );
+      _logDebug('☁️ Updating Firestore with tier=$tier, productId=$productId');
 
       await docRef.set({
         'tier': tier,
-        'entitlementId': entitlementId ?? 'none',
+        'productId':
+            productId ??
+            'none', // 👈 rename field if you want canonical clarity
         'lastLogin': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 

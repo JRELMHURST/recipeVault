@@ -53,10 +53,13 @@ GoRouter buildAppRouter(AccessController access) {
       GoRoute(
         parentNavigatorKey: NavKeys.root,
         path: AppRoutes.paywall,
-        pageBuilder: (context, state) => slideFromLeftPage(
-          const PaywallScreen(),
-          key: const ValueKey('paywall'),
-        ),
+        pageBuilder: (context, state) {
+          final isManaging = state.uri.queryParameters['manage'] == '1';
+          const key = ValueKey('paywall');
+          return isManaging
+              ? slideFromLeftPage(const PaywallScreen(), key: key)
+              : slideFromRightPage(const PaywallScreen(), key: key);
+        },
       ),
       GoRoute(
         parentNavigatorKey: NavKeys.root,

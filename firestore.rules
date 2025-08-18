@@ -10,7 +10,7 @@ service cloud.firestore {
         (
           // ✅ Allow updates only to specific fields (safe changes)
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'entitlementId',
+            'productId',
             'tier',
             'superUser',
             'lastLogin',

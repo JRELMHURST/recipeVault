@@ -73,12 +73,12 @@ export async function getResolvedTier(uid: string): Promise<TierOrNone> {
   const firestoreTier: TierOrNone =
     fsTierRaw === "home_chef" || fsTierRaw === "master_chef" ? fsTierRaw : "none";
 
-  const entitlementId = data?.entitlementId as string | undefined;
+  const productId = data?.productId as string | undefined;
 
   if (doc.exists) {
     console.log(
-      `🎯 Using Firestore tier for ${uid}: ${firestoreTier} (entitlementId: ${
-        entitlementId ?? "none"
+      `🎯 Using Firestore tier for ${uid}: ${firestoreTier} (productId: ${
+        productId ?? "none"
       })`
     );
     return firestoreTier;

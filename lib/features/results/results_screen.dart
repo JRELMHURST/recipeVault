@@ -13,6 +13,8 @@ import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
 import 'package:recipe_vault/data/services/hive_recipe_service.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
+import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
 import 'package:recipe_vault/widgets/recipe_image_header.dart';
 import 'package:recipe_vault/core/theme.dart';
@@ -66,6 +68,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
   ) async {
     final t = AppLocalizations.of(context);
     setState(() => _isSaving = true);
+
+    // Show a blocking overlay while saving
+    await LoadingOverlay.show(context, message: t.editRecipeSaving);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -137,15 +142,21 @@ class _ResultsScreenState extends State<ResultsScreen> {
       await HiveRecipeService.save(recipe);
 
       if (!mounted) return;
+
+      // Optional toast; will show briefly before we navigate
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(t.recipeSaved)));
 
-      await Future.delayed(const Duration(milliseconds: 1500));
-      if (!mounted) return;
-      context.go('/home');
+      // Navigate to Vault with overlay still visible,
+      // then hide overlay on the next frame of the destination.
+      context.go(AppRoutes.vault);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        LoadingOverlay.hide();
+      });
     } catch (_) {
       if (!mounted) return;
+      LoadingOverlay.hide();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(t.unexpectedError)));
@@ -205,8 +216,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
               onPressed: _isSaving
                   ? null
                   : () => _saveRecipe(formattedRecipe, result),
-              icon: const Icon(Icons.save_alt_rounded),
-              label: Text(_isSaving ? t.editRecipeSaving : t.saveToVault),
+              icon: const Icon(Icons.save_alt_rounded, color: Colors.white),
+              label: Text(
+                _isSaving ? t.editRecipeSaving : t.saveToVault,
+                style: const TextStyle(
+                  color: Colors.white, // ✅ Force white text
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               backgroundColor: AppTheme.primaryColor,
             )
           : null,

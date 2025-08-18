@@ -1,4 +1,4 @@
-// SubscriptionService.dart
+// lib/billing/subscription_service.dart
 // Refreshed Aug 2025 — single source of truth is Firebase UID + RevenueCat product IDs.
 // Tier values: 'none' | 'home_chef' | 'master_chef'
 
@@ -18,9 +18,11 @@ class SubscriptionService extends ChangeNotifier {
   SubscriptionService._internal();
 
   // ── Public state/notifiers ────────────────────────────────────────────────
-  final ValueNotifier<String> tierNotifier = ValueNotifier('none');
+  final ValueNotifier<String> tierNotifier = ValueNotifier(
+    'none',
+  ); // 'none'|'home_chef'|'master_chef'
 
-  String _tier = 'none'; // 'none' | 'home_chef' | 'master_chef'
+  String _tier = 'none';
   String _entitlementId = 'none'; // RevenueCat productIdentifier or 'none'
   bool _hasSpecialAccess = false;
 
@@ -44,14 +46,14 @@ class SubscriptionService extends ChangeNotifier {
 
   // ── Getters ───────────────────────────────────────────────────────────────
   String get tier => _tier;
-  String get entitlementId => _entitlementId;
+  String get productId => _entitlementId; // normalized lower-case
   bool get isLoaded => _customerInfo != null;
 
   bool get isHomeChef => _tier == 'home_chef';
   bool get isMasterChef => _tier == 'master_chef';
   bool get hasActiveSubscription => isHomeChef || isMasterChef;
 
-  // Capability gates (keep simple: paid == allowed)
+  // Capability gates — PAID ONLY (no free)
   bool get allowTranslation => hasActiveSubscription;
   bool get allowImageUpload => hasActiveSubscription;
   bool get allowSaveToVault => hasActiveSubscription;
@@ -90,8 +92,7 @@ class SubscriptionService extends ChangeNotifier {
 
   String get trialEndDateFormatted {
     final d = trialEndDate;
-    return d != null ? DateFormat('d/M/yyyy').format(d) : 'N/A';
-    // UK day/month/year as requested
+    return d != null ? DateFormat('d/M/yyyy').format(d) : 'N/A'; // UK format
   }
 
   bool get isInTrial {
@@ -122,11 +123,28 @@ class SubscriptionService extends ChangeNotifier {
     if (_isInitialising) return;
     _isInitialising = true;
     try {
+      // Listen for RC push updates so we stay fresh after restores/purchases.
+      Purchases.addCustomerInfoUpdateListener(_onCustomerInfo);
       await Purchases.invalidateCustomerInfoCache();
       await loadSubscriptionStatus();
       await _loadAvailablePackages();
     } finally {
       _isInitialising = false;
+    }
+  }
+
+  /// Call this whenever Firebase auth changes (log in/out or switch user).
+  /// Keeps RC’s app user id aligned to Firebase UID.
+  Future<void> setAppUserId(String? firebaseUid) async {
+    try {
+      if (firebaseUid == null) {
+        await Purchases.logOut();
+      } else {
+        await Purchases.logIn(firebaseUid);
+      }
+      await refresh(); // pick up entitlements for new user
+    } catch (e) {
+      debugPrint('RevenueCat setAppUserId error: $e');
     }
   }
 
@@ -174,10 +192,11 @@ class SubscriptionService extends ChangeNotifier {
         preferRetry: _isBrandNewUser(user),
       );
 
-      final entitlements = _customerInfo?.entitlements.active ?? const {};
-      final rcTier = _resolveTierFromEntitlements(entitlements);
-      final activeEntitlement = _getActiveEntitlement(entitlements, rcTier);
-      final rcEntitlementId = activeEntitlement?.productIdentifier ?? 'none';
+      final ents = _customerInfo?.entitlements.active ?? const {};
+      final rcTier = _resolveTierFromEntitlements(ents);
+      final activeEntitlement = _getActiveEntitlement(ents, rcTier);
+      final rcEntitlementId = (activeEntitlement?.productIdentifier ?? 'none')
+          .toLowerCase();
 
       _tier = rcTier;
       _entitlementId = rcEntitlementId;
@@ -224,6 +243,30 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
+  // ── RevenueCat push updates → keep local state fresh ──────────────────────
+  void _onCustomerInfo(CustomerInfo info) {
+    _customerInfo = info;
+
+    final ents = info.entitlements.active;
+    final rcTier = _resolveTierFromEntitlements(ents);
+    final activeEntitlement = _getActiveEntitlement(ents, rcTier);
+    final rcEntitlementId = (activeEntitlement?.productIdentifier ?? 'none')
+        .toLowerCase();
+
+    final changedTier = _tier != rcTier;
+    final changedEnt = _entitlementId != rcEntitlementId;
+
+    _tier = rcTier;
+    _entitlementId = rcEntitlementId;
+    _activeEntitlement = activeEntitlement;
+
+    if (changedTier) {
+      tierNotifier.value = _tier;
+      _logTierOnce(source: 'rc-listener');
+    }
+    if (changedTier || changedEnt) notifyListeners();
+  }
+
   // ── Usage fetch ───────────────────────────────────────────────────────────
   Future<void> _loadUsageData(String uid) async {
     try {
@@ -260,22 +303,21 @@ class SubscriptionService extends ChangeNotifier {
       final current = offerings.current;
 
       if (current != null) {
-        // You can also filter by product identifiers, but in RC v5 the safer
-        // discriminator is storeProduct.identifier or the package identifier
         homeChefPackage = current.availablePackages.firstWhereOrNull(
           (pkg) =>
-              pkg.identifier == 'home_chef_monthly' ||
-              pkg.storeProduct.identifier == 'home_chef_monthly',
+              pkg.identifier.toLowerCase() == 'home_chef_monthly' ||
+              pkg.storeProduct.identifier.toLowerCase() == 'home_chef_monthly',
         );
         masterChefMonthlyPackage = current.availablePackages.firstWhereOrNull(
           (pkg) =>
-              pkg.identifier == 'master_chef_monthly' ||
-              pkg.storeProduct.identifier == 'master_chef_monthly',
+              pkg.identifier.toLowerCase() == 'master_chef_monthly' ||
+              pkg.storeProduct.identifier.toLowerCase() ==
+                  'master_chef_monthly',
         );
         masterChefYearlyPackage = current.availablePackages.firstWhereOrNull(
           (pkg) =>
-              pkg.identifier == 'master_chef_yearly' ||
-              pkg.storeProduct.identifier == 'master_chef_yearly',
+              pkg.identifier.toLowerCase() == 'master_chef_yearly' ||
+              pkg.storeProduct.identifier.toLowerCase() == 'master_chef_yearly',
         );
       }
     } catch (e) {
@@ -285,8 +327,8 @@ class SubscriptionService extends ChangeNotifier {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   String _resolveTierFromEntitlements(Map<String, EntitlementInfo> ents) {
-    for (final entry in ents.entries) {
-      final id = entry.value.productIdentifier;
+    for (final e in ents.values) {
+      final id = e.productIdentifier.toLowerCase();
       if (id == 'home_chef_monthly') return 'home_chef';
       if (id == 'master_chef_monthly' || id == 'master_chef_yearly') {
         return 'master_chef';
@@ -301,14 +343,13 @@ class SubscriptionService extends ChangeNotifier {
   ) {
     switch (tier) {
       case 'master_chef':
-        return ents.values.firstWhereOrNull(
-          (e) =>
-              e.productIdentifier == 'master_chef_monthly' ||
-              e.productIdentifier == 'master_chef_yearly',
-        );
+        return ents.values.firstWhereOrNull((e) {
+          final id = e.productIdentifier.toLowerCase();
+          return id == 'master_chef_monthly' || id == 'master_chef_yearly';
+        });
       case 'home_chef':
         return ents.values.firstWhereOrNull(
-          (e) => e.productIdentifier == 'home_chef_monthly',
+          (e) => e.productIdentifier.toLowerCase() == 'home_chef_monthly',
         );
       default:
         return null;
@@ -361,9 +402,10 @@ class SubscriptionService extends ChangeNotifier {
     );
     final entitlements = customerInfo.entitlements.active;
     final rcTier = _resolveTierFromEntitlements(entitlements);
-    final entitlementId =
-        _getActiveEntitlement(entitlements, rcTier)?.productIdentifier ??
-        'none';
+    final productId =
+        (_getActiveEntitlement(entitlements, rcTier)?.productIdentifier ??
+                'none')
+            .toLowerCase();
 
     // Firestore may carry an admin override
     final doc = await firestore.collection('users').doc(uid).get();
@@ -374,7 +416,7 @@ class SubscriptionService extends ChangeNotifier {
 
     await firestore.collection('users').doc(uid).set({
       'tier': resolved,
-      'entitlementId': entitlementId,
+      'productId': productId,
       'lastLogin': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
@@ -392,20 +434,21 @@ class SubscriptionService extends ChangeNotifier {
     );
     final entitlements = customerInfo.entitlements.active;
     final rcTier = _resolveTierFromEntitlements(entitlements);
-    final entitlementId =
-        _getActiveEntitlement(entitlements, rcTier)?.productIdentifier ??
-        'none';
+    final productId =
+        (_getActiveEntitlement(entitlements, rcTier)?.productIdentifier ??
+                'none')
+            .toLowerCase();
 
-    debugPrint('📦 RevenueCat entitlementId resolved: $entitlementId');
+    debugPrint('📦 RevenueCat productId resolved: $productId');
 
     _tier = rcTier;
-    _entitlementId = entitlementId;
+    _entitlementId = productId;
     _activeEntitlement = _getActiveEntitlement(entitlements, rcTier);
     tierNotifier.value = _tier;
 
     await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
       'tier': rcTier,
-      'entitlementId': entitlementId,
+      'productId': productId,
       'lastLogin': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 

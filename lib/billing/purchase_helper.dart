@@ -47,8 +47,12 @@ class PurchaseHelper {
     return info;
   }
 
-  /// True if a given entitlement KEY is active (RC entitlement identifier, e.g. "pro").
-  static bool hasActiveEntitlement(CustomerInfo info, String entitlementKey) {
+  /// True if a given **entitlement key** (RC entitlement identifier) is active.
+  /// Example keys: "pro", "premium" — not product ids.
+  static bool hasActiveEntitlementKey(
+    CustomerInfo info,
+    String entitlementKey,
+  ) {
     return info.entitlements.active.containsKey(entitlementKey);
   }
 
@@ -67,7 +71,7 @@ class PurchaseHelper {
   /// 🔄 Push RC → Firestore so backend/analytics can see current tier.
   ///
   /// Written fields:
-  /// - entitlementId: product id (e.g. "home_chef_monthly")  ✅ canonical for app logic
+  /// - productId: product id (e.g. "home_chef_monthly")  ✅ canonical for app logic
   /// - entitlementKey: RC entitlement key (optional, informational)
   /// - tier: derived via resolveTier(productId)
   /// - willRenew, originalPurchaseDate, expirationDate, store, periodType, lastSyncedAt
@@ -79,6 +83,12 @@ class PurchaseHelper {
     final String productId = e?.productIdentifier ?? 'none'; // RC product id
     final String entitlementKey = e?.identifier ?? 'none'; // RC entitlement key
     final String tier = resolveTier(productId);
+
+    // Convert RC ISO8601 strings to DateTime? for Firestore
+    DateTime? parse(String? iso) => iso == null ? null : DateTime.tryParse(iso);
+
+    final originalPurchaseDate = parse(e?.originalPurchaseDate);
+    final expirationDate = parse(e?.expirationDate);
 
     // Prefer Firebase UID; fall back to RC app user id.
     final String? uid = FirebaseAuth.instance.currentUser?.uid;
@@ -94,17 +104,13 @@ class PurchaseHelper {
     }
 
     final updateData = <String, dynamic>{
-      // Your app reads product id from this field name.
-      'entitlementId': productId,
-      // Keep entitlement key too (useful for dashboards).
-      'entitlementKey': entitlementKey,
-
+      'productId': productId, // product id (canonical in app)
+      'entitlementKey': entitlementKey, // RC entitlement key (optional)
       'tier': tier,
       'willRenew': e?.willRenew ?? false,
-      // Firestore SDK accepts DateTime and converts to Timestamp.
-      'originalPurchaseDate': e?.originalPurchaseDate,
-      'expirationDate': e?.expirationDate,
-      'store': e?.store, // enum name string
+      'originalPurchaseDate': originalPurchaseDate, // DateTime?
+      'expirationDate': expirationDate, // DateTime?
+      'store': e?.store.name, // enum -> string
       'periodType': e?.periodType.name, // "trial" | "intro" | "normal"
       'lastSyncedAt': FieldValue.serverTimestamp(),
     };
@@ -135,6 +141,7 @@ class PurchaseHelper {
     if (uid == null || uid.isEmpty) return;
     try {
       await Purchases.logIn(uid);
+      await Purchases.invalidateCustomerInfoCache();
       final info = await Purchases.getCustomerInfo();
       await syncEntitlementToFirestore(info);
     } catch (e) {

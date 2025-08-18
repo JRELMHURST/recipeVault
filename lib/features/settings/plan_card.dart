@@ -25,13 +25,13 @@ class PlanCard extends StatelessWidget {
 
         // Default now is "none" instead of "free"
         final actualTier = snapshot.data ?? 'none';
-        final entitlementId = subscriptionService.entitlementId;
+        final productId = subscriptionService.productId;
 
         // Subtitle for Master Chef (Yearly/Monthly)
         String masterChefSubtitle = '';
-        if (entitlementId == 'master_chef_yearly') {
+        if (productId == 'master_chef_yearly') {
           masterChefSubtitle = ' (${t.planMasterChefSubtitleAnnual})';
-        } else if (entitlementId == 'master_chef_monthly') {
+        } else if (productId == 'master_chef_monthly') {
           masterChefSubtitle = ' (${t.planMasterChefSubtitleMonthly})';
         }
 
@@ -45,7 +45,7 @@ class PlanCard extends StatelessWidget {
         // Description
         final description = switch (actualTier) {
           'master_chef' =>
-            entitlementId == 'master_chef_yearly'
+            productId == 'master_chef_yearly'
                 ? t.planMasterChefDescriptionAnnual
                 : t.planMasterChefDescriptionMonthly,
           'home_chef' => t.planHomeChefDescription,

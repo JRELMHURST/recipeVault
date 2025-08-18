@@ -46,15 +46,15 @@ export const revenueCatWebhook = https.onRequest(async (req, res) => {
     const uid: string | undefined = app_user_id || aliases?.[0];
 
     // RevenueCat may send a single entitlement or an array depending on event
-    const entitlementId: string | undefined =
+    const productId: string | undefined =
       data?.entitlement_id || data?.entitlement_ids?.[0];
 
     // Map entitlement → internal tier, default to “none”
     const resolvedTier: TierOrNone =
-      (entitlementId && ENTITLEMENT_TIER_MAP[entitlementId]) || 'none';
+      (productId && ENTITLEMENT_TIER_MAP[productId]) || 'none';
 
     console.log(
-      `📦 RevenueCat event: ${eventType ?? 'unknown'} | uid=${uid ?? 'unknown'} | entitlement=${entitlementId ?? 'n/a'} → tier=${resolvedTier}`
+      `📦 RevenueCat event: ${eventType ?? 'unknown'} | uid=${uid ?? 'unknown'} | entitlement=${productId ?? 'n/a'} → tier=${resolvedTier}`
     );
 
     // 🧠 Log raw webhook for audit/debug
@@ -62,7 +62,7 @@ export const revenueCatWebhook = https.onRequest(async (req, res) => {
       source: 'revcat_webhook',
       uid: uid ?? null,
       eventType: eventType ?? 'unknown',
-      entitlement: entitlementId ?? null,
+      entitlement: productId ?? null,
       resolvedTier,
       environment: data?.environment ?? 'unknown',
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
@@ -86,16 +86,16 @@ export const revenueCatWebhook = https.onRequest(async (req, res) => {
       case 'TRIAL_CONVERTED':
       case 'UNCANCELLATION': {
         // If no entitlement (or unmapped), don’t overwrite to “none” on an upgrade-ish event
-        if (!entitlementId || resolvedTier === 'none') {
+        if (!productId || resolvedTier === 'none') {
           console.warn(
-            `⚠️ ${eventType}: missing or unmapped entitlementId → leaving user tier unchanged`
+            `⚠️ ${eventType}: missing or unmapped productId → leaving user tier unchanged`
           );
           break;
         }
         await userRef.set(
           {
             tier: resolvedTier,           // 'home_chef' | 'master_chef'
-            entitlementId,                // keep the concrete product id
+            productId,                // keep the concrete product id
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           { merge: true }
@@ -112,7 +112,7 @@ export const revenueCatWebhook = https.onRequest(async (req, res) => {
         await userRef.set(
           {
             tier: 'none',
-            entitlementId: null,
+            productId: null,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
           { merge: true }

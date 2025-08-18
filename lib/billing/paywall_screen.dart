@@ -13,7 +13,7 @@ import 'package:recipe_vault/billing/subscription_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
-import 'package:recipe_vault/navigation/routes.dart'; // ✅ for AppRoutes
+import 'package:recipe_vault/navigation/routes.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -29,6 +29,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
   List<Package> _availablePackages = [];
   VoidCallback? _tierListener;
 
+  // explicit manage flow (?manage=1)
+  bool _isManaging = false;
+
+  // ⬇️ Active product identifiers from RevenueCat (lowercased)
+  Set<String> _activeProductIds = const {};
+
   @override
   void initState() {
     super.initState();
@@ -40,10 +46,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
     _loadSubscriptionData();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final state = GoRouterState.of(context);
+    _isManaging = state.uri.queryParameters['manage'] == '1';
+  }
+
   void _attachTierListener() {
-    // Leave the paywall as soon as a valid entitlement is active.
     _tierListener = () {
-      if (_subscriptionService.hasActiveSubscription && mounted) {
+      if (!_isManaging &&
+          _subscriptionService.hasActiveSubscription &&
+          mounted) {
         _redirectHome();
       }
     };
@@ -61,13 +75,23 @@ class _PaywallScreenState extends State<PaywallScreen> {
   Future<void> _loadSubscriptionData() async {
     await _subscriptionService.init();
     try {
+      // offerings
       final offerings = await Purchases.getOfferings();
-      final entitlementId = _subscriptionService.entitlementId;
+
+      // 🔎 also fetch current active product ids for highlighting
+      final info = await Purchases.getCustomerInfo();
+      final active = info.entitlements.active.values;
+      _activeProductIds = {
+        for (final e in active)
+          if (e.productIdentifier.isNotEmpty) e.productIdentifier.toLowerCase(),
+      };
+
+      final productId =
+          _subscriptionService.productId; // may be "master_chef" / "home_chef"
 
       final packages = <Package>[];
       final seen = <String>{};
 
-      // De-dup across all offerings.
       offerings.all.forEach((_, offering) {
         for (final pkg in offering.availablePackages) {
           final id = pkg.storeProduct.identifier;
@@ -75,25 +99,17 @@ class _PaywallScreenState extends State<PaywallScreen> {
         }
       });
 
-      // Sort: current entitlement first, then by our priority order.
+      // Sort: current entitlement first, then by priority
       packages.sort((a, b) {
+        bool isCurrentPkg(Package p) => _isPackageCurrent(p, productId);
+        if (isCurrentPkg(a) && !isCurrentPkg(b)) return -1;
+        if (!isCurrentPkg(a) && isCurrentPkg(b)) return 1;
+
         const priority = [
           'home_chef_monthly',
           'master_chef_monthly',
           'master_chef_yearly',
         ];
-
-        bool isCurrent(Package p) {
-          final id = entitlementId.toLowerCase();
-          if (id.isEmpty) return false;
-          return p.storeProduct.identifier.toLowerCase() == id ||
-              p.identifier.toLowerCase() == id ||
-              p.offeringIdentifier.toLowerCase() == id;
-        }
-
-        if (isCurrent(a) && !isCurrent(b)) return -1;
-        if (!isCurrent(a) && isCurrent(b)) return 1;
-
         int ix(String s) =>
             priority.indexWhere((key) => s.toLowerCase().contains(key));
         int aIx = ix(a.storeProduct.identifier);
@@ -111,13 +127,37 @@ class _PaywallScreenState extends State<PaywallScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 
+  // ✅ Lenient “current package” detection:
+  // 1) exact/contains match against RC active product ids
+  // 2) fallback: match SubscriptionService.productId ("home_chef"/"master_chef") by keyword
+  bool _isPackageCurrent(Package pkg, String productId) {
+    final pid = pkg.storeProduct.identifier.toLowerCase();
+
+    // (1) match RC product ids
+    if (_activeProductIds.isNotEmpty) {
+      if (_activeProductIds.any(
+        (p) => p == pid || p.contains(pid) || pid.contains(p),
+      )) {
+        return true;
+      }
+    }
+
+    // (2) fallback: match entitlement keyword against product id
+    final ent = productId.toLowerCase();
+    if (ent.isNotEmpty) {
+      if (ent.contains('master') && pid.contains('master')) return true;
+      if (ent.contains('home') && pid.contains('home')) return true;
+    }
+
+    return false;
+  }
+
   Future<void> _handlePurchase(Package package) async {
     setState(() => _isPurchasing = true);
     LoadingOverlay.show(context);
     try {
       final info = await Purchases.purchasePackage(package);
 
-      // Sync local state + Firestore regardless.
       await _subscriptionService.syncRevenueCatEntitlement(forceRefresh: true);
       await _subscriptionService.loadSubscriptionStatus();
 
@@ -149,23 +189,17 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context);
 
-    // Show a back button only when explicitly opened for management (?manage=1).
-    final state = GoRouterState.of(context);
-    final isManaging = state.uri.queryParameters['manage'] == '1';
-
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(loc.chefModeTitle),
-        leading: isManaging
+        leading: _isManaging
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () async {
-                  // Try to pop; if there's nothing to pop (e.g. opened with `go`),
-                  // fall back to Settings (or Vault if you prefer).
                   final popped = await Navigator.of(context).maybePop();
                   if (!popped && mounted) {
-                    context.go(AppRoutes.settings); // fallback
+                    context.go(AppRoutes.settings);
                   }
                 },
               )
@@ -182,7 +216,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     ThemeData theme,
     AppLocalizations loc,
   ) {
-    final entitlementId = _subscriptionService.entitlementId;
+    final productId = _subscriptionService.productId;
 
     return Column(
       children: [
@@ -214,11 +248,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   children: [
                     const SizedBox(height: 24),
                     ..._availablePackages.map((pkg) {
-                      final isCurrent =
-                          entitlementId.isNotEmpty &&
-                          (pkg.storeProduct.identifier == entitlementId ||
-                              pkg.identifier == entitlementId ||
-                              pkg.offeringIdentifier == entitlementId);
+                      final isCurrent = _isPackageCurrent(pkg, productId);
 
                       final isYearly =
                           (pkg.storeProduct.subscriptionPeriod ?? '')
@@ -240,7 +270,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             }
                           },
                           isDisabled: isCurrent,
-                          badge: badge, // null -> no badge
+                          badge: badge,
                         ),
                       );
                     }),

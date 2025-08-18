@@ -21,9 +21,13 @@ class AccessController extends ChangeNotifier {
   String? _tier;
   bool _ready = false;
 
-  // Track whether each source has produced a result this cycle
+  // Source resolution flags
   bool _rcResolved = false;
-  bool _fsResolved = false;
+
+  // Source opinions
+  bool _rcActive = false;
+  String? _rcTier;
+  String? _fsTier;
 
   // Persisted flag: has this user ever had an active entitlement?
   bool _everHadAccess = false;
@@ -34,41 +38,31 @@ class AccessController extends ChangeNotifier {
   bool get hasAccess => _status == EntitlementStatus.active;
   String? get tier => _tier;
 
-  /// Whether an authenticated Firebase user exists.
   bool get isLoggedIn => _auth.currentUser != null;
-
-  /// Whether the current user is anonymous.
   bool get isAnonymous => _auth.currentUser?.isAnonymous ?? false;
 
-  /// Treat a user as “newly registered” for a short window after account creation.
   static const _newUserWindow = Duration(hours: 12);
   bool get isNewlyRegistered {
     final u = _auth.currentUser;
     final created = u?.metadata.creationTime;
     if (u == null || created == null) return false;
-    final now = DateTime.now();
-    return now.difference(created).abs() <= _newUserWindow;
+    return DateTime.now().difference(created).abs() <= _newUserWindow;
   }
 
   bool get everHadAccess => _everHadAccess;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
-  /// Call once at app start (e.g., in your top-level Provider setup).
   void start() {
-    // Re-check whenever auth state changes.
     _authSub = _auth.authStateChanges().listen((_) {
-      // Defer to next microtask so we don't notify during build.
       scheduleMicrotask(refresh);
     });
 
-    // RevenueCat pushes updates
     Purchases.addCustomerInfoUpdateListener(_applyCustomerInfo);
 
-    // Initial kick
     if (_auth.currentUser != null) {
-      refresh();
+      // Ensure RC identity matches Firebase UID before the first fetch
+      _ensureRcIdentity().then((_) => refresh());
     } else {
-      // Not logged in: no entitlement checks; app can route to /login.
       _everHadAccess = false;
       _setState(EntitlementStatus.inactive, tier: null, ready: true);
     }
@@ -76,9 +70,10 @@ class AccessController extends ChangeNotifier {
 
   /// Public: re-run entitlement checks & user doc listener.
   Future<void> refresh() async {
-    // Reset resolution flags for this cycle
     _rcResolved = false;
-    _fsResolved = false;
+    _rcActive = false;
+    _rcTier = null;
+    _fsTier = null;
 
     final user = _auth.currentUser;
     if (user == null) {
@@ -88,10 +83,13 @@ class AccessController extends ChangeNotifier {
       return;
     }
 
-    await _loadEverHadAccess(); // load persisted “ever had” flag for this uid
+    // Hydrate optimistic tier from cache (sticky across restarts).
+    await _loadCachedTier(uid: user.uid);
+
+    await _loadEverHadAccess();
     _setState(EntitlementStatus.checking, ready: false);
 
-    // If Firestore never emits or RC throws, never hang: fallback after 3s
+    // Fallback so UI never hangs forever if neither source returns.
     unawaited(
       Future<void>.delayed(const Duration(seconds: 3), () {
         if (!_ready && _status == EntitlementStatus.checking) {
@@ -118,72 +116,102 @@ class AccessController extends ChangeNotifier {
         .listen(
           (snap) {
             final data = snap.data();
-            final docTier = (data?['Tier'] ?? data?['tier']) as String?;
+            _fsTier = (data?['Tier'] ?? data?['tier']) as String?;
 
-            _fsResolved = true;
-
-            if (docTier == null || docTier == 'none') {
-              // No entitlement from Firestore.
-              _setState(EntitlementStatus.inactive, tier: null);
-            } else {
-              // Firestore says they have a tier → mark active.
-              _setState(EntitlementStatus.active, tier: docTier);
-              if (!_everHadAccess) {
-                _everHadAccess = true;
-                unawaited(_saveEverHadAccess());
-              }
-            }
-            _maybeMarkReady('firestore');
+            // NOTE: don't setState here; decide in _resolveEntitlement()
+            _resolveEntitlement(uid: uid);
           },
           onError: (e) {
             debugPrint('⚠️ Firestore access check error: $e');
-            _fsResolved = true;
-            // Don’t block the app on errors.
-            _maybeMarkReady('firestore-error');
+            _resolveEntitlement(uid: uid);
           },
         );
   }
 
   Future<void> _refreshFromRevenueCat() async {
     try {
+      // 🔒 Ensure RC identity matches Firebase UID
+      await _ensureRcIdentity();
+
       final info = await Purchases.getCustomerInfo();
       _applyCustomerInfo(info);
     } catch (e) {
       debugPrint('⚠️ RevenueCat getCustomerInfo failed: $e');
       _rcResolved = true;
-      _maybeMarkReady('rc-error');
+      _resolveEntitlement(uid: _auth.currentUser?.uid);
+    }
+  }
+
+  /// Make sure RC is logged in with the same UID as FirebaseAuth
+  Future<void> _ensureRcIdentity() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final appUserId = await Purchases.appUserID; // ✅ getter
+      final isAnon = await Purchases.isAnonymous; // ✅ getter
+
+      if (isAnon || appUserId != user.uid) {
+        debugPrint(
+          '🔄 RC identity mismatch (had=$appUserId, want=${user.uid}) → logging in',
+        );
+        await Purchases.logIn(user.uid);
+        await Purchases.invalidateCustomerInfoCache();
+      }
+    } catch (e) {
+      debugPrint('⚠️ _ensureRcIdentity failed: $e');
     }
   }
 
   void _applyCustomerInfo(CustomerInfo info) {
     _rcResolved = true;
 
-    // If RC finds any active entitlement, prefer "active".
     final active = info.entitlements.active;
     if (active.isNotEmpty) {
       final keys = active.keys.map((k) => k.toLowerCase()).toList();
-      String resolvedTier = 'home_chef';
-      if (keys.any((k) => k.contains('master'))) resolvedTier = 'master_chef';
-      _setState(EntitlementStatus.active, tier: resolvedTier);
+      _rcActive = true;
+      _rcTier = keys.any((k) => k.contains('master'))
+          ? 'master_chef'
+          : 'home_chef';
 
       if (!_everHadAccess) {
         _everHadAccess = true;
         unawaited(_saveEverHadAccess());
       }
+    } else {
+      _rcActive = false;
+      _rcTier = null;
     }
 
-    _maybeMarkReady('rc');
+    _resolveEntitlement(uid: _auth.currentUser?.uid);
   }
 
-  void _maybeMarkReady(String source) {
-    // Mark ready as soon as at least ONE source answered.
-    if (!_ready && (_fsResolved || _rcResolved)) {
-      debugPrint(
-        '✅ AccessController ready via $source '
-        '(rc=$_rcResolved, fs=$_fsResolved) → status=$_status, tier=$_tier',
-      );
-      _setState(_status, tier: _tier, ready: true);
+  /// Final decision-maker combining RC + Firestore with RC-first policy.
+  void _resolveEntitlement({String? uid}) {
+    // 1) RC says active → ACTIVE wins immediately.
+    if (_rcActive) {
+      _setState(EntitlementStatus.active, tier: _rcTier, ready: true);
+      unawaited(_saveCachedTier(uid: uid, tier: _rcTier));
+      return;
     }
+
+    // 2) RC not resolved yet → keep checking; do NOT downgrade from Firestore=none.
+    if (!_rcResolved) {
+      _setState(EntitlementStatus.checking, tier: _tier, ready: false);
+      return;
+    }
+
+    // 3) RC resolved and not active → fall back to Firestore tier.
+    final fsActive = _fsTier != null && _fsTier != 'none';
+    if (fsActive) {
+      _setState(EntitlementStatus.active, tier: _fsTier, ready: true);
+      unawaited(_saveCachedTier(uid: uid, tier: _fsTier));
+      return;
+    }
+
+    // 4) Neither source shows access → inactive.
+    _setState(EntitlementStatus.inactive, tier: null, ready: true);
+    unawaited(_saveCachedTier(uid: uid, tier: 'none'));
   }
 
   void _setState(EntitlementStatus s, {String? tier, bool? ready}) {
@@ -192,11 +220,9 @@ class AccessController extends ChangeNotifier {
     if (ready != null) _ready = ready;
 
     debugPrint('🔑 Access state → status=$_status, tier=$_tier, ready=$_ready');
-
     _safeNotify();
   }
 
-  // Avoid "notify during build" crashes.
   void _safeNotify() {
     if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
       notifyListeners();
@@ -208,7 +234,7 @@ class AccessController extends ChangeNotifier {
     }
   }
 
-  // ── Persistence for "ever had access" ─────────────────────────────────────
+  // ── Persistence helpers ───────────────────────────────────────────────────
   Future<void> _loadEverHadAccess() async {
     final u = _auth.currentUser;
     if (u == null) {
@@ -232,6 +258,34 @@ class AccessController extends ChangeNotifier {
       await prefs.setBool('everHadAccess_${u.uid}', true);
     } catch (e) {
       debugPrint('⚠️ Failed to save everHadAccess: $e');
+    }
+  }
+
+  Future<void> _loadCachedTier({required String uid}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString('tier_$uid');
+      if (cached != null && cached != 'none') {
+        // Optimistically surface last known tier while we check RC.
+        _tier = cached;
+        _status = EntitlementStatus.checking; // still verifying
+        _safeNotify();
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to load cached tier: $e');
+    }
+  }
+
+  Future<void> _saveCachedTier({
+    required String? uid,
+    required String? tier,
+  }) async {
+    if (uid == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('tier_$uid', tier ?? 'none');
+    } catch (e) {
+      debugPrint('⚠️ Failed to save cached tier: $e');
     }
   }
 

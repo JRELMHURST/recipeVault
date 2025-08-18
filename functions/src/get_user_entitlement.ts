@@ -47,7 +47,7 @@ export async function getUserEntitlementFromRevenueCat(uid: string): Promise<Tie
   console.log(`📡 RevenueCat lookup → UID: ${uid}`);
 
   let tier: Tier = "none";
-  let entitlementId: string | null = null;
+  let productId: string | null = null;
 
   try {
     const response = await fetch(url, {
@@ -59,7 +59,7 @@ export async function getUserEntitlementFromRevenueCat(uid: string): Promise<Tie
 
     if (!response.ok) {
       console.error(`❌ RevenueCat request failed: ${response.status} ${response.statusText}`);
-      await saveToFirestore(uid, tier, entitlementId);
+      await saveToFirestore(uid, tier, productId);
       return tier;
     }
 
@@ -68,7 +68,7 @@ export async function getUserEntitlementFromRevenueCat(uid: string): Promise<Tie
 
     if (!entitlements || Object.keys(entitlements).length === 0) {
       console.log("ℹ️ No entitlements on account — defaulting to 'none'");
-      await saveToFirestore(uid, tier, entitlementId);
+      await saveToFirestore(uid, tier, productId);
       return tier;
     }
 
@@ -86,26 +86,26 @@ export async function getUserEntitlementFromRevenueCat(uid: string): Promise<Tie
 
       if (TIER_PRIORITY[mapped] > TIER_PRIORITY[tier]) {
         tier = mapped;
-        entitlementId = product;
+        productId = product;
       }
     }
 
     if (tier === "none") {
       console.warn("⚠️ No active, recognized entitlements — falling back to 'none'");
     } else {
-      console.log(`🎯 Resolved UID ${uid} → tier=${tier} via ${entitlementId}`);
+      console.log(`🎯 Resolved UID ${uid} → tier=${tier} via ${productId}`);
     }
 
-    await saveToFirestore(uid, tier, entitlementId);
+    await saveToFirestore(uid, tier, productId);
     return tier;
   } catch (error) {
     console.error("❌ RevenueCat lookup failed:", error);
-    await saveToFirestore(uid, tier, entitlementId);
+    await saveToFirestore(uid, tier, productId);
     return tier;
   }
 }
 
-async function saveToFirestore(uid: string, tier: Tier, entitlementId: string | null): Promise<void> {
+async function saveToFirestore(uid: string, tier: Tier, productId: string | null): Promise<void> {
   try {
     await getFirestore()
       .collection("users")
@@ -113,7 +113,7 @@ async function saveToFirestore(uid: string, tier: Tier, entitlementId: string | 
       .set(
         {
           tier,
-          entitlementId: entitlementId ?? null,
+          productId: productId ?? null,
           entitlementCheckedAt: FieldValue.serverTimestamp(),
         },
         { merge: true }

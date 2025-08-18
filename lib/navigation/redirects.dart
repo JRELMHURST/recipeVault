@@ -28,9 +28,8 @@ String? appRedirect(
     return (loc == AppRoutes.boot) ? null : AppRoutes.boot;
   }
 
-  // 2) Access active
+  // 2) Access active → keep them out of boot/paywall/login/register
   if (access.hasAccess) {
-    // With access, only reach paywall when explicitly managing (handled above)
     if (loc == AppRoutes.boot ||
         loc == AppRoutes.paywall ||
         loc == AppRoutes.login ||
@@ -43,7 +42,6 @@ String? appRedirect(
   // 3) No access:
   //    Show paywall ONLY if they just registered or previously had access (lapsed).
   final shouldSeePaywall = access.isNewlyRegistered || access.everHadAccess;
-
   if (shouldSeePaywall) {
     return (loc == AppRoutes.paywall) ? null : AppRoutes.paywall;
   }

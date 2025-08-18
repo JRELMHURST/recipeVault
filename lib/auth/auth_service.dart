@@ -18,7 +18,7 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
   bool get isLoggedIn => currentUser != null;
 
-  /// Reads locally saved preferred recipe locale
+  /// Reads locally saved preferred recipe locale.
   Future<String?> _getPreferredRecipeLocale() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -28,22 +28,16 @@ class AuthService {
     }
   }
 
-  /// Safe RC entitlement fetch
-  Future<String?> _getActiveEntitlementIdSafe() async {
+  /// Safe RC fetch of the **productIdentifier** of the first active entitlement,
+  /// e.g. 'master_chef_monthly' / 'home_chef_monthly'. Returns null if none.
+  Future<String?> _getActiveEntitlementProductIdSafe() async {
     try {
       final info = await Purchases.getCustomerInfo();
-      return info.entitlements.active.values.firstOrNull?.identifier;
+      final ent = info.entitlements.active.values.firstOrNull;
+      return ent?.productIdentifier;
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ RC getCustomerInfo failed: $e');
       return null;
-    }
-  }
-
-  Future<void> _logInRevenueCat(String uid) async {
-    try {
-      await Purchases.logIn(uid);
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ RC logIn failed for $uid: $e');
     }
   }
 
@@ -55,7 +49,6 @@ class AuthService {
       password: password,
     );
     final user = credential.user!;
-    await _logInRevenueCat(user.uid);
     await ensureUserDocument(user); // unified
     return credential;
   }
@@ -69,7 +62,6 @@ class AuthService {
       password: password,
     );
     final user = credential.user!;
-    await _logInRevenueCat(user.uid);
     await ensureUserDocument(user); // unified
     return credential;
   }
@@ -87,7 +79,6 @@ class AuthService {
 
       final userCredential = await _auth.signInWithCredential(credential);
       final user = userCredential.user!;
-      await _logInRevenueCat(user.uid);
       await ensureUserDocument(user); // unified
       return userCredential;
     } catch (e, stack) {
@@ -117,7 +108,6 @@ class AuthService {
 
       final userCredential = await _auth.signInWithCredential(oauthCredential);
       final user = userCredential.user!;
-      await _logInRevenueCat(user.uid);
       await ensureUserDocument(user); // unified
       return userCredential;
     } catch (e, stack) {
@@ -130,7 +120,7 @@ class AuthService {
 
   Future<void> signOut() async {
     try {
-      await Purchases.logOut();
+      await Purchases.logOut(); // ok to keep
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ RC logOut failed: $e');
     }
@@ -185,13 +175,15 @@ class AuthService {
     final doc = await docRef.get();
 
     final service = AuthService();
-    final entitlementId = await service._getActiveEntitlementIdSafe();
-    final resolvedTier = resolveTier(entitlementId ?? 'none');
+    // Use productIdentifier so resolveTier() maps correctly.
+    final entitlementProductId = await service
+        ._getActiveEntitlementProductIdSafe();
+    final resolvedTier = resolveTier(entitlementProductId ?? 'none');
     final preferredLocale = await service._getPreferredRecipeLocale();
 
     final updateData = <String, dynamic>{
       'email': user.email,
-      'entitlementId': entitlementId ?? 'none',
+      'productId': entitlementProductId ?? 'none', // product id stored
       'tier': resolvedTier,
       if (preferredLocale != null) 'preferredRecipeLocale': preferredLocale,
       if (!doc.exists) 'createdAt': FieldValue.serverTimestamp(),
@@ -210,7 +202,7 @@ class AuthService {
       final existing = doc.data() ?? {};
       final needsUpdate =
           existing['tier'] != resolvedTier ||
-          existing['entitlementId'] != entitlementId ||
+          existing['productId'] != entitlementProductId ||
           (preferredLocale != null &&
               existing['preferredRecipeLocale'] != preferredLocale);
 

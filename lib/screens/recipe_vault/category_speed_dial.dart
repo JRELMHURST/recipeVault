@@ -35,7 +35,7 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(l.addCategoryTitle),
         content: TextField(
           controller: controller,
@@ -44,7 +44,8 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            // ✅ Safely closes only the dialog
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(l.cancel),
           ),
           ElevatedButton(
@@ -56,7 +57,8 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
                 widget.onCategoryChanged();
               }
               if (!mounted) return;
-              Navigator.pop(context);
+              // ✅ Again, use dialogContext here
+              Navigator.of(dialogContext).pop();
             },
             child: Text(l.add),
           ),

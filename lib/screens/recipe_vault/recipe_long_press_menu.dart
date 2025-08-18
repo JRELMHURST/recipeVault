@@ -34,13 +34,14 @@ class RecipeLongPressMenu {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
+    // ✅ Keep a reference to the *outer* context for navigation after closing the sheet.
+    final rootContext = context;
+
     // Treat these as "system chips" and hide them from assignment.
     final systemChips = <String>{
-      // canonical fallbacks
       'Favourites',
       'All',
       'Translated',
-      // localized labels (use the same keys you standardized elsewhere)
       l.favourites,
       l.systemAll,
       l.systemTranslated,
@@ -49,15 +50,14 @@ class RecipeLongPressMenu {
     final filteredCategories = categories
         .where((c) => !systemChips.contains(c))
         .toList();
-
     final selectedCategories = List<String>.from(recipe.categories);
 
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => ClipRRect(
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setState) => ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -131,7 +131,6 @@ class RecipeLongPressMenu {
                                         spacing: 6,
                                         runSpacing: -4,
                                         children: recipe.categories.map((c) {
-                                          // Show system chips localized; user chips as-is (with a few built-ins localized)
                                           final shown = systemChips.contains(c)
                                               ? (c == 'Translated' ||
                                                         c == l.systemTranslated
@@ -229,6 +228,7 @@ class RecipeLongPressMenu {
 
                         Row(
                           children: [
+                            // Update image
                             Expanded(
                               child: OutlinedButton.icon(
                                 icon: const Icon(Icons.image_rounded, size: 18),
@@ -237,7 +237,9 @@ class RecipeLongPressMenu {
                                   style: const TextStyle(fontSize: 13),
                                 ),
                                 onPressed: () {
-                                  Navigator.pop(context);
+                                  // ✅ Close ONLY the sheet
+                                  Navigator.of(sheetContext).pop();
+                                  // ✅ Then perform the action
                                   onAddOrUpdateImage();
                                 },
                                 style: OutlinedButton.styleFrom(
@@ -256,6 +258,8 @@ class RecipeLongPressMenu {
                               ),
                             ),
                             const SizedBox(width: 12),
+
+                            // Edit
                             Expanded(
                               child: ElevatedButton.icon(
                                 icon: const Icon(Icons.edit_rounded, size: 18),
@@ -264,14 +268,17 @@ class RecipeLongPressMenu {
                                   style: const TextStyle(fontSize: 13),
                                 ),
                                 onPressed: () async {
-                                  Navigator.pop(context);
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          EditRecipeScreen(recipe: recipe),
-                                    ),
-                                  );
+                                  // ✅ Close ONLY the sheet
+                                  Navigator.of(sheetContext).pop();
+                                  // ✅ Push AFTER closing, using the root context
+                                  await Future.microtask(() async {
+                                    await Navigator.of(rootContext).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            EditRecipeScreen(recipe: recipe),
+                                      ),
+                                    );
+                                  });
                                 },
                                 style: ElevatedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(
@@ -290,6 +297,7 @@ class RecipeLongPressMenu {
                         ),
                         const SizedBox(height: 16),
 
+                        // Delete
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
@@ -300,8 +308,9 @@ class RecipeLongPressMenu {
                             ),
                             onPressed: () async {
                               final confirmed = await showDialog<bool>(
-                                context: context,
-                                builder: (ctx) => Dialog(
+                                // ✅ Use the sheet context so the dialog sits above the sheet
+                                context: sheetContext,
+                                builder: (dialogCtx) => Dialog(
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20),
                                   ),
@@ -344,8 +353,8 @@ class RecipeLongPressMenu {
                                             Expanded(
                                               child: OutlinedButton(
                                                 onPressed: () => Navigator.of(
-                                                  ctx,
-                                                ).pop(false),
+                                                  dialogCtx,
+                                                ).pop(false), // ✅ close dialog
                                                 style: OutlinedButton.styleFrom(
                                                   foregroundColor:
                                                       theme.colorScheme.primary,
@@ -362,8 +371,9 @@ class RecipeLongPressMenu {
                                             const SizedBox(width: 12),
                                             Expanded(
                                               child: ElevatedButton(
-                                                onPressed: () =>
-                                                    Navigator.of(ctx).pop(true),
+                                                onPressed: () => Navigator.of(
+                                                  dialogCtx,
+                                                ).pop(true), // ✅ close dialog
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor:
                                                       Colors.redAccent,
@@ -385,8 +395,10 @@ class RecipeLongPressMenu {
                                   ),
                                 ),
                               );
+
                               if (confirmed == true) {
-                                Navigator.pop(context);
+                                // ✅ Close the sheet first, then run the deletion
+                                Navigator.of(sheetContext).pop();
                                 onDelete();
                               }
                             },

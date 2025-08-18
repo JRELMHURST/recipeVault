@@ -2,33 +2,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:recipe_vault/core/feature_flags.dart'; // ⬅️ feature flags
+import 'package:recipe_vault/core/feature_flags.dart';
 
-/// 🛍 User-facing view modes
-enum ViewMode { list, grid, compact }
+/// 📦 Internal-to-persistence view modes (renamed to avoid clashes)
+enum PrefsViewMode { list, grid, compact }
 
-extension ViewModeExtension on ViewMode {
-  String get label {
-    switch (this) {
-      case ViewMode.list:
-        return 'List';
-      case ViewMode.grid:
-        return 'Grid';
-      case ViewMode.compact:
-        return 'Compact';
-    }
-  }
+extension PrefsViewModeX on PrefsViewMode {
+  String get label => switch (this) {
+    PrefsViewMode.list => 'List',
+    PrefsViewMode.grid => 'Grid',
+    PrefsViewMode.compact => 'Compact',
+  };
 
-  String get iconAsset {
-    switch (this) {
-      case ViewMode.list:
-        return 'assets/icons/view_list.png';
-      case ViewMode.grid:
-        return 'assets/icons/view_grid.png';
-      case ViewMode.compact:
-        return 'assets/icons/view_compact.png';
-    }
-  }
+  String get iconAsset => switch (this) {
+    PrefsViewMode.list => 'assets/icons/view_list.png',
+    PrefsViewMode.grid => 'assets/icons/view_grid.png',
+    PrefsViewMode.compact => 'assets/icons/view_compact.png',
+  };
 }
 
 class UserPreferencesService {
@@ -48,12 +38,10 @@ class UserPreferencesService {
   static String? _boxForUid;
 
   static bool get isBoxOpen => _box?.isOpen == true;
-
   static Box? get _safeBox => _box?.isOpen == true ? _box : null;
 
   // ── Lifecycle / user switching ─────────────────────────────────────────────
 
-  /// Call this after sign-in and at app start (if already signed in).
   static Future<void> init() async {
     if (_uid == 'unknown') {
       if (kDebugMode) {
@@ -64,9 +52,7 @@ class UserPreferencesService {
     await _ensureBoxForCurrentUser();
   }
 
-  /// Ensures the correct box is open for the current signed-in user.
   static Future<void> _ensureBoxForCurrentUser() async {
-    // If open for another user, close it first.
     if (_box?.isOpen == true && _boxForUid != _uid) {
       try {
         await _box!.close();
@@ -79,7 +65,6 @@ class UserPreferencesService {
       _boxForUid = null;
     }
 
-    // Open or reuse
     if (!Hive.isBoxOpen(_boxName)) {
       try {
         _box = await Hive.openBox(_boxName);
@@ -97,14 +82,12 @@ class UserPreferencesService {
     }
   }
 
-  /// Ensures the box is ready before any read/write.
   static Future<Box?> _ensureBox() async {
     if (_box?.isOpen == true && _boxForUid == _uid) return _box;
     await _ensureBoxForCurrentUser();
     return _safeBox;
   }
 
-  /// Optional: call on logout to fully close references.
   static Future<void> close() async {
     try {
       if (_box?.isOpen == true) await _box!.close();
@@ -119,7 +102,7 @@ class UserPreferencesService {
 
   // ── View mode ──────────────────────────────────────────────────────────────
 
-  static Future<void> saveViewMode(ViewMode mode) async {
+  static Future<void> saveViewMode(PrefsViewMode mode) async {
     final box = await _ensureBox();
     if (box != null) {
       await box.put(_keyViewMode, mode.index);
@@ -127,12 +110,13 @@ class UserPreferencesService {
     }
   }
 
-  static Future<ViewMode> getSavedViewMode() async {
+  static Future<PrefsViewMode> getSavedViewMode() async {
     final box = await _ensureBox();
     final index = box?.get(_keyViewMode) as int?;
-    final mode = (index != null && index >= 0 && index < ViewMode.values.length)
-        ? ViewMode.values[index]
-        : ViewMode.grid;
+    final mode =
+        (index != null && index >= 0 && index < PrefsViewMode.values.length)
+        ? PrefsViewMode.values[index]
+        : PrefsViewMode.grid;
     if (kDebugMode) debugPrint('📅 Loaded view mode: ${mode.name}');
     return mode;
   }
@@ -191,7 +175,6 @@ class UserPreferencesService {
     final box = await _ensureBox();
     if (box == null) return;
 
-    // If globally disabled, mark as done immediately.
     if (!kOnboardingBubblesEnabled) {
       await box.put(_keyBubblesShownOnce, true);
       await box.put(_keyVaultTutorialComplete, true);
@@ -211,16 +194,13 @@ class UserPreferencesService {
 
     if (kDebugMode) {
       debugPrint(
-        '📊 Bubble trigger check: shownOnce=$hasShownBubblesOnce, '
-        'completed=$tutorialComplete',
+        '📊 Bubble trigger check: shownOnce=$hasShownBubblesOnce, completed=$tutorialComplete',
       );
     }
 
     if (!hasShownBubblesOnce && !tutorialComplete) {
-      await resetBubbles(); // clean slate; UI will call markBubblesShown() later
-      if (kDebugMode) {
-        debugPrint('🌟 Bubbles prepared for first-time user');
-      }
+      await resetBubbles();
+      if (kDebugMode) debugPrint('🌟 Bubbles prepared for first-time user');
     }
   }
 
@@ -230,13 +210,11 @@ class UserPreferencesService {
         false;
   }
 
-  /// Call when the first bubble actually becomes visible.
   static Future<void> markBubblesShown() async {
     final box = await _ensureBox();
     if (box != null) await box.put(_keyBubblesShownOnce, true);
   }
 
-  /// Clear all onboarding flags (simulate new user).
   static Future<void> markAsNewUser() async {
     final box = await _ensureBox();
     if (box != null) {
@@ -245,13 +223,10 @@ class UserPreferencesService {
       for (final key in _bubbleKeys) {
         await box.delete('bubbleDismissed_$key');
       }
-      if (kDebugMode) {
-        debugPrint('🎯 Onboarding flags cleared (new user mode)');
-      }
+      if (kDebugMode) debugPrint('🎯 Onboarding flags cleared (new user mode)');
     }
   }
 
-  /// Small delay to allow session to prep flags before UI checks.
   static Future<void> waitForBubbleFlags() async {
     await Future.delayed(const Duration(milliseconds: 200));
   }
@@ -328,7 +303,6 @@ class UserPreferencesService {
     }
   }
 
-  /// 🔒 Internal: close and delete a Hive box
   static Future<void> _closeAndDeleteBox(String name) async {
     try {
       if (Hive.isBoxOpen(name)) {

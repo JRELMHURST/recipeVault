@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
@@ -65,7 +67,7 @@ class SettingsScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Account section
+              // Account
               _buildSettingsCard(
                 context,
                 title: t.settingsSectionAccount,
@@ -79,7 +81,7 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
 
-              // Preferences section
+              // Preferences
               _buildSettingsCard(
                 context,
                 title: t.settingsSectionPreferences,
@@ -99,7 +101,7 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
 
-              // Local Storage section
+              // Local Storage
               _buildSettingsCard(
                 context,
                 title: t.settingsSectionStorage,
@@ -113,11 +115,12 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
 
-              // Subscription section
+              // Subscription
               _buildSettingsCard(
                 context,
                 title: t.settingsSectionSubscription,
                 items: [
+                  // Note: /paywall lives outside the shell → use context.go
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.card_membership_outlined,
@@ -127,7 +130,7 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
 
-              // Support section
+              // Support
               _buildSettingsCard(
                 context,
                 title: t.settingsSectionSupport,
@@ -157,7 +160,7 @@ class SettingsScreen extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          t.footerCompanyName, // localized company name
+                          t.footerCompanyName,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: Colors.grey,
                           ),
@@ -180,7 +183,7 @@ class SettingsScreen extends StatelessWidget {
                             'https://badger-creations.co.uk/privacy',
                           ),
                           child: Text(
-                            t.legalPrivacy, // make sure these two keys exist in ARBs
+                            t.legalPrivacy,
                             style: theme.textTheme.labelSmall?.copyWith(
                               decoration: TextDecoration.underline,
                               color: Colors.blueAccent,
@@ -192,7 +195,7 @@ class SettingsScreen extends StatelessWidget {
                             'https://badger-creations.co.uk/terms',
                           ),
                           child: Text(
-                            t.legalTerms, // make sure these two keys exist in ARBs
+                            t.legalTerms,
                             style: theme.textTheme.labelSmall?.copyWith(
                               decoration: TextDecoration.underline,
                               color: Colors.blueAccent,
@@ -230,7 +233,7 @@ class SettingsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Use styling instead of toUpperCase() so translations remain correct.
+          // Keep i18n intact; no forced uppercase.
           Padding(
             padding: const EdgeInsets.only(left: 8, bottom: 4),
             child: Text(
@@ -261,11 +264,20 @@ class SettingsScreen extends StatelessWidget {
     required String label,
     required String route,
   }) {
+    final isPaywall = route == '/paywall';
     return ListTile(
       leading: Icon(icon),
       title: Text(label),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () => Navigator.pushNamed(context, route),
+      onTap: () {
+        if (isPaywall) {
+          // replace shell with Paywall (outside the ShellRoute)
+          context.go(route);
+        } else {
+          // push settings subpages on top of the current shell
+          context.push(route);
+        }
+      },
     );
   }
 }

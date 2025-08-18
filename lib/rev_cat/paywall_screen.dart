@@ -40,10 +40,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   void _attachTierListener() {
-    // If tier flips from free → paid while we’re on this screen, redirect.
+    // ✅ As soon as a real entitlement is active, leave the paywall.
     _tierListener = () {
-      final tier = _subscriptionService.tierNotifier.value;
-      if (tier != 'free' && mounted) _redirectHome();
+      if (_subscriptionService.hasActiveSubscription && mounted) {
+        _redirectHome();
+      }
     };
     _subscriptionService.tierNotifier.addListener(_tierListener!);
   }
@@ -139,8 +140,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   void _redirectHome() {
-    // With go_router, this replaces the stack and lands in Home.
-    context.go('/home');
+    // ✅ Your canonical "home" route is /vault
+    context.go('/vault');
   }
 
   @override
@@ -194,15 +195,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                 pkg.offeringIdentifier == entitlementId);
 
                         final isYearly =
-                            pkg.storeProduct.subscriptionPeriod
-                                ?.toUpperCase() ==
+                            (pkg.storeProduct.subscriptionPeriod ?? '')
+                                .toUpperCase() ==
                             'P1Y';
 
+                        // Badges: keep “Current plan” and “Best value”.
+                        // (Nothing referencing the word "free" here.)
                         final badge = isCurrent
                             ? loc.badgeCurrentPlan
-                            : (isYearly
-                                  ? loc.badgeBestValue
-                                  : loc.badgeFreeTrial);
+                            : (isYearly ? loc.badgeBestValue : null);
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
@@ -214,7 +215,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                               }
                             },
                             isDisabled: isCurrent,
-                            badge: badge,
+                            // If your PricingCard requires a String, use '' when null:
+                            badge: badge ?? '',
                           ),
                         );
                       }),

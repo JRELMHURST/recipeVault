@@ -1,141 +1,182 @@
 // lib/app_router.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import 'package:recipe_vault/boot_screen.dart';
 import 'package:recipe_vault/access_controller.dart';
+import 'package:recipe_vault/boot_screen.dart';
 import 'package:recipe_vault/rev_cat/paywall_screen.dart';
-
-// Vault + results
-import 'package:recipe_vault/screens/recipe_vault/recipe_vault_screen.dart';
-import 'package:recipe_vault/screens/results_screen.dart';
 import 'package:recipe_vault/model/processed_recipe_result.dart';
-import 'package:recipe_vault/services/user_preference_service.dart';
+import 'package:recipe_vault/screens/results_screen.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_vault_screen.dart';
+
+// Settings root + subpages
+import 'package:recipe_vault/settings/settings_screen.dart';
+import 'package:recipe_vault/settings/account_settings_screen.dart';
+import 'package:recipe_vault/login/change_password.dart';
+import 'package:recipe_vault/settings/appearance_settings_screen.dart';
+import 'package:recipe_vault/settings/notifications_settings_screen.dart';
+import 'package:recipe_vault/settings/storage_sync_screen.dart';
+import 'package:recipe_vault/settings/faq_screen.dart';
+import 'package:recipe_vault/settings/about_screen.dart';
+
+// Notifiers required by appearance settings
+import 'package:recipe_vault/core/theme_notifier.dart';
+import 'package:recipe_vault/core/text_scale_notifier.dart';
+
+// Navigation helpers
+import 'navigation/routes.dart';
+import 'navigation/redirects.dart';
+import 'navigation/transition_pages.dart';
+import 'navigation/nav_shell.dart';
 
 GoRouter buildAppRouter(AccessController access) {
   return GoRouter(
-    initialLocation: '/boot',
-
-    // Re-check redirects whenever access changes.
+    initialLocation: AppRoutes.boot,
     refreshListenable: access,
+    redirect: (context, state) => appRedirect(context, state, access),
 
-    // Centralized access control.
-    redirect: (context, state) {
-      final loc = state.matchedLocation;
-
-      // 1) While resolving access → keep on /boot.
-      if (!access.ready || access.status == EntitlementStatus.checking) {
-        return (loc == '/boot') ? null : '/boot';
-      }
-
-      // 2) No access → force paywall (except when already on paywall/boot).
-      if (!access.hasAccess) {
-        if (loc == '/paywall' || loc == '/boot') return null;
-        return '/paywall';
-      }
-
-      // 3) Access granted → keep out of boot/paywall.
-      if (loc == '/boot' || loc == '/paywall') {
-        return '/vault';
-      }
-
-      // 4) No redirect.
-      return null;
-    },
-
-    // Routes.
     routes: [
       GoRoute(
-        path: '/boot',
+        path: AppRoutes.boot,
         pageBuilder: (context, state) =>
-            _fade(const BootScreen(), key: const ValueKey('boot')),
+            fadePage(const BootScreen(), key: const ValueKey('boot')),
       ),
       GoRoute(
-        path: '/paywall',
+        path: AppRoutes.paywall,
         pageBuilder: (context, state) =>
-            _fade(const PaywallScreen(), key: const ValueKey('paywall')),
+            fadePage(const PaywallScreen(), key: const ValueKey('paywall')),
+      ),
+
+      // ----- SHELL with AppBar + Bottom nav (Create / Vault / Settings root) -----
+      ShellRoute(
+        builder: (context, state, child) => NavShell(child: child),
+        routes: [
+          GoRoute(
+            path: AppRoutes.vault,
+            pageBuilder: (context, state) => fadePage(
+              const RecipeVaultScreen(),
+              key: const ValueKey('vault'),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.settings,
+            pageBuilder: (context, state) => fadePage(
+              const SettingsScreen(),
+              key: const ValueKey('settings'),
+            ),
+          ),
+        ],
+      ),
+
+      // ----- Settings detail pages OUTSIDE the ShellRoute (own app bars) -----
+      GoRoute(
+        path: AppRoutes.settingsAccount,
+        pageBuilder: (context, state) => fadePage(
+          const AccountSettingsScreen(),
+          key: const ValueKey('settings-account'),
+        ),
+        routes: [
+          GoRoute(
+            path: 'change-password',
+            pageBuilder: (context, state) => fadePage(
+              const ChangePasswordScreen(),
+              key: const ValueKey('settings-change-password'),
+            ),
+          ),
+        ],
       ),
       GoRoute(
-        path: '/vault',
-        pageBuilder: (context, state) => _fade(
-          // Default view; adjust if you expose via query params later.
-          const RecipeVaultScreen(viewMode: ViewMode.grid),
-          key: const ValueKey('vault'),
+        path: AppRoutes.settingsAppearance,
+        pageBuilder: (context, state) => fadePage(
+          AppearanceSettingsScreen(
+            themeNotifier: context.read<ThemeNotifier>(),
+            textScaleNotifier: context.read<TextScaleNotifier>(),
+          ),
+          key: const ValueKey('settings-appearance'),
         ),
       ),
       GoRoute(
-        path: '/results',
-        pageBuilder: (context, state) => _fade(
+        path: AppRoutes.settingsNotifications,
+        pageBuilder: (context, state) => fadePage(
+          const NotificationsSettingsScreen(),
+          key: const ValueKey('settings-notifications'),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsStorage,
+        pageBuilder: (context, state) => fadePage(
+          const StorageSyncScreen(),
+          key: const ValueKey('settings-storage'),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsFaqs,
+        pageBuilder: (context, state) =>
+            fadePage(FaqsScreen(), key: const ValueKey('settings-faqs')),
+      ),
+      GoRoute(
+        path: AppRoutes.settingsAbout,
+        pageBuilder: (context, state) => fadePage(
+          const AboutSettingsScreen(),
+          key: const ValueKey('settings-about'),
+        ),
+      ),
+
+      // Full-screen route outside shell (no app bar/tabs)
+      GoRoute(
+        path: AppRoutes.results,
+        pageBuilder: (context, state) => fadePage(
           ResultsScreen(initialResult: state.extra as ProcessedRecipeResult?),
           key: const ValueKey('results'),
         ),
       ),
-      // Add more routes (settings, details, etc.) as needed.
     ],
 
-    // Friendly error page instead of a blank screen.
-    errorBuilder: (context, state) => _RouterErrorPage(error: state.error),
+    errorBuilder: (context, state) => const _RouterErrorPage(),
   );
 }
 
-/// Small helper to keep transitions consistent across routes.
-CustomTransitionPage _fade(Widget child, {LocalKey? key}) {
-  return CustomTransitionPage(
-    key: key,
-    child: child,
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      // Gentle fade; feels native on both platforms.
-      return FadeTransition(opacity: animation, child: child);
-    },
-  );
-}
-
-/// A simple, user-friendly error page. Shown for unknown routes and router errors.
+/// Simple friendly error page
 class _RouterErrorPage extends StatelessWidget {
-  final Object? error;
-  const _RouterErrorPage({this.error});
+  const _RouterErrorPage();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final message = (error?.toString().isNotEmpty ?? false)
-        ? error.toString()
-        : 'Unknown route or navigation error.';
-
     return Scaffold(
       appBar: AppBar(title: const Text('Oops')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.error_outline,
                   size: 56,
-                  color: theme.colorScheme.error,
+                  color: Theme.of(context).colorScheme.error,
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Something went wrong',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  message,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  'Unknown route or navigation error.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: () => context.go('/vault'),
+                  onPressed: () => context.go(AppRoutes.vault),
                   child: const Text('Go to Vault'),
                 ),
               ],

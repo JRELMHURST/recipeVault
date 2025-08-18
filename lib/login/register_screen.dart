@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:recipe_vault/widgets/loading_overlay.dart';
-import 'package:recipe_vault/firebase_auth_service.dart';
+import 'package:recipe_vault/auth_service.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';

@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:recipe_vault/firebase_auth_service.dart'; // AuthService
+import 'package:recipe_vault/auth_service.dart'; // AuthService
 import 'package:recipe_vault/rev_cat/purchase_helper.dart';
 import 'package:recipe_vault/rev_cat/tier_utils.dart';
 import 'package:recipe_vault/screens/recipe_vault/vault_recipe_service.dart';

@@ -1,4 +1,5 @@
 // RecipeVaultScreen.dart
+// ignore_for_file: use_build_context_synchronously
 
 import 'dart:async';
 
@@ -21,17 +22,23 @@ import 'package:recipe_vault/screens/recipe_vault/recipe_search_bar.dart';
 import 'package:recipe_vault/services/category_service.dart';
 import 'package:recipe_vault/services/hive_recipe_service.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
-import 'package:recipe_vault/services/user_preference_service.dart';
+
+// ✅ Import prefs as a namespace so we can access both the service and PrefsViewMode
+import 'package:recipe_vault/services/user_preference_service.dart' as prefs;
+
 import 'package:recipe_vault/widgets/empty_vault_placeholder.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 
-// ⚠️ Alias each view to avoid ambiguous symbols.
+// Views (aliased)
 import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart'
     as list_view;
 import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart'
     as grid_view;
 import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart'
     as compact_view;
+
+// Shared view-mode notifier used by the AppBar toggle
+import 'package:recipe_vault/screens/recipe_vault/vault_view_mode_notifier.dart';
 
 class RecipeVaultScreen extends StatefulWidget {
   /// Optional starting view mode (router can override); otherwise we pull from prefs.
@@ -47,9 +54,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   late final CollectionReference<Map<String, dynamic>> recipeCollection;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
   _recipeStreamSubscription;
-
-  // Source of truth for this widget
-  late ViewMode _viewMode;
 
   // Internal category keys
   static const String kAll = 'All';
@@ -70,12 +74,11 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
     kDessert,
   ];
 
-  // Start minimal; loaders will populate the rest.
   List<String> _allCategories = const [kAll];
   List<RecipeCardModel> _allRecipes = [];
 
-  // FAB key (optional future use)
   final GlobalKey _keyFab = GlobalKey();
+  bool _initializedViewModeFromRoute = false;
 
   // ---------- Filtering ----------
 
@@ -101,7 +104,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       case kFav:
         return t.favourites;
       case kTranslated:
-        return t.systemTranslated; // ← keep consistent with chip bar
+        return t.systemTranslated;
       case kBreakfast:
         return t.defaultBreakfast;
       case kMain:
@@ -129,15 +132,23 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   void initState() {
     super.initState();
 
-    // Start with router override or a sane default.
-    _viewMode = widget.viewMode ?? ViewMode.grid;
-
-    // Then load the saved preference (non-blocking).
+    // Load view mode into the shared notifier (route override > prefs)
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final saved = await UserPreferencesService.getSavedViewMode();
-      if (mounted && widget.viewMode == null && _viewMode != saved) {
-        setState(() => _viewMode = saved);
+      final notifier = context.read<VaultViewModeNotifier>();
+
+      if (!_initializedViewModeFromRoute &&
+          widget.viewMode != null &&
+          mounted) {
+        notifier.set(
+          widget.viewMode!,
+        ); // one-time set from the route-provided UI ViewMode
+        _initializedViewModeFromRoute = true;
+      } else if (widget.viewMode == null) {
+        // Load from prefs (PrefsViewMode) and convert to UI ViewMode
+        final saved = await prefs.UserPreferencesService.getSavedViewMode();
+        if (mounted) notifier.set(_fromPrefs(saved));
       }
+
       await _initVault();
     });
   }
@@ -146,6 +157,19 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
   void dispose() {
     _recipeStreamSubscription?.cancel();
     super.dispose();
+  }
+
+  // ---------- Prefs <-> UI enum bridge ----------
+
+  ViewMode _fromPrefs(prefs.PrefsViewMode m) {
+    switch (m) {
+      case prefs.PrefsViewMode.list:
+        return ViewMode.list;
+      case prefs.PrefsViewMode.grid:
+        return ViewMode.grid;
+      case prefs.PrefsViewMode.compact:
+        return ViewMode.compact;
+    }
   }
 
   // ---------- Mutations ----------
@@ -222,7 +246,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       await showDialog(
         context: context,
         barrierDismissible: true,
-        builder: (_) => Dialog(
+        builder: (dialogCtx) => Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
@@ -245,24 +269,16 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  loc.createFromImagesPaid,
-                  style: const TextStyle(fontSize: 15),
-                  textAlign: TextAlign.center,
-                ),
+                Text(loc.createFromImagesPaid, textAlign: TextAlign.center),
                 const SizedBox(height: 8),
-                Text(
-                  loc.upgradeToUnlockBody,
-                  style: const TextStyle(fontSize: 14, color: Colors.black54),
-                  textAlign: TextAlign.center,
-                ),
+                Text(loc.upgradeToUnlockBody, textAlign: TextAlign.center),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context);
-                      context.go('/paywall');
+                      Navigator.of(dialogCtx).pop(); // close dialog only
+                      context.push('/paywall'); // then navigate
                     },
                     child: Text(
                       loc.seePlanOptions,
@@ -274,7 +290,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.of(dialogCtx).pop(),
                   child: Text(loc.cancel),
                 ),
               ],
@@ -306,6 +322,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
         .doc(userId)
         .collection('recipes');
 
+    // tiny delay so listeners/widgets settle
     await Future.delayed(const Duration(milliseconds: 100));
 
     await Future.wait([
@@ -324,7 +341,6 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
             final userRecipes = snapshot.docs
                 .map((doc) => RecipeCardModel.fromJson(doc.data()))
                 .toList();
-
             final localRecipes = await HiveRecipeService.getAll();
 
             final Map<String, RecipeCardModel> mergedMap = {
@@ -381,8 +397,11 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final scale = Provider.of<TextScaleNotifier>(context).scaleFactor;
+    final scale = context.watch<TextScaleNotifier>().scaleFactor;
     final t = AppLocalizations.of(context);
+
+    // Single source of truth for the view mode
+    final viewMode = context.watch<VaultViewModeNotifier>().mode;
 
     final displayedCategories = _allCategories
         .map((c) => _labelFor(c, t))
@@ -441,7 +460,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                     : AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         child: ResponsiveWrapper(
-                          child: switch (_viewMode) {
+                          child: switch (viewMode) {
                             ViewMode.list => list_view.RecipeListView(
                               recipes: _filteredRecipes,
                               onDelete: _deleteRecipe,
@@ -482,12 +501,11 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
       floatingActionButton: Builder(
         key: _keyFab,
         builder: (context) {
-          final subService = Provider.of<SubscriptionService>(context);
+          final subService = context.watch<SubscriptionService>();
           final count = _allCategories
               .where((c) => !_defaultCategories.contains(c) && c != kAll)
               .length;
 
-          // Limit category creation if desired for certain tiers.
           final allow =
               subService.allowCategoryCreation ||
               (subService.isHomeChef && count < 3);

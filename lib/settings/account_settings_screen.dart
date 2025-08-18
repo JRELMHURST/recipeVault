@@ -199,19 +199,19 @@ class AccountSettingsScreen extends StatelessWidget {
     final t = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(t.signOutQuestion),
         content: Text(t.signOutConfirmBody),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(t.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             child: Text(t.signOut),
           ),
         ],
@@ -219,6 +219,7 @@ class AccountSettingsScreen extends StatelessWidget {
     );
 
     if (confirm == true) {
+      // Loading overlay (attached to screen context; pop with same)
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -230,14 +231,14 @@ class AccountSettingsScreen extends StatelessWidget {
         await FirebaseAuth.instance.signOut();
 
         if (context.mounted) {
-          Navigator.pop(context); // dismiss loading
+          Navigator.of(context).pop(); // dismiss loading
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(t.signedOut)));
-          context.go('/login'); // ⬅️ replace pushNamedAndRemoveUntil
+          context.go('/login');
         }
       } catch (e) {
-        Navigator.pop(context);
+        Navigator.of(context).pop(); // dismiss loading
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
@@ -251,19 +252,19 @@ class AccountSettingsScreen extends StatelessWidget {
     final t = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(t.deleteAccountQuestion),
         content: Text(t.deleteAccountBody),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(t.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             child: Text(t.deleteAccount),
           ),
         ],
@@ -271,6 +272,7 @@ class AccountSettingsScreen extends StatelessWidget {
     );
 
     if (confirm == true) {
+      // Loading overlay (attached to screen context; pop with same)
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -299,14 +301,14 @@ class AccountSettingsScreen extends StatelessWidget {
         }
 
         if (context.mounted) {
-          Navigator.pop(context); // dismiss loading
+          Navigator.of(context).pop(); // dismiss loading
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(t.deleteAccountSuccess)));
-          context.go('/login'); // ⬅️ replace pushNamedAndRemoveUntil
+          context.go('/login');
         }
       } catch (e) {
-        Navigator.pop(context);
+        Navigator.of(context).pop(); // dismiss loading
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
@@ -324,7 +326,7 @@ class AccountSettingsScreen extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) {
+      builder: (sheetContext) {
         final current = provider.selected;
 
         // 🔧 Convert the Set to a sorted List for stable UI & index access
@@ -354,7 +356,7 @@ class AccountSettingsScreen extends StatelessWidget {
                 title: Text(label),
                 onTap: () async {
                   await provider.setSelected(key);
-                  Navigator.pop(context);
+                  Navigator.of(sheetContext).pop(); // ✅ close just the sheet
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Recipe language set to $label')),
                   );

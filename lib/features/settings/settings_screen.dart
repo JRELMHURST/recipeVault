@@ -270,10 +270,14 @@ class SettingsScreen extends StatelessWidget {
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
         if (isPaywall) {
-          // Explicitly mark as manage flow
-          context.go('${AppRoutes.paywall}?manage=1');
+          // Explicit manage flow → keep .go (your Paywall back button already falls back to Settings)
+          final loc = Uri(
+            path: AppRoutes.paywall,
+            queryParameters: {'manage': '1'},
+          ).toString();
+          context.go(loc);
         } else {
-          // Push settings subpages on top of the shell
+          // Subpages stack on top of the shell
           context.push(route);
         }
       },

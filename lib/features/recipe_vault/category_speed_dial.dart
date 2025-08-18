@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:recipe_vault/l10n/app_localizations.dart';
@@ -11,6 +10,10 @@ import 'package:recipe_vault/data/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:recipe_vault/features/home/usage_metrics_widget.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
+
+// ✅ Central routes + safe nav helpers
+import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class CategorySpeedDial extends StatefulWidget {
   final VoidCallback onCategoryChanged;
@@ -57,7 +60,7 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
                 widget.onCategoryChanged();
               }
               if (!mounted) return;
-              // ✅ Again, use dialogContext here
+              // ✅ Close the dialog
               Navigator.of(dialogContext).pop();
             },
             child: Text(l.add),
@@ -76,8 +79,8 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l.recipeCreationLimited)));
-      // Nudge to paywall
-      context.push('/paywall');
+      // Nudge to paywall safely (post-frame)
+      safeGo(context, AppRoutes.paywall);
       return;
     }
 
@@ -86,7 +89,7 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l.upgradeToCreateRecipe)));
-      context.push('/paywall');
+      safeGo(context, AppRoutes.paywall);
       return;
     }
 
@@ -143,7 +146,7 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(l.categoryCreationLimited)),
                   );
-                  context.push('/paywall');
+                  safeGo(context, AppRoutes.paywall);
                 },
         ),
         SpeedDialChild(

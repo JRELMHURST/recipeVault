@@ -2,9 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
-import 'package:provider/provider.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:recipe_vault/navigation/routes.dart';
@@ -46,8 +47,13 @@ Future<void> handleCreateAction(BuildContext context) async {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.of(dialogCtx).pop(); // close dialog
-                    context.push(AppRoutes.paywall); // then navigate
+                    Navigator.of(dialogCtx).pop(); // close dialog only
+                    // Schedule navigation after the dialog is fully closed.
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (context.mounted) {
+                        context.push(AppRoutes.paywall);
+                      }
+                    });
                   },
                   child: Text(loc.seePlanOptions),
                 ),
@@ -66,10 +72,15 @@ Future<void> handleCreateAction(BuildContext context) async {
 
   // Paid: proceed to pick & process images.
   final files = await ImageProcessingService.pickAndCompressImages();
-  if (files.isNotEmpty && context.mounted) {
-    ProcessingOverlay.show(context, files);
-  }
+  if (!context.mounted) return;
 
-  // After create action, keep user on Vault
-  if (context.mounted) context.go(AppRoutes.vault);
+  if (files.isNotEmpty) {
+    ProcessingOverlay.show(context, files);
+    // Only route to Vault if we aren't already there.
+    final current = GoRouterState.of(context).matchedLocation;
+    if (current != AppRoutes.vault) {
+      context.go(AppRoutes.vault);
+    }
+  }
+  // If files are empty (user cancelled), stay on the current screen.
 }

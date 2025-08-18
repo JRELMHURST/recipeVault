@@ -34,7 +34,7 @@ class RecipeLongPressMenu {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
-    // ✅ Keep a reference to the *outer* context for navigation after closing the sheet.
+    // Keep a reference to the *outer* context for navigation after closing the sheet.
     final rootContext = context;
 
     // Treat these as "system chips" and hide them from assignment.
@@ -237,9 +237,9 @@ class RecipeLongPressMenu {
                                   style: const TextStyle(fontSize: 13),
                                 ),
                                 onPressed: () {
-                                  // ✅ Close ONLY the sheet
+                                  // Close ONLY the sheet
                                   Navigator.of(sheetContext).pop();
-                                  // ✅ Then perform the action
+                                  // Then perform the action
                                   onAddOrUpdateImage();
                                 },
                                 style: OutlinedButton.styleFrom(
@@ -268,11 +268,17 @@ class RecipeLongPressMenu {
                                   style: const TextStyle(fontSize: 13),
                                 ),
                                 onPressed: () async {
-                                  // ✅ Close ONLY the sheet
+                                  // Close ONLY the sheet
                                   Navigator.of(sheetContext).pop();
-                                  // ✅ Push AFTER closing, using the root context
-                                  await Future.microtask(() async {
-                                    await Navigator.of(rootContext).push(
+
+                                  // Push AFTER closing, on the root navigator, next frame.
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
+                                    Navigator.of(
+                                      rootContext,
+                                      rootNavigator: true,
+                                    ).push(
                                       MaterialPageRoute(
                                         builder: (_) =>
                                             EditRecipeScreen(recipe: recipe),
@@ -308,7 +314,7 @@ class RecipeLongPressMenu {
                             ),
                             onPressed: () async {
                               final confirmed = await showDialog<bool>(
-                                // ✅ Use the sheet context so the dialog sits above the sheet
+                                // Use the sheet context so the dialog sits above the sheet
                                 context: sheetContext,
                                 builder: (dialogCtx) => Dialog(
                                   shape: RoundedRectangleBorder(
@@ -354,7 +360,7 @@ class RecipeLongPressMenu {
                                               child: OutlinedButton(
                                                 onPressed: () => Navigator.of(
                                                   dialogCtx,
-                                                ).pop(false), // ✅ close dialog
+                                                ).pop(false),
                                                 style: OutlinedButton.styleFrom(
                                                   foregroundColor:
                                                       theme.colorScheme.primary,
@@ -373,7 +379,7 @@ class RecipeLongPressMenu {
                                               child: ElevatedButton(
                                                 onPressed: () => Navigator.of(
                                                   dialogCtx,
-                                                ).pop(true), // ✅ close dialog
+                                                ).pop(true),
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor:
                                                       Colors.redAccent,
@@ -397,7 +403,7 @@ class RecipeLongPressMenu {
                               );
 
                               if (confirmed == true) {
-                                // ✅ Close the sheet first, then run the deletion
+                                // Close the sheet first, then run the deletion
                                 Navigator.of(sheetContext).pop();
                                 onDelete();
                               }

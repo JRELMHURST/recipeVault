@@ -14,6 +14,8 @@ import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/navigation/routes.dart';
+// ✅ Safe navigation helpers (post-frame)
+import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -58,7 +60,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       if (!_isManaging &&
           _subscriptionService.hasActiveSubscription &&
           mounted) {
-        _redirectHome();
+        _redirectHome(); // now uses safeGo()
       }
     };
     _subscriptionService.tierNotifier.addListener(_tierListener!);
@@ -75,7 +77,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
   Future<void> _loadSubscriptionData() async {
     await _subscriptionService.init();
     try {
-      // offerings
       final offerings = await Purchases.getOfferings();
 
       // 🔎 also fetch current active product ids for highlighting
@@ -86,8 +87,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
           if (e.productIdentifier.isNotEmpty) e.productIdentifier.toLowerCase(),
       };
 
-      final productId =
-          _subscriptionService.productId; // may be "master_chef" / "home_chef"
+      final productId = _subscriptionService.productId;
 
       final packages = <Package>[];
       final seen = <String>{};
@@ -128,8 +128,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   // ✅ Lenient “current package” detection:
-  // 1) exact/contains match against RC active product ids
-  // 2) fallback: match SubscriptionService.productId ("home_chef"/"master_chef") by keyword
   bool _isPackageCurrent(Package pkg, String productId) {
     final pid = pkg.storeProduct.identifier.toLowerCase();
 
@@ -168,7 +166,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
           info.entitlements.active.isNotEmpty ||
           _subscriptionService.hasActiveSubscription;
 
-      if (hasEntitlement) _redirectHome();
+      if (hasEntitlement) _redirectHome(); // safeGo()
     } on PlatformException {
       if (!mounted) return;
       LoadingOverlay.hide(); // user cancelled
@@ -181,7 +179,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   void _redirectHome() {
-    context.go(AppRoutes.vault);
+    // 🛟 Avoid “setState during build” by deferring with safeGo()
+    safeGo(context, AppRoutes.vault);
   }
 
   @override
@@ -197,9 +196,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () async {
-                  final popped = await Navigator.of(context).maybePop();
-                  if (!popped && mounted) {
-                    context.go(AppRoutes.settings);
+                  if (context.canPop()) {
+                    safePop(context);
+                  } else {
+                    safeGo(context, AppRoutes.settings);
                   }
                 },
               )
@@ -249,13 +249,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     const SizedBox(height: 24),
                     ..._availablePackages.map((pkg) {
                       final isCurrent = _isPackageCurrent(pkg, productId);
-
                       final isYearly =
                           (pkg.storeProduct.subscriptionPeriod ?? '')
                               .toUpperCase() ==
                           'P1Y';
 
-                      // Only "Current plan" and "Best value" badges.
                       final String? badge = isCurrent
                           ? loc.badgeCurrentPlan
                           : (isYearly ? loc.badgeBestValue : null);

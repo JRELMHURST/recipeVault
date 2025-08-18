@@ -7,6 +7,7 @@ import 'package:recipe_vault/features/home/home_app_bar.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_view_mode_notifier.dart';
 import 'package:recipe_vault/navigation/routes.dart';
 import 'package:recipe_vault/navigation/create_action.dart';
+import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class NavShell extends StatelessWidget {
   const NavShell({super.key, required this.child});
@@ -57,10 +58,14 @@ class NavShell extends StatelessWidget {
               await handleCreateAction(context);
               break;
             case 1:
-              context.go(AppRoutes.vault);
+              if (location != AppRoutes.vault) {
+                safeGo(context, AppRoutes.vault);
+              }
               break;
             case 2:
-              context.go(AppRoutes.settings);
+              if (!isSettings) {
+                safeGo(context, AppRoutes.settings);
+              }
               break;
           }
         },

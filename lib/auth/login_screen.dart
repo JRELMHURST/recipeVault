@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:recipe_vault/auth/auth_service.dart';
@@ -9,6 +8,10 @@ import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_recipe_service.dart';
+
+// ✅ Centralised routes + safe navigation helpers
+import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,13 +42,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _safeGo(String route) async {
-    FocusManager.instance.primaryFocus?.unfocus();
-    await Future.delayed(const Duration(milliseconds: 50));
-    if (!mounted) return;
-    context.go(route); // go_router replacement for pushReplacementNamed
-  }
-
   Future<void> _signInWithEmail() async {
     FocusScope.of(context).unfocus();
     LoadingOverlay.show(context);
@@ -54,11 +50,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final password = passwordController.text.trim();
 
       await AuthService().signInWithEmail(email, password);
-
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      await _safeGo('/home'); // router will redirect if needed
+      // Let redirects decide, but point at vault
+      safeGo(context, AppRoutes.vault);
     } catch (e) {
       if (!mounted) return;
       _showError(_friendlyAuthError(e));
@@ -80,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      await _safeGo('/home'); // router will redirect if needed
+      safeGo(context, AppRoutes.vault);
     } catch (e) {
       if (!mounted) return;
       _showError(_friendlyAuthError(e));
@@ -102,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      await _safeGo('/home'); // router will redirect if needed
+      safeGo(context, AppRoutes.vault);
     } catch (e) {
       if (!mounted) return;
       _showError(_friendlyAuthError(e));
@@ -128,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return loc.unknownError;
   }
 
-  void _goToRegister() => _safeGo('/register');
+  void _goToRegister() => safeGo(context, AppRoutes.register);
 
   @override
   Widget build(BuildContext context) {

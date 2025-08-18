@@ -28,6 +28,7 @@ import 'package:recipe_vault/auth/register_screen.dart';
 // Notifiers required by appearance settings
 import 'package:recipe_vault/core/theme_notifier.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
+import 'package:recipe_vault/navigation/nav_utils.dart';
 
 // Navigation helpers
 import 'package:recipe_vault/navigation/routes.dart';
@@ -200,7 +201,7 @@ GoRouter buildAppRouter(AccessController access) {
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: () => context.go(AppRoutes.vault),
+                  onPressed: () => safeGo(context, AppRoutes.vault),
                   child: const Text('Go to Vault'),
                 ),
               ],

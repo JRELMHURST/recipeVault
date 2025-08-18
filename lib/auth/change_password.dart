@@ -1,11 +1,12 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
+import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -43,7 +44,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         return l10n.passwordMinLength;
       case 'requires-recent-login':
         return l10n
-            .error; // or a dedicated string like "Please reauthenticate and try again."
+            .error; // or a dedicated string like “Please reauthenticate…”
       case 'network-request-failed':
         return l10n.networkError;
       default:
@@ -64,8 +65,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final l10n = AppLocalizations.of(context);
 
     if (user == null) {
-      // Not signed in anymore; bounce to login.
-      context.go('/login');
+      // Not signed in anymore; bounce to login via safe helper.
+      safeGo(context, AppRoutes.login);
       return;
     }
 
@@ -82,7 +83,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.passwordUpdated)));
-      context.pop(); // go_router-safe back
+      // Use safe pop so we don't mutate router state mid-build.
+      safePop(context);
     } on FirebaseAuthException catch (e) {
       setState(() => _errorMessage = _friendlyError(e, l10n));
     } catch (_) {
@@ -100,10 +102,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
     // If somehow reached while signed out, guard here too.
     if (user == null) {
-      // Immediate redirect keeps UI consistent.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.go('/login');
-      });
+      // Immediate safe redirect keeps UI consistent.
+      safeGo(context, AppRoutes.login);
       return const SizedBox.shrink();
     }
 

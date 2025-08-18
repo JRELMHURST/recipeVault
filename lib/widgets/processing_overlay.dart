@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_messages.dart';
+import 'package:recipe_vault/navigation/routes.dart'; // 👈 use route constants
 
 class ProcessingOverlay {
   static OverlayEntry? _currentOverlay;
@@ -164,10 +165,15 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (!mounted) return;
+
+      // Close overlay first…
       ProcessingOverlay.hide();
 
-      // go_router navigation (aligned with app-wide router usage)
-      context.push('/results', extra: result);
+      // …then navigate on the next frame using route constants
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.push(AppRoutes.results, extra: result);
+      });
     } catch (e, st) {
       debugPrint('❌ Processing failed: $e\n$st');
 

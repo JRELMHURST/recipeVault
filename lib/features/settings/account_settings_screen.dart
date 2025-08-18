@@ -11,9 +11,13 @@ import 'package:recipe_vault/data/services/user_session_service.dart';
 import 'package:hive/hive.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 
-// 👇 Add these
+// Providers
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/core/language_provider.dart';
+
+// 🚦 routes + safe nav helpers
+import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
@@ -116,9 +120,8 @@ class AccountSettingsScreen extends StatelessWidget {
                               Icons.arrow_forward_ios_rounded,
                               size: 16,
                             ),
-                            onTap: () => context.push(
-                              '/settings/account/change-password',
-                            ),
+                            onTap: () =>
+                                context.push(AppRoutes.settingsChangePassword),
                           ),
                           ListTile(
                             leading: const Icon(Icons.logout),
@@ -235,7 +238,8 @@ class AccountSettingsScreen extends StatelessWidget {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(t.signedOut)));
-          context.go('/login');
+          // 🔒 Route via safeGo to avoid router build-phase issues
+          safeGo(context, AppRoutes.login);
         }
       } catch (e) {
         Navigator.of(context).pop(); // dismiss loading
@@ -305,7 +309,8 @@ class AccountSettingsScreen extends StatelessWidget {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(t.deleteAccountSuccess)));
-          context.go('/login');
+          // 🔒 Route via safeGo after destructive flow
+          safeGo(context, AppRoutes.login);
         }
       } catch (e) {
         Navigator.of(context).pop(); // dismiss loading
@@ -329,7 +334,7 @@ class AccountSettingsScreen extends StatelessWidget {
       builder: (sheetContext) {
         final current = provider.selected;
 
-        // 🔧 Convert the Set to a sorted List for stable UI & index access
+        // Stable, sorted list for UI
         final items = LanguageProvider.supported.toList()
           ..sort((a, b) {
             final la = LanguageProvider.displayNames[a] ?? a;
@@ -356,7 +361,7 @@ class AccountSettingsScreen extends StatelessWidget {
                 title: Text(label),
                 onTap: () async {
                   await provider.setSelected(key);
-                  Navigator.of(sheetContext).pop(); // ✅ close just the sheet
+                  Navigator.of(sheetContext).pop(); // close just the sheet
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Recipe language set to $label')),
                   );

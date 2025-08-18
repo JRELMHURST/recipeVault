@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import 'package:recipe_vault/billing/subscription_service.dart';
@@ -15,11 +14,16 @@ import 'package:recipe_vault/widgets/processing_overlay.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 // ✅ Prefs service (has PrefsViewMode)
-import 'package:recipe_vault/data/services/user_preference_service.dart' as prefs;
+import 'package:recipe_vault/data/services/user_preference_service.dart'
+    as prefs;
 
 // ✅ UI enum (ViewMode) used by screens/widgets
 import 'package:recipe_vault/features/recipe_vault/vault_view_mode_notifier.dart'
     show ViewMode;
+
+// ✅ Central routes + safe nav helpers
+import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -111,7 +115,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.of(dialogContext).pop(); // close dialog only
-                        context.push('/paywall'); // then navigate
+                        // 🔐 Safe, post-frame navigation to paywall
+                        safeGo(context, AppRoutes.paywall);
                       },
                       child: Text(loc.seePlanOptions),
                     ),

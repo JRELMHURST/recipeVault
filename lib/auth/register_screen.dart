@@ -2,13 +2,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/auth/auth_service.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
+
+// ✅ Centralised routes + safe navigation
+import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -21,13 +24,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
-
-  Future<void> _safeGo(String route) async {
-    FocusManager.instance.primaryFocus?.unfocus();
-    await Future.delayed(const Duration(milliseconds: 50));
-    if (!mounted) return;
-    context.go(route);
-  }
 
   @override
   void dispose() {
@@ -56,7 +52,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      await _safeGo('/home'); // router will redirect to paywall if needed
+      // Route to vault; redirect logic will handle paywall if needed
+      safeGo(context, AppRoutes.vault);
     } catch (e) {
       _showError('${loc.registrationFailed}: $e');
     } finally {
@@ -78,7 +75,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      await _safeGo('/home');
+      safeGo(context, AppRoutes.vault);
     } catch (e) {
       _showError('${loc.googleSignupFailed}: $e');
     } finally {
@@ -100,7 +97,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      await _safeGo('/home');
+      safeGo(context, AppRoutes.vault);
     } catch (e) {
       _showError('${loc.appleSignupFailed}: $e');
     } finally {
@@ -108,7 +105,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  void _goToLogin() => _safeGo('/login');
+  void _goToLogin() => safeGo(context, AppRoutes.login);
 
   void _showError(String message) {
     if (!mounted) return;

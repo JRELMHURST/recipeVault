@@ -14,6 +14,7 @@ import 'package:recipe_vault/billing/subscription_service.dart';
 import 'package:recipe_vault/data/services/hive_recipe_service.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
 import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/navigation/nav_utils.dart'; // ← add this
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
 import 'package:recipe_vault/widgets/recipe_image_header.dart';
@@ -148,9 +149,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(t.recipeSaved)));
 
-      // Navigate to Vault with overlay still visible,
-      // then hide overlay on the next frame of the destination.
-      context.go(AppRoutes.vault);
+      // Navigate using safeGo (next frame) and then hide overlay in that frame.
+      safeGo(context, AppRoutes.vault);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         LoadingOverlay.hide();
       });
@@ -220,7 +220,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               label: Text(
                 _isSaving ? t.editRecipeSaving : t.saveToVault,
                 style: const TextStyle(
-                  color: Colors.white, // ✅ Force white text
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -291,7 +291,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                               );
 
                           if (!subscriptionService.allowImageUpload) {
-                            context.push('/paywall');
+                            context.push(AppRoutes.paywall);
                             return '';
                           }
 

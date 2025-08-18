@@ -40,7 +40,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   void _attachTierListener() {
-    // ✅ As soon as a real entitlement is active, leave the paywall.
+    // Leave the paywall as soon as a valid entitlement is active.
     _tierListener = () {
       if (_subscriptionService.hasActiveSubscription && mounted) {
         _redirectHome();
@@ -66,7 +66,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       final packages = <Package>[];
       final seen = <String>{};
 
-      // De-dup across all offerings
+      // De-dup across all offerings.
       offerings.all.forEach((_, offering) {
         for (final pkg in offering.availablePackages) {
           final id = pkg.storeProduct.identifier;
@@ -127,10 +127,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
           info.entitlements.active.isNotEmpty ||
           _subscriptionService.hasActiveSubscription;
 
-      if (hasEntitlement) _redirectHome(); // go_router
+      if (hasEntitlement) _redirectHome();
     } on PlatformException {
       if (!mounted) return;
-      LoadingOverlay.hide(); // silent cancel
+      LoadingOverlay.hide(); // user cancelled
     } catch (_) {
       if (!mounted) return;
       LoadingOverlay.hide(); // silent errors
@@ -140,7 +140,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   void _redirectHome() {
-    // ✅ Your canonical "home" route is /vault
+    // Canonical app home
     context.go('/vault');
   }
 
@@ -165,7 +165,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             margin: const EdgeInsets.fromLTRB(24, 12, 24, 0),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.05),
+              color: theme.colorScheme.primary.withOpacity(0.05),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
@@ -199,9 +199,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                 .toUpperCase() ==
                             'P1Y';
 
-                        // Badges: keep “Current plan” and “Best value”.
-                        // (Nothing referencing the word "free" here.)
-                        final badge = isCurrent
+                        // Only "Current plan" and "Best value" badges.
+                        final String? badge = isCurrent
                             ? loc.badgeCurrentPlan
                             : (isYearly ? loc.badgeBestValue : null);
 
@@ -215,8 +214,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                               }
                             },
                             isDisabled: isCurrent,
-                            // If your PricingCard requires a String, use '' when null:
-                            badge: badge ?? '',
+                            badge:
+                                badge, // pass null when none -> no green blob
                           ),
                         );
                       }),

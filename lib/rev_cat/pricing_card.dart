@@ -39,11 +39,19 @@ class PricingCard extends StatelessWidget {
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(16));
     final cardElevation = theme.cardTheme.elevation ?? 2;
 
+    // --- Badge normalization & selection ---
+    // Treat empty/whitespace badge values as "no badge"
+    final normalizedBadge = (badge != null && badge!.trim().isNotEmpty)
+        ? badge!.trim()
+        : null;
+
     final effectiveBadge =
-        badge ??
+        normalizedBadge ??
         (hasFreeTrial
             ? loc.badgeFreeTrial
             : (isAnnual ? loc.badgeBestValue : null));
+
+    final hasBadge = effectiveBadge != null && effectiveBadge.trim().isNotEmpty;
 
     return Opacity(
       opacity: isDisabled ? 0.6 : 1.0,
@@ -97,7 +105,8 @@ class PricingCard extends StatelessWidget {
                     ),
                   ),
 
-                  if (isAnnual && effectiveBadge == null)
+                  // Inline hint if annual and no separate badge shown
+                  if (isAnnual && !hasBadge)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
@@ -153,8 +162,8 @@ class PricingCard extends StatelessWidget {
             ),
           ),
 
-          // Badge (free trial / current / best value)
-          if (effectiveBadge != null)
+          // Badge (free trial / current / best value) — only if non-empty
+          if (hasBadge)
             Positioned(
               top: -12,
               left: 0,
@@ -179,7 +188,7 @@ class PricingCard extends StatelessWidget {
                     ],
                   ),
                   child: Text(
-                    effectiveBadge,
+                    effectiveBadge, // safe due to hasBadge
                     style: theme.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -202,15 +211,13 @@ class PricingCard extends StatelessWidget {
   }
 
   bool _hasFreeTrial(StoreProduct p) {
-    // Prefer explicit introductory eligibility if available; otherwise heuristic:
-    // many monthly plans offer trial; annual typically not.
-    // storeProduct.introductoryPrice?.price == 0 can also be used if provided.
+    // Prefer explicit introductory details if available
     final intro = p.introductoryPrice;
     if (intro != null) {
-      // If there's an introductory price that is zero or has a free trial period.
       final hasFree = intro.price == 0 || (intro.period.isNotEmpty);
       return hasFree;
     }
+    // Heuristic: monthly plans often have trials
     final period = p.subscriptionPeriod?.toUpperCase() ?? '';
     return period == 'P1M' || period.endsWith('M');
   }

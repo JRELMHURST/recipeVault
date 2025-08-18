@@ -8,11 +8,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_messages.dart';
 import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/billing/subscription_service.dart';
 
 class ProcessingOverlay {
   static OverlayEntry? _currentOverlay;
@@ -88,7 +90,6 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     ];
 
     _inited = true;
-    // Kick off after we have a valid localised context
     _runFullFlow();
   }
 
@@ -105,20 +106,31 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('User not signed in.');
 
+      // 🔑 Resolve subscription via SubscriptionService
+      final sub = context.read<SubscriptionService>();
+      if (sub.tier == 'none') {
+        await sub.refresh(); // ensure fresh entitlement
+      }
+      debugPrint('📄 Resolved tier (live): ${sub.tier}');
+
+      // 🔄 Sync Firestore (optional, non-blocking)
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'tier': sub.tier,
+          'productId': sub.productId,
+          'lastLogin': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        debugPrint('⚠️ Failed to sync user tier before processing: $e');
+      }
+
       await _setStep(0);
       final imageUrls = await ImageProcessingService.uploadFiles(
         widget.imageFiles,
       );
       if (_hasCancelled) return;
 
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-      debugPrint(
-        '📄 User tier before extractAndFormatRecipe: ${userDoc.data()?['tier']}',
-      );
-
+      // 🧠 Process recipe
       final result = await ImageProcessingService.extractAndFormatRecipe(
         imageUrls,
         context,
@@ -148,7 +160,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
           ProcessingMessages.pickRandom(ProcessingMessages.formatting(context)),
           ProcessingMessages.pickRandom(ProcessingMessages.completed(context)),
         ];
-        setState(() {}); // refresh the UI with the additional step
+        setState(() {}); // refresh with extra step
       }
 
       if (needsTranslation) {
@@ -167,11 +179,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
       if (!mounted) return;
 
-      // Close overlay first…
       ProcessingOverlay.hide();
-
-      // …then navigate on the next frame using route constants.
-      // Also guard against a late cancel between hide() and this callback.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _hasCancelled) return;
         context.push(AppRoutes.results, extra: result);

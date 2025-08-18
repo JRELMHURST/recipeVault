@@ -19,10 +19,7 @@ class SubscriptionService extends ChangeNotifier {
   SubscriptionService._internal();
 
   // ── Public state/notifiers ────────────────────────────────────────────────
-  final ValueNotifier<String> tierNotifier = ValueNotifier(
-    'none',
-  ); // 'none'|'home_chef'|'master_chef'
-
+  final ValueNotifier<String> tierNotifier = ValueNotifier('none');
   String _tier = 'none';
   String _entitlementId = 'none'; // RevenueCat productIdentifier or 'none'
   bool _hasSpecialAccess = false;
@@ -34,7 +31,7 @@ class SubscriptionService extends ChangeNotifier {
   CustomerInfo? _customerInfo;
   EntitlementInfo? _activeEntitlement;
 
-  // Cached packages (optional convenience)
+  // Cached packages
   Package? homeChefPackage;
   Package? masterChefMonthlyPackage;
   Package? masterChefYearlyPackage;
@@ -45,10 +42,11 @@ class SubscriptionService extends ChangeNotifier {
     'translationUsage': {},
   };
 
-  // ── Local cache (Hive) to keep plan across hot restarts ───────────────────
+  // ── Local cache (Hive) ────────────────────────────────────────────────────
   static String _prefsBoxName(String uid) => 'userPrefs_$uid';
   static const _kCachedTier = 'cachedTier';
   static const _kCachedStatus = 'cachedStatus';
+  static const _kCachedSpecial = 'cachedSpecialAccess';
 
   Future<void> _saveCache(
     String uid,
@@ -62,7 +60,7 @@ class SubscriptionService extends ChangeNotifier {
           : await Hive.openBox<dynamic>(boxName);
       await box.put(_kCachedTier, tier);
       await box.put(_kCachedStatus, active ? 'active' : 'inactive');
-      // debugPrint('💾 Cached tier=$tier, status=${active ? 'active' : 'inactive'}');
+      await box.put(_kCachedSpecial, _hasSpecialAccess);
     } catch (e) {
       debugPrint('⚠️ Failed to cache tier: $e');
     }
@@ -76,10 +74,15 @@ class SubscriptionService extends ChangeNotifier {
           : await Hive.openBox<dynamic>(boxName);
 
       final cachedTier = (box.get(_kCachedTier) as String?)?.trim();
+      final cachedSpecial = box.get(_kCachedSpecial) as bool?;
+
       if (cachedTier != null && cachedTier.isNotEmpty) {
         _tier = cachedTier;
         tierNotifier.value = _tier;
-        notifyListeners(); // show cached tier immediately
+        notifyListeners();
+      }
+      if (cachedSpecial != null) {
+        _hasSpecialAccess = cachedSpecial;
       }
     } catch (e) {
       debugPrint('⚠️ Failed to seed tier from cache: $e');
@@ -88,7 +91,7 @@ class SubscriptionService extends ChangeNotifier {
 
   // ── Getters ───────────────────────────────────────────────────────────────
   String get tier => _tier;
-  String get productId => _entitlementId; // normalized lower-case
+  String get productId => _entitlementId;
   bool get isLoaded => _customerInfo != null;
 
   bool get isHomeChef => _tier == 'home_chef';
@@ -104,11 +107,10 @@ class SubscriptionService extends ChangeNotifier {
   bool get hasSpecialAccess => _hasSpecialAccess;
 
   String get tierIcon {
-    if (_hasSpecialAccess) return '⭐'; // special flag only
-
+    if (_hasSpecialAccess) return '⭐'; // only here
     return switch (_tier) {
-      'master_chef' => '', // no emoji
-      'home_chef' => '', // no emoji
+      'master_chef' => '',
+      'home_chef' => '',
       'none' => '🚫',
       _ => '❓',
     };
@@ -138,7 +140,7 @@ class SubscriptionService extends ChangeNotifier {
 
   String get trialEndDateFormatted {
     final d = trialEndDate;
-    return d != null ? DateFormat('d/M/yyyy').format(d) : 'N/A'; // UK format
+    return d != null ? DateFormat('d/M/yyyy').format(d) : 'N/A';
   }
 
   bool get isInTrial {
@@ -169,17 +171,14 @@ class SubscriptionService extends ChangeNotifier {
     if (_isInitialising) return;
     _isInitialising = true;
     try {
-      // Seed tier from local cache immediately (keeps plan through hot restarts)
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await _seedFromCacheIfAny(user.uid);
       }
 
-      // Listen for RC push updates so we stay fresh after restores/purchases.
       Purchases.addCustomerInfoUpdateListener(_onCustomerInfo);
       await Purchases.invalidateCustomerInfoCache();
 
-      // Then do the usual online resolution (won’t wipe seeded tier)
       await loadSubscriptionStatus();
       await _loadAvailablePackages();
     } finally {
@@ -187,18 +186,15 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
-  /// Call this whenever Firebase auth changes (log in/out or switch user).
-  /// Keeps RC’s app user id aligned to Firebase UID.
   Future<void> setAppUserId(String? firebaseUid) async {
     try {
       if (firebaseUid == null) {
         await Purchases.logOut();
       } else {
-        // Seed new user's cached tier before network calls, for instant UI
         await _seedFromCacheIfAny(firebaseUid);
         await Purchases.logIn(firebaseUid);
       }
-      await refresh(); // pick up entitlements for new user
+      await refresh();
     } catch (e) {
       debugPrint('RevenueCat setAppUserId error: $e');
     }
@@ -243,7 +239,6 @@ class SubscriptionService extends ChangeNotifier {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      // New users sometimes need brief retries for RC provisioning.
       _customerInfo = await _getCustomerInfoWithRetry(
         preferRetry: _isBrandNewUser(user),
       );
@@ -260,7 +255,7 @@ class SubscriptionService extends ChangeNotifier {
       tierNotifier.value = _tier;
       _logTierOnce(source: 'loadSubscriptionStatus');
 
-      // Firestore overrides (admin/specialAccess)
+      // Firestore overrides
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -288,10 +283,8 @@ class SubscriptionService extends ChangeNotifier {
 
       await _loadUsageData(user.uid);
 
-      // Persist the resolved tier locally for hot restarts
       await _saveCache(user.uid, _tier, active: hasActiveSubscription);
 
-      // Keep onboarding flags consistent regardless of tier
       await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible();
 
       notifyListeners();
@@ -302,7 +295,7 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
-  // ── RevenueCat push updates → keep local state fresh ──────────────────────
+  // ── RevenueCat push updates ───────────────────────────────────────────────
   void _onCustomerInfo(CustomerInfo info) async {
     _customerInfo = info;
 
@@ -322,8 +315,6 @@ class SubscriptionService extends ChangeNotifier {
     if (changedTier) {
       tierNotifier.value = _tier;
       _logTierOnce(source: 'rc-listener');
-
-      // Also persist cache when RC pushes a change
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
         await _saveCache(uid, _tier, active: hasActiveSubscription);
@@ -361,7 +352,7 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
-  // ── RevenueCat package cache (optional) ───────────────────────────────────
+  // ── RevenueCat package cache ──────────────────────────────────────────────
   Future<void> _loadAvailablePackages() async {
     try {
       final offerings = await Purchases.getOfferings();
@@ -454,7 +445,7 @@ class SubscriptionService extends ChangeNotifier {
     return info;
   }
 
-  // ── Tier resolution API (used around the app) ─────────────────────────────
+  // ── Tier resolution API ───────────────────────────────────────────────────
   Future<String> getResolvedTier({bool forceRefresh = false}) async {
     if (!forceRefresh && _tier != 'none') return _tier;
 
@@ -474,20 +465,21 @@ class SubscriptionService extends ChangeNotifier {
                 'none')
             .toLowerCase();
 
-    // Firestore may carry an admin override
     final doc = await firestore.collection('users').doc(uid).get();
     final fsTier = (doc.data()?['tier'] as String?)?.trim() ?? 'none';
+    final special = doc.data()?['specialAccess'] == true;
 
+    _hasSpecialAccess = special;
     final resolved = fsTier != 'none' ? fsTier : rcTier;
     updateTier(resolved);
 
     await firestore.collection('users').doc(uid).set({
       'tier': resolved,
+      'specialAccess': _hasSpecialAccess,
       'productId': productId,
       'lastLogin': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    // Save local cache for hot restart
     await _saveCache(uid, resolved, active: resolved != 'none');
 
     return resolved;
@@ -509,15 +501,19 @@ class SubscriptionService extends ChangeNotifier {
                 'none')
             .toLowerCase();
 
-    debugPrint('📦 RevenueCat productId resolved: $productId');
-
     _tier = rcTier;
     _entitlementId = productId;
     _activeEntitlement = _getActiveEntitlement(entitlements, rcTier);
+
+    final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final doc = await docRef.get();
+    _hasSpecialAccess = doc.data()?['specialAccess'] == true;
+
     tierNotifier.value = _tier;
 
-    await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-      'tier': rcTier,
+    await docRef.set({
+      'tier': _tier,
+      'specialAccess': _hasSpecialAccess,
       'productId': productId,
       'lastLogin': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));

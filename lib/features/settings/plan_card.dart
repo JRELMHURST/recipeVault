@@ -1,3 +1,4 @@
+// lib/features/settings/plan_card.dart
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
@@ -18,16 +19,14 @@ class PlanCard extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-
         if (snapshot.hasError || !snapshot.hasData) {
           return Text(t.unknownError);
         }
 
-        // Default now is "none" instead of "free"
         final actualTier = snapshot.data ?? 'none';
         final productId = subscriptionService.productId;
+        final isSpecial = subscriptionService.hasSpecialAccess; // <— fixed
 
-        // Subtitle for Master Chef (Yearly/Monthly)
         String masterChefSubtitle = '';
         if (productId == 'master_chef_yearly') {
           masterChefSubtitle = ' (${t.planMasterChefSubtitleAnnual})';
@@ -35,14 +34,19 @@ class PlanCard extends StatelessWidget {
           masterChefSubtitle = ' (${t.planMasterChefSubtitleMonthly})';
         }
 
-        // Plan label
-        final label = switch (actualTier) {
-          'master_chef' => '👑 ${t.planMasterChef}$masterChefSubtitle',
-          'home_chef' => '👨‍🍳 ${t.planHomeChef}',
-          _ => '🔒 No active plan', // <-- no i18n key required
-        };
+        String label;
+        switch (actualTier) {
+          case 'master_chef':
+            label =
+                '${isSpecial ? "⭐ " : ""}${t.planMasterChef}$masterChefSubtitle';
+            break;
+          case 'home_chef':
+            label = '${isSpecial ? "⭐ " : ""}${t.planHomeChef}';
+            break;
+          default:
+            label = '🔒 No active plan';
+        }
 
-        // Description
         final description = switch (actualTier) {
           'master_chef' =>
             productId == 'master_chef_yearly'
@@ -55,7 +59,6 @@ class PlanCard extends StatelessWidget {
         final isTrial = subscriptionService.trialEndDate != null;
         final trialEnd = subscriptionService.trialEndDateFormatted;
 
-        // Benefits
         final List<String> benefits = switch (actualTier) {
           'master_chef' => [
             t.featureMasterChef1,

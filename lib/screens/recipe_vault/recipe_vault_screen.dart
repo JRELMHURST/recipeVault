@@ -1,35 +1,25 @@
-// RecipeVaultScreen.dart
+// lib/screens/recipe_vault/recipe_vault_screen.dart
 // ignore_for_file: use_build_context_synchronously
 
-import 'dart:async';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
-import 'package:recipe_vault/model/recipe_card_model.dart';
 import 'package:recipe_vault/rev_cat/subscription_service.dart';
-import 'package:recipe_vault/screens/recipe_vault/category_speed_dial.dart';
-import 'package:recipe_vault/screens/recipe_vault/recipe_chip_filter_bar.dart';
+
 import 'package:recipe_vault/screens/recipe_vault/recipe_dialog.dart';
 import 'package:recipe_vault/screens/recipe_vault/recipe_search_bar.dart';
-import 'package:recipe_vault/services/category_service.dart';
-import 'package:recipe_vault/services/hive_recipe_service.dart';
+import 'package:recipe_vault/screens/recipe_vault/category_speed_dial.dart';
+import 'package:recipe_vault/screens/recipe_vault/recipe_vault_controller.dart';
 import 'package:recipe_vault/services/image_processing_service.dart';
-
-// ✅ Import prefs as a namespace so we can access both the service and PrefsViewMode
-import 'package:recipe_vault/services/user_preference_service.dart' as prefs;
 
 import 'package:recipe_vault/widgets/empty_vault_placeholder.dart';
 import 'package:recipe_vault/widgets/processing_overlay.dart';
 
-// Views (aliased)
+// Views
 import 'package:recipe_vault/screens/recipe_vault/recipe_list_view.dart'
     as list_view;
 import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart'
@@ -37,376 +27,51 @@ import 'package:recipe_vault/screens/recipe_vault/recipe_grid_view.dart'
 import 'package:recipe_vault/screens/recipe_vault/recipe_compact_view.dart'
     as compact_view;
 
-// Shared view-mode notifier used by the AppBar toggle
+// View mode (for AppBar toggle)
 import 'package:recipe_vault/screens/recipe_vault/vault_view_mode_notifier.dart';
 
-class RecipeVaultScreen extends StatefulWidget {
-  /// Optional starting view mode (router can override); otherwise we pull from prefs.
-  final ViewMode? viewMode;
+// Category keys
+import 'package:recipe_vault/screens/recipe_vault/categories.dart';
+
+// Centralised filter row widget
+import 'package:recipe_vault/screens/recipe_vault/vault_filter.dart';
+
+class RecipeVaultScreen extends StatelessWidget {
+  final ViewMode? viewMode; // optional route override
   const RecipeVaultScreen({super.key, this.viewMode});
 
   @override
-  State<RecipeVaultScreen> createState() => _RecipeVaultScreenState();
+  Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    return ChangeNotifierProvider(
+      create: (_) =>
+          RecipeVaultController()
+            ..initialise(userId: uid, initialViewMode: viewMode),
+      child: const _VaultBody(),
+    );
+  }
 }
 
-class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
-  String? userId;
-  late final CollectionReference<Map<String, dynamic>> recipeCollection;
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
-  _recipeStreamSubscription;
-
-  // Internal category keys
-  static const String kAll = 'All';
-  static const String kFav = 'Favourites';
-  static const String kTranslated = 'Translated';
-  static const String kBreakfast = 'Breakfast';
-  static const String kMain = 'Main';
-  static const String kDessert = 'Dessert';
-
-  String _selectedCategory = kAll;
-  String _searchQuery = '';
-
-  static const List<String> _defaultCategories = [
-    kFav,
-    kTranslated,
-    kBreakfast,
-    kMain,
-    kDessert,
-  ];
-
-  List<String> _allCategories = const [kAll];
-  List<RecipeCardModel> _allRecipes = [];
-
-  final GlobalKey _keyFab = GlobalKey();
-  bool _initializedViewModeFromRoute = false;
-
-  // ---------- Filtering ----------
-
-  List<RecipeCardModel> get _filteredRecipes {
-    final q = _searchQuery.trim();
-    return _allRecipes.where((recipe) {
-      final matchesCategory =
-          _selectedCategory == kAll ||
-          (_selectedCategory == kFav && recipe.isFavourite) ||
-          recipe.categories.contains(_selectedCategory);
-
-      final matchesSearch = q.isEmpty || recipe.matchesQuery(q);
-      return matchesCategory && matchesSearch;
-    }).toList();
-  }
-
-  // ---------- Localisation helpers (keys <-> labels) ----------
-
-  String _labelFor(String key, AppLocalizations t) {
-    switch (key) {
-      case kAll:
-        return t.systemAll;
-      case kFav:
-        return t.favourites;
-      case kTranslated:
-        return t.systemTranslated;
-      case kBreakfast:
-        return t.defaultBreakfast;
-      case kMain:
-        return t.defaultMain;
-      case kDessert:
-        return t.defaultDessert;
-      default:
-        return key;
-    }
-  }
-
-  String _keyFor(String label, AppLocalizations t) {
-    if (label == t.systemAll) return kAll;
-    if (label == t.favourites) return kFav;
-    if (label == t.systemTranslated) return kTranslated;
-    if (label == t.defaultBreakfast) return kBreakfast;
-    if (label == t.defaultMain) return kMain;
-    if (label == t.defaultDessert) return kDessert;
-    return label;
-  }
-
-  // ---------- Lifecycle ----------
+class _VaultBody extends StatefulWidget {
+  const _VaultBody();
 
   @override
-  void initState() {
-    super.initState();
+  State<_VaultBody> createState() => _VaultBodyState();
+}
 
-    // Load view mode into the shared notifier (route override > prefs)
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final notifier = context.read<VaultViewModeNotifier>();
-
-      if (!_initializedViewModeFromRoute &&
-          widget.viewMode != null &&
-          mounted) {
-        notifier.set(
-          widget.viewMode!,
-        ); // one-time set from the route-provided UI ViewMode
-        _initializedViewModeFromRoute = true;
-      } else if (widget.viewMode == null) {
-        // Load from prefs (PrefsViewMode) and convert to UI ViewMode
-        final saved = await prefs.UserPreferencesService.getSavedViewMode();
-        if (mounted) notifier.set(_fromPrefs(saved));
-      }
-
-      await _initVault();
-    });
-  }
-
-  @override
-  void dispose() {
-    _recipeStreamSubscription?.cancel();
-    super.dispose();
-  }
-
-  // ---------- Prefs <-> UI enum bridge ----------
-
-  ViewMode _fromPrefs(prefs.PrefsViewMode m) {
-    switch (m) {
-      case prefs.PrefsViewMode.list:
-        return ViewMode.list;
-      case prefs.PrefsViewMode.grid:
-        return ViewMode.grid;
-      case prefs.PrefsViewMode.compact:
-        return ViewMode.compact;
-    }
-  }
-
-  // ---------- Mutations ----------
-
-  Future<void> _deleteRecipe(RecipeCardModel recipe) async {
-    setState(() => _allRecipes.removeWhere((r) => r.id == recipe.id));
-    await HiveRecipeService.delete(recipe.id);
-    await recipeCollection.doc(recipe.id).delete();
-    if (recipe.imageUrl?.isNotEmpty == true) {
-      final ref = FirebaseStorage.instance.refFromURL(recipe.imageUrl!);
-      await ref.delete().catchError((_) => null);
-    }
-  }
-
-  Future<void> _toggleFavourite(RecipeCardModel recipe) async {
-    final updated = recipe.copyWith(isFavourite: !recipe.isFavourite);
-    await HiveRecipeService.save(updated);
-    await recipeCollection
-        .doc(updated.id)
-        .set(updated.toJson(), SetOptions(merge: true));
-    setState(() {
-      final index = _allRecipes.indexWhere((r) => r.id == updated.id);
-      if (index != -1) _allRecipes[index] = updated;
-    });
-  }
-
-  Future<void> _assignCategories(
-    RecipeCardModel recipe,
-    List<String> categories,
-  ) async {
-    final updated = recipe.copyWith(categories: categories);
-    await HiveRecipeService.save(updated);
-    await recipeCollection
-        .doc(updated.id)
-        .set(updated.toJson(), SetOptions(merge: true));
-    setState(() {
-      final index = _allRecipes.indexWhere((r) => r.id == updated.id);
-      if (index != -1) _allRecipes[index] = updated;
-    });
-  }
-
-  Future<void> _addOrUpdateImage(RecipeCardModel recipe) async {
-    final newImageUrl = await ImageProcessingService.pickAndUploadSingleImage(
-      context: context,
-      recipeId: recipe.id,
-    );
-    if (newImageUrl == null) return;
-
-    final updated = recipe.copyWith(imageUrl: newImageUrl);
-    await HiveRecipeService.save(updated);
-    await recipeCollection
-        .doc(updated.id)
-        .set(updated.toJson(), SetOptions(merge: true));
-    setState(() {
-      final index = _allRecipes.indexWhere((r) => r.id == updated.id);
-      if (index != -1) _allRecipes[index] = updated;
-    });
-  }
-
-  void _removeCategory(String label) async {
-    final t = AppLocalizations.of(context);
-    final key = _keyFor(label, t);
-    await CategoryService.hideDefaultCategory(key);
-    await _loadCustomCategories();
-  }
-
-  // ---------- Create flow from empty state ----------
-
-  Future<void> _startCreateFlow() async {
-    final loc = AppLocalizations.of(context);
-    final sub = Provider.of<SubscriptionService>(context, listen: false);
-
-    if (!sub.allowImageUpload) {
-      await showDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (dialogCtx) => Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 40,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.lock_outline_rounded, size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  loc.upgradeToUnlockTitle,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(loc.createFromImagesPaid, textAlign: TextAlign.center),
-                const SizedBox(height: 8),
-                Text(loc.upgradeToUnlockBody, textAlign: TextAlign.center),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(dialogCtx).pop(); // close dialog only
-                      context.push('/paywall'); // then navigate
-                    },
-                    child: Text(
-                      loc.seePlanOptions,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(dialogCtx).pop(),
-                  child: Text(loc.cancel),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-      return;
-    }
-
-    final files = await ImageProcessingService.pickAndCompressImages();
-    if (!mounted || files.isEmpty) return;
-    ProcessingOverlay.show(context, files);
-  }
-
-  // ---------- Data/bootstrap ----------
-
-  Future<void> _initVault() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null || user.isAnonymous) {
-      debugPrint('⚠️ Skipped vault init – no signed-in user');
-      return;
-    }
-
-    userId = user.uid;
-
-    recipeCollection = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('recipes');
-
-    // tiny delay so listeners/widgets settle
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    await Future.wait([
-      _initializeDefaultCategories(),
-      _loadCustomCategories(),
-      Future(_startRecipeListener),
-    ]);
-  }
-
-  void _startRecipeListener() {
-    _recipeStreamSubscription = recipeCollection
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .listen((snapshot) async {
-          try {
-            final userRecipes = snapshot.docs
-                .map((doc) => RecipeCardModel.fromJson(doc.data()))
-                .toList();
-            final localRecipes = await HiveRecipeService.getAll();
-
-            final Map<String, RecipeCardModel> mergedMap = {
-              for (final r in userRecipes) r.id: r,
-            };
-
-            final List<RecipeCardModel> merged = mergedMap.values.map((recipe) {
-              final local = localRecipes.firstWhere(
-                (r) => r.id == recipe.id,
-                orElse: () => recipe,
-              );
-              final mergedRecipe = recipe.copyWith(
-                isFavourite: local.isFavourite,
-                categories: local.categories,
-              );
-              HiveRecipeService.save(mergedRecipe);
-              return mergedRecipe;
-            }).toList();
-
-            if (!mounted) return;
-            setState(() => _allRecipes = merged);
-          } catch (e) {
-            debugPrint("⚠️ Live recipe sync failed: $e");
-          }
-        }, onError: (e) => debugPrint("⚠️ Recipe stream error: $e"));
-  }
-
-  Future<void> _initializeDefaultCategories() async {
-    final savedCategories = await CategoryService.getAllCategories();
-    final savedNames = savedCategories.map((c) => c.name).toList();
-    for (final defaultCat in _defaultCategories) {
-      if (!savedNames.contains(defaultCat)) {
-        await CategoryService.saveCategory(defaultCat);
-      }
-    }
-  }
-
-  Future<void> _loadCustomCategories() async {
-    final saved = await CategoryService.getAllCategories();
-    final hidden = await CategoryService.getHiddenDefaultCategories();
-    final savedNames = saved.map((c) => c.name).toList();
-    final hiddenNames = hidden.toSet();
-
-    setState(() {
-      _allCategories = [
-        kAll,
-        ..._defaultCategories.where((c) => !hiddenNames.contains(c)),
-        ...savedNames.where((c) => !_defaultCategories.contains(c)),
-      ];
-    });
-  }
-
-  // ---------- Build ----------
+class _VaultBodyState extends State<_VaultBody> {
+  final GlobalKey _fabKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
-    final scale = context.watch<TextScaleNotifier>().scaleFactor;
     final t = AppLocalizations.of(context);
+    final scale = context.watch<TextScaleNotifier>().scaleFactor;
 
-    // Single source of truth for the view mode
+    final c = context.watch<RecipeVaultController>();
     final viewMode = context.watch<VaultViewModeNotifier>().mode;
 
-    final displayedCategories = _allCategories
-        .map((c) => _labelFor(c, t))
-        .toList();
-    final displayedSelected = _labelFor(_selectedCategory, t);
+    final filtered = c.filteredRecipes;
 
     return Scaffold(
       body: MediaQuery(
@@ -414,7 +79,7 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
           context,
         ).copyWith(textScaler: TextScaler.linear(scale)),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -423,34 +88,32 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
               // Search bar
               RecipeSearchBar(
-                initialValue: _searchQuery,
-                onChanged: (value) => setState(() => _searchQuery = value),
+                initialValue: c.searchQuery,
+                onChanged: c.setSearchQuery,
               ),
 
               const SizedBox(height: 12),
 
-              // Filter chips row
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 6.0),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: RecipeChipFilterBar(
-                    categories: displayedCategories,
-                    selectedCategory: displayedSelected,
-                    onCategorySelected: (label) =>
-                        setState(() => _selectedCategory = _keyFor(label, t)),
-                    onCategoryDeleted: (label) => _removeCategory(label),
-                    allRecipes: _allRecipes,
-                  ),
-                ),
-              ),
+              // Centralised filter bar (categories + delete/hide)
+              const VaultFilter(),
 
               // Results area
               Expanded(
-                child: _filteredRecipes.isEmpty
-                    ? (_allRecipes.isEmpty
-                          ? EmptyVaultPlaceholder(onCreate: _startCreateFlow)
+                child: filtered.isEmpty
+                    ? (c.allRecipes.isEmpty
+                          ? EmptyVaultPlaceholder(
+                              onCreate: () async {
+                                // “Create” flow stays in UI (needs dialogs/context)
+                                final sub = context.read<SubscriptionService>();
+                                if (!sub.allowImageUpload) {
+                                  // Optionally show your paywall prompt here.
+                                }
+                                final files =
+                                    await ImageProcessingService.pickAndCompressImages();
+                                if (!mounted || files.isEmpty) return;
+                                ProcessingOverlay.show(context, files);
+                              },
+                            )
                           : Center(
                               child: Text(
                                 t.noRecipesFound,
@@ -462,31 +125,37 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
                         child: ResponsiveWrapper(
                           child: switch (viewMode) {
                             ViewMode.list => list_view.RecipeListView(
-                              recipes: _filteredRecipes,
-                              onDelete: _deleteRecipe,
+                              recipes: filtered,
+                              onDelete: c.deleteRecipe,
                               onTap: (r) => showRecipeDialog(context, r),
-                              onToggleFavourite: _toggleFavourite,
-                              categories: _allCategories,
-                              onAssignCategories: _assignCategories,
-                              onAddOrUpdateImage: _addOrUpdateImage,
+                              onToggleFavourite: c.toggleFavourite,
+                              categories: c.categories,
+                              onAssignCategories: (r, cats) =>
+                                  c.assignCategories(r, cats),
+                              onAddOrUpdateImage: (r) =>
+                                  c.addOrUpdateImage(r, context: context),
                             ),
                             ViewMode.grid => grid_view.RecipeGridView(
-                              recipes: _filteredRecipes,
+                              recipes: filtered,
                               onTap: (r) => showRecipeDialog(context, r),
-                              onToggleFavourite: _toggleFavourite,
-                              onAssignCategories: _assignCategories,
-                              categories: _allCategories,
-                              onDelete: _deleteRecipe,
-                              onAddOrUpdateImage: _addOrUpdateImage,
+                              onToggleFavourite: c.toggleFavourite,
+                              onAssignCategories: (r, cats) =>
+                                  c.assignCategories(r, cats),
+                              categories: c.categories,
+                              onDelete: c.deleteRecipe,
+                              onAddOrUpdateImage: (r) =>
+                                  c.addOrUpdateImage(r, context: context),
                             ),
                             ViewMode.compact => compact_view.RecipeCompactView(
-                              recipes: _filteredRecipes,
+                              recipes: filtered,
                               onTap: (r) => showRecipeDialog(context, r),
-                              onToggleFavourite: _toggleFavourite,
-                              onDelete: _deleteRecipe,
-                              categories: _allCategories,
-                              onAssignCategories: _assignCategories,
-                              onAddOrUpdateImage: _addOrUpdateImage,
+                              onToggleFavourite: c.toggleFavourite,
+                              onDelete: c.deleteRecipe,
+                              categories: c.categories,
+                              onAssignCategories: (r, cats) =>
+                                  c.assignCategories(r, cats),
+                              onAddOrUpdateImage: (r) =>
+                                  c.addOrUpdateImage(r, context: context),
                             ),
                           },
                         ),
@@ -499,20 +168,31 @@ class _RecipeVaultScreenState extends State<RecipeVaultScreen> {
 
       // FAB
       floatingActionButton: Builder(
-        key: _keyFab,
+        key: _fabKey,
         builder: (context) {
-          final subService = context.watch<SubscriptionService>();
-          final count = _allCategories
-              .where((c) => !_defaultCategories.contains(c) && c != kAll)
+          final ctrl = context.watch<RecipeVaultController>();
+
+          // Count ONLY custom categories (exclude defaults + All)
+          final customCount = ctrl.categories
+              .where(
+                (k) =>
+                    !CategoryKeys.defaults.contains(k) && k != CategoryKeys.all,
+              )
               .length;
 
-          final allow =
-              subService.allowCategoryCreation ||
-              (subService.isHomeChef && count < 3);
+          // Subscription limits exactly like before
+          final sub = context.watch<SubscriptionService>();
+          final allowCreation =
+              sub.allowCategoryCreation || (sub.isHomeChef && customCount < 3);
 
           return CategorySpeedDial(
-            onCategoryChanged: _loadCustomCategories,
-            allowCreation: allow,
+            onCategoryChanged: () async {
+              // Re-pull categories after the dialog
+              if (mounted) {
+                await context.read<RecipeVaultController>().refresh();
+              }
+            },
+            allowCreation: allowCreation,
           );
         },
       ),

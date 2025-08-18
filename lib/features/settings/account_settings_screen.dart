@@ -10,6 +10,7 @@ import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/data/services/user_session_service.dart';
 import 'package:hive/hive.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
+import 'package:recipe_vault/widgets/loading_overlay.dart';
 
 // Providers
 import 'package:provider/provider.dart';
@@ -222,32 +223,26 @@ class AccountSettingsScreen extends StatelessWidget {
     );
 
     if (confirm == true) {
-      // Loading overlay (attached to screen context; pop with same)
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
-      );
-
+      await LoadingOverlay.show(context);
       try {
         await UserSessionService.logoutReset();
         await FirebaseAuth.instance.signOut();
-
-        if (context.mounted) {
-          Navigator.of(context).pop(); // dismiss loading
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(t.signedOut)));
-          // 🔒 Route via safeGo to avoid router build-phase issues
-          safeGo(context, AppRoutes.login);
-        }
       } catch (e) {
-        Navigator.of(context).pop(); // dismiss loading
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(t.signOutFailed('$e'))));
         }
+        return;
+      } finally {
+        LoadingOverlay.hide(); // closes first, safely
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(t.signedOut)));
+        safeGo(context, AppRoutes.login); // navigate next frame
       }
     }
   }
@@ -276,16 +271,10 @@ class AccountSettingsScreen extends StatelessWidget {
     );
 
     if (confirm == true) {
-      // Loading overlay (attached to screen context; pop with same)
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
-      );
-
+      await LoadingOverlay.show(context);
       try {
         final user = FirebaseAuth.instance.currentUser;
-        if (user == null) return;
+        if (user == null) throw Exception('No user');
 
         await FirebaseFunctions.instanceFor(
           region: 'europe-west2',
@@ -303,22 +292,22 @@ class AccountSettingsScreen extends StatelessWidget {
         } else if (await Hive.boxExists(boxName)) {
           await Hive.deleteBoxFromDisk(boxName);
         }
-
-        if (context.mounted) {
-          Navigator.of(context).pop(); // dismiss loading
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(t.deleteAccountSuccess)));
-          // 🔒 Route via safeGo after destructive flow
-          safeGo(context, AppRoutes.login);
-        }
       } catch (e) {
-        Navigator.of(context).pop(); // dismiss loading
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(t.deleteAccountFailed('$e'))));
         }
+        return;
+      } finally {
+        LoadingOverlay.hide(); // close loader before navigation
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(t.deleteAccountSuccess)));
+        safeGo(context, AppRoutes.login);
       }
     }
   }

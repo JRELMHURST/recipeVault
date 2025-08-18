@@ -1,3 +1,4 @@
+// lib/widgets/processing_overlay.dart
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'dart:convert';
@@ -11,7 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_messages.dart';
-import 'package:recipe_vault/navigation/routes.dart'; // 👈 use route constants
+import 'package:recipe_vault/navigation/routes.dart';
 
 class ProcessingOverlay {
   static OverlayEntry? _currentOverlay;
@@ -169,9 +170,10 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       // Close overlay first…
       ProcessingOverlay.hide();
 
-      // …then navigate on the next frame using route constants
+      // …then navigate on the next frame using route constants.
+      // Also guard against a late cancel between hide() and this callback.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
+        if (!mounted || _hasCancelled) return;
         context.push(AppRoutes.results, extra: result);
       });
     } catch (e, st) {

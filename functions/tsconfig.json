@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "nodenext",
-    "target": "es2022",
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Node",
     "outDir": "lib",
+    "rootDir": "src",
     "sourceMap": true,
     "strict": true,
     "esModuleInterop": true,
@@ -12,16 +13,9 @@
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
-    "moduleDetection": "force",
     "types": ["node"]
   },
-  "ts-node": {
-    "moduleTypes": {
-      "**/*.ts": "module"
-    },
-    "transpileOnly": true,
-    "esm": true
-  },
   "compileOnSave": true,
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules", "lib"]
 }

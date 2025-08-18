@@ -2,24 +2,18 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // User-specific uploads (e.g. vault images, temp images)
+    // 🔐 User-specific uploads (e.g. temp images, vault images)
     match /users/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Public/shared images (shared recipe cards)
+    // 🌍 Public/shared images (e.g. when a user shares a recipe card)
     match /shared_recipes/{allPaths=**} {
-      allow read: if true;
+      allow read: if true; // Anyone can view shared recipes
       allow write: if request.auth != null && request.auth.token.admin == true;
     }
 
-    // 🌍 Public/global recipe images
-    match /global_recipes/{allPaths=**} {
-      allow read: if true; // fully public
-      allow write: if request.auth != null && request.auth.token.admin == true;
-    }
-
-    // Default deny
+    // 🚫 Deny everything else
     match /{allPaths=**} {
       allow read, write: if false;
     }

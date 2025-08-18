@@ -1,7 +1,7 @@
 // lib/navigation/redirects.dart
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
-import 'package:recipe_vault/access_controller.dart';
+import 'package:recipe_vault/auth/access_controller.dart';
 import 'routes.dart';
 
 String? appRedirect(

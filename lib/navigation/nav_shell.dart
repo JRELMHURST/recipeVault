@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import 'package:recipe_vault/screens/home_screen/home_app_bar.dart';
-import 'package:recipe_vault/screens/recipe_vault/vault_view_mode_notifier.dart';
+import 'package:recipe_vault/features/home/home_app_bar.dart';
+import 'package:recipe_vault/features/recipe_vault/vault_view_mode_notifier.dart';
 import 'package:recipe_vault/navigation/routes.dart';
 import 'package:recipe_vault/navigation/create_action.dart';
 

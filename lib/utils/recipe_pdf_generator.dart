@@ -1,6 +1,6 @@
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:recipe_vault/model/recipe_card_model.dart';
+import 'package:recipe_vault/data/models/recipe_card_model.dart';
 
 class RecipePdfGenerator {
   static Future<void> sharePdf(RecipeCardModel recipe) async {

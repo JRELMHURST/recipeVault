@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
-import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/data/services/image_processing_service.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 typedef OnImagePicked = Future<String> Function(String localPath);

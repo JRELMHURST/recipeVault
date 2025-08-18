@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:recipe_vault/l10n/app_localizations.dart';
-import 'package:recipe_vault/services/image_processing_service.dart';
+import 'package:recipe_vault/data/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_messages.dart';
 
 class ProcessingOverlay {

@@ -1,7 +1,10 @@
-// lib/navigation/routes.dart
 class AppRoutes {
   static const boot = '/boot';
   static const paywall = '/paywall';
+
+  // Auth
+  static const login = '/login';
+  static const register = '/register';
 
   // Shell tabs
   static const vault = '/vault';

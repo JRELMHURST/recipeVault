@@ -1,3 +1,4 @@
+// lib/access_controller.dart
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -26,6 +27,10 @@ class AccessController extends ChangeNotifier {
   EntitlementStatus get status => _status;
   bool get ready => _ready;
   bool get hasAccess => _status == EntitlementStatus.active;
+
+  /// NEW: Whether an authenticated Firebase user exists.
+  bool get isLoggedIn => _auth.currentUser != null;
+
   String? get tier => _tier;
 
   /// Call once at app start (e.g., in your top-level Provider setup).
@@ -43,6 +48,7 @@ class AccessController extends ChangeNotifier {
     if (_auth.currentUser != null) {
       refresh();
     } else {
+      // Not logged in: no entitlement checks; app can route to /login.
       _setState(EntitlementStatus.inactive, tier: null, ready: true);
     }
   }
@@ -55,7 +61,7 @@ class AccessController extends ChangeNotifier {
 
     final user = _auth.currentUser;
     if (user == null) {
-      _userDocSub?.cancel();
+      await _userDocSub?.cancel();
       _setState(EntitlementStatus.inactive, tier: null, ready: true);
       return;
     }

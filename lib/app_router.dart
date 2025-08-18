@@ -1,4 +1,3 @@
-// lib/app_router.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -19,6 +18,10 @@ import 'package:recipe_vault/settings/notifications_settings_screen.dart';
 import 'package:recipe_vault/settings/storage_sync_screen.dart';
 import 'package:recipe_vault/settings/faq_screen.dart';
 import 'package:recipe_vault/settings/about_screen.dart';
+
+// ✅ Add your login screen import
+import 'package:recipe_vault/login/login_screen.dart';
+import 'package:recipe_vault/login/register_screen.dart';
 
 // Notifiers required by appearance settings
 import 'package:recipe_vault/core/theme_notifier.dart';
@@ -48,7 +51,19 @@ GoRouter buildAppRouter(AccessController access) {
             fadePage(const PaywallScreen(), key: const ValueKey('paywall')),
       ),
 
-      // ----- SHELL with AppBar + Bottom nav (Create / Vault / Settings root) -----
+      // ✅ Login route
+      GoRoute(
+        path: AppRoutes.login,
+        pageBuilder: (context, state) =>
+            fadePage(const LoginScreen(), key: const ValueKey('login')),
+      ),
+      GoRoute(
+        path: AppRoutes.register,
+        pageBuilder: (context, state) =>
+            fadePage(const RegisterScreen(), key: const ValueKey('register')),
+      ),
+
+      // ----- SHELL with AppBar + Bottom nav -----
       ShellRoute(
         builder: (context, state, child) => NavShell(child: child),
         routes: [
@@ -69,7 +84,7 @@ GoRouter buildAppRouter(AccessController access) {
         ],
       ),
 
-      // ----- Settings detail pages OUTSIDE the ShellRoute (own app bars) -----
+      // ----- Settings detail pages OUTSIDE the ShellRoute -----
       GoRoute(
         path: AppRoutes.settingsAccount,
         pageBuilder: (context, state) => fadePage(
@@ -123,7 +138,7 @@ GoRouter buildAppRouter(AccessController access) {
         ),
       ),
 
-      // Full-screen route outside shell (no app bar/tabs)
+      // Full-screen route outside shell
       GoRoute(
         path: AppRoutes.results,
         pageBuilder: (context, state) => fadePage(

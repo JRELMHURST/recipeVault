@@ -2,63 +2,53 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 🔐 Per-user documents
+    // ── Per-user root documents ─────────────────────────────────────────────
     match /users/{userId} {
+      // Only the authenticated owner can read their profile
       allow read, list, create, delete: if request.auth != null && request.auth.uid == userId;
 
+      // 🔒 Updates: allow only safe keys; tier/productId/superUser/createdAt are server-controlled
       allow update: if request.auth != null && request.auth.uid == userId &&
         (
-          // ✅ Allow updates only to specific fields (safe changes)
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'productId',
-            'tier',
-            'superUser',
             'lastLogin',
             'email',
-            'createdAt',
             'platform',
             'usage'
           ]) ||
-
-          // ✅ Allow updates if 'tier' is not being changed
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['tier']) ||
-
-          // ✅ Allow full updates if user is admin
           request.auth.token.admin == true
         );
 
-      // 📦 Recipes stored in user's vault
+      // ── User-owned subcollections ─────────────────────────────────────────
       match /recipes/{recipeId} {
         allow read, list, write: if request.auth != null && request.auth.uid == userId;
       }
 
-      // 🏷️ Custom categories for filtering recipes
       match /categories/{categoryId} {
         allow read, list, write: if request.auth != null && request.auth.uid == userId;
       }
 
-      // 📈 AI usage quota (read-only from app)
+      // Quota collections (read-only from client)
       match /aiUsage/{docId} {
         allow read, list: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
       }
-
-      // 🌍 Translation usage quota (read-only from app)
       match /translationUsage/{docId} {
         allow read, list: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
       }
 
-      // 🗑️ Hide global recipes per user (soft delete)
+      // Soft-delete per-user hidden global recipes
       match /hiddenGlobalRecipes/{recipeId} {
         allow read, list, write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
+    // ── Global/public docs ──────────────────────────────────────────────────
     // 🌍 Publicly available global recipes
     match /global_recipes/{recipeId} {
-      allow read, list: if request.auth != null && request.auth.uid != null;
-      allow write: if false;
+      allow read, list: if true;  // 🔓 fully public read
+      allow write: if request.auth != null && request.auth.token.admin == true;
     }
 
     // 📊 Event analytics (write-only logging)

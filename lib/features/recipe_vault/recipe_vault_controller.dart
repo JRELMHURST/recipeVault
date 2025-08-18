@@ -8,6 +8,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
+import 'package:recipe_vault/features/recipe_vault/categories.dart';
 
 // UI enum lives here
 import 'package:recipe_vault/features/recipe_vault/vault_view_mode_notifier.dart'
@@ -15,9 +16,6 @@ import 'package:recipe_vault/features/recipe_vault/vault_view_mode_notifier.dart
 
 // Centralised prefs adapter
 import 'package:recipe_vault/features/recipe_vault/view_mode_prefs.dart';
-
-// Centralized category keys/helpers
-import 'package:recipe_vault/features/recipe_vault/categories.dart';
 
 // Repository (local Hive + remote Firestore)
 import 'package:recipe_vault/data/repositories/vault_repository.dart';
@@ -97,7 +95,7 @@ class RecipeVaultController extends ChangeNotifier {
 
     // Categories & local recipes
     await Future.wait([
-      _initializeDefaultCategories(),
+      _initializeDefaultCategories(), // no-op; CategoryService.init seeds user defaults
       _loadCustomCategories(),
       _loadAllLocalRecipes(),
     ]);
@@ -131,28 +129,15 @@ class RecipeVaultController extends ChangeNotifier {
   @override
   void dispose() {
     _remoteSub?.cancel();
-    // If you add an upgrade banner ValueNotifier back:
-    // if (_upgradeListener != null) {
-    //   ImageProcessingService.upgradeBannerMessage.removeListener(_upgradeListener!);
-    //   _upgradeListener = null;
-    // }
     super.dispose();
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────
 
+  /// Kept for compatibility; CategoryService.init() handles seeding user defaults.
   Future<void> _initializeDefaultCategories() async {
-    final saved = await _repo.loadAllCategoryNames();
-    final names = saved.toSet();
-    for (final def in CategoryKeys.defaults) {
-      if (!names.contains(def)) {
-        // Use CategoryService via repo facade
-        await _repo.hideDefaultCategory(def); // ensures presence/visibility
-      }
-    }
-    // The above toggles visibility; if you actually need to *create* defaults
-    // on first run, ensure your CategoryService.saveCategory(def) is called
-    // by your bootstrap or adapt repo to expose that.
+    // no-op
+    return;
   }
 
   Future<void> _loadCustomCategories() async {
@@ -160,10 +145,14 @@ class RecipeVaultController extends ChangeNotifier {
     final hidden = await _repo.loadHiddenDefaultCategories();
     final hiddenSet = hidden.toSet();
 
+    // Build list:
+    // - Always include "All"
+    // - Include protected system categories unless hidden (Favourites/Translated)
+    // - Include ALL user categories (including seeded Breakfast/Main/Dessert)
     _allCategories = [
       CategoryKeys.all,
-      ...CategoryKeys.defaults.where((c) => !hiddenSet.contains(c)),
-      ...savedNames.where((c) => !CategoryKeys.defaults.contains(c)),
+      ...CategoryKeys.systemOnly.where((c) => !hiddenSet.contains(c)),
+      ...savedNames.where((c) => !CategoryKeys.allSystem.contains(c)),
     ];
   }
 
@@ -282,25 +271,12 @@ class RecipeVaultController extends ChangeNotifier {
   }
 }
 
-/* ───────────────────────────── UI bridge for image picking ─────────────────────────────
-   This keeps the controller from importing your whole ImageProcessingService directly.
-   Replace this with your real implementation or keep using your existing service.
-*/
+/* ───────────────────────────── UI bridge for image picking ───────────────────────────── */
 class ImageStorageBridge {
   static Future<String?> pickAndUploadSingleImage({
     required dynamic context, // BuildContext
     required String recipeId,
   }) async {
-    // Reuse your existing service:
-    // import 'package:recipe_vault/data/services/image_processing_service.dart';
-    // return await ImageProcessingService.pickAndUploadSingleImage(
-    //   context: context as BuildContext,
-    //   recipeId: recipeId,
-    // );
-
-    // If you already imported the service elsewhere, just call it:
-    // (Leaving a tiny indirection makes testing easier.)
-    // ignore: unnecessary_cast
     return await _realPickAndUpload(context as dynamic, recipeId);
   }
 
@@ -308,13 +284,6 @@ class ImageStorageBridge {
     dynamic context,
     String recipeId,
   ) async {
-    // Inline call to your existing function to avoid import cycles in this snippet.
-    // If you already have the import, you can delete this helper and call the service directly.
-    // Replace this with:
-    // return ImageProcessingService.pickAndUploadSingleImage(context: context, recipeId: recipeId);
-    // For now, we call it directly (assuming the service is globally available):
-    // ignore_for_file: avoid_dynamic_calls
-    // The actual implementation should be the concrete service method:
     return await ImageProcessingService.pickAndUploadSingleImage(
       context: context,
       recipeId: recipeId,

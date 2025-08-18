@@ -15,6 +15,7 @@ import 'package:recipe_vault/widgets/loading_overlay.dart';
 // Providers
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/core/language_provider.dart';
+import 'package:recipe_vault/billing/subscription_service.dart'; // 👈 plan source
 
 // 🚦 routes + safe nav helpers
 import 'package:recipe_vault/navigation/routes.dart';
@@ -33,13 +34,20 @@ class AccountSettingsScreen extends StatelessWidget {
       return Scaffold(body: Center(child: Text(t.noUserSignedIn)));
     }
 
-    final email = user.email ?? '';
     final displayName = user.displayName ?? t.noName;
 
     final langProvider = context.watch<LanguageProvider>();
     final currentLangKey = langProvider.selected;
     final currentLangLabel =
         LanguageProvider.displayNames[currentLangKey] ?? currentLangKey;
+
+    // 🔎 Plan label (no emojis; free/none → app title)
+    final tier = context.watch<SubscriptionService>().tier;
+    final planLabel = switch (tier) {
+      'home_chef' => t.planHomeChef,
+      'master_chef' => t.planMasterChef,
+      _ => t.appTitle, // Free/none shows app name
+    };
 
     return Scaffold(
       appBar: AppBar(title: Text(t.accountSettingsTitle), centerTitle: true),
@@ -48,41 +56,57 @@ class AccountSettingsScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.only(bottom: 24),
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.only(top: 32, bottom: 32),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.primary.withOpacity(0.85),
+              // ===== Header: pill with Name + subtle plan (centered) =====
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 18,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        theme.colorScheme.primary.withOpacity(0.85),
+                        theme.colorScheme.primary,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x22000000),
+                        blurRadius: 16,
+                        offset: Offset(0, 8),
+                      ),
                     ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
                   ),
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(36),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        displayName,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        planLabel,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withOpacity(0.85),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 10),
-                    Text(
-                      displayName,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      email,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
                 ),
               ),
               const SizedBox(height: 24),
@@ -235,14 +259,14 @@ class AccountSettingsScreen extends StatelessWidget {
         }
         return;
       } finally {
-        LoadingOverlay.hide(); // closes first, safely
+        LoadingOverlay.hide();
       }
 
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(t.signedOut)));
-        safeGo(context, AppRoutes.login); // navigate next frame
+        safeGo(context, AppRoutes.login);
       }
     }
   }
@@ -300,7 +324,7 @@ class AccountSettingsScreen extends StatelessWidget {
         }
         return;
       } finally {
-        LoadingOverlay.hide(); // close loader before navigation
+        LoadingOverlay.hide();
       }
 
       if (context.mounted) {
@@ -323,7 +347,6 @@ class AccountSettingsScreen extends StatelessWidget {
       builder: (sheetContext) {
         final current = provider.selected;
 
-        // Stable, sorted list for UI
         final items = LanguageProvider.supported.toList()
           ..sort((a, b) {
             final la = LanguageProvider.displayNames[a] ?? a;
@@ -350,7 +373,7 @@ class AccountSettingsScreen extends StatelessWidget {
                 title: Text(label),
                 onTap: () async {
                   await provider.setSelected(key);
-                  Navigator.of(sheetContext).pop(); // close just the sheet
+                  Navigator.of(sheetContext).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Recipe language set to $label')),
                   );

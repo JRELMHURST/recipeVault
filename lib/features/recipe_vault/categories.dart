@@ -1,30 +1,31 @@
-// lib/screens/recipe_vault/categories.dart
-
 /// Keys used internally to represent categories.
 /// UI layers will localise them into readable labels.
 class CategoryKeys {
+  // System (non-deletable) — "All" is virtual
   static const all = 'All';
   static const fav = 'Favourites';
   static const translated = 'Translated';
+
+  // Friendly names you may want to seed as *user* categories
   static const breakfast = 'Breakfast';
   static const main = 'Main';
   static const dessert = 'Dessert';
 
-  /// All default system categories (except "All")
-  static const defaults = <String>[fav, translated, breakfast, main, dessert];
+  /// Only true system categories (exclude "All")
+  static const systemOnly = <String>[fav, translated];
 
   /// Convenience: full set including "All"
-  static const allWithSystem = <String>[all, ...defaults];
+  static const allSystem = <String>[all, ...systemOnly];
+
+  /// Starter user categories you may auto-seed locally (deletable)
+  static const starterUser = <String>[breakfast, main, dessert];
 }
 
 /// Extension helpers for quick checks.
 extension CategoryHelpers on String {
-  /// Whether this category is one of the built-in defaults.
-  bool get isDefaultCategory => CategoryKeys.defaults.contains(this);
-
-  /// Whether this is the special "All" category.
   bool get isAllCategory => this == CategoryKeys.all;
-
-  /// Whether this is system-defined (default or "All").
-  bool get isSystemCategory => isDefaultCategory || isAllCategory;
+  bool get isSystemCategory =>
+      this == CategoryKeys.fav ||
+      this == CategoryKeys.translated ||
+      isAllCategory;
 }

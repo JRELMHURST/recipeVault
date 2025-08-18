@@ -174,10 +174,7 @@ class _VaultBodyState extends State<_VaultBody> {
 
           // Count ONLY custom categories (exclude defaults + All)
           final customCount = ctrl.categories
-              .where(
-                (k) =>
-                    !CategoryKeys.defaults.contains(k) && k != CategoryKeys.all,
-              )
+              .where((k) => !k.isSystemCategory)
               .length;
 
           // Subscription limits exactly like before

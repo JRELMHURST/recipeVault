@@ -43,8 +43,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       case 'weak-password':
         return l10n.passwordMinLength;
       case 'requires-recent-login':
-        return l10n
-            .error; // or a dedicated string like “Please reauthenticate…”
+        return l10n.error; // or a dedicated string
       case 'network-request-failed':
         return l10n.networkError;
       default:
@@ -113,40 +112,57 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         child: ListView(
           padding: const EdgeInsets.only(bottom: 24),
           children: [
-            // Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.only(top: 32, bottom: 24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primary.withOpacity(0.85),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+            // ===== Header with pill =====
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 22,
                 ),
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(36),
-                ),
-              ),
-              child: Column(
-                children: [
-                  const Icon(Icons.lock, size: 48, color: Colors.white),
-                  if (user.email != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      user.email!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white70,
-                      ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary.withOpacity(0.85),
+                      theme.colorScheme.primary,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x22000000),
+                      blurRadius: 16,
+                      offset: Offset(0, 8),
                     ),
                   ],
-                ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.lock, size: 48, color: Colors.white),
+                    if (user.email != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        user.email!,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withOpacity(0.9),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
 
             const SizedBox(height: 24),
+
+            // ===== Form card =====
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Card(

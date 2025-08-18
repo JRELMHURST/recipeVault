@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:hive/hive.dart';
 
 import 'package:recipe_vault/data/services/user_preference_service.dart';
 
@@ -44,6 +45,47 @@ class SubscriptionService extends ChangeNotifier {
     'translationUsage': {},
   };
 
+  // ── Local cache (Hive) to keep plan across hot restarts ───────────────────
+  static String _prefsBoxName(String uid) => 'userPrefs_$uid';
+  static const _kCachedTier = 'cachedTier';
+  static const _kCachedStatus = 'cachedStatus';
+
+  Future<void> _saveCache(
+    String uid,
+    String tier, {
+    required bool active,
+  }) async {
+    try {
+      final boxName = _prefsBoxName(uid);
+      final box = Hive.isBoxOpen(boxName)
+          ? Hive.box<dynamic>(boxName)
+          : await Hive.openBox<dynamic>(boxName);
+      await box.put(_kCachedTier, tier);
+      await box.put(_kCachedStatus, active ? 'active' : 'inactive');
+      // debugPrint('💾 Cached tier=$tier, status=${active ? 'active' : 'inactive'}');
+    } catch (e) {
+      debugPrint('⚠️ Failed to cache tier: $e');
+    }
+  }
+
+  Future<void> _seedFromCacheIfAny(String uid) async {
+    try {
+      final boxName = _prefsBoxName(uid);
+      final box = Hive.isBoxOpen(boxName)
+          ? Hive.box<dynamic>(boxName)
+          : await Hive.openBox<dynamic>(boxName);
+
+      final cachedTier = (box.get(_kCachedTier) as String?)?.trim();
+      if (cachedTier != null && cachedTier.isNotEmpty) {
+        _tier = cachedTier;
+        tierNotifier.value = _tier;
+        notifyListeners(); // show cached tier immediately
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to seed tier from cache: $e');
+    }
+  }
+
   // ── Getters ───────────────────────────────────────────────────────────────
   String get tier => _tier;
   String get productId => _entitlementId; // normalized lower-case
@@ -61,12 +103,16 @@ class SubscriptionService extends ChangeNotifier {
 
   bool get hasSpecialAccess => _hasSpecialAccess;
 
-  String get tierIcon => switch (_tier) {
-    'master_chef' => '👑',
-    'home_chef' => '👨‍🍳',
-    'none' => '🚫',
-    _ => '❓',
-  };
+  String get tierIcon {
+    if (_hasSpecialAccess) return '⭐'; // special flag only
+
+    return switch (_tier) {
+      'master_chef' => '', // no emoji
+      'home_chef' => '', // no emoji
+      'none' => '🚫',
+      _ => '❓',
+    };
+  }
 
   String get entitlementLabel => switch (_entitlementId) {
     'master_chef_monthly' => 'Master Chef – Monthly',
@@ -123,9 +169,17 @@ class SubscriptionService extends ChangeNotifier {
     if (_isInitialising) return;
     _isInitialising = true;
     try {
+      // Seed tier from local cache immediately (keeps plan through hot restarts)
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await _seedFromCacheIfAny(user.uid);
+      }
+
       // Listen for RC push updates so we stay fresh after restores/purchases.
       Purchases.addCustomerInfoUpdateListener(_onCustomerInfo);
       await Purchases.invalidateCustomerInfoCache();
+
+      // Then do the usual online resolution (won’t wipe seeded tier)
       await loadSubscriptionStatus();
       await _loadAvailablePackages();
     } finally {
@@ -140,6 +194,8 @@ class SubscriptionService extends ChangeNotifier {
       if (firebaseUid == null) {
         await Purchases.logOut();
       } else {
+        // Seed new user's cached tier before network calls, for instant UI
+        await _seedFromCacheIfAny(firebaseUid);
         await Purchases.logIn(firebaseUid);
       }
       await refresh(); // pick up entitlements for new user
@@ -232,6 +288,9 @@ class SubscriptionService extends ChangeNotifier {
 
       await _loadUsageData(user.uid);
 
+      // Persist the resolved tier locally for hot restarts
+      await _saveCache(user.uid, _tier, active: hasActiveSubscription);
+
       // Keep onboarding flags consistent regardless of tier
       await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible();
 
@@ -244,7 +303,7 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   // ── RevenueCat push updates → keep local state fresh ──────────────────────
-  void _onCustomerInfo(CustomerInfo info) {
+  void _onCustomerInfo(CustomerInfo info) async {
     _customerInfo = info;
 
     final ents = info.entitlements.active;
@@ -263,6 +322,12 @@ class SubscriptionService extends ChangeNotifier {
     if (changedTier) {
       tierNotifier.value = _tier;
       _logTierOnce(source: 'rc-listener');
+
+      // Also persist cache when RC pushes a change
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await _saveCache(uid, _tier, active: hasActiveSubscription);
+      }
     }
     if (changedTier || changedEnt) notifyListeners();
   }
@@ -308,12 +373,14 @@ class SubscriptionService extends ChangeNotifier {
               pkg.identifier.toLowerCase() == 'home_chef_monthly' ||
               pkg.storeProduct.identifier.toLowerCase() == 'home_chef_monthly',
         );
+
         masterChefMonthlyPackage = current.availablePackages.firstWhereOrNull(
           (pkg) =>
               pkg.identifier.toLowerCase() == 'master_chef_monthly' ||
               pkg.storeProduct.identifier.toLowerCase() ==
                   'master_chef_monthly',
         );
+
         masterChefYearlyPackage = current.availablePackages.firstWhereOrNull(
           (pkg) =>
               pkg.identifier.toLowerCase() == 'master_chef_yearly' ||
@@ -420,6 +487,9 @@ class SubscriptionService extends ChangeNotifier {
       'lastLogin': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
+    // Save local cache for hot restart
+    await _saveCache(uid, resolved, active: resolved != 'none');
+
     return resolved;
   }
 
@@ -451,6 +521,9 @@ class SubscriptionService extends ChangeNotifier {
       'productId': productId,
       'lastLogin': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+
+    // Save local cache for hot restart
+    await _saveCache(user.uid, _tier, active: hasActiveSubscription);
 
     _logTierOnce(source: 'syncRevenueCatEntitlement');
     notifyListeners();

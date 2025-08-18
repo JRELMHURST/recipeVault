@@ -88,11 +88,13 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       },
 
       // 💡 Daily message trigger in place of Upgrade button
-      actions: const [
-        Padding(
-          padding: EdgeInsets.only(right: 12.0),
-          child: DailyMessageBubble(),
-        ),
+      // 💡 Only show DailyMessageBubble in Vault view
+      actions: [
+        if (selectedIndex == 1)
+          const Padding(
+            padding: EdgeInsets.only(right: 12.0),
+            child: DailyMessageBubble(),
+          ),
       ],
     );
   }

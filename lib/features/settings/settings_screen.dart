@@ -25,46 +25,15 @@ class SettingsScreen extends StatelessWidget {
       return Scaffold(body: Center(child: Text(t.authUserNotFound)));
     }
 
-    final tier = context.watch<SubscriptionService>().tier;
-    final planLabel = switch (tier) {
-      'home_chef' => '👨‍🍳 ${t.planHomeChef}',
-      'master_chef' => '👑 ${t.planMasterChef}',
-      _ => '🆓 ${t.planFree}',
-    };
-
     return Scaffold(
       body: SafeArea(
         child: ResponsiveWrapper(
           child: ListView(
             padding: const EdgeInsets.only(bottom: 24),
             children: [
-              // Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primary,
-                      theme.colorScheme.primary.withOpacity(0.8),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(24),
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    planLabel,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
+              // Header (plan/app banner)
+              const SizedBox(height: 8),
+              _PlanHeaderBanner(),
 
               const SizedBox(height: 24),
 
@@ -270,17 +239,73 @@ class SettingsScreen extends StatelessWidget {
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
         if (isPaywall) {
-          // Explicit manage flow → keep .go (your Paywall back button already falls back to Settings)
           final loc = Uri(
             path: AppRoutes.paywall,
             queryParameters: {'manage': '1'},
           ).toString();
           context.go(loc);
         } else {
-          // Subpages stack on top of the shell
           context.push(route);
         }
       },
+    );
+  }
+}
+
+/// Floating premium-style banner that keeps text perfectly centered.
+/// If tier is free/none → shows the app title instead of "Free plan".
+class _PlanHeaderBanner extends StatelessWidget {
+  const _PlanHeaderBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = AppLocalizations.of(context);
+    final tier = context.watch<SubscriptionService>().tier;
+
+    final label = switch (tier) {
+      'home_chef' => t.planHomeChef,
+      'master_chef' => t.planMasterChef,
+      _ => t.appTitle, // ← free/default shows app name
+    };
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          // soft, premium gradient
+          gradient: LinearGradient(
+            colors: [
+              theme.colorScheme.primary.withOpacity(0.90),
+              theme.colorScheme.primary.withOpacity(0.72),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: theme.colorScheme.primary.withOpacity(0.25),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            label, // no emojis
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

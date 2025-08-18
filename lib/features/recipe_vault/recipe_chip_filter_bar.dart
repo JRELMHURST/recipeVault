@@ -1,5 +1,4 @@
 // ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
@@ -20,8 +19,12 @@ class RecipeChipFilterBar extends StatelessWidget {
     required this.allRecipes,
   });
 
-  /// Canonical keys for system categories
-  static const _systemCategories = ['All', 'Favourites', 'Translated'];
+  /// Canonical keys for system categories (order matters for display)
+  static const List<String> _systemCategories = [
+    'All',
+    'Favourites',
+    'Translated',
+  ];
 
   /// Map any incoming label (possibly localized) back to the canonical key.
   String _canonicalCategory(AppLocalizations l10n, String category) {
@@ -59,6 +62,28 @@ class RecipeChipFilterBar extends StatelessWidget {
     }
   }
 
+  /// Build the final list of chip keys to render:
+  /// - Always include system chips (All, Favourites, Translated)
+  /// - Merge in user categories (deduped), alphabetized
+  /// - Ensure the currently-selected category is present
+  List<String> _buildDisplayKeys(AppLocalizations l10n) {
+    final incoming = categories
+        .map((c) => _canonicalCategory(l10n, c))
+        .where((c) => c.trim().isNotEmpty)
+        .toList();
+
+    final userOnly =
+        incoming.where((c) => !_systemCategories.contains(c)).toSet().toList()
+          ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+    final keys = <String>[..._systemCategories, ...userOnly];
+
+    final selectedKey = _canonicalCategory(l10n, selectedCategory);
+    if (!keys.contains(selectedKey)) keys.add(selectedKey);
+
+    return keys;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -66,22 +91,17 @@ class RecipeChipFilterBar extends StatelessWidget {
     final primary = theme.colorScheme.primary;
     final textStyle = theme.textTheme.bodySmall;
 
-    // Safer for older SDKs than surfaceContainerHighest:
     final chipBg = theme.colorScheme.surfaceVariant.withOpacity(0.30);
 
-    if (categories.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
     final selectedKey = _canonicalCategory(l10n, selectedCategory);
+    final displayKeys = _buildDisplayKeys(l10n);
+    if (displayKeys.isEmpty) return const SizedBox.shrink();
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
-        children: categories.map((rawCategory) {
-          final key = _canonicalCategory(l10n, rawCategory);
-
+        children: displayKeys.map((key) {
           final isSelected = key == selectedKey;
           final isProtected = _isProtectedCategory(key);
           final isDeletable = !isProtected && !_isCategoryUsed(l10n, key);
@@ -100,7 +120,7 @@ class RecipeChipFilterBar extends StatelessWidget {
               selected: isSelected,
               selectedColor: primary.withOpacity(0.15),
               backgroundColor: chipBg,
-              onSelected: (_) => onCategorySelected(key), // pass canonical key
+              onSelected: (_) => onCategorySelected(key),
               deleteIcon: isDeletable ? const Icon(Icons.close) : null,
               deleteButtonTooltipMessage: isDeletable
                   ? l10n.chipDeleteCategoryTooltip
@@ -116,7 +136,6 @@ class RecipeChipFilterBar extends StatelessWidget {
                   width: 1.2,
                 ),
               ),
-              // keep elevation props for compatibility; harmless if ignored
               elevation: 0,
               pressElevation: 1.5,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,

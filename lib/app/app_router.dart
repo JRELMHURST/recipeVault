@@ -28,10 +28,10 @@ import 'package:recipe_vault/core/theme_notifier.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 
 // Navigation helpers
-import 'navigation/routes.dart';
-import 'navigation/redirects.dart';
-import 'navigation/transition_pages.dart';
-import 'navigation/nav_shell.dart';
+import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/navigation/redirects.dart';
+import 'package:recipe_vault/navigation/transition_pages.dart';
+import 'package:recipe_vault/navigation/nav_shell.dart';
 
 GoRouter buildAppRouter(AccessController access) {
   return GoRouter(

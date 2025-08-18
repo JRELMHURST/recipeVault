@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
-import '../model/recipe_card_model.dart';
+import 'package:recipe_vault/data/models/recipe_card_model.dart';
 
 class HiveRecipeService {
   static String get _uid => FirebaseAuth.instance.currentUser?.uid ?? 'unknown';

@@ -4,13 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
-import 'core/text_scale_notifier.dart';
-import 'core/theme_notifier.dart';
-import 'core/language_provider.dart';
-import 'core/theme.dart';
+import 'package:recipe_vault/core/text_scale_notifier.dart';
+import 'package:recipe_vault/core/theme_notifier.dart';
+import 'package:recipe_vault/core/language_provider.dart';
+import 'package:recipe_vault/core/theme.dart';
 
-import 'access_controller.dart';
-import 'app_router.dart';
+import 'package:recipe_vault/auth/access_controller.dart;
+import 'package:recipe_vault/app/app_router.dart';
 
 class RecipeVaultApp extends StatefulWidget {
   final AccessController access;

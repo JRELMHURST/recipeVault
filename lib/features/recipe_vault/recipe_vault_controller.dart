@@ -20,7 +20,7 @@ import 'package:recipe_vault/features/recipe_vault/view_mode_prefs.dart';
 import 'package:recipe_vault/features/recipe_vault/categories.dart';
 
 // Repository (local Hive + remote Firestore)
-import 'package:recipe_vault/features/recipe_vault/vault_repository.dart';
+import 'package:recipe_vault/data/repositories/vault_repository.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
 
 /// Controller for Recipe Vault — app-logic only (no BuildContext/UI side-effects).

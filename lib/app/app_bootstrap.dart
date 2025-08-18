@@ -10,12 +10,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
-import 'firebase_options.dart';
-import 'model/recipe_card_model.dart';
-import 'model/category_model.dart';
-import 'services/category_service.dart';
-import 'services/notification_service.dart';
-import 'services/user_preference_service.dart';
+import 'package:recipe_vault/app/firebase_options.dart';
+import 'package:recipe_vault/data/models/recipe_card_model.dart';
+import 'package:recipe_vault/data/models/category_model.dart';
+import 'package:recipe_vault/data/services/category_service.dart';
+import 'package:recipe_vault/data/services/notification_service.dart';
+import 'package:recipe_vault/data/services/user_preference_service.dart';
 
 class AppBootstrap {
   static bool _isReady = false;

@@ -3,7 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import '../model/recipe_card_model.dart';
+import 'package:recipe_vault/data/models/recipe_card_model.dart';
 
 /// User-only recipe fetches (no global/community merging).
 class RecipeService {

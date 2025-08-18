@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:recipe_vault/auth/access_controller.dart';
 
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
@@ -9,7 +10,6 @@ import 'package:recipe_vault/core/theme_notifier.dart';
 import 'package:recipe_vault/core/language_provider.dart';
 import 'package:recipe_vault/core/theme.dart';
 
-import 'package:recipe_vault/auth/access_controller.dart;
 import 'package:recipe_vault/app/app_router.dart';
 
 class RecipeVaultApp extends StatefulWidget {

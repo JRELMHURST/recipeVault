@@ -1,11 +1,13 @@
-// lib/access_controller.dart
+// ignore_for_file: avoid_print
+
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum EntitlementStatus { checking, active, inactive }
 
@@ -23,16 +25,34 @@ class AccessController extends ChangeNotifier {
   bool _rcResolved = false;
   bool _fsResolved = false;
 
-  // Public
+  // Persisted flag: has this user ever had an active entitlement?
+  bool _everHadAccess = false;
+
+  // ── Public getters ────────────────────────────────────────────────────────
   EntitlementStatus get status => _status;
   bool get ready => _ready;
   bool get hasAccess => _status == EntitlementStatus.active;
-
-  /// NEW: Whether an authenticated Firebase user exists.
-  bool get isLoggedIn => _auth.currentUser != null;
-
   String? get tier => _tier;
 
+  /// Whether an authenticated Firebase user exists.
+  bool get isLoggedIn => _auth.currentUser != null;
+
+  /// Whether the current user is anonymous.
+  bool get isAnonymous => _auth.currentUser?.isAnonymous ?? false;
+
+  /// Treat a user as “newly registered” for a short window after account creation.
+  static const _newUserWindow = Duration(hours: 12);
+  bool get isNewlyRegistered {
+    final u = _auth.currentUser;
+    final created = u?.metadata.creationTime;
+    if (u == null || created == null) return false;
+    final now = DateTime.now();
+    return now.difference(created).abs() <= _newUserWindow;
+  }
+
+  bool get everHadAccess => _everHadAccess;
+
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
   /// Call once at app start (e.g., in your top-level Provider setup).
   void start() {
     // Re-check whenever auth state changes.
@@ -49,6 +69,7 @@ class AccessController extends ChangeNotifier {
       refresh();
     } else {
       // Not logged in: no entitlement checks; app can route to /login.
+      _everHadAccess = false;
       _setState(EntitlementStatus.inactive, tier: null, ready: true);
     }
   }
@@ -62,10 +83,12 @@ class AccessController extends ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) {
       await _userDocSub?.cancel();
+      _everHadAccess = false;
       _setState(EntitlementStatus.inactive, tier: null, ready: true);
       return;
     }
 
+    await _loadEverHadAccess(); // load persisted “ever had” flag for this uid
     _setState(EntitlementStatus.checking, ready: false);
 
     // If Firestore never emits or RC throws, never hang: fallback after 3s
@@ -99,11 +122,16 @@ class AccessController extends ChangeNotifier {
 
             _fsResolved = true;
 
-            // If Firestore says no tier -> inactive; else active with tier.
             if (docTier == null || docTier == 'none') {
+              // No entitlement from Firestore.
               _setState(EntitlementStatus.inactive, tier: null);
             } else {
+              // Firestore says they have a tier → mark active.
               _setState(EntitlementStatus.active, tier: docTier);
+              if (!_everHadAccess) {
+                _everHadAccess = true;
+                unawaited(_saveEverHadAccess());
+              }
             }
             _maybeMarkReady('firestore');
           },
@@ -137,6 +165,11 @@ class AccessController extends ChangeNotifier {
       String resolvedTier = 'home_chef';
       if (keys.any((k) => k.contains('master'))) resolvedTier = 'master_chef';
       _setState(EntitlementStatus.active, tier: resolvedTier);
+
+      if (!_everHadAccess) {
+        _everHadAccess = true;
+        unawaited(_saveEverHadAccess());
+      }
     }
 
     _maybeMarkReady('rc');
@@ -172,6 +205,33 @@ class AccessController extends ChangeNotifier {
         if (!hasListeners) return;
         notifyListeners();
       });
+    }
+  }
+
+  // ── Persistence for "ever had access" ─────────────────────────────────────
+  Future<void> _loadEverHadAccess() async {
+    final u = _auth.currentUser;
+    if (u == null) {
+      _everHadAccess = false;
+      return;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _everHadAccess = prefs.getBool('everHadAccess_${u.uid}') ?? false;
+    } catch (e) {
+      debugPrint('⚠️ Failed to load everHadAccess: $e');
+      _everHadAccess = false;
+    }
+  }
+
+  Future<void> _saveEverHadAccess() async {
+    final u = _auth.currentUser;
+    if (u == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('everHadAccess_${u.uid}', true);
+    } catch (e) {
+      debugPrint('⚠️ Failed to save everHadAccess: $e');
     }
   }
 

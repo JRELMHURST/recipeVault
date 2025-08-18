@@ -5,18 +5,19 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class LoadingOverlay {
   static bool _isShowing = false;
   static BuildContext? _dialogContext;
 
-  /// Show the loading overlay. If already showing, this is a no-op.
+  /// Show the loading overlay. If already showing, it's a no-op.
   static Future<void> show(BuildContext context, {String? message}) async {
     if (_isShowing) return;
     _isShowing = true;
 
-    // Don’t await the dialog; we want show() to return immediately.
+    // Don’t await; return immediately.
     unawaited(
       showGeneralDialog(
         context: context,
@@ -41,7 +42,7 @@ class LoadingOverlay {
           );
         },
       ).whenComplete(() {
-        // If the route is popped externally, make sure we reset our guards.
+        // If popped externally, reset our guards.
         _isShowing = false;
         _dialogContext = null;
       }),
@@ -49,14 +50,49 @@ class LoadingOverlay {
   }
 
   /// Hide the overlay if it’s currently showing.
+  /// Safe against route transitions / disposed trees.
   static void hide() {
-    // If we have a dialog context, pop it regardless of _isShowing flag.
-    final ctx = _dialogContext;
-    if (ctx != null) {
-      Navigator.of(ctx, rootNavigator: true).pop();
-    }
+    // Mark as not showing right away to prevent duplicate pops.
     _isShowing = false;
-    _dialogContext = null;
+
+    final ctx = _dialogContext;
+    if (ctx == null) {
+      _dialogContext = null;
+      return;
+    }
+
+    // Try to fetch a root navigator tied to this dialog context.
+    final nav = Navigator.maybeOf(ctx, rootNavigator: true);
+    if (nav == null) {
+      _dialogContext = null;
+      return;
+    }
+
+    // Pop on the next frame to avoid popping while navigator is locked.
+    void attemptPop() {
+      try {
+        if (nav.mounted && nav.canPop()) {
+          nav.pop();
+        }
+      } catch (_) {
+        // If we hit a "navigator locked" assert, try again next frame.
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          try {
+            if (nav.mounted && nav.canPop()) {
+              nav.pop();
+            }
+          } catch (_) {
+            // Give up silently — route is already gone or still locked.
+          } finally {
+            _dialogContext = null;
+          }
+        });
+        return;
+      }
+      _dialogContext = null;
+    }
+
+    SchedulerBinding.instance.addPostFrameCallback((_) => attemptPop());
   }
 
   /// Convenience helper to run an async task with the overlay shown.

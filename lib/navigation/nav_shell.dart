@@ -31,6 +31,17 @@ class NavShell extends StatelessWidget {
       onToggle = vm.toggle;
     }
 
+    final theme = Theme.of(context);
+    final active = theme.colorScheme.primary;
+    final inactive = theme.colorScheme.onSurfaceVariant;
+
+    Widget vaultIcon(bool selected) => Image.asset(
+      'assets/icon/lock_icon.png',
+      height: selected ? 56 : 48,
+      // Remove the color line if you want the original PNG colors.
+      color: selected ? active : inactive,
+    );
+
     return Scaffold(
       appBar: HomeAppBar(
         selectedIndex: selectedIndex,
@@ -53,17 +64,19 @@ class NavShell extends StatelessWidget {
               break;
           }
         },
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.add_a_photo_outlined),
             label: 'Create',
           ),
           NavigationDestination(
-            icon: Icon(Icons.folder_open_outlined),
+            icon: vaultIcon(false),
+            selectedIcon: vaultIcon(true),
             label: 'Vault',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
             label: 'Settings',
           ),
         ],

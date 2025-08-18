@@ -61,7 +61,7 @@ class _VaultBody extends StatefulWidget {
 }
 
 class _VaultBodyState extends State<_VaultBody> {
-  final GlobalKey _fabKey = GlobalKey();
+  final GlobalObjectKey _fabKey = GlobalObjectKey('vault-fab-anchor');
 
   @override
   Widget build(BuildContext context) {

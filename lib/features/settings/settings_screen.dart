@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/navigation/routes.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -76,7 +77,7 @@ class SettingsScreen extends StatelessWidget {
                     context: context,
                     icon: Icons.manage_accounts_outlined,
                     label: t.settingsTileAccountSettings,
-                    route: '/settings/account',
+                    route: AppRoutes.settingsAccount,
                   ),
                 ],
               ),
@@ -90,13 +91,13 @@ class SettingsScreen extends StatelessWidget {
                     context: context,
                     icon: CupertinoIcons.brightness,
                     label: t.settingsTileAppearance,
-                    route: '/settings/appearance',
+                    route: AppRoutes.settingsAppearance,
                   ),
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.notifications_outlined,
                     label: t.settingsTileNotifications,
-                    route: '/settings/notifications',
+                    route: AppRoutes.settingsNotifications,
                   ),
                 ],
               ),
@@ -110,7 +111,7 @@ class SettingsScreen extends StatelessWidget {
                     context: context,
                     icon: Icons.cloud_done_outlined,
                     label: t.settingsTileCacheClear,
-                    route: '/settings/storage',
+                    route: AppRoutes.settingsStorage,
                   ),
                 ],
               ),
@@ -120,12 +121,11 @@ class SettingsScreen extends StatelessWidget {
                 context,
                 title: t.settingsSectionSubscription,
                 items: [
-                  // Note: /paywall lives outside the shell → use context.go
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.card_membership_outlined,
                     label: t.settingsTileManageSubscription,
-                    route: '/paywall',
+                    route: AppRoutes.paywall, // helper will add ?manage=1
                   ),
                 ],
               ),
@@ -139,13 +139,13 @@ class SettingsScreen extends StatelessWidget {
                     context: context,
                     icon: Icons.help_outline,
                     label: t.settingsTileHelpFaqs,
-                    route: '/settings/faqs',
+                    route: AppRoutes.settingsFaqs,
                   ),
                   _buildSettingsTile(
                     context: context,
                     icon: Icons.info_outline,
                     label: t.settingsTileAboutLegal,
-                    route: '/settings/about',
+                    route: AppRoutes.settingsAbout,
                   ),
                 ],
               ),
@@ -233,7 +233,6 @@ class SettingsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Keep i18n intact; no forced uppercase.
           Padding(
             padding: const EdgeInsets.only(left: 8, bottom: 4),
             child: Text(
@@ -264,17 +263,17 @@ class SettingsScreen extends StatelessWidget {
     required String label,
     required String route,
   }) {
-    final isPaywall = route == '/paywall';
+    final isPaywall = route == AppRoutes.paywall;
     return ListTile(
       leading: Icon(icon),
       title: Text(label),
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
         if (isPaywall) {
-          // replace shell with Paywall (outside the ShellRoute)
-          context.go(route);
+          // Explicitly mark as manage flow
+          context.go('${AppRoutes.paywall}?manage=1');
         } else {
-          // push settings subpages on top of the current shell
+          // Push settings subpages on top of the shell
           context.push(route);
         }
       },

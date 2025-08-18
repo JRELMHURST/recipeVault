@@ -13,6 +13,7 @@ import 'package:recipe_vault/billing/subscription_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
+import 'package:recipe_vault/navigation/routes.dart'; // ✅ for AppRoutes
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -140,8 +141,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   void _redirectHome() {
-    // Canonical app home
-    context.go('/vault');
+    context.go(AppRoutes.vault);
   }
 
   @override
@@ -149,95 +149,119 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context);
 
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    final entitlementId = _subscriptionService.entitlementId;
+    // Show a back button only when explicitly opened for management (?manage=1).
+    final state = GoRouterState.of(context);
+    final isManaging = state.uri.queryParameters['manage'] == '1';
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(title: Text(loc.chefModeTitle)),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              loc.paywallHeader,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontSize: 16,
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-              children: [
-                ResponsiveWrapper(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 24),
-                      ..._availablePackages.map((pkg) {
-                        final isCurrent =
-                            entitlementId.isNotEmpty &&
-                            (pkg.storeProduct.identifier == entitlementId ||
-                                pkg.identifier == entitlementId ||
-                                pkg.offeringIdentifier == entitlementId);
-
-                        final isYearly =
-                            (pkg.storeProduct.subscriptionPeriod ?? '')
-                                .toUpperCase() ==
-                            'P1Y';
-
-                        // Only "Current plan" and "Best value" badges.
-                        final String? badge = isCurrent
-                            ? loc.badgeCurrentPlan
-                            : (isYearly ? loc.badgeBestValue : null);
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: PricingCard(
-                            package: pkg,
-                            onTap: () {
-                              if (!isCurrent && !_isPurchasing) {
-                                _handlePurchase(pkg);
-                              }
-                            },
-                            isDisabled: isCurrent,
-                            badge:
-                                badge, // pass null when none -> no green blob
-                          ),
-                        );
-                      }),
-                      if (_availablePackages.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 24),
-                          child: Text(
-                            loc.noPlans,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                      const SizedBox(height: 32),
-                      Center(child: _buildLegalNotice(context)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+      appBar: AppBar(
+        title: Text(loc.chefModeTitle),
+        leading: isManaging
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () async {
+                  // Try to pop; if there's nothing to pop (e.g. opened with `go`),
+                  // fall back to Settings (or Vault if you prefer).
+                  final popped = await Navigator.of(context).maybePop();
+                  if (!popped && mounted) {
+                    context.go(AppRoutes.settings); // fallback
+                  }
+                },
+              )
+            : null,
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildContent(context, theme, loc),
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations loc,
+  ) {
+    final entitlementId = _subscriptionService.entitlementId;
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            loc.paywallHeader,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontSize: 16,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            children: [
+              ResponsiveWrapper(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+                    ..._availablePackages.map((pkg) {
+                      final isCurrent =
+                          entitlementId.isNotEmpty &&
+                          (pkg.storeProduct.identifier == entitlementId ||
+                              pkg.identifier == entitlementId ||
+                              pkg.offeringIdentifier == entitlementId);
+
+                      final isYearly =
+                          (pkg.storeProduct.subscriptionPeriod ?? '')
+                              .toUpperCase() ==
+                          'P1Y';
+
+                      // Only "Current plan" and "Best value" badges.
+                      final String? badge = isCurrent
+                          ? loc.badgeCurrentPlan
+                          : (isYearly ? loc.badgeBestValue : null);
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: PricingCard(
+                          package: pkg,
+                          onTap: () {
+                            if (!isCurrent && !_isPurchasing) {
+                              _handlePurchase(pkg);
+                            }
+                          },
+                          isDisabled: isCurrent,
+                          badge: badge, // null -> no badge
+                        ),
+                      );
+                    }),
+                    if (_availablePackages.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 24),
+                        child: Text(
+                          loc.noPlans,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                    const SizedBox(height: 32),
+                    Center(child: _buildLegalNotice(context)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

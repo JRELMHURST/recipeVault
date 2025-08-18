@@ -10,7 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
-import 'package:recipe_vault/app/firebase_options.dart';
+import 'package:recipe_vault/firebase_options.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 import 'package:recipe_vault/data/models/category_model.dart';
 import 'package:recipe_vault/data/services/category_service.dart';

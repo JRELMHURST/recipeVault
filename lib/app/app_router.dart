@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import 'package:recipe_vault/navigation/nav_keys.dart'; // ← singleton keys
+
 import 'package:recipe_vault/auth/access_controller.dart';
 import 'package:recipe_vault/app/boot_screen.dart';
 import 'package:recipe_vault/billing/paywall_screen.dart';
@@ -19,7 +21,7 @@ import 'package:recipe_vault/features/settings/storage_sync_screen.dart';
 import 'package:recipe_vault/features/settings/faq_screen.dart';
 import 'package:recipe_vault/features/settings/about_screen.dart';
 
-// ✅ Add your login screen import
+// Auth screens
 import 'package:recipe_vault/auth/login_screen.dart';
 import 'package:recipe_vault/auth/register_screen.dart';
 
@@ -35,29 +37,35 @@ import 'package:recipe_vault/navigation/nav_shell.dart';
 
 GoRouter buildAppRouter(AccessController access) {
   return GoRouter(
+    navigatorKey: NavKeys.root, // ← use singleton
     initialLocation: AppRoutes.boot,
     refreshListenable: access,
     redirect: (context, state) => appRedirect(context, state, access),
 
     routes: [
+      // ----- Root-level pages (mounted on root navigator) -----
       GoRoute(
+        parentNavigatorKey: NavKeys.root,
         path: AppRoutes.boot,
         pageBuilder: (context, state) =>
             fadePage(const BootScreen(), key: const ValueKey('boot')),
       ),
       GoRoute(
+        parentNavigatorKey: NavKeys.root,
         path: AppRoutes.paywall,
-        pageBuilder: (context, state) =>
-            fadePage(const PaywallScreen(), key: const ValueKey('paywall')),
+        pageBuilder: (context, state) => slideFromLeftPage(
+          const PaywallScreen(),
+          key: const ValueKey('paywall'),
+        ),
       ),
-
-      // ✅ Login route
       GoRoute(
+        parentNavigatorKey: NavKeys.root,
         path: AppRoutes.login,
         pageBuilder: (context, state) =>
             fadePage(const LoginScreen(), key: const ValueKey('login')),
       ),
       GoRoute(
+        parentNavigatorKey: NavKeys.root,
         path: AppRoutes.register,
         pageBuilder: (context, state) =>
             fadePage(const RegisterScreen(), key: const ValueKey('register')),
@@ -65,6 +73,7 @@ GoRouter buildAppRouter(AccessController access) {
 
       // ----- SHELL with AppBar + Bottom nav -----
       ShellRoute(
+        navigatorKey: NavKeys.shell, // ← use singleton
         builder: (context, state, child) => NavShell(child: child),
         routes: [
           GoRoute(
@@ -84,8 +93,9 @@ GoRouter buildAppRouter(AccessController access) {
         ],
       ),
 
-      // ----- Settings detail pages OUTSIDE the ShellRoute -----
+      // ----- Settings detail pages (open on root, outside shell) -----
       GoRoute(
+        parentNavigatorKey: NavKeys.root,
         path: AppRoutes.settingsAccount,
         pageBuilder: (context, state) => fadePage(
           const AccountSettingsScreen(),
@@ -93,7 +103,7 @@ GoRouter buildAppRouter(AccessController access) {
         ),
         routes: [
           GoRoute(
-            path: 'change-password',
+            path: 'change-password', // matches AppRoutes.settingsChangePassword
             pageBuilder: (context, state) => fadePage(
               const ChangePasswordScreen(),
               key: const ValueKey('settings-change-password'),
@@ -102,6 +112,7 @@ GoRouter buildAppRouter(AccessController access) {
         ],
       ),
       GoRoute(
+        parentNavigatorKey: NavKeys.root,
         path: AppRoutes.settingsAppearance,
         pageBuilder: (context, state) => fadePage(
           AppearanceSettingsScreen(
@@ -112,6 +123,7 @@ GoRouter buildAppRouter(AccessController access) {
         ),
       ),
       GoRoute(
+        parentNavigatorKey: NavKeys.root,
         path: AppRoutes.settingsNotifications,
         pageBuilder: (context, state) => fadePage(
           const NotificationsSettingsScreen(),
@@ -119,6 +131,7 @@ GoRouter buildAppRouter(AccessController access) {
         ),
       ),
       GoRoute(
+        parentNavigatorKey: NavKeys.root,
         path: AppRoutes.settingsStorage,
         pageBuilder: (context, state) => fadePage(
           const StorageSyncScreen(),
@@ -126,11 +139,13 @@ GoRouter buildAppRouter(AccessController access) {
         ),
       ),
       GoRoute(
+        parentNavigatorKey: NavKeys.root,
         path: AppRoutes.settingsFaqs,
         pageBuilder: (context, state) =>
             fadePage(FaqsScreen(), key: const ValueKey('settings-faqs')),
       ),
       GoRoute(
+        parentNavigatorKey: NavKeys.root,
         path: AppRoutes.settingsAbout,
         pageBuilder: (context, state) => fadePage(
           const AboutSettingsScreen(),
@@ -138,8 +153,9 @@ GoRouter buildAppRouter(AccessController access) {
         ),
       ),
 
-      // Full-screen route outside shell
+      // ----- Full-screen route outside shell -----
       GoRoute(
+        parentNavigatorKey: NavKeys.root,
         path: AppRoutes.results,
         pageBuilder: (context, state) => fadePage(
           ResultsScreen(initialResult: state.extra as ProcessedRecipeResult?),
@@ -148,17 +164,7 @@ GoRouter buildAppRouter(AccessController access) {
       ),
     ],
 
-    errorBuilder: (context, state) => const _RouterErrorPage(),
-  );
-}
-
-/// Simple friendly error page
-class _RouterErrorPage extends StatelessWidget {
-  const _RouterErrorPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+    errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(title: const Text('Oops')),
       body: Center(
         child: ConstrainedBox(
@@ -199,6 +205,6 @@ class _RouterErrorPage extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }

@@ -1,25 +1,22 @@
-// functions/src/revenuecat_index.ts
-import admin from "firebase-admin";
-import {
-  beforeUserCreated,
-} from "firebase-functions/v2/identity";
+import admin, { firestore } from "./firebase.js";
 import {
   onRequest,
   onCall,
   CallableRequest,
   HttpsError,
 } from "firebase-functions/v2/https";
+import { beforeUserCreated } from "firebase-functions/v2/identity";
 import fetch from "node-fetch";
 
 import { resolveTierFromPayload } from "./revenuecat.js";
 import { productToTier } from "./mapping.js";
 import { verifyRevenueCatSignature } from "./rc-verify.js";
 
-admin.initializeApp();
-const db = admin.firestore();
+// ✅ Use firestore from firebase.ts (no duplicate initializeApp)
+const db = firestore;
 
 /**
- * 1) Create user doc on sign-up (v2 blocking identity trigger)
+ * 1) Create user doc on sign-up (blocking identity trigger: before user created)
  */
 export const onAuthInitUser = beforeUserCreated(async (event) => {
   const user = event.data;
@@ -41,6 +38,8 @@ export const onAuthInitUser = beforeUserCreated(async (event) => {
     platform: null,
     usage: {},
   });
+
+  console.log(`✅ User initialised in Firestore: ${uid}`);
 });
 
 /**

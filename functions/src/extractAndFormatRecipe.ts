@@ -2,8 +2,6 @@ import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https
 import { defineSecret } from "firebase-functions/params";
 import { getStorage } from "firebase-admin/storage";
 import { decode } from "html-entities";
-import admin from "./firebase.js";
-import dayjs from "dayjs";
 
 import { extractTextFromImages } from "./ocr.js";
 import { detectLanguage } from "./detect.js";
@@ -17,6 +15,7 @@ import {
   incrementGptRecipeUsage,
 } from "./policy.js";
 
+// 🔑 Secrets
 const REVENUECAT_SECRET_KEY = defineSecret("REVENUECAT_SECRET_KEY");
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
@@ -61,9 +60,7 @@ async function deleteUploadedImage(url: string) {
 
 // ---------------------------- main ----------------------------
 export const extractAndFormatRecipe = onCall(
-  {
-    secrets: [REVENUECAT_SECRET_KEY, OPENAI_API_KEY],
-  },
+  { secrets: [REVENUECAT_SECRET_KEY, OPENAI_API_KEY] },
   async (request: CallableRequest<{
     imageUrls: string[];
     targetLanguage?: string; // e.g. "pl", "en"
@@ -97,18 +94,16 @@ export const extractAndFormatRecipe = onCall(
       process.env.FUNCTIONS_PROJECT_ID ||
       process.env.GCP_PROJECT ||
       "";
-
     if (!projectId) {
       throw new HttpsError("failed-precondition", "No project ID available.");
     }
 
-    // —— Target locale from frontend (defaults preserved)
+    // —— Target locale from frontend
     const targetLanguage = (request.data?.targetLanguage || "en").toLowerCase();
     const targetRegion = (request.data?.targetRegion || "GB") || undefined;
     const targetLanguageTag = toBcp47(targetLanguage, targetRegion);
     const targetFlutterLocale = toFlutterLocaleTag(targetLanguage, targetRegion);
 
-    // We always try to clean up uploaded images even if processing fails
     try {
       console.log(`📸 Starting processing of ${imageUrls.length} image(s)...`);
 
@@ -117,9 +112,8 @@ export const extractAndFormatRecipe = onCall(
       if (!ocrText.trim()) {
         throw new HttpsError("invalid-argument", "No text detected in provided images.");
       }
-
       const cleanInput = ocrText.replace(/[ \t]+\n/g, "\n").trim();
-      console.log("🔎 OCR done (preview omitted for brevity)");
+      console.log("🔎 OCR complete");
 
       // —— Language detection
       let detectedLanguage = "unknown";
@@ -162,15 +156,16 @@ export const extractAndFormatRecipe = onCall(
             usedText = cleanedTranslated;
             translationUsed = true;
 
-            // Enforce + count only when we actually translated meaningful text
+            // ✅ Enforce + count via policy
             await enforceTranslationPolicy(uid);
             await incrementTranslationUsage(uid);
+
+            console.log("✅ Translation successful & usage incremented");
           } else {
-            console.warn("⚠️ Translation returned empty or null. Continuing with original text.");
+            console.warn("⚠️ Translation returned empty. Continuing with original text.");
           }
         } catch (err) {
           console.error("❌ Translation failed:", err);
-          // Continue with original text if translation fails
         }
       } else {
         console.log(`🟢 Skipping translation – already ${targetLanguageTag}`);
@@ -179,9 +174,7 @@ export const extractAndFormatRecipe = onCall(
       // —— GPT formatting (enforce policy first)
       await enforceGptRecipePolicy(uid);
 
-      // Decode HTML entities & trim before sending to GPT
       const finalText = decode(usedText.trim());
-
       const formattedRecipe = await generateFormattedRecipe(
         finalText,
         translationUsed ? (srcBase || "unknown") : (tgtBase || "en"),
@@ -189,32 +182,7 @@ export const extractAndFormatRecipe = onCall(
       );
 
       await incrementGptRecipeUsage(uid);
-      console.log("✅ GPT formatting complete.");
-
-      // —— Usage metrics (month bucket)
-      try {
-        const monthKey = dayjs().format("YYYY-MM");
-        await admin.firestore().doc(`users/${uid}/aiUsage/usage`).set(
-          {
-            [monthKey]: admin.firestore.FieldValue.increment(1),
-            lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true }
-        );
-
-        if (translationUsed) {
-          await admin.firestore().doc(`users/${uid}/translationUsage/usage`).set(
-            {
-              [monthKey]: admin.firestore.FieldValue.increment(1),
-              lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-            },
-            { merge: true }
-          );
-        }
-        console.log("📈 Synced usage metrics to Firestore");
-      } catch (err) {
-        console.warn("⚠️ Failed to sync usage metrics to Firestore:", err);
-      }
+      console.log("✅ GPT formatting complete & usage incremented");
 
       console.log(`🏁 Processing complete in ${Date.now() - start}ms`);
 
@@ -229,24 +197,18 @@ export const extractAndFormatRecipe = onCall(
         imageUrls,
         isTranslated: translationUsed,
         translatedFromLanguage: translationUsed ? detectedLanguage : null,
+        tier,
       };
     } catch (err: any) {
-      console.error("❌ extractAndFormatRecipe failed:");
-      console.error("📛 Error message:", err?.message || err);
-      console.error("🧵 Stack trace:\n", err?.stack || "No stack trace");
-      console.error("📥 Request data:", JSON.stringify(request.data, null, 2));
-
+      console.error("❌ extractAndFormatRecipe failed:", err);
       if (err instanceof HttpsError) throw err;
-      throw new HttpsError(
-        "internal",
-        `❌ Failed to process recipe: ${err?.message || "Unknown error"}`
-      );
+      throw new HttpsError("internal", `❌ Failed to process recipe: ${err?.message || "Unknown error"}`);
     } finally {
-      // always try to clean up uploaded images
+      // Always delete uploads
       try {
         await Promise.all((request.data?.imageUrls ?? []).map(deleteUploadedImage));
       } catch (e) {
-        console.warn("⚠️ Failed to delete uploaded images in finally:", e);
+        console.warn("⚠️ Failed to delete uploaded images:", e);
       }
     }
   }

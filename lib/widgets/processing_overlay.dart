@@ -1,20 +1,15 @@
-// lib/widgets/processing_overlay.dart
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
+import 'package:recipe_vault/data/services/image_processing_service.dart';
 
 import 'package:recipe_vault/l10n/app_localizations.dart';
-import 'package:recipe_vault/data/services/image_processing_service.dart';
 import 'package:recipe_vault/widgets/processing_messages.dart';
-import 'package:recipe_vault/navigation/routes.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
 
 class ProcessingOverlay {
   static OverlayEntry? _currentOverlay;
@@ -106,31 +101,13 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('User not signed in.');
 
-      // 🔑 Resolve subscription via SubscriptionService
-      final sub = context.read<SubscriptionService>();
-      if (sub.tier == 'none') {
-        await sub.refresh(); // ensure fresh entitlement
-      }
-      debugPrint('📄 Resolved tier (live): ${sub.tier}');
-
-      // 🔄 Sync Firestore (optional, non-blocking)
-      try {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'tier': sub.tier,
-          'productId': sub.productId,
-          'lastLogin': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      } catch (e) {
-        debugPrint('⚠️ Failed to sync user tier before processing: $e');
-      }
-
       await _setStep(0);
       final imageUrls = await ImageProcessingService.uploadFiles(
         widget.imageFiles,
       );
       if (_hasCancelled) return;
 
-      // 🧠 Process recipe
+      // Call CF
       final result = await ImageProcessingService.extractAndFormatRecipe(
         imageUrls,
         context,
@@ -141,9 +118,11 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
         "🧭 RAW FUNCTION RESPONSE = ${JsonEncoder.withIndent('  ').convert(result.toMap())}",
       );
 
+      // ✅ Use backend-provided tier instead of Firestore read
+      debugPrint("📄 User tier (from CF): ${result.tier}");
+
       final needsTranslation = result.translationUsed;
 
-      // If translation was used, insert the translation step/messages
       if (mounted && needsTranslation) {
         final t = AppLocalizations.of(context);
         _currentSteps = [
@@ -160,30 +139,26 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
           ProcessingMessages.pickRandom(ProcessingMessages.formatting(context)),
           ProcessingMessages.pickRandom(ProcessingMessages.completed(context)),
         ];
-        setState(() {}); // refresh with extra step
+        setState(() {});
       }
 
       if (needsTranslation) {
-        await _setStep(1); // Translating
+        await _setStep(1);
         await Future.delayed(const Duration(milliseconds: 600));
-        await _setStep(2); // Formatting
+        await _setStep(2);
       } else {
-        await _setStep(1); // Formatting
+        await _setStep(1);
       }
 
       if (_hasCancelled) return;
       await Future.delayed(const Duration(milliseconds: 600));
 
-      await _setStep(_currentSteps.length - 1); // Finishing
+      await _setStep(_currentSteps.length - 1);
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (!mounted) return;
-
       ProcessingOverlay.hide();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || _hasCancelled) return;
-        context.push(AppRoutes.results, extra: result);
-      });
+      context.push('/results', extra: result);
     } catch (e, st) {
       debugPrint('❌ Processing failed: $e\n$st');
 

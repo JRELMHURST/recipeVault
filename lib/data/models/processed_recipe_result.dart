@@ -14,6 +14,9 @@ class ProcessedRecipeResult {
   /// Download URLs of any images produced/kept during processing (immutable).
   final List<String> imageUrls;
 
+  /// The user's subscription tier at the time of processing (from backend).
+  final String? tier;
+
   // NOTE: not const (uses List.unmodifiable).
   ProcessedRecipeResult({
     required this.formattedRecipe,
@@ -21,6 +24,7 @@ class ProcessedRecipeResult {
     required this.translationUsed,
     required this.originalText,
     required List<String> imageUrls,
+    this.tier,
   }) : imageUrls = List.unmodifiable(imageUrls);
 
   /// Convenient empty value.
@@ -30,6 +34,7 @@ class ProcessedRecipeResult {
     translationUsed: false,
     originalText: '',
     imageUrls: const [],
+    tier: null,
   );
 
   /// Map → model. Accepts both 'language' and 'detectedLanguage'.
@@ -49,6 +54,7 @@ class ProcessedRecipeResult {
       translationUsed: (data['translationUsed'] ?? false) == true,
       language: lang,
       imageUrls: urls,
+      tier: data['tier']?.toString(),
     );
   }
 
@@ -59,6 +65,7 @@ class ProcessedRecipeResult {
     'translationUsed': translationUsed,
     'detectedLanguage': language,
     'imageUrls': imageUrls,
+    'tier': tier,
   };
 
   /// Selective immutable update.
@@ -68,6 +75,7 @@ class ProcessedRecipeResult {
     bool? translationUsed,
     String? originalText,
     List<String>? imageUrls,
+    String? tier,
   }) {
     return ProcessedRecipeResult(
       formattedRecipe: formattedRecipe ?? this.formattedRecipe,
@@ -75,6 +83,7 @@ class ProcessedRecipeResult {
       translationUsed: translationUsed ?? this.translationUsed,
       originalText: originalText ?? this.originalText,
       imageUrls: imageUrls ?? this.imageUrls,
+      tier: tier ?? this.tier,
     );
   }
 
@@ -90,6 +99,7 @@ class ProcessedRecipeResult {
           ? other.originalText
           : originalText,
       imageUrls: other.imageUrls.isNotEmpty ? other.imageUrls : imageUrls,
+      tier: other.tier ?? tier,
     );
   }
 
@@ -101,7 +111,7 @@ class ProcessedRecipeResult {
   @override
   String toString() =>
       'ProcessedRecipeResult(lang:$language, translated:$translationUsed, '
-      'images:${imageUrls.length}, formatted:${formattedRecipe.length} chars)';
+      'images:${imageUrls.length}, formatted:${formattedRecipe.length} chars, tier:$tier)';
 
   @override
   bool operator ==(Object other) =>
@@ -111,7 +121,8 @@ class ProcessedRecipeResult {
           language == other.language &&
           translationUsed == other.translationUsed &&
           originalText == other.originalText &&
-          _listEquals(imageUrls, other.imageUrls);
+          _listEquals(imageUrls, other.imageUrls) &&
+          tier == other.tier;
 
   @override
   int get hashCode =>
@@ -119,7 +130,8 @@ class ProcessedRecipeResult {
       language.hashCode ^
       translationUsed.hashCode ^
       originalText.hashCode ^
-      imageUrls.hashCode;
+      imageUrls.hashCode ^
+      tier.hashCode;
 
   static bool _listEquals(List<String> a, List<String> b) {
     if (identical(a, b)) return true;

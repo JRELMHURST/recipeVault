@@ -1,5 +1,9 @@
 import "./firebase.js";
 import { TranslationServiceClient } from "@google-cloud/translate";
+import {
+  enforceTranslationPolicy,
+  incrementMonthlyUsage,
+} from "./usage_service.js";
 
 const client = new TranslationServiceClient();
 
@@ -14,37 +18,40 @@ function cleanText(input: string): string {
     .trim();
 }
 
-/** Keep request size reasonable for detection */
 function truncate(input: string, max = 5000): string {
   return input.length > max ? input.slice(0, max) : input;
 }
 
-// Map GCP language codes to your Flutter supported locales (underscored)
+/** Map GCP language codes to Flutter-supported locales */
 function mapToFlutterLocale(code: string): string {
-  const base = code.toLowerCase(); // e.g. "en", "pl", "ga"
+  const base = code.toLowerCase();
 
   const exact = new Set([
-    "en", "en-gb", "bg", "cs", "da", "de", "el", "es", "fr", "ga", "it", "nl", "pl", "cy",
+    "en", "en-gb", "bg", "cs", "da", "de", "el",
+    "es", "fr", "ga", "it", "nl", "pl", "cy",
   ]);
 
-  if (exact.has(base) || /^[a-z]{2}-[a-z]{2}$/i.test(code)) {
+  if (exact.has(base) || /^[a-z]{2}-[a-z]{2}$/i.test(base)) {
     return base.replace("-", "_");
   }
 
-  // sensible fallback: your app defaults to British English
   return "en_GB";
 }
 
 export async function detectLanguage(
+  uid: string,      // 🔑 must pass UID for quotas
   text: string,
   projectId?: string
 ): Promise<{
-  languageCode: string;   // e.g. "pl", "en", "fr"
-  confidence: number;     // 0..1
-  flutterLocale: string;  // e.g. "pl", "en_GB", "fr"
+  languageCode: string;
+  confidence: number;
+  flutterLocale: string;
 }> {
   if (!text?.trim()) {
     throw new Error("❌ No text provided for language detection.");
+  }
+  if (!uid) {
+    throw new Error("❌ Missing UID for usage enforcement.");
   }
 
   const pid =
@@ -61,7 +68,9 @@ export async function detectLanguage(
   console.log(
     `🔍 Detecting language: original=${text.length} chars, cleaned=${cleaned.length} chars`
   );
-  console.log(`🧪 Sample:\n${cleaned.slice(0, 300)}\n`);
+
+  // 1. Enforce quota
+  await enforceTranslationPolicy(uid);
 
   try {
     const [response] = await client.detectLanguage({
@@ -73,13 +82,14 @@ export async function detectLanguage(
     const language = response.languages?.[0];
     const languageCode = (language?.languageCode || "unknown").toLowerCase();
     const confidence = language?.confidence ?? 0;
+    const flutterLocale = mapToFlutterLocale(languageCode);
 
     if (confidence < 0.5) {
       console.warn("⚠️ Low confidence in language detection.");
     }
 
-    const flutterLocale = mapToFlutterLocale(languageCode);
-    console.log(`🌍 Detected: ${languageCode} (conf=${confidence}) → flutter=${flutterLocale}`);
+    // 2. Increment usage
+    await incrementMonthlyUsage(uid, "translationUsage");
 
     return { languageCode, confidence, flutterLocale };
   } catch (err) {

@@ -10,10 +10,9 @@ import { generateFormattedRecipe } from "./gpt_logic.js";
 import {
   getResolvedTier,
   enforceTranslationPolicy,
-  incrementTranslationUsage,
+  incrementMonthlyUsage,
   enforceGptRecipePolicy,
-  incrementGptRecipeUsage,
-} from "./policy.js";
+} from "./usage_service.js";
 
 // 🔑 Secrets
 const REVENUECAT_SECRET_KEY = defineSecret("REVENUECAT_SECRET_KEY");
@@ -156,9 +155,9 @@ export const extractAndFormatRecipe = onCall(
             usedText = cleanedTranslated;
             translationUsed = true;
 
-            // ✅ Enforce + count via policy
+            // ✅ Enforce + count via usage service
             await enforceTranslationPolicy(uid);
-            await incrementTranslationUsage(uid);
+            await incrementMonthlyUsage(uid, "translationUsage");
 
             console.log("✅ Translation successful & usage incremented");
           } else {
@@ -181,7 +180,7 @@ export const extractAndFormatRecipe = onCall(
         targetFlutterLocale
       );
 
-      await incrementGptRecipeUsage(uid);
+      await incrementMonthlyUsage(uid, "aiUsage");
       console.log("✅ GPT formatting complete & usage incremented");
 
       console.log(`🏁 Processing complete in ${Date.now() - start}ms`);

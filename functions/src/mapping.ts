@@ -9,12 +9,12 @@ export type Tier = "home_chef" | "master_chef" | "none";
  * Mapping from RevenueCat product identifiers → internal Tier.
  * Always normalise keys to lowercase.
  */
-export const PRODUCT_TO_TIER: Record<string, Tier> = {
+export const PRODUCT_TO_TIER: Readonly<Record<string, Tier>> = {
   "home_chef_monthly": "home_chef",
-  "home_chef_yearly": "home_chef",   // ✅ future-proof in case you add yearly
+  "home_chef_yearly": "home_chef",
   "master_chef_monthly": "master_chef",
   "master_chef_yearly": "master_chef",
-};
+} as const;
 
 /**
  * Convert a RevenueCat productId into a Tier

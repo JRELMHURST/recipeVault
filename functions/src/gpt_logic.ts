@@ -1,24 +1,28 @@
+// functions/src/gpt_logic.ts
 import OpenAI from "openai";
+import {
+  enforceGptRecipePolicy,
+  incrementMonthlyUsage,
+} from "./usage_service.js";
 
 type GptRecipeResponse = {
   formattedRecipe: string;
   notes?: string;
 };
 
-// Use your preferred model; keep your original if required
 const MODEL = "gpt-4o-mini"; // or "gpt-3.5-turbo-0125"
 
-// Map locale → language name for the instruction + localised labels
+// 🌍 Map locale → language name + labels
 const LOCALE_META: Record<
   string,
   {
-    languageName: string;               // used in the system prompt
+    languageName: string;
     labels: {
       title: string;
       ingredients: string;
       instructions: string;
-      hints: string;                    // “Hints & Tips”
-      noTips: string;                   // fallback for empty tips
+      hints: string;
+      noTips: string;
     };
   }
 > = {
@@ -164,24 +168,30 @@ const LOCALE_META: Record<
   },
 };
 
-// Fallback to en_GB semantics if we don’t recognise the locale
+// fallback
 function resolveLocaleMeta(locale: string | undefined) {
-  return (locale && LOCALE_META[locale]) ? LOCALE_META[locale] : LOCALE_META.en_GB;
+  return (locale && LOCALE_META[locale])
+    ? LOCALE_META[locale]
+    : LOCALE_META.en_GB;
 }
 
 /**
- * Formats a translated recipe into a consistent structure in the user's locale.
- * Returns a single formatted string (backwards compatible with your UI).
+ * Formats a recipe into a consistent structure in the user's locale,
+ * with quota enforcement + usage tracking.
  */
 export async function generateFormattedRecipe(
+  uid: string,          // 🔑 must be passed in for quota
   text: string,
   sourceLang: string,
-  targetLocale: string // REQUIRED: pass the app's current locale (e.g. "pl", "en_GB")
+  targetLocale: string
 ): Promise<string> {
+  if (!uid) throw new Error("❌ Missing UID for usage enforcement");
+
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("❌ Missing OPENAI_API_KEY in environment variables");
-  }
+  if (!apiKey) throw new Error("❌ Missing OPENAI_API_KEY in environment variables");
+
+  // 1. Enforce quota before calling GPT
+  await enforceGptRecipePolicy(uid);
 
   const { languageName, labels } = resolveLocaleMeta(targetLocale);
   const openai = new OpenAI({ apiKey });
@@ -223,7 +233,7 @@ Return only a single JSON object **inside a JSON code block** like:
   "notes": "<extracted tips list or '${labels.noTips}'>"
 }
 \`\`\`
-`.trim();
+  `.trim();
 
   const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""`;
 
@@ -239,18 +249,16 @@ Return only a single JSON object **inside a JSON code block** like:
 
   const rawContent = completion.choices[0]?.message?.content?.trim() || "";
 
-  // Strip ```json fences if present
+  // strip code fences if present
   const jsonCandidate = rawContent
     .replace(/^```json\s*/i, "")
     .replace(/```$/i, "")
     .trim();
 
   let parsed: GptRecipeResponse | null = null;
-
   const tryParse = (s: string) => {
     try { return JSON.parse(s) as GptRecipeResponse; } catch { return null; }
   };
-
   parsed = tryParse(jsonCandidate) ||
            tryParse((rawContent.match(/```json\s*([\s\S]*?)\s*```/i)?.[1] || "").trim());
 
@@ -261,9 +269,10 @@ Return only a single JSON object **inside a JSON code block** like:
 
   const formatted = parsed.formattedRecipe.trim();
   const notes = (parsed.notes || labels.noTips).trim();
-
-  // If model didn’t include the hints section, append it
   const hasHintsSection = new RegExp(`(^|\\n)${labels.hints}\\s*:`, "i").test(formatted);
+
+  // 2. Increment usage only after a successful GPT call
+  await incrementMonthlyUsage(uid, "aiUsage");
 
   return hasHintsSection ? formatted : `${formatted}\n\n${labels.hints}:\n${notes}`;
 }

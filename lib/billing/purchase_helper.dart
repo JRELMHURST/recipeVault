@@ -1,10 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart'; // PlatformException
 import 'package:purchases_flutter/purchases_flutter.dart';
-
-import 'package:recipe_vault/billing/tier_utils.dart'; // resolveTier(productId)
+import 'package:cloud_functions/cloud_functions.dart';
 
 class PurchaseHelper {
   /// Initialise RevenueCat with the public API key.
@@ -24,11 +22,11 @@ class PurchaseHelper {
   /// All offerings from RC.
   static Future<Offerings> getOfferings() => Purchases.getOfferings();
 
-  /// Purchase a selected package and sync to Firestore.
+  /// Purchase a selected package and then trigger backend reconcile.
   static Future<CustomerInfo> purchasePackage(Package package) async {
     try {
       final info = await Purchases.purchasePackage(package);
-      await syncEntitlementToFirestore(info);
+      await _triggerBackendReconcile();
       return info;
     } on PlatformException {
       rethrow; // let UI handle cancelled/failed states
@@ -40,112 +38,36 @@ class PurchaseHelper {
     await purchasePackage(package);
   }
 
-  /// Restore previous purchases and sync.
+  /// Restore previous purchases and trigger backend reconcile.
   static Future<CustomerInfo> restorePurchases() async {
     final info = await Purchases.restorePurchases();
-    await syncEntitlementToFirestore(info);
+    await _triggerBackendReconcile();
     return info;
   }
 
-  /// True if a given **entitlement key** (RC entitlement identifier) is active.
-  /// Example keys: "pro", "premium" — not product ids.
-  static bool hasActiveEntitlementKey(
-    CustomerInfo info,
-    String entitlementKey,
-  ) {
-    return info.entitlements.active.containsKey(entitlementKey);
-  }
-
-  /// Active product id (e.g. "home_chef_monthly") — what resolveTier() expects.
+  /// Optimistic: check RC immediately without waiting for backend.
   static String? getActiveProductId(CustomerInfo info) {
     if (info.entitlements.active.isEmpty) return null;
     final EntitlementInfo e = info.entitlements.active.values.first;
     return e.productIdentifier;
   }
 
-  /// Back-compat alias; returns product id (not entitlement key).
-  static String? getActiveEntitlementId(CustomerInfo info) {
-    return getActiveProductId(info);
+  static String? getActiveEntitlementKey(CustomerInfo info) {
+    if (info.entitlements.active.isEmpty) return null;
+    final EntitlementInfo e = info.entitlements.active.values.first;
+    return e.identifier;
   }
 
-  /// 🔄 Push RC → Firestore so backend/analytics can see current tier.
-  ///
-  /// Written fields:
-  /// - productId: product id (e.g. "home_chef_monthly")  ✅ canonical for app logic
-  /// - entitlementKey: RC entitlement key (optional, informational)
-  /// - tier: derived via resolveTier(productId)
-  /// - willRenew, originalPurchaseDate, expirationDate, store, periodType, lastSyncedAt
-  static Future<void> syncEntitlementToFirestore(CustomerInfo info) async {
-    final EntitlementInfo? e = info.entitlements.active.values.isNotEmpty
-        ? info.entitlements.active.values.first
-        : null;
-
-    final String productId = e?.productIdentifier ?? 'none'; // RC product id
-    final String entitlementKey = e?.identifier ?? 'none'; // RC entitlement key
-    final String tier = resolveTier(productId);
-
-    // Convert RC ISO8601 strings to DateTime? for Firestore
-    DateTime? parse(String? iso) => iso == null ? null : DateTime.tryParse(iso);
-
-    final originalPurchaseDate = parse(e?.originalPurchaseDate);
-    final expirationDate = parse(e?.expirationDate);
-
-    // Prefer Firebase UID; fall back to RC app user id.
-    final String? uid = FirebaseAuth.instance.currentUser?.uid;
-    final String userId = (uid != null && uid.isNotEmpty)
-        ? uid
-        : (info.originalAppUserId.isNotEmpty ? info.originalAppUserId : '');
-
-    if (userId.isEmpty) {
-      if (kDebugMode) {
-        print('⚠️ syncEntitlementToFirestore skipped: no user id available.');
-      }
-      return;
-    }
-
-    final updateData = <String, dynamic>{
-      'productId': productId, // product id (canonical in app)
-      'entitlementKey': entitlementKey, // RC entitlement key (optional)
-      'tier': tier,
-      'willRenew': e?.willRenew ?? false,
-      'originalPurchaseDate': originalPurchaseDate, // DateTime?
-      'expirationDate': expirationDate, // DateTime?
-      'store': e?.store.name, // enum -> string
-      'periodType': e?.periodType.name, // "trial" | "intro" | "normal"
-      'lastSyncedAt': FieldValue.serverTimestamp(),
-    };
-
-    try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .set(updateData, SetOptions(merge: true));
-
-      if (kDebugMode) {
-        print(
-          '✅ RC sync → users/$userId '
-          '{product="$productId", key="$entitlementKey", tier="$tier", '
-          'renew=${updateData['willRenew']}, period=${updateData['periodType']}}',
-        );
-      }
-    } catch (err) {
-      if (kDebugMode) {
-        print('❌ Failed to sync entitlement to Firestore: $err');
-      }
-    }
-  }
-
-  /// Optional: call when the Firebase user changes to link RC to that user explicitly.
+  /// Optional: call when the Firebase user changes to link RC explicitly.
   static Future<void> identifyIfNeeded() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || uid.isEmpty) return;
     try {
       await Purchases.logIn(uid);
       await Purchases.invalidateCustomerInfoCache();
-      final info = await Purchases.getCustomerInfo();
-      await syncEntitlementToFirestore(info);
+      await _triggerBackendReconcile();
     } catch (e) {
-      if (kDebugMode) print('⚠️ RevenueCat identify failed: $e');
+      if (kDebugMode) debugPrint('⚠️ RevenueCat identify failed: $e');
     }
   }
 
@@ -154,7 +76,24 @@ class PurchaseHelper {
     try {
       await Purchases.logOut();
     } catch (e) {
-      if (kDebugMode) print('⚠️ RevenueCat logOut failed: $e');
+      if (kDebugMode) debugPrint('⚠️ RevenueCat logOut failed: $e');
     }
   }
+
+  /// 🔄 Trigger backend reconcile (Firestore is updated only by backend).
+  static Future<void> _triggerBackendReconcile() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+      final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
+      final callable = functions.httpsCallable("reconcileUserFromRC");
+      await callable.call({"uid": uid});
+      if (kDebugMode) debugPrint("✅ Reconcile triggered for $uid");
+    } catch (e) {
+      if (kDebugMode) debugPrint("⚠️ Failed to trigger reconcile: $e");
+    }
+  }
+
+  /// ✅ Public wrapper for backend reconcile (for external calls).
+  static Future<void> triggerBackendReconcile() => _triggerBackendReconcile();
 }

@@ -317,30 +317,27 @@ class UserSessionService {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final customerInfo = await Purchases.getCustomerInfo();
-    final productId = PurchaseHelper.getActiveProductId(customerInfo);
-    final tier = resolveTier(productId);
-
-    SubscriptionService().updateTier(tier);
-
     try {
-      final docRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid);
+      // Fetch RC customer info
+      final customerInfo = await Purchases.getCustomerInfo();
+      final productId = PurchaseHelper.getActiveProductId(customerInfo);
+      final tier = resolveTier(productId);
 
-      _logDebug('☁️ Updating Firestore with tier=$tier, productId=$productId');
+      // Update in-memory tier so the UI reacts immediately
+      SubscriptionService().updateTier(tier);
 
-      await docRef.set({
-        'tier': tier,
-        'productId':
-            productId ??
-            'none', // 👈 rename field if you want canonical clarity
-        'lastLogin': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      _logDebug(
+        '☁️ Optimistic entitlement sync: tier=$tier, productId=$productId '
+        '→ delegating Firestore write to backend',
+      );
 
-      _logDebug('☁️ Synced entitlement → Firestore');
-    } catch (e) {
-      _logDebug('⚠️ Failed to sync entitlement: $e');
+      // Let the backend reconcile Firestore (source of truth)
+      await PurchaseHelper.triggerBackendReconcile();
+
+      _logDebug('☁️ Reconcile triggered successfully');
+    } catch (e, stack) {
+      _logDebug('⚠️ Failed to sync entitlement via backend: $e');
+      if (kDebugMode) print(stack);
     }
   }
 

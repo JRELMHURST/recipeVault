@@ -13,24 +13,28 @@ service cloud.firestore {
       // User can delete their own doc
       allow delete: if request.auth != null && request.auth.uid == userId;
 
-      // ⚠️ Updates: only safe fields from client
-      allow update: if request.auth != null && request.auth.uid == userId && (
+      // ⚠️ Client updates: only safe fields (email, platform)
+      allow update: if request.auth != null && request.auth.uid == userId &&
         request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['email', 'platform', 'usage'])
-      );
+          .hasOnly(['email', 'platform']);
 
-      // 👑 Admin override
+      // 👑 Admin override: can update anything
       allow update: if request.auth.token.admin == true;
 
-// 📦 Recipes stored in user's vault
-match /recipes/{recipeId} {
-  allow read, list, create, update, delete: if request.auth != null && request.auth.uid == userId;
-}
+      // 📦 Recipes stored in user's vault
+      match /recipes/{recipeId} {
+        allow read, list, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
 
-// 🏷️ Custom categories for filtering recipes
-match /categories/{categoryId} {
-  allow read, list, create, update, delete: if request.auth != null && request.auth.uid == userId;
-}
+      // 🏷️ Custom categories for filtering recipes
+      match /categories/{categoryId} {
+        allow read, list, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 📜 Translated recipe cards (optional)
+      match /translations/{translationId} {
+        allow read, list, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
 
       // 📈 AI usage quota (read-only from app, backend writes only)
       match /aiUsage/{docId} {
@@ -40,6 +44,12 @@ match /categories/{categoryId} {
 
       // 🌍 Translation usage quota (read-only from app, backend writes only)
       match /translationUsage/{docId} {
+        allow read, list: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+
+      // 🖼️ Image usage quota (read-only from app, backend writes only)
+      match /imageUsage/{docId} {
         allow read, list: if request.auth != null && request.auth.uid == userId;
         allow write: if false;
       }

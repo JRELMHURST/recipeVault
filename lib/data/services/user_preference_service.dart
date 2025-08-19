@@ -1,6 +1,6 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
+import 'package:recipe_vault/auth/uid_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:recipe_vault/core/feature_flags.dart';
 
@@ -31,7 +31,7 @@ class UserPreferencesService {
   /// Order matters only for `maybeMarkTutorialCompleted`.
   static const List<String> _bubbleKeys = ['viewToggle', 'longPress', 'scan'];
 
-  static String get _uid => FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+  static String get _uid => UIDProvider.requireUid();
   static String get _boxName => 'userPrefs_$_uid';
 
   static Box? _box;
@@ -43,13 +43,7 @@ class UserPreferencesService {
   // ── Lifecycle / user switching ─────────────────────────────────────────────
 
   static Future<void> init() async {
-    if (_uid == 'unknown') {
-      if (kDebugMode) {
-        debugPrint('🟡 UserPreferencesService.init() skipped – no user');
-      }
-      return;
-    }
-    await _ensureBoxForCurrentUser();
+    await _ensureBoxForCurrentUser(); // always requires a valid UID
   }
 
   static Future<void> _ensureBoxForCurrentUser() async {

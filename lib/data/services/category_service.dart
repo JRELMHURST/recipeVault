@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:recipe_vault/auth/uid_provider.dart';
 
 import 'package:recipe_vault/data/models/category_model.dart';
 import 'package:recipe_vault/features/recipe_vault/categories.dart';
@@ -16,7 +17,7 @@ class CategoryService {
   static const List<String> _seedUserDefaults = CategoryKeys.starterUser;
 
   // ─────────────────────────────── state ───────────────────────────────
-  static String get _uid => FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+  static String get _uid => UIDProvider.requireUid();
   static String get _customBoxName => 'customCategories_$_uid';
   static String get _hiddenDefaultBox => 'hiddenDefaultCategories_$_uid';
 

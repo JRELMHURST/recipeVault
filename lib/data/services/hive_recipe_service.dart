@@ -4,11 +4,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
+import 'package:recipe_vault/auth/uid_provider.dart';
 
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 
 class HiveRecipeService {
-  static String get _uid => FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+  static String get _uid => UIDProvider.requireUid();
   static String get _boxName => 'recipes_$_uid';
 
   static Box<RecipeCardModel>? _box;
@@ -34,7 +35,6 @@ class HiveRecipeService {
     }
 
     // Open (or reuse) the correct box for the current user.
-    if (_uid == 'unknown') return; // no signed-in user → don't open a box
     if (!Hive.isBoxOpen(_boxName)) {
       try {
         _box = await Hive.openBox<RecipeCardModel>(_boxName);
@@ -55,11 +55,7 @@ class HiveRecipeService {
 
   /// Public init – call this early (after sign-in) and before usage.
   static Future<void> init() async {
-    if (_uid == 'unknown') {
-      debugPrint('🟡 HiveRecipeService.init() skipped – no signed-in user');
-      return;
-    }
-    await _reopenIfUserChanged();
+    await _reopenIfUserChanged(); // throws if no UID
   }
 
   static void _throwIfNotInitialised() {

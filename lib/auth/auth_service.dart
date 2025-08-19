@@ -6,9 +6,8 @@ import 'package:recipe_vault/data/services/user_preference_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:recipe_vault/billing/tier_utils.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:collection/collection.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -28,19 +27,6 @@ class AuthService {
     }
   }
 
-  /// Safe RC fetch of the **productIdentifier** of the first active entitlement,
-  /// e.g. 'master_chef_monthly' / 'home_chef_monthly'. Returns null if none.
-  Future<String?> _getActiveEntitlementProductIdSafe() async {
-    try {
-      final info = await Purchases.getCustomerInfo();
-      final ent = info.entitlements.active.values.firstOrNull;
-      return ent?.productIdentifier;
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ RC getCustomerInfo failed: $e');
-      return null;
-    }
-  }
-
   // ── SIGN IN & REGISTER ─────────────────────────────
 
   Future<UserCredential> signInWithEmail(String email, String password) async {
@@ -49,7 +35,8 @@ class AuthService {
       password: password,
     );
     final user = credential.user!;
-    await ensureUserDocument(user); // unified
+    await ensureUserDocument(user);
+    await _reconcileFromRC(user);
     return credential;
   }
 
@@ -62,7 +49,8 @@ class AuthService {
       password: password,
     );
     final user = credential.user!;
-    await ensureUserDocument(user); // unified
+    await ensureUserDocument(user);
+    await _reconcileFromRC(user);
     return credential;
   }
 
@@ -79,7 +67,8 @@ class AuthService {
 
       final userCredential = await _auth.signInWithCredential(credential);
       final user = userCredential.user!;
-      await ensureUserDocument(user); // unified
+      await ensureUserDocument(user);
+      await _reconcileFromRC(user);
       return userCredential;
     } catch (e, stack) {
       debugPrint('🔴 Google sign-in failed: $e\n$stack');
@@ -108,7 +97,8 @@ class AuthService {
 
       final userCredential = await _auth.signInWithCredential(oauthCredential);
       final user = userCredential.user!;
-      await ensureUserDocument(user); // unified
+      await ensureUserDocument(user);
+      await _reconcileFromRC(user);
       return userCredential;
     } catch (e, stack) {
       debugPrint('🔴 Apple sign-in failed: $e\n$stack');
@@ -120,7 +110,7 @@ class AuthService {
 
   Future<void> signOut() async {
     try {
-      await Purchases.logOut(); // ok to keep
+      await Purchases.logOut();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ RC logOut failed: $e');
     }
@@ -138,8 +128,7 @@ class AuthService {
       try {
         await _deleteLocalUserData(uid);
         debugPrint('✅ Signed out and cleared local data for $uid');
-
-        await Hive.deleteFromDisk(); // nukes all boxes
+        await Hive.deleteFromDisk();
         debugPrint('🧹 All Hive data deleted from disk');
       } catch (e) {
         debugPrint('⚠️ Failed to clear local user data: $e');
@@ -168,23 +157,18 @@ class AuthService {
     await UserPreferencesService.clearAllPreferences(uid);
   }
 
-  // ── FIRESTORE USER DOCUMENT (UNIFIED) ─────────────────────────────
+  // ── FIRESTORE USER DOCUMENT (SIMPLE) ─────────────────────────────
 
   static Future<bool> ensureUserDocument(User user) async {
     final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final doc = await docRef.get();
 
-    final service = AuthService();
-    // Use productIdentifier so resolveTier() maps correctly.
-    final entitlementProductId = await service
-        ._getActiveEntitlementProductIdSafe();
-    final resolvedTier = resolveTier(entitlementProductId ?? 'none');
-    final preferredLocale = await service._getPreferredRecipeLocale();
+    final preferredLocale = await AuthService()._getPreferredRecipeLocale();
 
     final updateData = <String, dynamic>{
       'email': user.email,
-      'productId': entitlementProductId ?? 'none', // product id stored
-      'tier': resolvedTier,
+      'productId': 'none',
+      'tier': 'none',
       if (preferredLocale != null) 'preferredRecipeLocale': preferredLocale,
       if (!doc.exists) 'createdAt': FieldValue.serverTimestamp(),
     };
@@ -194,23 +178,22 @@ class AuthService {
       debugPrint('📝 Created Firestore user doc → $updateData');
       try {
         await UserPreferencesService.markAsNewUser();
-      } catch (e) {
-        debugPrint('⚠️ Failed to mark new user prefs: $e');
-      }
+      } catch (_) {}
       return true;
-    } else {
-      final existing = doc.data() ?? {};
-      final needsUpdate =
-          existing['tier'] != resolvedTier ||
-          existing['productId'] != entitlementProductId ||
-          (preferredLocale != null &&
-              existing['preferredRecipeLocale'] != preferredLocale);
+    }
+    return false;
+  }
 
-      if (needsUpdate) {
-        await docRef.set(updateData, SetOptions(merge: true));
-        debugPrint('♻️ Updated Firestore user doc → $updateData');
-      }
-      return false;
+  // ── SERVER-SIDE RECONCILE ─────────────────────────────
+
+  Future<void> _reconcileFromRC(User user) async {
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
+      final callable = functions.httpsCallable("reconcileUserFromRC");
+      await callable.call({"uid": user.uid});
+      debugPrint("✅ Forced reconcile from RC for ${user.uid}");
+    } catch (e) {
+      debugPrint("⚠️ Failed reconcile from RC: $e");
     }
   }
 

@@ -2,63 +2,82 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 🔐 Per-user documents
+    /* ─────────── helpers ─────────── */
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+    // Only allow clients to touch benign profile prefs on /users/{uid}
+    function userUpdateIsSafe() {
+      // keys the client is allowed to change on their user doc
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly([
+          'email',
+          'platform',
+          'preferredRecipeLocale'
+        ]);
+    }
+
+    /* ─────────── per-user space ─────────── */
     match /users/{userId} {
-      // User can always read their own doc
-      allow read, list: if request.auth != null && request.auth.uid == userId;
 
-      // User can create their own doc on signup
-      allow create: if request.auth != null && request.auth.uid == userId;
+      // Read own user doc
+      allow get, list: if isOwner(userId);
 
-      // User can delete their own doc
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      // Create own doc (backend normally creates this, but keep for first sign-in)
+      allow create: if isOwner(userId);
 
-      // ⚠️ Client updates: only safe fields (email, platform)
-      allow update: if request.auth != null && request.auth.uid == userId &&
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['email', 'platform']);
+      // Delete own doc (you may want to keep this backend-only; leave enabled if UI supports it)
+      allow delete: if isOwner(userId);
 
-      // 👑 Admin override: can update anything
-      allow update: if request.auth.token.admin == true;
+      // Client may update only allowlisted keys
+      allow update: if isOwner(userId) && userUpdateIsSafe();
 
-      // 📦 Recipes stored in user's vault
+      // Admin can update anything on user doc
+      allow update: if isAdmin();
+
+      /* ── recipes (CRUD by owner) ── */
       match /recipes/{recipeId} {
-        allow read, list, create, update, delete: if request.auth != null && request.auth.uid == userId;
+        allow get, list, create, update, delete: if isOwner(userId);
       }
 
-      // 🏷️ Custom categories for filtering recipes
+      /* ── custom categories (CRUD by owner) ── */
       match /categories/{categoryId} {
-        allow read, list, create, update, delete: if request.auth != null && request.auth.uid == userId;
+        allow get, list, create, update, delete: if isOwner(userId);
       }
 
-      // 📜 Translated recipe cards (optional)
+      /* ── optional translated/alt content (CRUD by owner) ── */
       match /translations/{translationId} {
-        allow read, list, create, update, delete: if request.auth != null && request.auth.uid == userId;
+        allow get, list, create, update, delete: if isOwner(userId);
       }
 
-      // 📈 AI usage quota (read-only from app, backend writes only)
+      /* ── usage counters (backend writes only; client read‑only) ── */
       match /aiUsage/{docId} {
-        allow read, list: if request.auth != null && request.auth.uid == userId;
-        allow write: if false;
+        allow get, list: if isOwner(userId);
+        allow create, update, delete: if false;
       }
-
-      // 🌍 Translation usage quota (read-only from app, backend writes only)
       match /translationUsage/{docId} {
-        allow read, list: if request.auth != null && request.auth.uid == userId;
-        allow write: if false;
+        allow get, list: if isOwner(userId);
+        allow create, update, delete: if false;
       }
-
-      // 🖼️ Image usage quota (read-only from app, backend writes only)
       match /imageUsage/{docId} {
-        allow read, list: if request.auth != null && request.auth.uid == userId;
-        allow write: if false;
+        allow get, list: if isOwner(userId);
+        allow create, update, delete: if false;
       }
     }
 
-    // 📊 Event analytics (write-only logging)
+    /* ─────────── write-only analytics (from signed-in clients) ─────────── */
     match /analytics/{docId} {
-      allow create: if request.auth != null && request.auth.uid != null;
-      allow read, update, delete: if false;
+      // Allow creating new events, but nothing else
+      allow create: if isSignedIn();
+      allow get, list, update, delete: if false;
     }
+
+    /* (add other top-level collections here as needed; default deny applies) */
   }
 }

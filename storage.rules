@@ -2,18 +2,45 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // 🔐 User-specific uploads (e.g. temp images, vault images)
+    /* ─────────── helpers ─────────── */
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+    function isImageUpload() {
+      // Only accept common image types from app uploads
+      return request.resource.contentType.matches('image/.*');
+    }
+    function sizeUnder10MB() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    /* ─────────── per-user uploads ───────────
+       e.g. users/{uid}/recipe_images/..., users/{uid}/temp/...
+    */
     match /users/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Owner can read anything under their folder
+      allow read: if isOwner(userId);
+
+      // Owner can write images up to 10MB
+      allow write: if isOwner(userId) && isImageUpload() && sizeUnder10MB();
     }
 
-    // 🌍 Public/shared images (e.g. when a user shares a recipe card)
+    /* ─────────── public/shared images ───────────
+       Publicly viewable (e.g., when a user shares a recipe card).
+       Only admins can upload/change here to prevent abuse.
+    */
     match /shared_recipes/{allPaths=**} {
-      allow read: if true; // Anyone can view shared recipes
-      allow write: if request.auth != null && request.auth.token.admin == true;
+      allow read: if true;
+      allow write: if isAdmin() && isImageUpload() && sizeUnder10MB();
     }
 
-    // 🚫 Deny everything else
+    /* ─────────── default deny ─────────── */
     match /{allPaths=**} {
       allow read, write: if false;
     }

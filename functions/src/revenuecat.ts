@@ -1,16 +1,34 @@
 // functions/src/revenuecat.ts
 import { Tier, productToTier } from "./mapping.js";
 
+/**
+ * Types for RevenueCat webhook payloads
+ */
+export interface Entitlement {
+  is_active?: boolean;
+  product_identifier?: string;
+  [key: string]: any;
+}
+
+export interface Subscription {
+  expires_date?: string;
+  product_identifier?: string;
+  [key: string]: any;
+}
+
+export interface RCSubscriber {
+  entitlements?: Record<string, Entitlement>;
+  subscriptions?: Record<string, Subscription>;
+  original_app_user_id?: string;
+  [key: string]: any;
+}
+
 export interface RCWebhookPayload {
   event?: { type?: string };
   app_user_id?: string;
-  subscriber?: {
-    entitlements?: Record<string, any>;
-    subscriptions?: Record<string, any>;
-    original_app_user_id?: string;
-    [key: string]: any;
-  };
+  subscriber?: RCSubscriber;
   product_id?: string;
+  [key: string]: any;
 }
 
 /**
@@ -20,7 +38,7 @@ export function resolveActiveProductId(payload: RCWebhookPayload): string | null
   const s = payload.subscriber ?? {};
 
   // 1) Check entitlements first
-  if (s.entitlements && typeof s.entitlements === "object") {
+  if (s.entitlements) {
     for (const [, ent] of Object.entries(s.entitlements)) {
       if (ent?.is_active && ent?.product_identifier) {
         return String(ent.product_identifier);
@@ -32,7 +50,7 @@ export function resolveActiveProductId(payload: RCWebhookPayload): string | null
   if (payload.product_id) return String(payload.product_id);
 
   // 3) Subscriptions fallback
-  if (s.subscriptions && typeof s.subscriptions === "object") {
+  if (s.subscriptions) {
     for (const [pid, sub] of Object.entries(s.subscriptions)) {
       const expiresAt = sub?.expires_date ? new Date(sub.expires_date) : null;
       const isActive = !expiresAt || expiresAt > new Date();

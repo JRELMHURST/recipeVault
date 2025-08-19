@@ -5,45 +5,18 @@ import {
   CallableRequest,
   HttpsError,
 } from "firebase-functions/v2/https";
-import { beforeUserCreated } from "firebase-functions/v2/identity";
 import fetch from "node-fetch";
 
 import { resolveTierFromPayload } from "./revenuecat.js";
 import { productToTier } from "./mapping.js";
 import { verifyRevenueCatSignature } from "./rc-verify.js";
 
-// ✅ Use firestore from firebase.ts (no duplicate initializeApp)
+// Firestore instance
 const db = firestore;
 
 /**
- * 1) Create user doc on sign-up (blocking identity trigger: before user created)
- */
-export const onAuthInitUser = beforeUserCreated(async (event) => {
-  const user = event.data;
-  if (!user) return;
-
-  const uid = user.uid;
-  const email = user.email ?? null;
-
-  const ref = db.doc(`users/${uid}`);
-  const snap = await ref.get();
-  if (snap.exists) return;
-
-  await ref.set({
-    email,
-    productId: "none",
-    tier: "none",
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    lastLogin: admin.firestore.FieldValue.serverTimestamp(),
-    platform: null,
-    usage: {},
-  });
-
-  console.log(`✅ User initialised in Firestore: ${uid}`);
-});
-
-/**
- * 2) RevenueCat webhook → server-owned write of {tier, productId}
+ * 1) RevenueCat webhook → server-owned write of {tier, productId}
+ * This is the ONLY place where user entitlements are set.
  */
 export const revenuecatWebhook = onRequest(async (req, res) => {
   try {
@@ -75,10 +48,11 @@ export const revenuecatWebhook = onRequest(async (req, res) => {
       return;
     }
 
+    // Always upsert the Firestore doc
     await db.doc(`users/${uid}`).set(
       {
         productId: productId?.toLowerCase() ?? "none",
-        tier,
+        tier: tier ?? "none",
         lastLogin: admin.firestore.FieldValue.serverTimestamp(),
       },
       { merge: true }
@@ -95,7 +69,7 @@ export const revenuecatWebhook = onRequest(async (req, res) => {
 });
 
 /**
- * 3) Admin-only callable to reconcile a user on-demand from RevenueCat REST
+ * 2) Admin-only callable to reconcile a user on-demand from RevenueCat REST
  */
 export const reconcileUserFromRC = onCall(
   async (request: CallableRequest) => {
@@ -111,7 +85,7 @@ export const reconcileUserFromRC = onCall(
       throw new HttpsError("failed-precondition", "Missing RC API key in env");
     }
 
-    // RevenueCat REST v1
+    // Fetch from RevenueCat REST
     const resp = await fetch(
       `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(uid)}`,
       {
@@ -157,6 +131,7 @@ export const reconcileUserFromRC = onCall(
 
     const tier = productToTier(productId);
 
+    // Upsert into Firestore
     await db.doc(`users/${uid}`).set(
       {
         productId: (productId ?? "none").toLowerCase(),

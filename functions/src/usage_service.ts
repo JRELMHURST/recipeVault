@@ -4,13 +4,13 @@ import { HttpsError } from "firebase-functions/v2/https";
 
 const firestore = getFirestore();
 
-/** Types of usage we track */
+/** Types of usage we track (collection names match these keys) */
 export type UsageKind = "aiUsage" | "translationUsage" | "imageUsage";
 
 /** Internal subscription tiers */
 export type Tier = "home_chef" | "master_chef" | "none";
 
-/** Centralised tier limits (no 'free') */
+/** Centralised tier limits (no 'free/none') */
 export const tierLimits: Record<
   Exclude<Tier, "none">,
   { translation: number; recipes: number; images: number }
@@ -19,32 +19,57 @@ export const tierLimits: Record<
   master_chef: { translation: 20, recipes: 100, images: 250 },
 };
 
-/** 📅 Current month key, e.g. "2025-08" */
-export function monthKey(): string {
-  return new Date().toISOString().slice(0, 7);
+/** Map UsageKind -> tierLimits key */
+type LimitKey = "translation" | "recipes" | "images";
+const limitKeyByKind: Record<UsageKind, LimitKey> = {
+  translationUsage: "translation",
+  aiUsage: "recipes",
+  imageUsage: "images",
+};
+
+/** 📅 Current month key in Europe/London, e.g. "2025-08" */
+export function monthKey(tz: string = "Europe/London"): string {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(now);
+  const year = parts.find(p => p.type === "year")?.value ?? "0000";
+  const month = parts.find(p => p.type === "month")?.value ?? "01";
+  return `${year}-${month}`;
 }
 
 /** 🔗 Firestore path for a given usage kind */
 export function usagePath(uid: string, kind: UsageKind): string {
+  if (!uid) throw new HttpsError("invalid-argument", "uid is required");
   return `users/${uid}/${kind}/usage`;
 }
 
-/** 📊 Get the monthly usage count for a given user/kind */
-export async function getMonthlyUsage(
-  uid: string,
-  kind: UsageKind
-): Promise<number> {
+/** 📊 Get the monthly usage count for a given user/kind (0 if none) */
+export async function getMonthlyUsage(uid: string, kind: UsageKind): Promise<number> {
   const key = monthKey();
   const snap = await firestore.doc(usagePath(uid, kind)).get();
-  return snap.exists ? snap.data()?.[key] || 0 : 0;
+  return snap.exists ? Number(snap.data()?.[key] ?? 0) : 0;
 }
 
-/** 📈 Increment usage for this month (and total lifetime) */
-export async function incrementMonthlyUsage(
-  uid: string,
-  kind: UsageKind,
-  by = 1
-): Promise<void> {
+/** 🎯 Get the monthly limit for a user/kind based on their tier */
+export function getMonthlyLimit(tier: Tier, kind: UsageKind): number {
+  if (tier === "none") return 0;
+  const limits = tierLimits[tier]; // tier is now narrowed to 'home_chef' | 'master_chef'
+  const k: LimitKey = limitKeyByKind[kind];
+  return limits[k];
+}
+
+/** 🧮 Remaining this month (never negative) */
+export async function getMonthlyRemaining(uid: string, kind: UsageKind, tier: Tier): Promise<number> {
+  const used = await getMonthlyUsage(uid, kind);
+  const limit = getMonthlyLimit(tier, kind);
+  return Math.max(0, limit - used);
+}
+
+/** 📈 Increment usage for this month (and total lifetime) – non-transactional helper */
+export async function incrementMonthlyUsage(uid: string, kind: UsageKind, by = 1): Promise<void> {
   const key = monthKey();
   const updates: Record<string, any> = {
     total: FieldValue.increment(by),
@@ -53,16 +78,10 @@ export async function incrementMonthlyUsage(
   await firestore.doc(usagePath(uid, kind)).set(updates, { merge: true });
 }
 
-/** 🧹 Reset usage for a given month (if ever needed manually) */
-export async function resetMonthlyUsage(
-  uid: string,
-  kind: UsageKind
-): Promise<void> {
+/** 🧹 Reset usage for the current month (manual/admin tool) */
+export async function resetMonthlyUsage(uid: string, kind: UsageKind): Promise<void> {
   const key = monthKey();
-  await firestore.doc(usagePath(uid, kind)).set(
-    { [key]: 0 },
-    { merge: true }
-  );
+  await firestore.doc(usagePath(uid, kind)).set({ [key]: 0 }, { merge: true });
 }
 
 /* ────────────────────────────────────────────────
@@ -76,35 +95,68 @@ export async function getResolvedTier(uid: string): Promise<Tier> {
   return tier ?? "none";
 }
 
-/** Translation policy enforcement */
+/** Generic policy check (no increment) */
+export async function enforcePolicy(uid: string, kind: UsageKind): Promise<void> {
+  const tier = await getResolvedTier(uid);
+  if (tier === "none") {
+    throw new HttpsError("permission-denied", "SUB_REQUIRED: Subscription required.");
+  }
+  const used = await getMonthlyUsage(uid, kind);
+  const limit = getMonthlyLimit(tier, kind);
+  if (used >= limit) {
+    const code =
+      kind === "translationUsage" ? "TRANS_LIMIT" :
+      kind === "aiUsage"          ? "RECIPES_LIMIT" :
+      "IMAGES_LIMIT";
+    throw new HttpsError("resource-exhausted", `MONTHLY_LIMIT: ${code}`);
+  }
+}
+
+/**
+ * ✅ Transactional consume: atomically checks + increments.
+ * Prevents two concurrent requests from overshooting the cap.
+ */
+export async function enforceAndConsume(uid: string, kind: UsageKind, by = 1): Promise<void> {
+  if (by <= 0) return;
+
+  const tier = await getResolvedTier(uid);
+  if (tier === "none") {
+    throw new HttpsError("permission-denied", "SUB_REQUIRED: Subscription required.");
+  }
+
+  const docRef = firestore.doc(usagePath(uid, kind));
+  const key = monthKey();
+  const limit = getMonthlyLimit(tier, kind);
+
+  await firestore.runTransaction(async (tx) => {
+    const snap = await tx.get(docRef);
+    const data = snap.exists ? (snap.data() ?? {}) : {};
+    const current = Number(data[key] ?? 0);
+    if (current + by > limit) {
+      const code =
+        kind === "translationUsage" ? "TRANS_LIMIT" :
+        kind === "aiUsage"          ? "RECIPES_LIMIT" :
+        "IMAGES_LIMIT";
+      throw new HttpsError("resource-exhausted", `MONTHLY_LIMIT: ${code}`);
+    }
+    tx.set(
+      docRef,
+      {
+        total: FieldValue.increment(by),
+        [key]: FieldValue.increment(by),
+      },
+      { merge: true }
+    );
+  });
+}
+
+/** Convenience wrappers */
 export async function enforceTranslationPolicy(uid: string): Promise<void> {
-  const tier = await getResolvedTier(uid);
-  if (tier === "none") throw new HttpsError("permission-denied", "Subscription required.");
-
-  const used = await getMonthlyUsage(uid, "translationUsage");
-  if (used >= tierLimits[tier].translation) {
-    throw new HttpsError("resource-exhausted", "Monthly translation limit reached.");
-  }
+  await enforcePolicy(uid, "translationUsage");
 }
-
-/** GPT recipe policy enforcement */
 export async function enforceGptRecipePolicy(uid: string): Promise<void> {
-  const tier = await getResolvedTier(uid);
-  if (tier === "none") throw new HttpsError("permission-denied", "Subscription required.");
-
-  const used = await getMonthlyUsage(uid, "aiUsage");
-  if (used >= tierLimits[tier].recipes) {
-    throw new HttpsError("resource-exhausted", "Monthly recipe limit reached.");
-  }
+  await enforcePolicy(uid, "aiUsage");
 }
-
-/** Image usage policy enforcement */
 export async function enforceImagePolicy(uid: string): Promise<void> {
-  const tier = await getResolvedTier(uid);
-  if (tier === "none") throw new HttpsError("permission-denied", "Subscription required.");
-
-  const used = await getMonthlyUsage(uid, "imageUsage");
-  if (used >= tierLimits[tier].images) {
-    throw new HttpsError("resource-exhausted", "Monthly image limit reached.");
-  }
+  await enforcePolicy(uid, "imageUsage");
 }

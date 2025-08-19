@@ -105,7 +105,6 @@ class UserSessionService {
       final isNewUser = await AuthService.ensureUserDocument(user);
       if (isNewUser) {
         try {
-          await UserPreferencesService.markAsNewUser();
           await UserPreferencesService.resetBubbles();
         } catch (e, stack) {
           _logDebug('⚠️ Failed to mark user as new: $e');
@@ -186,26 +185,6 @@ class UserSessionService {
 
       final tier = SubscriptionService().tier;
       _logDebug('🎟️ Tier resolved: $tier');
-
-      // ✅ Onboarding bubbles (only if new user + enabled)
-      if (kOnboardingBubblesEnabled) {
-        _logDebug('🫧 Checking onboarding bubbles (new-user only)…');
-        final hasShownOnce = await UserPreferencesService.hasShownBubblesOnce;
-        final tutorialComplete =
-            await UserPreferencesService.hasCompletedVaultTutorial();
-
-        if (isNewUser && !hasShownOnce && !tutorialComplete) {
-          await UserPreferencesService.markBubblesShown();
-          _logDebug('🌟 Onboarding flagged for first show (new user)');
-        } else {
-          _logDebug(
-            '🫧 Skipping onboarding: isNewUser=$isNewUser, '
-            'hasShownOnce=$hasShownOnce, tutorialComplete=$tutorialComplete',
-          );
-        }
-      } else {
-        _logDebug('🚫 Onboarding bubbles disabled via feature flag');
-      }
 
       // Complete to unblock any awaiters
       _bubbleFlagsReady?.complete();

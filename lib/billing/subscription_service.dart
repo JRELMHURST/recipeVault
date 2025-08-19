@@ -6,11 +6,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:hive/hive.dart';
-
-import 'package:recipe_vault/data/services/user_preference_service.dart';
+import 'package:flutter/scheduler.dart';
 
 class SubscriptionService extends ChangeNotifier {
   // Singleton
@@ -76,13 +76,24 @@ class SubscriptionService extends ChangeNotifier {
       final cachedTier = (box.get(_kCachedTier) as String?)?.trim();
       final cachedSpecial = box.get(_kCachedSpecial) as bool?;
 
-      if (cachedTier != null && cachedTier.isNotEmpty) {
+      bool changed = false;
+
+      if (cachedTier != null && cachedTier.isNotEmpty && cachedTier != _tier) {
         _tier = cachedTier;
-        tierNotifier.value = _tier;
-        notifyListeners();
+        changed = true;
       }
       if (cachedSpecial != null) {
         _hasSpecialAccess = cachedSpecial;
+      }
+
+      // Don’t notify here (we’re often called during init/build).
+      // If the tier changed, push it to the ValueNotifier *after* the first frame.
+      if (changed) {
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          // this notifies only ValueNotifier listeners (cards highlighting etc.)
+          tierNotifier.value = _tier;
+          // NO notifyListeners() here
+        });
       }
     } catch (e) {
       debugPrint('⚠️ Failed to seed tier from cache: $e');
@@ -165,6 +176,7 @@ class SubscriptionService extends ChangeNotifier {
 
   bool get showUsageWidget => hasActiveSubscription;
   bool get trackUsage => hasActiveSubscription;
+  bool _rcListenerAttached = false;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   Future<void> init() async {
@@ -176,9 +188,12 @@ class SubscriptionService extends ChangeNotifier {
         await _seedFromCacheIfAny(user.uid);
       }
 
-      Purchases.addCustomerInfoUpdateListener(_onCustomerInfo);
-      await Purchases.invalidateCustomerInfoCache();
+      if (!_rcListenerAttached) {
+        Purchases.addCustomerInfoUpdateListener(_onCustomerInfo);
+        _rcListenerAttached = true;
+      }
 
+      await Purchases.invalidateCustomerInfoCache();
       await loadSubscriptionStatus();
       await _loadAvailablePackages();
     } finally {
@@ -189,7 +204,19 @@ class SubscriptionService extends ChangeNotifier {
   Future<void> setAppUserId(String? firebaseUid) async {
     try {
       if (firebaseUid == null) {
-        await Purchases.logOut();
+        try {
+          await Purchases.logOut();
+        } on PlatformException catch (e) {
+          // RC code 22 = LOGOUT_CALLED_WITH_ANONYMOUS_USER → safe to ignore
+          if ((e.code == '22') ||
+              (e.details is Map &&
+                  (e.details['readableErrorCode'] ==
+                      'LOGOUT_CALLED_WITH_ANONYMOUS_USER'))) {
+            debugPrint('RC: already anonymous; ignoring logOut.');
+          } else {
+            rethrow;
+          }
+        }
       } else {
         await _seedFromCacheIfAny(firebaseUid);
         await Purchases.logIn(firebaseUid);
@@ -284,8 +311,6 @@ class SubscriptionService extends ChangeNotifier {
       await _loadUsageData(user.uid);
 
       await _saveCache(user.uid, _tier, active: hasActiveSubscription);
-
-      await UserPreferencesService.ensureBubbleFlagTriggeredIfEligible();
 
       notifyListeners();
     } catch (e) {

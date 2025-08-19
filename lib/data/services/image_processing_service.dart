@@ -1,3 +1,4 @@
+// lib/data/services/image_processing_service.dart
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:async';
@@ -14,6 +15,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:recipe_vault/firebase_storage.dart'; // FirebaseStorageService
 import 'package:recipe_vault/data/models/processed_recipe_result.dart';
+import 'package:recipe_vault/billing/subscription_service.dart';
 
 class ImageProcessingService {
   // ───────────────────────────── Tunables ─────────────────────────────
@@ -21,6 +23,7 @@ class ImageProcessingService {
   static const int _jpegQualityIOS = 85;
   static const int _maxDimension = 2200; // clamp long side for uploads
   static const Duration _uploadTimeout = Duration(seconds: 30);
+  static const Duration _cfTimeout = Duration(seconds: 30);
   static const bool _debug = false;
 
   static final ImagePicker _picker = ImagePicker();
@@ -31,10 +34,33 @@ class ImageProcessingService {
   );
   static void clearUpgradeBanner() => upgradeBannerMessage.value = null;
 
+  // ───────────────────────── PLAN GATES ─────────────────────────
+
+  /// Throws with a friendly message if uploads aren’t allowed.
+  static Future<void> _ensureUploadAllowedOrThrow() async {
+    final subs = SubscriptionService();
+    if (!subs.allowImageUpload) {
+      upgradeBannerMessage.value =
+          '✨ Upload images with the Home Chef or Master Chef plan.';
+      throw Exception('Upload blocked due to plan limit.');
+    }
+  }
+
+  /// Throws with a friendly message if OCR/translation isn’t allowed.
+  static Future<void> _ensureProcessingAllowedOrThrow() async {
+    final subs = SubscriptionService();
+    if (!subs.allowTranslation) {
+      upgradeBannerMessage.value =
+          '✨ Unlock Chef Mode with Home Chef or Master Chef to process recipes.';
+      throw Exception('Translation blocked due to plan limit.');
+    }
+  }
+
   // ───────────────────────── PICK + COMPRESS ─────────────────────────
 
   /// Picks multiple images and compresses them (JPEG + orientation fixed).
   static Future<List<File>> pickAndCompressImages() async {
+    await _ensureUploadAllowedOrThrow();
     final picked = await _picker.pickMultiImage();
     if (picked.isEmpty) return [];
     return _compressFiles(picked.map((x) => File(x.path)).toList());
@@ -57,6 +83,7 @@ class ImageProcessingService {
           format: CompressFormat.jpeg,
           minWidth: _maxDimension,
           minHeight: _maxDimension,
+          keepExif: true,
         );
 
         if (compressed != null) {
@@ -82,6 +109,7 @@ class ImageProcessingService {
 
   /// Uploads image files to Firebase Storage; returns download URLs.
   static Future<List<String>> uploadFiles(List<File> files) async {
+    await _ensureUploadAllowedOrThrow();
     _logDebug('⏫ Uploading ${files.length} file(s) to Firebase Storage…');
     return FirebaseStorageService.uploadImages(files);
   }
@@ -92,6 +120,7 @@ class ImageProcessingService {
     required String userId,
     required String recipeId,
   }) async {
+    await _ensureUploadAllowedOrThrow();
     try {
       final ref = FirebaseStorage.instance.ref(
         'users/$userId/recipe_images/$recipeId.jpg',
@@ -148,6 +177,8 @@ class ImageProcessingService {
     bool allowCrop = true,
   }) async {
     try {
+      await _ensureUploadAllowedOrThrow();
+
       final picked = await _picker.pickImage(source: source);
       if (picked == null) return null;
 
@@ -178,9 +209,19 @@ class ImageProcessingService {
   static Future<ProcessedRecipeResult> extractAndFormatRecipe(
     List<String> imageUrls,
     BuildContext context, {
-    Duration timeout = const Duration(seconds: 30),
+    Duration timeout = _cfTimeout,
   }) async {
+    // Gate before any network calls.
+    await _ensureProcessingAllowedOrThrow();
+
     try {
+      // Make sure callable sees fresh auth
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('Not signed in.');
+      }
+      await user.getIdToken(true);
+
       final locale = Localizations.localeOf(context);
       final lang = locale.languageCode; // e.g. "en"
       final region = locale.countryCode; // e.g. "GB"
@@ -206,6 +247,9 @@ class ImageProcessingService {
         throw Exception('Formatted recipe was empty.');
       }
 
+      // Clear any sticky upgrade messages on success
+      clearUpgradeBanner();
+
       _logDebug(
         '✅ CF success. lang=${data['detectedLanguage']} translated=${data['translationUsed']}',
       );
@@ -214,6 +258,7 @@ class ImageProcessingService {
     } on FirebaseFunctionsException catch (e) {
       _logDebug('🛑 CF exception: ${e.code} — ${e.message}');
       switch (e.code) {
+        // Hybrid path: backend enforces; map to friendly UX.
         case 'permission-denied':
           upgradeBannerMessage.value =
               '✨ Unlock Chef Mode with the Home Chef or Master Chef plan!';
@@ -237,6 +282,7 @@ class ImageProcessingService {
                   })
                   .timeout(timeout);
           final retryData = (retry.data as Map).cast<String, dynamic>();
+          clearUpgradeBanner();
           return ProcessedRecipeResult.fromMap(retryData);
         default:
           throw Exception('Processing failed: ${e.message}');

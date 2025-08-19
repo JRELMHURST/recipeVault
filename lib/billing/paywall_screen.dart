@@ -14,7 +14,6 @@ import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/navigation/routes.dart';
-// ✅ Safe navigation helpers (post-frame)
 import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class PaywallScreen extends StatefulWidget {
@@ -28,6 +27,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
   late final SubscriptionService _subscriptionService;
   bool _isLoading = true;
   bool _isPurchasing = false;
+  bool _loadFailed = false;
+
   List<Package> _availablePackages = [];
   VoidCallback? _tierListener;
 
@@ -55,17 +56,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
     _isManaging = state.uri.queryParameters['manage'] == '1';
   }
 
-  void _attachTierListener() {
-    _tierListener = () {
-      if (!_isManaging &&
-          _subscriptionService.hasActiveSubscription &&
-          mounted) {
-        _redirectHome(); // now uses safeGo()
-      }
-    };
-    _subscriptionService.tierNotifier.addListener(_tierListener!);
-  }
-
   @override
   void dispose() {
     if (_tierListener != null) {
@@ -74,8 +64,27 @@ class _PaywallScreenState extends State<PaywallScreen> {
     super.dispose();
   }
 
+  void _attachTierListener() {
+    _tierListener = () {
+      // Defer navigation to post‑frame to avoid build-phase updates
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (!_isManaging && _subscriptionService.hasActiveSubscription) {
+          _redirectHome(); // uses safeGo()
+        }
+      });
+    };
+    _subscriptionService.tierNotifier.addListener(_tierListener!);
+  }
+
   Future<void> _loadSubscriptionData() async {
-    await _subscriptionService.init();
+    setState(() {
+      _isLoading = true;
+      _loadFailed = false;
+    });
+
+    await _subscriptionService.refresh();
+
     try {
       final offerings = await Purchases.getOfferings();
 
@@ -87,11 +96,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
           if (e.productIdentifier.isNotEmpty) e.productIdentifier.toLowerCase(),
       };
 
-      final productId = _subscriptionService.productId;
-
       final packages = <Package>[];
       final seen = <String>{};
 
+      // offerings.all can be empty; guard null/empty
       offerings.all.forEach((_, offering) {
         for (final pkg in offering.availablePackages) {
           final id = pkg.storeProduct.identifier;
@@ -100,6 +108,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       });
 
       // Sort: current entitlement first, then by priority
+      final productId = _subscriptionService.productId;
       packages.sort((a, b) {
         bool isCurrentPkg(Package p) => _isPackageCurrent(p, productId);
         if (isCurrentPkg(a) && !isCurrentPkg(b)) return -1;
@@ -119,9 +128,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
         return aIx.compareTo(bIx);
       });
 
+      if (!mounted) return;
       _availablePackages = packages;
     } catch (e) {
       debugPrint('❌ Failed to load offerings: $e');
+      _loadFailed = true;
     }
 
     if (mounted) setState(() => _isLoading = false);
@@ -204,6 +215,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 },
               )
             : null,
+        actions: [
+          if (!_isLoading)
+            IconButton(
+              tooltip: 'Refresh',
+              onPressed: _loadSubscriptionData,
+              icon: const Icon(Icons.refresh),
+            ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -247,40 +266,58 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 24),
-                    ..._availablePackages.map((pkg) {
-                      final isCurrent = _isPackageCurrent(pkg, productId);
-                      final isYearly =
-                          (pkg.storeProduct.subscriptionPeriod ?? '')
-                              .toUpperCase() ==
-                          'P1Y';
 
-                      final String? badge = isCurrent
-                          ? loc.badgeCurrentPlan
-                          : (isYearly ? loc.badgeBestValue : null);
+                    // Packages list OR empty/failure state
+                    if (_availablePackages.isNotEmpty) ...[
+                      ..._availablePackages.map((pkg) {
+                        final isCurrent = _isPackageCurrent(pkg, productId);
+                        final isYearly =
+                            (pkg.storeProduct.subscriptionPeriod ?? '')
+                                .toUpperCase() ==
+                            'P1Y';
 
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: PricingCard(
-                          package: pkg,
-                          onTap: () {
-                            if (!isCurrent && !_isPurchasing) {
-                              _handlePurchase(pkg);
-                            }
-                          },
-                          isDisabled: isCurrent,
-                          badge: badge,
-                        ),
-                      );
-                    }),
-                    if (_availablePackages.isEmpty)
+                        final String? badge = isCurrent
+                            ? loc.badgeCurrentPlan
+                            : (isYearly ? loc.badgeBestValue : null);
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: PricingCard(
+                            package: pkg,
+                            onTap: () {
+                              if (!isCurrent && !_isPurchasing) {
+                                _handlePurchase(pkg);
+                              }
+                            },
+                            isDisabled: isCurrent,
+                            badge: badge,
+                          ),
+                        );
+                      }),
+                    ] else ...[
                       Padding(
                         padding: const EdgeInsets.only(top: 24),
-                        child: Text(
-                          loc.noPlans,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.grey),
+                        child: Column(
+                          children: [
+                            Text(
+                              _loadFailed
+                                  ? 'Couldn’t load plans.'
+                                  : loc.noPlans,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(height: 12),
+                            OutlinedButton.icon(
+                              onPressed: _loadSubscriptionData,
+                              icon: const Icon(Icons.refresh),
+                              // 🔁 replaced loc.retry (missing) with a safe literal
+                              label: const Text('Try again'),
+                            ),
+                          ],
                         ),
                       ),
+                    ],
+
                     const SizedBox(height: 32),
                     Center(child: _buildLegalNotice(context)),
                   ],

@@ -176,9 +176,7 @@ class AuthService {
     if (!doc.exists) {
       await docRef.set(updateData);
       debugPrint('📝 Created Firestore user doc → $updateData');
-      try {
-        await UserPreferencesService.markAsNewUser();
-      } catch (_) {}
+      try {} catch (_) {}
       return true;
     }
     return false;
@@ -186,14 +184,33 @@ class AuthService {
 
   // ── SERVER-SIDE RECONCILE ─────────────────────────────
 
+  // lib/auth/auth_service.dart (inside AuthService)
   Future<void> _reconcileFromRC(User user) async {
     try {
-      final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
-      final callable = functions.httpsCallable("reconcileUserFromRC");
-      await callable.call({"uid": user.uid});
-      debugPrint("✅ Forced reconcile from RC for ${user.uid}");
-    } catch (e) {
-      debugPrint("⚠️ Failed reconcile from RC: $e");
+      // make sure token is fresh
+      await user.getIdToken(true);
+
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
+      final callable = functions.httpsCallable('reconcileUserFromRC');
+
+      int attempts = 3;
+      while (attempts-- > 0) {
+        try {
+          await callable.call(<String, dynamic>{});
+          debugPrint('✅ Forced reconcile from RC for ${user.uid}');
+          break;
+        } on FirebaseFunctionsException catch (e) {
+          if (e.code == 'unauthenticated' && attempts > 0) {
+            await Future.delayed(const Duration(milliseconds: 400));
+            await user.getIdToken(true);
+            continue; // retry
+          }
+          rethrow;
+        }
+      }
+    } catch (e, stack) {
+      debugPrint('⚠️ Failed reconcile from RC: $e');
+      if (kDebugMode) debugPrint('$stack');
     }
   }
 

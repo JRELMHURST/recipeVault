@@ -1,16 +1,21 @@
+// lib/auth/access_controller.dart
 // ignore_for_file: avoid_print
 
-import 'dart:async';
+import 'dart:async'; // for unawaited
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Cross-check with RevenueCat snapshot to avoid false downgrades
+import 'package:recipe_vault/billing/subscription_service.dart';
+
 enum EntitlementStatus { checking, active, inactive }
 
 class AccessController extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
   StreamSubscription<User?>? _authSub;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userDocSub;
 
@@ -18,10 +23,10 @@ class AccessController extends ChangeNotifier {
   String? _tier;
   bool _ready = false;
 
-  // Persistence: has this user ever had access?
+  // Keep whether this user ever had access (persists in SharedPreferences)
   bool _everHadAccess = false;
 
-  // ── Public getters ─────────────────────────────────────────────
+  // ── Public getters used by router/boot screen ─────────────────────────────
   EntitlementStatus get status => _status;
   bool get ready => _ready;
   bool get hasAccess => _status == EntitlementStatus.active;
@@ -30,7 +35,7 @@ class AccessController extends ChangeNotifier {
   bool get isLoggedIn => _auth.currentUser != null;
   bool get isAnonymous => _auth.currentUser?.isAnonymous ?? false;
 
-  // New user = created within last 12 hours
+  // New user = created within the last 12 hours (same window your redirects use)
   static const _newUserWindow = Duration(hours: 12);
   bool get isNewlyRegistered {
     final u = _auth.currentUser;
@@ -41,8 +46,11 @@ class AccessController extends ChangeNotifier {
 
   bool get everHadAccess => _everHadAccess;
 
-  // ── Lifecycle ──────────────────────────────────────────────────
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
   void start() {
+    // Warm RC so we can cross-check entitlement quickly.
+    unawaited(SubscriptionService().init());
+
     _authSub = _auth.authStateChanges().listen((_) {
       scheduleMicrotask(refresh);
     });
@@ -55,7 +63,7 @@ class AccessController extends ChangeNotifier {
     }
   }
 
-  /// Public: re-run entitlement checks & user doc listener.
+  /// Public: re-run entitlement checks & (re)attach user doc listener.
   Future<void> refresh() async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -77,44 +85,82 @@ class AccessController extends ChangeNotifier {
         .doc(uid)
         .snapshots()
         .listen(
-          (snap) {
+          (snap) async {
+            // If Firestore is missing/lagging, don’t downgrade if RC is active.
             if (!snap.exists) {
+              final rc = SubscriptionService();
+              if (rc.hasActiveSubscription) {
+                _setState(EntitlementStatus.active, tier: rc.tier, ready: true);
+                _markEverHadAccess(uid);
+                debugPrint(
+                  '🔁 Firestore missing doc, but RC active → staying ACTIVE (${rc.tier})',
+                );
+                return;
+              }
               _setState(EntitlementStatus.inactive, tier: null, ready: true);
               return;
             }
 
             final data = snap.data();
-            final tier = (data?['tier'] ?? 'none') as String;
-            final isActive = tier != 'none';
+            final fsTier = (data?['tier'] ?? 'none') as String;
+            final fsActive = fsTier != 'none';
 
-            if (isActive && !_everHadAccess) {
-              _everHadAccess = true;
-              _saveEverHadAccess(uid);
+            // Cross-check with current RC snapshot (already warmed by init()).
+            final rc = SubscriptionService();
+            final rcActive = rc.hasActiveSubscription;
+            final rcTier = rc.tier;
+
+            if (!fsActive && rcActive) {
+              _setState(EntitlementStatus.active, tier: rcTier, ready: true);
+              _markEverHadAccess(uid);
+              debugPrint(
+                '🛡️ Prevented downgrade: Firestore=none, RC=$rcTier → ACTIVE',
+              );
+              return;
+            }
+
+            if (fsActive && !_everHadAccess) {
+              _markEverHadAccess(uid);
             }
 
             _setState(
-              isActive ? EntitlementStatus.active : EntitlementStatus.inactive,
-              tier: tier,
+              fsActive ? EntitlementStatus.active : EntitlementStatus.inactive,
+              tier: fsTier,
               ready: true,
             );
           },
           onError: (e) {
             debugPrint('⚠️ Firestore entitlement error: $e');
-            _setState(EntitlementStatus.inactive, tier: null, ready: true);
+            // Be conservative on errors: if RC is active keep access, else inactive.
+            final rc = SubscriptionService();
+            if (rc.hasActiveSubscription) {
+              _setState(EntitlementStatus.active, tier: rc.tier, ready: true);
+            } else {
+              _setState(EntitlementStatus.inactive, tier: null, ready: true);
+            }
           },
         );
   }
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
   void _setState(EntitlementStatus s, {String? tier, bool? ready}) {
+    final oldStatus = _status;
+    final oldTier = _tier;
+
     _status = s;
     _tier = tier ?? _tier;
     if (ready != null) _ready = ready;
 
     debugPrint('🔑 Access state → status=$_status, tier=$_tier, ready=$_ready');
+    if (oldStatus != _status || oldTier != _tier) {
+      debugPrint('🔁 Access flip: $oldStatus/$oldTier → $_status/$_tier');
+    }
+
     _safeNotify();
   }
 
   void _safeNotify() {
+    // Avoid “markNeedsBuild during build”
     if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle) {
       notifyListeners();
     } else {
@@ -139,7 +185,8 @@ class AccessController extends ChangeNotifier {
     }
   }
 
-  Future<void> _saveEverHadAccess(String uid) async {
+  Future<void> _markEverHadAccess(String uid) async {
+    _everHadAccess = true;
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('everHadAccess_$uid', true);

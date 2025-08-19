@@ -250,6 +250,8 @@ class AccountSettingsScreen extends StatelessWidget {
       await LoadingOverlay.show(context);
       try {
         await UserSessionService.logoutReset();
+        // 🔐 also reset RC to avoid stale tier after hot restart
+        await context.read<SubscriptionService>().reset();
         await FirebaseAuth.instance.signOut();
       } catch (e) {
         if (context.mounted) {
@@ -294,45 +296,78 @@ class AccountSettingsScreen extends StatelessWidget {
       ),
     );
 
-    if (confirm == true) {
-      await LoadingOverlay.show(context);
-      try {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user == null) throw Exception('No user');
+    if (confirm != true) return;
 
-        await FirebaseFunctions.instanceFor(
-          region: 'europe-west2',
-        ).httpsCallable('deleteAccount').call();
+    await LoadingOverlay.show(context);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception('No user');
 
-        await UserSessionService.logoutReset();
-        await FirebaseAuth.instance.signOut();
+      await FirebaseFunctions.instanceFor(
+        region: 'europe-west2',
+      ).httpsCallable('deleteAccount').call();
 
-        final uid = user.uid;
-        final boxName = 'recipes_$uid';
-        if (Hive.isBoxOpen(boxName)) {
-          final box = Hive.box<RecipeCardModel>(boxName);
-          await box.clear();
-          await box.close();
-        } else if (await Hive.boxExists(boxName)) {
-          await Hive.deleteBoxFromDisk(boxName);
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(t.deleteAccountFailed('$e'))));
-        }
-        return;
-      } finally {
-        LoadingOverlay.hide();
+      await UserSessionService.logoutReset();
+      await context.read<SubscriptionService>().reset();
+      await FirebaseAuth.instance.signOut();
+
+      final uid = user.uid;
+      final boxName = 'recipes_$uid';
+      if (Hive.isBoxOpen(boxName)) {
+        final box = Hive.box<RecipeCardModel>(boxName);
+        await box.clear();
+        await box.close();
+      } else if (await Hive.boxExists(boxName)) {
+        await Hive.deleteBoxFromDisk(boxName);
       }
-
+    } on FirebaseFunctionsException catch (e) {
+      // Mirror backend errors nicely
+      final msg = e.code == 'permission-denied'
+          ? t.deleteAccountFailed('Permission denied')
+          : t.deleteAccountFailed(e.message ?? e.code);
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(t.deleteAccountSuccess)));
-        safeGo(context, AppRoutes.login);
+        ).showSnackBar(SnackBar(content: Text(msg)));
       }
+      return;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        // 🔁 Ask user to re-auth before retrying
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                // Add to your l10n when you can; temporary inline message here:
+                'For security, please sign in again, then retry account deletion.',
+              ),
+            ),
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(t.deleteAccountFailed(e.code))),
+          );
+        }
+      }
+      return;
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(t.deleteAccountFailed('$e'))));
+      }
+      return;
+    } finally {
+      LoadingOverlay.hide();
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t.deleteAccountSuccess)));
+      safeGo(context, AppRoutes.login);
     }
   }
 

@@ -11,24 +11,22 @@ String? appRedirect(
 ) {
   final loc = state.matchedLocation;
   final isManaging = state.uri.queryParameters['manage'] == '1';
-  final resolving =
+  final isResolving =
       !access.ready || access.status == EntitlementStatus.checking;
 
-  // 0) Not logged in → force Login (but allow Login/Register themselves)
+  // 0) Not logged in → allow /login and /register only
   if (!access.isLoggedIn) {
     if (loc == AppRoutes.login || loc == AppRoutes.register) return null;
     return AppRoutes.login;
   }
 
-  // ✅ Always allow paywall when explicitly managing (even during resolving)
-  if (loc == AppRoutes.paywall && isManaging) return null;
-
-  // 1) Still resolving → keep on /boot (unless explicitly managing above)
-  if (resolving) {
-    return (loc == AppRoutes.boot) ? null : AppRoutes.boot;
+  // 1) While resolving, pin to /boot (unless explicitly managing the paywall)
+  if (isResolving) {
+    if (loc == AppRoutes.paywall && isManaging) return null;
+    return loc == AppRoutes.boot ? null : AppRoutes.boot;
   }
 
-  // 2) Access active → keep them out of boot/paywall/login/register
+  // 2) If they have access (paid), keep them out of boot/paywall/auth
   if (access.hasAccess) {
     if (loc == AppRoutes.boot ||
         loc == AppRoutes.paywall ||
@@ -36,24 +34,11 @@ String? appRedirect(
         loc == AppRoutes.register) {
       return AppRoutes.vault;
     }
-    return null;
+    return null; // no redirect
   }
 
-  // 3) No access:
-  //    Show paywall ONLY if they just registered or previously had access (lapsed).
-  final shouldSeePaywall = access.isNewlyRegistered || access.everHadAccess;
-  if (shouldSeePaywall) {
-    return (loc == AppRoutes.paywall) ? null : AppRoutes.paywall;
-  }
-
-  // 4) Free-tier path → keep them out of boot/paywall/login/register.
-  if (loc == AppRoutes.boot ||
-      loc == AppRoutes.paywall ||
-      loc == AppRoutes.login ||
-      loc == AppRoutes.register) {
-    return AppRoutes.vault;
-  }
-
-  // 5) No redirect
-  return null;
+  // 3) No access (paid-only app):
+  //    Always show paywall, except allow /paywall?manage=1 as-is.
+  if (loc == AppRoutes.paywall) return null;
+  return AppRoutes.paywall;
 }

@@ -7,10 +7,12 @@ import 'package:collection/collection.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:hive/hive.dart';
-import 'package:flutter/scheduler.dart';
+
+enum EntitlementStatus { checking, active, inactive }
 
 class SubscriptionService extends ChangeNotifier {
   // Singleton
@@ -31,7 +33,7 @@ class SubscriptionService extends ChangeNotifier {
   CustomerInfo? _customerInfo;
   EntitlementInfo? _activeEntitlement;
 
-  // Cached packages
+  // Cached packages (optional helpers for paywall)
   Package? homeChefPackage;
   Package? masterChefMonthlyPackage;
   Package? masterChefYearlyPackage;
@@ -42,11 +44,15 @@ class SubscriptionService extends ChangeNotifier {
     'translationUsage': {},
   };
 
+  // RC listener guard
+  bool _rcListenerAttached = false;
+
   // ── Local cache (Hive) ────────────────────────────────────────────────────
   static String _prefsBoxName(String uid) => 'userPrefs_$uid';
   static const _kCachedTier = 'cachedTier';
-  static const _kCachedStatus = 'cachedStatus';
+  static const _kCachedStatus = 'cachedStatus'; // 'active' | 'inactive'
   static const _kCachedSpecial = 'cachedSpecialAccess';
+  static const _kEverHadAccess = 'everHadAccess'; // bool
 
   Future<void> _saveCache(
     String uid,
@@ -61,6 +67,9 @@ class SubscriptionService extends ChangeNotifier {
       await box.put(_kCachedTier, tier);
       await box.put(_kCachedStatus, active ? 'active' : 'inactive');
       await box.put(_kCachedSpecial, _hasSpecialAccess);
+      if (active) {
+        await box.put(_kEverHadAccess, true);
+      }
     } catch (e) {
       debugPrint('⚠️ Failed to cache tier: $e');
     }
@@ -75,7 +84,6 @@ class SubscriptionService extends ChangeNotifier {
 
       final cachedTier = (box.get(_kCachedTier) as String?)?.trim();
       final cachedSpecial = box.get(_kCachedSpecial) as bool?;
-
       bool changed = false;
 
       if (cachedTier != null && cachedTier.isNotEmpty && cachedTier != _tier) {
@@ -86,13 +94,10 @@ class SubscriptionService extends ChangeNotifier {
         _hasSpecialAccess = cachedSpecial;
       }
 
-      // Don’t notify here (we’re often called during init/build).
-      // If the tier changed, push it to the ValueNotifier *after* the first frame.
       if (changed) {
+        // nudge UI highlights without triggering rebuild loops during init
         SchedulerBinding.instance.addPostFrameCallback((_) {
-          // this notifies only ValueNotifier listeners (cards highlighting etc.)
           tierNotifier.value = _tier;
-          // NO notifyListeners() here
         });
       }
     } catch (e) {
@@ -109,16 +114,42 @@ class SubscriptionService extends ChangeNotifier {
   bool get isMasterChef => _tier == 'master_chef';
   bool get hasActiveSubscription => isHomeChef || isMasterChef;
 
-  // Capability gates — PAID ONLY (no free)
-  bool get allowTranslation => hasActiveSubscription;
-  bool get allowImageUpload => hasActiveSubscription;
-  bool get allowSaveToVault => hasActiveSubscription;
-  bool get allowCategoryCreation => hasActiveSubscription;
+  // Single source of truth: status + ready
+  EntitlementStatus get status {
+    // While the app is starting or we're fetching RC/FS, treat as checking
+    if (_isInitialising || _isLoadingTier || _customerInfo == null) {
+      return EntitlementStatus.checking;
+    }
+    // Special access forces feature gates but status still reflects "active"
+    if (hasActiveSubscription || _hasSpecialAccess) {
+      return EntitlementStatus.active;
+    }
+    return EntitlementStatus.inactive;
+  }
+
+  bool get ready => status != EntitlementStatus.checking;
+
+  // Ever had access (persisted)
+  Future<bool> get everHadAccess async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return false;
+    final boxName = _prefsBoxName(uid);
+    final box = Hive.isBoxOpen(boxName)
+        ? Hive.box<dynamic>(boxName)
+        : await Hive.openBox<dynamic>(boxName);
+    return (box.get(_kEverHadAccess) as bool?) ?? false;
+  }
+
+  // Capability gates — PAID ONLY
+  bool get allowTranslation => hasActiveSubscription || _hasSpecialAccess;
+  bool get allowImageUpload => hasActiveSubscription || _hasSpecialAccess;
+  bool get allowSaveToVault => hasActiveSubscription || _hasSpecialAccess;
+  bool get allowCategoryCreation => hasActiveSubscription || _hasSpecialAccess;
 
   bool get hasSpecialAccess => _hasSpecialAccess;
 
   String get tierIcon {
-    if (_hasSpecialAccess) return '⭐'; // only here
+    if (_hasSpecialAccess) return '⭐';
     return switch (_tier) {
       'master_chef' => '',
       'home_chef' => '',
@@ -159,7 +190,7 @@ class SubscriptionService extends ChangeNotifier {
     return end != null && DateTime.now().isBefore(end);
   }
 
-  bool get hasAccess => allowSaveToVault;
+  bool get hasAccess => allowSaveToVault; // single gate
   String get currentTier => _tier;
 
   int get aiUsage {
@@ -174,9 +205,8 @@ class SubscriptionService extends ChangeNotifier {
     return _usageData['translationUsage']?[key] ?? 0;
   }
 
-  bool get showUsageWidget => hasActiveSubscription;
-  bool get trackUsage => hasActiveSubscription;
-  bool _rcListenerAttached = false;
+  bool get showUsageWidget => hasActiveSubscription || _hasSpecialAccess;
+  bool get trackUsage => hasActiveSubscription || _hasSpecialAccess;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   Future<void> init() async {
@@ -282,7 +312,7 @@ class SubscriptionService extends ChangeNotifier {
       tierNotifier.value = _tier;
       _logTierOnce(source: 'loadSubscriptionStatus');
 
-      // Firestore overrides
+      // Firestore (server-side overrides / flags)
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -310,6 +340,7 @@ class SubscriptionService extends ChangeNotifier {
 
       await _loadUsageData(user.uid);
 
+      // Persist cache + everHadAccess
       await _saveCache(user.uid, _tier, active: hasActiveSubscription);
 
       notifyListeners();
@@ -505,7 +536,7 @@ class SubscriptionService extends ChangeNotifier {
     _entitlementId = productId;
     await _saveCache(uid, resolved, active: resolved != 'none');
 
-    // 🔒 Respect your rules: only update allowed keys from client
+    // Safe write: lastLogin
     try {
       await firestore.collection('users').doc(uid).set({
         'lastLogin': FieldValue.serverTimestamp(),
@@ -549,10 +580,10 @@ class SubscriptionService extends ChangeNotifier {
 
     tierNotifier.value = _tier;
 
-    // Cache for hot restarts
+    // Cache for hot restarts (+everHadAccess)
     await _saveCache(user.uid, _tier, active: hasActiveSubscription);
 
-    // 🔒 Respect rules: only write allowed keys
+    // Safe write: lastLogin
     try {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
         'lastLogin': FieldValue.serverTimestamp(),

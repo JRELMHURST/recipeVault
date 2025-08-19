@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:recipe_vault/core/text_scale_notifier.dart';
+import 'package:recipe_vault/core/theme_notifier.dart';
 
-import 'package:recipe_vault/navigation/nav_keys.dart'; // ← singleton keys
+import 'package:recipe_vault/navigation/nav_keys.dart';
+import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/navigation/transition_pages.dart';
+import 'package:recipe_vault/navigation/nav_shell.dart';
+import 'package:recipe_vault/navigation/nav_utils.dart';
 
-import 'package:recipe_vault/auth/access_controller.dart';
 import 'package:recipe_vault/app/boot_screen.dart';
 import 'package:recipe_vault/billing/paywall_screen.dart';
-import 'package:recipe_vault/data/models/processed_recipe_result.dart';
-import 'package:recipe_vault/features/results/results_screen.dart';
-import 'package:recipe_vault/features/recipe_vault/recipe_vault_screen.dart';
+import 'package:recipe_vault/auth/login_screen.dart';
+import 'package:recipe_vault/auth/register_screen.dart';
 
-// Settings root + subpages
+import 'package:recipe_vault/features/recipe_vault/recipe_vault_screen.dart';
+import 'package:recipe_vault/features/results/results_screen.dart';
+import 'package:recipe_vault/data/models/processed_recipe_result.dart';
+
+// Settings
 import 'package:recipe_vault/features/settings/settings_screen.dart';
 import 'package:recipe_vault/features/settings/account_settings_screen.dart';
 import 'package:recipe_vault/auth/change_password.dart';
@@ -21,30 +30,59 @@ import 'package:recipe_vault/features/settings/storage_sync_screen.dart';
 import 'package:recipe_vault/features/settings/faq_screen.dart';
 import 'package:recipe_vault/features/settings/about_screen.dart';
 
-// Auth screens
-import 'package:recipe_vault/auth/login_screen.dart';
-import 'package:recipe_vault/auth/register_screen.dart';
+// Subscriptions
+import 'package:recipe_vault/billing/subscription_service.dart';
 
-// Notifiers required by appearance settings
-import 'package:recipe_vault/core/theme_notifier.dart';
-import 'package:recipe_vault/core/text_scale_notifier.dart';
-import 'package:recipe_vault/navigation/nav_utils.dart';
+GoRouter buildAppRouter(SubscriptionService subs) {
+  // This notifier ticks on auth changes so GoRouter refreshes redirects.
+  final authTick = ValueNotifier(0);
+  FirebaseAuth.instance.authStateChanges().listen((_) {
+    authTick.value++;
+  });
 
-// Navigation helpers
-import 'package:recipe_vault/navigation/routes.dart';
-import 'package:recipe_vault/navigation/redirects.dart';
-import 'package:recipe_vault/navigation/transition_pages.dart';
-import 'package:recipe_vault/navigation/nav_shell.dart';
-
-GoRouter buildAppRouter(AccessController access) {
   return GoRouter(
-    navigatorKey: NavKeys.root, // ← use singleton
+    navigatorKey: NavKeys.root,
     initialLocation: AppRoutes.boot,
-    refreshListenable: access,
-    redirect: (context, state) => appRedirect(context, state, access),
+    // refresh when subscription OR auth changes
+    refreshListenable: Listenable.merge([subs, authTick]),
+
+    redirect: (context, state) {
+      final user = FirebaseAuth.instance.currentUser;
+      final loc = state.matchedLocation;
+      final isManaging = state.uri.queryParameters['manage'] == '1';
+
+      // While subs are still resolving, pin on /boot (allow manage paywall)
+      final isResolving = subs.status == EntitlementStatus.checking;
+      if (isResolving) {
+        if (loc == AppRoutes.paywall && isManaging) return null;
+        return loc == AppRoutes.boot ? null : AppRoutes.boot;
+      }
+
+      // Not logged in → only allow /login and /register
+      if (user == null) {
+        if (loc == AppRoutes.login || loc == AppRoutes.register) return null;
+        return AppRoutes.login;
+      }
+
+      // Logged in:
+      if (subs.hasAccess) {
+        // Keep paid users out of boot/paywall/auth
+        if (loc == AppRoutes.boot ||
+            loc == AppRoutes.paywall ||
+            loc == AppRoutes.login ||
+            loc == AppRoutes.register) {
+          return AppRoutes.vault;
+        }
+        return null;
+      }
+
+      // No access (paid‑only app) → show paywall (allow explicit manage)
+      if (loc == AppRoutes.paywall) return null;
+      return AppRoutes.paywall;
+    },
 
     routes: [
-      // ----- Root-level pages (mounted on root navigator) -----
+      // Root level
       GoRoute(
         parentNavigatorKey: NavKeys.root,
         path: AppRoutes.boot,
@@ -75,9 +113,9 @@ GoRouter buildAppRouter(AccessController access) {
             fadePage(const RegisterScreen(), key: const ValueKey('register')),
       ),
 
-      // ----- SHELL with AppBar + Bottom nav -----
+      // Shell with app bar/bottom nav
       ShellRoute(
-        navigatorKey: NavKeys.shell, // ← use singleton
+        navigatorKey: NavKeys.shell,
         builder: (context, state, child) => NavShell(child: child),
         routes: [
           GoRoute(
@@ -97,7 +135,7 @@ GoRouter buildAppRouter(AccessController access) {
         ],
       ),
 
-      // ----- Settings detail pages (open on root, outside shell) -----
+      // Settings details (root)
       GoRoute(
         parentNavigatorKey: NavKeys.root,
         path: AppRoutes.settingsAccount,
@@ -107,7 +145,7 @@ GoRouter buildAppRouter(AccessController access) {
         ),
         routes: [
           GoRoute(
-            path: 'change-password', // matches AppRoutes.settingsChangePassword
+            path: 'change-password',
             pageBuilder: (context, state) => fadePage(
               const ChangePasswordScreen(),
               key: const ValueKey('settings-change-password'),
@@ -157,7 +195,7 @@ GoRouter buildAppRouter(AccessController access) {
         ),
       ),
 
-      // ----- Full-screen route outside shell -----
+      // Full-screen
       GoRoute(
         parentNavigatorKey: NavKeys.root,
         path: AppRoutes.results,

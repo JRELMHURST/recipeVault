@@ -5,10 +5,11 @@ import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:go_router/go_router.dart'; // ✅ use GoRouter for extra:
 import 'package:recipe_vault/data/services/image_processing_service.dart';
 
 import 'package:recipe_vault/l10n/app_localizations.dart';
+import 'package:recipe_vault/navigation/routes.dart';
 import 'package:recipe_vault/widgets/processing_messages.dart';
 
 class ProcessingOverlay {
@@ -157,8 +158,9 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       await Future.delayed(const Duration(milliseconds: 500));
 
       if (!mounted) return;
+      // Hide the overlay, then navigate to the Results screen with payload.
       ProcessingOverlay.hide();
-      context.push('/results', extra: result);
+      context.push(AppRoutes.results, extra: result); // ✅ pass extra here
     } catch (e, st) {
       debugPrint('❌ Processing failed: $e\n$st');
 

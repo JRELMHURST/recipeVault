@@ -38,6 +38,9 @@ String? appRedirect(
 
   // 3) Logged in with valid access → block boot/auth/paywall
   if (subs.hasActiveSubscription || subs.hasSpecialAccess) {
+    // ✅ allow manage mode explicitly
+    if (loc == AppRoutes.paywall && isManaging) return null;
+
     final onBlocked = {
       AppRoutes.boot,
       AppRoutes.login,

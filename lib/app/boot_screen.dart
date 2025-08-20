@@ -21,8 +21,8 @@ class BootScreen extends StatelessWidget {
                   // 🔒 Your app logo
                   Image.asset(
                     'assets/icon/round_vaultLogo.png',
-                    height: 56,
-                    width: 56,
+                    height: 100,
+                    width: 100,
                     fit: BoxFit.contain,
                     semanticLabel: 'RecipeVault',
                   ),

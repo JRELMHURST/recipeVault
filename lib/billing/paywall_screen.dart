@@ -1,5 +1,7 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,7 +17,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/navigation/routes.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';
-import 'package:recipe_vault/billing/purchase_helper.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -65,10 +66,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
     await _subscriptionService.refresh();
 
     try {
-      final offerings = await PurchaseHelper.getOfferings();
-
-      // 🔎 also fetch current active product ids for highlighting
-      final info = await PurchaseHelper.getCustomerInfo();
+      final offerings = await Purchases.getOfferings();
+      final info = await Purchases.getCustomerInfo();
       final active = info.entitlements.active.values;
       _activeProductIds = {
         for (final e in active)
@@ -144,7 +143,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
     setState(() => _isPurchasing = true);
     LoadingOverlay.show(context);
     try {
-      final info = await PurchaseHelper.purchasePackage(package);
+      // Direct RC purchase (no PurchaseHelper)
+      final info = await Purchases.purchasePackage(package);
+
+      // 🔄 Force backend reconcile (RC → Firestore) just like before
+      try {
+        final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
+        final callable = functions.httpsCallable("reconcileUserFromRC");
+        await callable.call(<String, dynamic>{}); // auth context supplies uid
+        if (kDebugMode) debugPrint("✅ Reconcile triggered after purchase");
+      } catch (e) {
+        if (kDebugMode) debugPrint("⚠️ Failed to trigger reconcile: $e");
+      }
 
       // Pull fresh RC + FS state into the app.
       await _subscriptionService.refresh();
@@ -156,7 +166,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
           info.entitlements.active.isNotEmpty ||
           _subscriptionService.hasActiveSubscription;
 
-      // Do NOT navigate here; router redirect will move us away if entitled.
+      // Router redirect will move us if entitled; otherwise inform the user.
       if (!hasEntitlement && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

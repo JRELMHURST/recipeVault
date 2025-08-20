@@ -2,12 +2,13 @@
 
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:recipe_vault/auth/auth_service.dart'; // AuthService
-import 'package:recipe_vault/billing/purchase_helper.dart';
+
+import 'package:recipe_vault/auth/auth_service.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/data/services/user_preference_service.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
@@ -44,10 +45,12 @@ class UserSessionService {
       if (e.isActive && e.periodType != PeriodType.trial) return false;
 
       if (e.periodType == PeriodType.trial) {
-        final expiry = e.expirationDate; // already DateTime? now
+        final expiryStr = e.expirationDate;
+        if (expiryStr == null) return false;
+        final expiry = DateTime.tryParse(expiryStr);
         if (expiry == null) return false;
 
-        final trialEnded = DateTime.now().isAfter(expiry as DateTime);
+        final trialEnded = DateTime.now().isAfter(expiry);
         final wontRenew = e.willRenew == false;
         return trialEnded && wontRenew;
       }
@@ -97,7 +100,7 @@ class UserSessionService {
       final resolvedTier = await SubscriptionService().getResolvedTier();
       _logDebug('🧾 Tier resolved via getResolvedTier(): $resolvedTier');
 
-      // ✅ Use unified AuthService
+      // ✅ Ensure/merge Firestore user doc via unified AuthService
       final isNewUser = await AuthService.ensureUserDocument(user);
       if (isNewUser) {
         try {
@@ -278,30 +281,33 @@ class UserSessionService {
     _logDebug('🔄 Session reset');
   }
 
+  /// (Optional helper) Replaces old PurchaseHelper-based sync.
+  /// Fetches RC info, asks backend to reconcile Firestore, then refreshes our SubscriptionService.
   static Future<void> syncRevenueCatEntitlement() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
-      // Fetch RC customer info
+      // 1) Ensure RC cache is fresh and read latest entitlements (for logging/diagnostics)
+      await Purchases.invalidateCustomerInfoCache();
       final customerInfo = await Purchases.getCustomerInfo();
-      final productId = PurchaseHelper.getActiveProductId(customerInfo);
-      final tier = await SubscriptionService().getResolvedTier(
-        forceRefresh: true,
-      );
+      final active = customerInfo.entitlements.active.values
+          .map((e) => e.productIdentifier)
+          .join(', ');
+      _logDebug('🧾 Active RC products: [$active]');
 
-      // Update in-memory tier so the UI reacts immediately
-      SubscriptionService().updateTier(tier);
+      // 2) Trigger backend reconcile (Cloud Function) — Firestore is updated server-side
+      try {
+        final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
+        final callable = functions.httpsCallable("reconcileUserFromRC");
+        await callable.call(<String, dynamic>{}); // uid inferred from auth
+        _logDebug('☁️ Reconcile triggered successfully');
+      } catch (e) {
+        _logDebug('⚠️ Failed to trigger reconcile: $e');
+      }
 
-      _logDebug(
-        '☁️ Optimistic entitlement sync: tier=$tier, productId=$productId '
-        '→ delegating Firestore write to backend',
-      );
-
-      // Let the backend reconcile Firestore (source of truth)
-      await PurchaseHelper.triggerBackendReconcile();
-
-      _logDebug('☁️ Reconcile triggered successfully');
+      // 3) Pull fresh state into the app (updates router/UI via notifiers)
+      await SubscriptionService().refresh();
     } catch (e, stack) {
       _logDebug('⚠️ Failed to sync entitlement via backend: $e');
       if (kDebugMode) print(stack);

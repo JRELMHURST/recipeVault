@@ -6,7 +6,7 @@ import 'package:flutter/services.dart'; // HapticFeedback
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import 'package:recipe_vault/features/home/home_app_bar.dart';
+import 'package:recipe_vault/core/home_app_bar.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_view_mode_notifier.dart';
 import 'package:recipe_vault/navigation/routes.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';

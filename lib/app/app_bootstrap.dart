@@ -1,11 +1,4 @@
 // lib/app/app_bootstrap.dart
-// Centralized, idempotent app initialization.
-// - Firebase Core + App Check
-// - RevenueCat (configure only; no user binding here)
-// - Notifications
-// - Hive + adapters + optional legacy migration
-// - Per-auth change hooks for per-user services and RC AppUserID
-
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
@@ -29,31 +22,49 @@ import 'package:recipe_vault/billing/subscription_service.dart';
 
 class AppBootstrap {
   AppBootstrap._();
-  static bool _isReady = false;
 
+  // Exposed services
   static final FirebaseFunctions functions = FirebaseFunctions.instanceFor(
     region: 'europe-west2',
   );
   static final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  /// Call once at app start.
-  static Future<void> ensureReady() async {
-    if (_isReady) return;
+  // ── Readiness signalling for the router ───────────────────────────────────
+  static final ValueNotifier<bool> _ready = ValueNotifier<bool>(false);
+  static ValueListenable<bool> get readyListenable => _ready;
+  static bool get isReady => _ready.value;
 
-    // 1) Firebase core
+  // One‑shot timeout so the router can stop showing /boot after a while
+  static const Duration _bootTimeout = Duration(seconds: 8);
+  static final ValueNotifier<bool> _timeoutReached = ValueNotifier<bool>(false);
+  static ValueListenable<bool> get timeoutListenable => _timeoutReached;
+  static bool get timeoutReached => _timeoutReached.value;
+
+  static bool _initialised = false;
+
+  /// Call once at app start (before runApp).
+  static Future<void> ensureReady() async {
+    if (_initialised) return;
+    _initialised = true;
+
+    // Fire a one‑shot signal at timeout so GoRouter re-runs redirects
+    Future<void>.delayed(_bootTimeout).then((_) {
+      if (!_timeoutReached.value) _timeoutReached.value = true;
+    });
+
+    // 1) Firebase Core
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
     } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint('❌ Firebase initialization failed: $e');
-        debugPrintStack(stackTrace: st);
-      }
-      return; // nothing else will work
+      debugPrint('❌ Firebase init failed: $e');
+      debugPrintStack(stackTrace: st);
+      _ready.value = true; // let the router render an error/alternative
+      return;
     }
 
-    // // Optional local emulators:
+    // // Optional local emulators
     // if (kDebugMode) {
     //   functions.useFunctionsEmulator('localhost', 5001);
     //   firestore.useFirestoreEmulator('localhost', 8080);
@@ -65,7 +76,7 @@ class AppBootstrap {
         await FirebaseAppCheck.instance.activate(
           webProvider: kReleaseMode
               ? ReCaptchaV3Provider('YOUR_RECAPTCHA_SITE_KEY')
-              : ReCaptchaV3Provider('** debug **'),
+              : ReCaptchaV3Provider('debug'),
         );
       } else if (Platform.isAndroid || Platform.isIOS) {
         await FirebaseAppCheck.instance.activate(
@@ -78,13 +89,11 @@ class AppBootstrap {
         );
       }
     } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint('⚠️ App Check failed: $e');
-        debugPrintStack(stackTrace: st);
-      }
+      debugPrint('⚠️ App Check failed: $e');
+      debugPrintStack(stackTrace: st);
     }
 
-    // 3) RevenueCat (configure SDK only; user binding handled on auth changes)
+    // 3) RevenueCat — configure SDK only (user binding via auth listener)
     try {
       if (kDebugMode) await Purchases.setLogLevel(LogLevel.debug);
       final cfg = PurchasesConfiguration(
@@ -94,23 +103,19 @@ class AppBootstrap {
       );
       await Purchases.configure(cfg);
     } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint('❌ RevenueCat configure failed: $e');
-        debugPrintStack(stackTrace: st);
-      }
+      debugPrint('❌ RevenueCat configure failed: $e');
+      debugPrintStack(stackTrace: st);
     }
 
     // 4) Notifications
     try {
       await NotificationService.init();
     } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint('⚠️ NotificationService init failed: $e');
-        debugPrintStack(stackTrace: st);
-      }
+      debugPrint('⚠️ NotificationService init failed: $e');
+      debugPrintStack(stackTrace: st);
     }
 
-    // 5) Hive core + adapters (+ optional legacy category migration)
+    // 5) Hive + adapters (+ optional legacy migration)
     try {
       await Hive.initFlutter();
 
@@ -121,7 +126,7 @@ class AppBootstrap {
         Hive.registerAdapter(CategoryModelAdapter());
       }
 
-      // Optional legacy categories migration (String -> CategoryModel)
+      // Optional legacy categories migration
       try {
         if (await Hive.boxExists('categories')) {
           final catBox = await Hive.openBox('categories');
@@ -131,70 +136,52 @@ class AppBootstrap {
           for (final key in legacyKeys) {
             final old = catBox.get(key) as String;
             await catBox.put(key, CategoryModel(id: key.toString(), name: old));
-            if (kDebugMode) {
-              debugPrint('🔁 Migrated legacy category "$old" → CategoryModel');
-            }
+            debugPrint('🔁 Migrated legacy category "$old" → CategoryModel');
           }
           await catBox.close();
         }
       } catch (e, st) {
-        if (kDebugMode) {
-          debugPrint('⚠️ Legacy category migration failed: $e');
-          debugPrintStack(stackTrace: st);
-        }
+        debugPrint('⚠️ Legacy category migration failed: $e');
+        debugPrintStack(stackTrace: st);
       }
 
       await CategoryService.init();
       await UserPreferencesService.init();
     } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint('❌ Hive core setup failed: $e');
-        debugPrintStack(stackTrace: st);
-      }
+      debugPrint('❌ Hive core setup failed: $e');
+      debugPrintStack(stackTrace: st);
     }
 
-    // 6) Keep per-user services + RevenueCat AppUserID in lockstep with Firebase Auth
+    // 6) Keep per‑user services + RC AppUserID in lockstep with Auth
     FirebaseAuth.instance.authStateChanges().listen((user) async {
-      if (kDebugMode) {
-        debugPrint(
-          user == null
-              ? '🧍 FirebaseAuth: No user signed in'
-              : '✅ FirebaseAuth: Signed in uid=${user.uid}',
-        );
-      }
+      debugPrint(
+        user == null
+            ? '🧍 FirebaseAuth: No user signed in'
+            : '✅ FirebaseAuth: Signed in uid=${user.uid}',
+      );
 
-      // Per-user services
       try {
         await CategoryService.onAuthChanged(user?.uid);
       } catch (e, st) {
-        if (kDebugMode) {
-          debugPrint('⚠️ CategoryService.onAuthChanged failed: $e');
-          debugPrintStack(stackTrace: st);
-        }
+        debugPrint('⚠️ CategoryService.onAuthChanged failed: $e');
+        debugPrintStack(stackTrace: st);
       }
       try {
         await UserPreferencesService.onAuthChanged(user?.uid);
       } catch (e, st) {
-        if (kDebugMode) {
-          debugPrint('⚠️ UserPreferencesService.onAuthChanged failed: $e');
-          debugPrintStack(stackTrace: st);
-        }
+        debugPrint('⚠️ UserPreferencesService.onAuthChanged failed: $e');
+        debugPrintStack(stackTrace: st);
       }
 
-      // RevenueCat AppUserID ↔ Firebase UID
       try {
         await SubscriptionService().setAppUserId(user?.uid);
-        // NOTE: The provider in main.dart also does `SubscriptionService()..init()`
-        // which preloads state; keeping setAppUserId here avoids duplication while
-        // ensuring RC stays in sync with auth transitions.
       } catch (e, st) {
-        if (kDebugMode) {
-          debugPrint('⚠️ SubscriptionService.setAppUserId failed: $e');
-          debugPrintStack(stackTrace: st);
-        }
+        debugPrint('⚠️ SubscriptionService.setAppUserId failed: $e');
+        debugPrintStack(stackTrace: st);
       }
     });
 
-    _isReady = true;
+    // Core bootstrap finished → allow router to proceed
+    _ready.value = true;
   }
 }

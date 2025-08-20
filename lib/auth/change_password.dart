@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
-import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/app/routes.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class ChangePasswordScreen extends StatefulWidget {

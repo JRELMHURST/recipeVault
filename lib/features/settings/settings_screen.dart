@@ -9,7 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
-import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/app/routes.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends StatelessWidget {

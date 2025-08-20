@@ -18,7 +18,7 @@ import 'package:recipe_vault/core/language_provider.dart';
 import 'package:recipe_vault/billing/subscription_service.dart'; // 👈 plan source
 
 // 🚦 routes + safe nav helpers
-import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/app/routes.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class AccountSettingsScreen extends StatelessWidget {

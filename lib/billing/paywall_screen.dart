@@ -15,7 +15,7 @@ import 'package:recipe_vault/billing/subscription_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
-import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/app/routes.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class PaywallScreen extends StatefulWidget {

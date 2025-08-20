@@ -10,7 +10,7 @@ import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_recipe_service.dart';
 
 // ✅ Centralised routes + safe navigation helpers
-import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/app/routes.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class LoginScreen extends StatefulWidget {

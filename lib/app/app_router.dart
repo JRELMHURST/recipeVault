@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 
+import 'package:recipe_vault/app/app_bootstrap.dart';
+import 'package:recipe_vault/app/redirects.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';
 
 import 'package:recipe_vault/navigation/nav_keys.dart';
-import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/app/routes.dart';
 import 'package:recipe_vault/navigation/transition_pages.dart';
 import 'package:recipe_vault/navigation/nav_shell.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';
@@ -36,55 +38,27 @@ import 'package:recipe_vault/features/settings/about_screen.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
 
 GoRouter buildAppRouter(SubscriptionService subs) {
-  // Make GoRouter re-evaluate redirects on auth changes.
+  // Trigger refresh on auth changes
   final authTick = ValueNotifier(0);
-  FirebaseAuth.instance.authStateChanges().listen((_) {
-    authTick.value++;
-  });
+  FirebaseAuth.instance.authStateChanges().listen((_) => authTick.value++);
 
   return GoRouter(
     navigatorKey: NavKeys.root,
     initialLocation: AppRoutes.boot,
 
-    // Refresh on subscription changes (ChangeNotifier) and auth changes.
-    refreshListenable: Listenable.merge([subs, authTick]),
+    // Re-run redirects when bootstrap ready, bootstrap timeout, subscription, or auth changes
+    refreshListenable: Listenable.merge([
+      AppBootstrap.readyListenable,
+      AppBootstrap.timeoutListenable,
+      subs,
+      authTick,
+    ]),
 
-    redirect: (context, state) {
-      final user = FirebaseAuth.instance.currentUser;
-      final loc = state.matchedLocation;
-      final isManaging = state.uri.queryParameters['manage'] == '1';
-
-      // 1) While subs resolving → keep on /boot (except explicit manage paywall)
-      final isResolving = subs.status == EntitlementStatus.checking;
-      if (isResolving) {
-        if (loc == AppRoutes.paywall && isManaging) return null;
-        return loc == AppRoutes.boot ? null : AppRoutes.boot;
-      }
-
-      // 2) Not logged in → allow only /login and /register
-      if (user == null) {
-        if (loc == AppRoutes.login || loc == AppRoutes.register) return null;
-        return AppRoutes.login;
-      }
-
-      // 3) Logged in with access → keep out of boot/paywall/auth
-      if (subs.hasAccess) {
-        if (loc == AppRoutes.boot ||
-            loc == AppRoutes.paywall ||
-            loc == AppRoutes.login ||
-            loc == AppRoutes.register) {
-          return AppRoutes.vault;
-        }
-        return null;
-      }
-
-      // 4) Logged in without access (paid‑only app) → always show paywall
-      if (loc == AppRoutes.paywall) return null; // including ?manage=1
-      return AppRoutes.paywall;
-    },
+    // ✅ Delegate redirect logic to redirects.dart
+    redirect: (context, state) => appRedirect(context, state, subs),
 
     routes: [
-      // ----- Root-level pages -----
+      // Root-level pages
       GoRoute(
         parentNavigatorKey: NavKeys.root,
         path: AppRoutes.boot,
@@ -115,7 +89,7 @@ GoRouter buildAppRouter(SubscriptionService subs) {
             fadePage(const RegisterScreen(), key: const ValueKey('register')),
       ),
 
-      // ----- Shell with top/bottom nav -----
+      // Shell
       ShellRoute(
         navigatorKey: NavKeys.shell,
         builder: (context, state, child) => NavShell(child: child),
@@ -137,7 +111,7 @@ GoRouter buildAppRouter(SubscriptionService subs) {
         ],
       ),
 
-      // ----- Settings detail pages (root) -----
+      // Settings detail
       GoRoute(
         parentNavigatorKey: NavKeys.root,
         path: AppRoutes.settingsAccount,
@@ -147,7 +121,7 @@ GoRouter buildAppRouter(SubscriptionService subs) {
         ),
         routes: [
           GoRoute(
-            path: 'change-password', // AppRoutes.settingsChangePassword
+            path: 'change-password',
             pageBuilder: (context, state) => fadePage(
               const ChangePasswordScreen(),
               key: const ValueKey('settings-change-password'),
@@ -197,7 +171,7 @@ GoRouter buildAppRouter(SubscriptionService subs) {
         ),
       ),
 
-      // ----- Full-screen outside shell -----
+      // Full-screen
       GoRoute(
         parentNavigatorKey: NavKeys.root,
         path: AppRoutes.results,

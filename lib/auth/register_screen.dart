@@ -10,7 +10,7 @@ import 'package:recipe_vault/features/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 // ✅ Centralised routes + safe navigation
-import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/app/routes.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class RegisterScreen extends StatefulWidget {

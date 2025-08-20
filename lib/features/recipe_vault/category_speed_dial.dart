@@ -12,7 +12,7 @@ import 'package:recipe_vault/core/usage_metrics_widget.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
 
 // ✅ Central routes + safe nav helpers
-import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/app/routes.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';
 
 class CategorySpeedDial extends StatefulWidget {

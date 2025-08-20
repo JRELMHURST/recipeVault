@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 
 import 'package:recipe_vault/core/home_app_bar.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_view_mode_notifier.dart';
-import 'package:recipe_vault/navigation/routes.dart';
+import 'package:recipe_vault/app/routes.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';
 
 import 'package:recipe_vault/l10n/app_localizations.dart';

@@ -56,7 +56,7 @@ export async function getMonthlyUsage(uid: string, kind: UsageKind): Promise<num
 /** 🎯 Get the monthly limit for a user/kind based on their tier */
 export function getMonthlyLimit(tier: Tier, kind: UsageKind): number {
   if (tier === "none") return 0;
-  const limits = tierLimits[tier]; // tier is now narrowed to 'home_chef' | 'master_chef'
+  const limits = tierLimits[tier];
   const k: LimitKey = limitKeyByKind[kind];
   return limits[k];
 }
@@ -68,8 +68,11 @@ export async function getMonthlyRemaining(uid: string, kind: UsageKind, tier: Ti
   return Math.max(0, limit - used);
 }
 
-/** 📈 Increment usage for this month (and total lifetime) – non-transactional helper */
+/** 📈 Increment usage for this month (and total lifetime).
+ *  Supports negative increments for refunds.
+ */
 export async function incrementMonthlyUsage(uid: string, kind: UsageKind, by = 1): Promise<void> {
+  if (!Number.isFinite(by) || by === 0) return;
   const key = monthKey();
   const updates: Record<string, any> = {
     total: FieldValue.increment(by),
@@ -85,17 +88,18 @@ export async function resetMonthlyUsage(uid: string, kind: UsageKind): Promise<v
 }
 
 /* ────────────────────────────────────────────────
-   🚦 Policy Enforcement Wrappers
+   🚦 Policy Enforcement
    ──────────────────────────────────────────────── */
 
-/** Get resolved tier string from Firestore */
+/** Get resolved tier string from Firestore (normalised) */
 export async function getResolvedTier(uid: string): Promise<Tier> {
   const snap = await firestore.collection("users").doc(uid).get();
-  const tier = snap.data()?.tier as Tier | undefined;
-  return tier ?? "none";
+  const raw = (snap.data()?.tier as string | undefined)?.toLowerCase().trim();
+  if (raw === "home_chef" || raw === "master_chef") return raw;
+  return "none";
 }
 
-/** Generic policy check (no increment) */
+/** Generic policy check (no increment) — keep for read-only checks if needed */
 export async function enforcePolicy(uid: string, kind: UsageKind): Promise<void> {
   const tier = await getResolvedTier(uid);
   if (tier === "none") {
@@ -117,7 +121,7 @@ export async function enforcePolicy(uid: string, kind: UsageKind): Promise<void>
  * Prevents two concurrent requests from overshooting the cap.
  */
 export async function enforceAndConsume(uid: string, kind: UsageKind, by = 1): Promise<void> {
-  if (by <= 0) return;
+  if (!Number.isFinite(by) || by <= 0) return;
 
   const tier = await getResolvedTier(uid);
   if (tier === "none") {
@@ -150,10 +154,14 @@ export async function enforceAndConsume(uid: string, kind: UsageKind, by = 1): P
   });
 }
 
-/** Convenience wrappers */
+/** Convenience wrappers (discouraged for new code) */
+/** @deprecated Use enforceAndConsume(uid, "translationUsage", 1) only if you truly want to bill translation separately.
+ *  For recipe cards, bill once via aiUsage in gpt_logic.
+ */
 export async function enforceTranslationPolicy(uid: string): Promise<void> {
   await enforcePolicy(uid, "translationUsage");
 }
+/** @deprecated Do not use; gpt_logic does transactional consume + refund itself. */
 export async function enforceGptRecipePolicy(uid: string): Promise<void> {
   await enforcePolicy(uid, "aiUsage");
 }

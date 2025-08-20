@@ -1,8 +1,8 @@
 // functions/src/gpt_logic.ts
 import OpenAI from "openai";
 import {
-  enforceGptRecipePolicy,
-  incrementMonthlyUsage,
+  enforceAndConsume,
+  incrementMonthlyUsage, // used only for refund on failure
 } from "./usage_service.js";
 
 type GptRecipeResponse = {
@@ -10,7 +10,7 @@ type GptRecipeResponse = {
   notes?: string;
 };
 
-const MODEL = "gpt-4o-mini"; // or "gpt-3.5-turbo-0125"
+const MODEL = "gpt-3.5-turbo-0125"; // ✅ switched to 3.5 turbo
 
 // 🌍 Map locale → language name + labels
 const LOCALE_META: Record<
@@ -26,161 +26,37 @@ const LOCALE_META: Record<
     };
   }
 > = {
-  en: {
-    languageName: "English",
-    labels: {
-      title: "Title",
-      ingredients: "Ingredients",
-      instructions: "Instructions",
-      hints: "Hints & Tips",
-      noTips: "No additional tips provided.",
-    },
-  },
-  en_GB: {
-    languageName: "British English",
-    labels: {
-      title: "Title",
-      ingredients: "Ingredients",
-      instructions: "Instructions",
-      hints: "Hints & Tips",
-      noTips: "No additional tips provided.",
-    },
-  },
-  bg: {
-    languageName: "Bulgarian",
-    labels: {
-      title: "Заглавие",
-      ingredients: "Съставки",
-      instructions: "Приготвяне",
-      hints: "Съвети & Трикове",
-      noTips: "Няма допълнителни съвети.",
-    },
-  },
-  cs: {
-    languageName: "Czech",
-    labels: {
-      title: "Název",
-      ingredients: "Suroviny",
-      instructions: "Postup",
-      hints: "Tipy a triky",
-      noTips: "Žádné další tipy.",
-    },
-  },
-  da: {
-    languageName: "Danish",
-    labels: {
-      title: "Titel",
-      ingredients: "Ingredienser",
-      instructions: "Fremgangsmåde",
-      hints: "Tips & Tricks",
-      noTips: "Ingen yderligere tips.",
-    },
-  },
-  de: {
-    languageName: "German",
-    labels: {
-      title: "Titel",
-      ingredients: "Zutaten",
-      instructions: "Zubereitung",
-      hints: "Tipps & Hinweise",
-      noTips: "Keine zusätzlichen Tipps.",
-    },
-  },
-  el: {
-    languageName: "Greek",
-    labels: {
-      title: "Τίτλος",
-      ingredients: "Υλικά",
-      instructions: "Εκτέλεση",
-      hints: "Συμβουλές & Κόλπα",
-      noTips: "Δεν υπάρχουν επιπλέον συμβουλές.",
-    },
-  },
-  es: {
-    languageName: "Spanish",
-    labels: {
-      title: "Título",
-      ingredients: "Ingredientes",
-      instructions: "Preparación",
-      hints: "Consejos y trucos",
-      noTips: "Sin consejos adicionales.",
-    },
-  },
-  fr: {
-    languageName: "French",
-    labels: {
-      title: "Titre",
-      ingredients: "Ingrédients",
-      instructions: "Préparation",
-      hints: "Astuces & Conseils",
-      noTips: "Aucune astuce supplémentaire.",
-    },
-  },
-  ga: {
-    languageName: "Irish (Gaeilge)",
-    labels: {
-      title: "Teideal",
-      ingredients: "Comhábhair",
-      instructions: "Modh",
-      hints: "Leideanna & Cleasa",
-      noTips: "Gan leideanna breise.",
-    },
-  },
-  it: {
-    languageName: "Italian",
-    labels: {
-      title: "Titolo",
-      ingredients: "Ingredienti",
-      instructions: "Preparazione",
-      hints: "Consigli & Suggerimenti",
-      noTips: "Nessun consiglio aggiuntivo.",
-    },
-  },
-  nl: {
-    languageName: "Dutch",
-    labels: {
-      title: "Titel",
-      ingredients: "Ingrediënten",
-      instructions: "Bereiding",
-      hints: "Tips & Tricks",
-      noTips: "Geen extra tips.",
-    },
-  },
-  pl: {
-    languageName: "Polish",
-    labels: {
-      title: "Tytuł",
-      ingredients: "Składniki",
-      instructions: "Przygotowanie",
-      hints: "Wskazówki i porady",
-      noTips: "Brak dodatkowych wskazówek.",
-    },
-  },
-  cy: {
-    languageName: "Welsh",
-    labels: {
-      title: "Teitl",
-      ingredients: "Cynhwysion",
-      instructions: "Paratoi",
-      hints: "Awgrymiadau a Chynghorion",
-      noTips: "Dim awgrymiadau pellach.",
-    },
-  },
+  en: { languageName: "English", labels: { title: "Title", ingredients: "Ingredients", instructions: "Instructions", hints: "Hints & Tips", noTips: "No additional tips provided." } },
+  en_GB: { languageName: "British English", labels: { title: "Title", ingredients: "Ingredients", instructions: "Instructions", hints: "Hints & Tips", noTips: "No additional tips provided." } },
+  bg: { languageName: "Bulgarian", labels: { title: "Заглавие", ingredients: "Съставки", instructions: "Приготвяне", hints: "Съвети & Трикове", noTips: "Няма допълнителни съвети." } },
+  cs: { languageName: "Czech", labels: { title: "Název", ingredients: "Suroviny", instructions: "Postup", hints: "Tipy a triky", noTips: "Žádné další tipy." } },
+  da: { languageName: "Danish", labels: { title: "Titel", ingredients: "Ingredienser", instructions: "Fremgangsmåde", hints: "Tips & Tricks", noTips: "Ingen yderligere tips." } },
+  de: { languageName: "German", labels: { title: "Titel", ingredients: "Zutaten", instructions: "Zubereitung", hints: "Tipps & Hinweise", noTips: "Keine zusätzlichen Tipps." } },
+  el: { languageName: "Greek", labels: { title: "Τίτλος", ingredients: "Υλικά", instructions: "Εκτέλεση", hints: "Συμβουλές & Κόλπα", noTips: "Δεν υπάρχουν επιπλέον συμβουλές." } },
+  es: { languageName: "Spanish", labels: { title: "Título", ingredients: "Ingredientes", instructions: "Preparación", hints: "Consejos y trucos", noTips: "Sin consejos adicionales." } },
+  fr: { languageName: "French", labels: { title: "Titre", ingredients: "Ingrédients", instructions: "Préparation", hints: "Astuces & Conseils", noTips: "Aucune astuce supplémentaire." } },
+  ga: { languageName: "Irish (Gaeilge)", labels: { title: "Teideal", ingredients: "Comhábhair", instructions: "Modh", hints: "Leideanna & Cleasa", noTips: "Gan leideanna breise." } },
+  it: { languageName: "Italian", labels: { title: "Titolo", ingredients: "Ingredienti", instructions: "Preparazione", hints: "Consigli & Suggerimenti", noTips: "Nessun consiglio aggiuntivo." } },
+  nl: { languageName: "Dutch", labels: { title: "Titel", ingredients: "Ingrediënten", instructions: "Bereiding", hints: "Tips & Tricks", noTips: "Geen extra tips." } },
+  pl: { languageName: "Polish", labels: { title: "Tytuł", ingredients: "Składniki", instructions: "Przygotowanie", hints: "Wskazówki i porady", noTips: "Brak dodatkowych wskazówek." } },
+  cy: { languageName: "Welsh", labels: { title: "Teitl", ingredients: "Cynhwysion", instructions: "Paratoi", hints: "Awgrymiadau a Chynghorion", noTips: "Dim awgrymiadau pellach." } },
 };
 
-// fallback
+// Normalise things like "en-GB" → "en_GB" → fallback
 function resolveLocaleMeta(locale: string | undefined) {
-  return (locale && LOCALE_META[locale])
-    ? LOCALE_META[locale]
-    : LOCALE_META.en_GB;
+  if (!locale) return LOCALE_META.en_GB;
+  const norm = locale.replace("-", "_");
+  if (LOCALE_META[norm]) return LOCALE_META[norm];
+  const primary = norm.split(/[_-]/)[0];
+  return LOCALE_META[primary] ?? LOCALE_META.en_GB;
 }
 
 /**
  * Formats a recipe into a consistent structure in the user's locale,
- * with quota enforcement + usage tracking.
+ * with transactional quota enforcement and refund on failure.
  */
 export async function generateFormattedRecipe(
-  uid: string,          // 🔑 must be passed in for quota
+  uid: string,
   text: string,
   sourceLang: string,
   targetLocale: string
@@ -190,13 +66,14 @@ export async function generateFormattedRecipe(
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("❌ Missing OPENAI_API_KEY in environment variables");
 
-  // 1. Enforce quota before calling GPT
-  await enforceGptRecipePolicy(uid);
-
   const { languageName, labels } = resolveLocaleMeta(targetLocale);
   const openai = new OpenAI({ apiKey });
 
-  const systemPrompt = `
+  // 🚦 Atomically check + consume 1 recipe credit BEFORE the API call.
+  await enforceAndConsume(uid, "aiUsage", 1);
+
+  try {
+    const systemPrompt = `
 You are a recipe assistant. The original recipe was written in ${sourceLang.toUpperCase()}, but the text below is already translated (if translation was necessary).
 
 Write the final output in **${languageName}** and follow that language's spelling and culinary conventions (units, ingredient names). Keep a clear, friendly tone.
@@ -233,48 +110,55 @@ Return only a single JSON object **inside a JSON code block** like:
   "notes": "<extracted tips list or '${labels.noTips}'>"
 }
 \`\`\`
-  `.trim();
+`.trim();
 
-  const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""`;
+    const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""`;
 
-  const completion = await openai.chat.completions.create({
-    model: MODEL,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    temperature: 0.3,
-    max_tokens: 1500,
-  });
+    const completion = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.3,
+      max_tokens: 1500,
+    });
 
-  const rawContent = completion.choices[0]?.message?.content?.trim() || "";
+    const rawContent = completion.choices[0]?.message?.content?.trim() || "";
 
-  // strip code fences if present
-  const jsonCandidate = rawContent
-    .replace(/^```json\s*/i, "")
-    .replace(/```$/i, "")
-    .trim();
+    // Strip code fences if present
+    const jsonCandidate = rawContent
+      .replace(/^```json\s*/i, "")
+      .replace(/```$/i, "")
+      .trim();
 
-  let parsed: GptRecipeResponse | null = null;
-  const tryParse = (s: string) => {
-    try { return JSON.parse(s) as GptRecipeResponse; } catch { return null; }
-  };
-  parsed = tryParse(jsonCandidate) ||
-           tryParse((rawContent.match(/```json\s*([\s\S]*?)\s*```/i)?.[1] || "").trim());
+    const tryParse = (s: string): GptRecipeResponse | null => {
+      try { return JSON.parse(s) as GptRecipeResponse; } catch { return null; }
+    };
 
-  if (!parsed || typeof parsed.formattedRecipe !== "string") {
-    console.error("❌ Failed to parse GPT response:\n", rawContent);
-    throw new Error("Invalid GPT response format");
+    const parsed =
+      tryParse(jsonCandidate) ||
+      tryParse((rawContent.match(/```json\s*([\s\S]*?)\s*```/i)?.[1] || "").trim());
+
+    if (!parsed || typeof parsed.formattedRecipe !== "string") {
+      console.error("❌ Failed to parse GPT response:\n", rawContent);
+      throw new Error("Invalid GPT response format");
+    }
+
+    const formatted = parsed.formattedRecipe.trim();
+    const notes = (parsed.notes || labels.noTips).trim();
+    const hasHintsSection = new RegExp(`(^|\\n)${labels.hints}\\s*:`, "i").test(formatted);
+
+    return hasHintsSection ? formatted : `${formatted}\n\n${labels.hints}:\n${notes}`;
+  } catch (err) {
+    // ❗ If anything fails after consumption, refund 1 credit
+    try {
+      await incrementMonthlyUsage(uid, "aiUsage", -1);
+    } catch (refundErr) {
+      console.error("⚠️ Refund of AI usage failed:", refundErr);
+    }
+    throw err;
   }
-
-  const formatted = parsed.formattedRecipe.trim();
-  const notes = (parsed.notes || labels.noTips).trim();
-  const hasHintsSection = new RegExp(`(^|\\n)${labels.hints}\\s*:`, "i").test(formatted);
-
-  // 2. Increment usage only after a successful GPT call
-  await incrementMonthlyUsage(uid, "aiUsage");
-
-  return hasHintsSection ? formatted : `${formatted}\n\n${labels.hints}:\n${notes}`;
 }
 
 export default generateFormattedRecipe;

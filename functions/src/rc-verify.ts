@@ -15,18 +15,10 @@ export function verifyRevenueCatSignature(
   sharedSecret: string
 ): boolean {
   if (!signatureHeader || !sharedSecret) return false;
-
   try {
-    // Compute expected signature as Buffer
-    const expected = crypto
-      .createHmac("sha256", sharedSecret)
-      .update(rawBody)
-      .digest(); // returns Buffer directly
-
-    // Decode the hex signature header into a Buffer
+    const expected = crypto.createHmac("sha256", sharedSecret).update(rawBody).digest(); // Buffer
     const received = Buffer.from(signatureHeader, "hex");
-
-    // Constant-time comparison
+    if (received.length !== expected.length) return false; // length guard
     return crypto.timingSafeEqual(expected, received);
   } catch (err) {
     console.error("❌ RevenueCat signature verification failed:", err);

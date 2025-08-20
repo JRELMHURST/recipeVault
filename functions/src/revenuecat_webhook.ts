@@ -1,13 +1,14 @@
+// functions/src/revenuecat_webhook.ts
 import admin, { firestore } from "./firebase.js";
 import { onRequest } from "firebase-functions/v2/https";
-import { resolveTierFromPayload } from "./revenuecat.js";
+import { resolveTierFromPayload, computeEntitlementHash } from "./revenuecat.js";
 import { verifyRevenueCatSignature } from "./rc-verify.js";
 import * as crypto from "crypto";
-import { toResult } from "./reconcile_entitlement.js";   // ⬅️ NEW
+import { toResult } from "./reconcile_entitlement.js";
 
 const db = firestore;
 
-export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (req, res) => {
+export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (req, res): Promise<void> => {
   try {
     const secret = process.env.RC_WEBHOOK_SECRET;
     if (!secret) { res.status(500).send("Missing RC secret"); return; }
@@ -17,41 +18,39 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
 
     if (!req.is("application/json")) { res.status(415).send("unsupported media type"); return; }
 
-    // Verify signature against RAW body
     if (!verifyRevenueCatSignature(req.rawBody, sig, secret)) {
       console.warn("Invalid RC signature");
       res.status(401).send("unauthorized");
-      return;
+      return; // ✅ do not return the Response
     }
 
     const payload = req.body;
-
-    // We only need uid + productId; tier will come from toResult()
     const { uid, productId } = resolveTierFromPayload(payload);
     if (!uid) {
       console.warn("RC payload without app_user_id; skipping");
       res.status(200).send("ok");
-      return;
+      return; // ✅
     }
 
-    // Idempotency: RC event id or hash of raw body
+    // Idempotency
     const eventId = payload?.event?.id || crypto.createHash("sha256").update(req.rawBody).digest("hex");
     const dedupeRef = db.doc(`rc_events/${eventId}`);
-    const dedupeSnap = await dedupeRef.get();
-    if (dedupeSnap.exists) {
-      console.info({ msg: "RC duplicate event ignored", eventId });
+    try {
+      await dedupeRef.create({ uid, at: admin.firestore.FieldValue.serverTimestamp() });
+    } catch (e: any) {
+      // Already processed
       res.status(200).send("ok");
-      return;
+      return; // ✅
     }
 
-    // ⬇️ Single source of truth for tier/status/grace
     const r = toResult(productId);
 
-    // No‑op write guard
-    const entitlementHash = crypto
-      .createHash("sha256")
-      .update(JSON.stringify({ productId: r.productId ?? "none", tier: r.tier }))
-      .digest("hex");
+    const entitlementHash = computeEntitlementHash({
+      productId: r.productId,
+      tier: r.tier,
+      entitlementStatus: r.entitlementStatus,
+      graceUntil: r.graceUntil,
+    });
 
     const userRef = db.doc(`users/${uid}`);
     const userSnap = await userRef.get();
@@ -63,20 +62,14 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
         {
           productId: (r.productId ?? "none").toLowerCase(),
           tier: r.tier,
-          entitlementStatus: r.entitlementStatus,   // ⬅️ NEW
-          graceUntil: r.graceUntil,                 // ⬅️ NEW (null for now)
+          entitlementStatus: r.entitlementStatus,
+          graceUntil: r.graceUntil,
           entitlementHash,
           lastLogin: admin.firestore.FieldValue.serverTimestamp(),
         },
         { merge: true }
       );
     }
-
-    // Mark event processed
-    await dedupeRef.create({
-      uid,
-      at: admin.firestore.FieldValue.serverTimestamp(),
-    });
 
     console.info({
       msg: "revenuecatWebhook reconciled",
@@ -89,9 +82,11 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
       changed,
     });
 
-    res.status(200).send("ok");
+    res.status(200).send("ok"); // ✅ send response
+    return;                      // ✅ but don't return the Response
   } catch (e) {
     console.error("RC webhook error", e);
-    res.status(500).send("error");
+    res.status(500).send("error"); // ✅ send response
+    return;                        // ✅ end the Promise<void>
   }
 });

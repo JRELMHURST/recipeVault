@@ -1,3 +1,4 @@
+// functions/src/extract_and_format_recipe.ts
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { getStorage } from "firebase-admin/storage";
@@ -9,27 +10,22 @@ import { translateText } from "./translate.js";
 import { generateFormattedRecipe } from "./gpt_logic.js";
 import {
   getResolvedTier,
-  enforceTranslationPolicy,
-  incrementMonthlyUsage,
-  enforceGptRecipePolicy,
+  enforceAndConsume,          // ✅ use transactional enforcement
+  incrementMonthlyUsage,      // used only for refunds if we choose to
 } from "./usage_service.js";
 
-// 🔑 Secrets
-const REVENUECAT_SECRET_KEY = defineSecret("REVENUECAT_SECRET_KEY");
+// 🔑 Secrets (OPENAI used by gpt_logic; RC secret not used here → remove if unused)
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
-// ---------------------------- helpers ----------------------------
 function normalizeLangBase(code: string | undefined | null): string {
   if (!code) return "";
   return code.toLowerCase().split(/[_-]/)[0] || "";
 }
-
 function toBcp47(lang?: string, region?: string | null): string {
   const base = (lang || "en").toLowerCase();
   const reg = region ? region.toUpperCase() : "";
   return reg ? `${base}-${reg}` : base;
 }
-
 function toFlutterLocaleTag(lang?: string, region?: string | null): string {
   const base = (lang || "en").toLowerCase();
   const reg = region ? region.toUpperCase() : "";
@@ -57,9 +53,8 @@ async function deleteUploadedImage(url: string) {
   }
 }
 
-// ---------------------------- main ----------------------------
 export const extractAndFormatRecipe = onCall(
-  { secrets: [REVENUECAT_SECRET_KEY, OPENAI_API_KEY] },
+  { secrets: [OPENAI_API_KEY] },
   async (request: CallableRequest<{
     imageUrls: string[];
     targetLanguage?: string; // e.g. "pl", "en"
@@ -67,47 +62,42 @@ export const extractAndFormatRecipe = onCall(
   }>) => {
     const start = Date.now();
 
-    // —— Validate input
+    // —— Validate
     const imageUrls = request.data?.imageUrls;
     if (!Array.isArray(imageUrls) || imageUrls.length === 0) {
       throw new HttpsError("invalid-argument", "Missing or invalid 'imageUrls' array.");
     }
-
     const uid = request.auth?.uid;
-    if (!uid) {
-      throw new HttpsError("unauthenticated", "User must be authenticated.");
-    }
+    if (!uid) throw new HttpsError("unauthenticated", "User must be authenticated.");
 
-    // 🔐 HARD GATE before expensive work
-    const tier = await getResolvedTier(uid); // 'home_chef' | 'master_chef' | 'none'
+    // 🔐 Hard gate before expensive work (fast fail for non‑subscribers)
+    const tier = await getResolvedTier(uid);
     if (tier === "none") {
       throw new HttpsError(
         "permission-denied",
         "A free trial or subscription is required to process screenshots."
       );
     }
-    console.log(`🎟️ Subscription tier resolved as: ${tier}`);
+    console.log(`🎟️ Subscription tier: ${tier}`);
 
     const projectId =
       process.env.GCLOUD_PROJECT ||
       process.env.FUNCTIONS_PROJECT_ID ||
       process.env.GCP_PROJECT ||
       "";
-    if (!projectId) {
-      throw new HttpsError("failed-precondition", "No project ID available.");
-    }
+    if (!projectId) throw new HttpsError("failed-precondition", "No project ID available.");
 
-    // —— Target locale from frontend
+    // —— Target locale
     const targetLanguage = (request.data?.targetLanguage || "en").toLowerCase();
     const targetRegion = (request.data?.targetRegion || "GB") || undefined;
-    const targetLanguageTag = toBcp47(targetLanguage, targetRegion);
-    const targetFlutterLocale = toFlutterLocaleTag(targetLanguage, targetRegion);
+    const targetLanguageTag = toBcp47(targetLanguage, targetRegion);     // e.g. en-GB
+    const targetFlutterLocale = toFlutterLocaleTag(targetLanguage, targetRegion); // e.g. en_GB
 
     try {
       console.log(`📸 Starting processing of ${imageUrls.length} image(s)...`);
 
-      // —— OCR
-      const ocrText = await extractTextFromImages(imageUrls);
+      // —— OCR (helper already enforces imageUsage transactionally)
+      const ocrText = await extractTextFromImages(uid, imageUrls); // ✅ pass uid
       if (!ocrText.trim()) {
         throw new HttpsError("invalid-argument", "No text detected in provided images.");
       }
@@ -118,14 +108,13 @@ export const extractAndFormatRecipe = onCall(
       let detectedLanguage = "unknown";
       let confidence = 0;
       let flutterLocale = "en_GB";
-
       try {
         const detection = await detectLanguage(cleanInput, projectId);
         detectedLanguage = detection.languageCode || "unknown";
         confidence = detection.confidence ?? 0;
         flutterLocale = detection.flutterLocale || "en_GB";
         console.log(
-          `🌐 Detected language: ${detectedLanguage} (conf: ${confidence}) → flutterLocale: ${flutterLocale}`
+          `🌐 Detected: ${detectedLanguage} (conf: ${confidence}) → flutterLocale: ${flutterLocale}`
         );
       } catch (err) {
         console.warn("⚠️ Language detection failed:", err);
@@ -140,10 +129,12 @@ export const extractAndFormatRecipe = onCall(
       let translationUsed = false;
 
       if (!srcBase) {
-        console.log("🤷 Detection returned unknown — skipping translation.");
+        console.log("🤷 Detection unknown — skipping translation.");
       } else if (!alreadyTarget) {
+        // 🚦 Transactionally consume 1 translation credit before calling Translate
+        await enforceAndConsume(uid, "translationUsage", 1);
         try {
-          console.log(`🚧 Translating from "${detectedLanguage}" → ${targetLanguageTag}...`);
+          console.log(`🚧 Translating "${detectedLanguage}" → ${targetLanguageTag}...`);
           const translated = await translateText(
             cleanInput,
             detectedLanguage,
@@ -154,36 +145,31 @@ export const extractAndFormatRecipe = onCall(
           if (cleanedTranslated) {
             usedText = cleanedTranslated;
             translationUsed = true;
-
-            // ✅ Enforce + count via usage service
-            await enforceTranslationPolicy(uid);
-            await incrementMonthlyUsage(uid, "translationUsage");
-
-            console.log("✅ Translation successful & usage incremented");
+            console.log("✅ Translation successful");
           } else {
             console.warn("⚠️ Translation returned empty. Continuing with original text.");
+            // Refund the consumed credit if we decide empty means failure:
+            await incrementMonthlyUsage(uid, "translationUsage", -1).catch(() => {});
           }
         } catch (err) {
-          console.error("❌ Translation failed:", err);
+          // Refund on failure
+          try { await incrementMonthlyUsage(uid, "translationUsage", -1); } catch {}
+          throw err;
         }
       } else {
         console.log(`🟢 Skipping translation – already ${targetLanguageTag}`);
       }
 
-      // —— GPT formatting (enforce policy first)
-      await enforceGptRecipePolicy(uid);
-
+      // —— GPT formatting (helper transactionally consumes aiUsage + refunds on failure)
       const finalText = decode(usedText.trim());
       const formattedRecipe = await generateFormattedRecipe(
+        uid,                                      // ✅ required by helper
         finalText,
-        translationUsed ? (srcBase || "unknown") : (tgtBase || "en"),
+        translationUsed ? (srcBase || "unknown")  : (tgtBase || "en"),
         targetFlutterLocale
       );
 
-      await incrementMonthlyUsage(uid, "aiUsage");
-      console.log("✅ GPT formatting complete & usage incremented");
-
-      console.log(`🏁 Processing complete in ${Date.now() - start}ms`);
+      console.log(`🏁 Done in ${Date.now() - start}ms`);
 
       return {
         formattedRecipe,

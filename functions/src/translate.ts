@@ -1,9 +1,10 @@
+// functions/src/translate.ts
 import { TranslationServiceClient } from "@google-cloud/translate";
 import "./firebase.js";
 
 const client = new TranslationServiceClient();
 
-/** Keep Unicode letters + useful punctuation; normalize + collapse whitespace */
+/** Keep Unicode letters + useful punctuation; normalise + collapse whitespace */
 function cleanText(input: string): string {
   return input
     .normalize("NFKC")                    // unify weird forms, fractions, etc.
@@ -41,9 +42,16 @@ function chunkText(input: string, max = 4500): string[] {
   return chunks;
 }
 
+/** Normalise language tags (accepts 'en_GB' or 'en-GB' → 'en-GB') */
+function normaliseLangTag(tag: string): string {
+  const t = tag.replace("_", "-").trim();
+  // Keep as provided otherwise; Cloud Translate accepts BCP‑47 (case-insensitive)
+  return t;
+}
+
 /**
- * Translates provided text from `sourceLanguage` to `targetLanguage` (e.g., "en-GB", "pl", "de").
- * Falls back gracefully if translation fails.
+ * Translate text from `sourceLanguage` to `targetLanguage` (e.g. "en-GB", "pl", "de").
+ * NOTE: No quota enforcement here — billing happens once at the GPT step.
  */
 export async function translateText(
   text: string,
@@ -56,7 +64,10 @@ export async function translateText(
   const cleanedText = cleanText(text);
   const chunks = chunkText(cleanedText);
 
-  console.log(`🔤 Translating ${chunks.length} chunk(s) "${sourceLanguage}" → "${targetLanguage}"`);
+  const src = normaliseLangTag(sourceLanguage);
+  const tgt = normaliseLangTag(targetLanguage);
+
+  console.log(`🔤 Translating ${chunks.length} chunk(s) "${src}" → "${tgt}"`);
   console.log(`📏 Original: ${text.length}, Cleaned: ${cleanedText.length}`);
   console.log(`🧪 Preview:\n${cleanedText.slice(0, 300)}\n`);
 
@@ -69,8 +80,8 @@ export async function translateText(
         parent,
         contents: [piece],
         mimeType: "text/plain",
-        sourceLanguageCode: sourceLanguage,
-        targetLanguageCode: targetLanguage,
+        sourceLanguageCode: src,
+        targetLanguageCode: tgt,
       });
 
       const translated = resp.translations?.[0]?.translatedText ?? piece;
@@ -85,6 +96,7 @@ export async function translateText(
     return out;
   } catch (err) {
     console.error("❌ Translation API failed:", err);
-    return cleanedText; // Fallback to cleaned input
+    // Fallback: return cleaned source so downstream still has something to format
+    return cleanedText;
   }
 }

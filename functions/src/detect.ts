@@ -1,13 +1,10 @@
+// functions/src/detect.ts
 import "./firebase.js";
 import { TranslationServiceClient } from "@google-cloud/translate";
-import {
-  enforceTranslationPolicy,
-  incrementMonthlyUsage,
-} from "./usage_service.js";
 
 const client = new TranslationServiceClient();
 
-/** Unicode-friendly cleanup: keep diacritics, normalize, collapse whitespace */
+/** Unicode-friendly cleanup: keep diacritics, normalise, collapse whitespace */
 function cleanText(input: string): string {
   return input
     .normalize("NFKC")
@@ -38,8 +35,13 @@ function mapToFlutterLocale(code: string): string {
   return "en_GB";
 }
 
+/**
+ * Detect language of text using Google Cloud Translate.
+ * Returns: language code (lowercase), confidence [0..1], and a Flutter locale tag.
+ *
+ * NOTE: No quota enforcement here — billing happens once at the GPT step.
+ */
 export async function detectLanguage(
-  uid: string,      // 🔑 must pass UID for quotas
   text: string,
   projectId?: string
 ): Promise<{
@@ -50,9 +52,6 @@ export async function detectLanguage(
   if (!text?.trim()) {
     throw new Error("❌ No text provided for language detection.");
   }
-  if (!uid) {
-    throw new Error("❌ Missing UID for usage enforcement.");
-  }
 
   const pid =
     projectId ||
@@ -60,17 +59,12 @@ export async function detectLanguage(
     process.env.FUNCTIONS_PROJECT_ID ||
     process.env.GCP_PROJECT ||
     "";
-
   if (!pid) throw new Error("❌ No projectId available for Translate API.");
 
   const cleaned = truncate(cleanText(text));
-
   console.log(
     `🔍 Detecting language: original=${text.length} chars, cleaned=${cleaned.length} chars`
   );
-
-  // 1. Enforce quota
-  await enforceTranslationPolicy(uid);
 
   try {
     const [response] = await client.detectLanguage({
@@ -87,9 +81,6 @@ export async function detectLanguage(
     if (confidence < 0.5) {
       console.warn("⚠️ Low confidence in language detection.");
     }
-
-    // 2. Increment usage
-    await incrementMonthlyUsage(uid, "translationUsage");
 
     return { languageCode, confidence, flutterLocale };
   } catch (err) {

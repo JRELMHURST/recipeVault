@@ -103,9 +103,7 @@ class UserSessionService {
       // ✅ Ensure/merge Firestore user doc via unified AuthService
       final isNewUser = await AuthService.ensureUserDocument(user);
       if (isNewUser) {
-        try {
-          await UserPreferencesService.resetBubbles();
-        } catch (e, stack) {
+        try {} catch (e, stack) {
           _logDebug('⚠️ Failed to mark user as new: $e');
           if (kDebugMode) print(stack);
         }

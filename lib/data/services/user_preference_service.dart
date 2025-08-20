@@ -26,12 +26,8 @@ extension PrefsViewModeX on PrefsViewMode {
 class UserPreferencesService {
   // ─────────────────────────────── keys ───────────────────────────────
   static const String _keyViewMode = 'viewMode';
-  static const String _keyVaultTutorialComplete = 'vaultTutorialComplete';
   static const String _keyAiUsage = 'aiUsage';
   static const String _keyTranslationUsage = 'translationUsage';
-
-  /// Order matters only for `maybeMarkTutorialCompleted`.
-  static const List<String> _bubbleKeys = ['viewToggle', 'longPress', 'scan'];
 
   // ─────────────────────────────── hive state ─────────────────────────
   static String? _activeUid;
@@ -135,54 +131,6 @@ class UserPreferencesService {
         : PrefsViewMode.grid;
     if (kDebugMode) debugPrint('📅 Loaded view mode: ${mode.name}');
     return mode;
-  }
-
-  // ────────────────────── onboarding / bubbles ────────────────────────
-
-  static Future<void> markVaultTutorialCompleted() async {
-    final box = await _ensureBox();
-    if (box == null) return;
-    await box.put(_keyVaultTutorialComplete, true);
-  }
-
-  static Future<void> maybeMarkTutorialCompleted() async {
-    final results = await Future.wait(_bubbleKeys.map(hasDismissedBubble));
-    if (results.every((b) => b)) {
-      await markVaultTutorialCompleted();
-    }
-  }
-
-  static Future<bool> hasCompletedVaultTutorial() async {
-    final box = await _ensureBox();
-    return box?.get(_keyVaultTutorialComplete, defaultValue: false) as bool? ??
-        false;
-  }
-
-  static Future<void> markBubbleDismissed(String key) async {
-    final box = await _ensureBox();
-    if (box == null) return;
-    await box.put('bubbleDismissed_$key', true);
-    await maybeMarkTutorialCompleted();
-  }
-
-  static Future<bool> hasDismissedBubble(String key) async {
-    final box = await _ensureBox();
-    return box?.get('bubbleDismissed_$key', defaultValue: false) as bool? ??
-        false;
-  }
-
-  static Future<bool> shouldShowBubble(String key) async {
-    final dismissed = await hasDismissedBubble(key);
-    if (kDebugMode) debugPrint('👀 Bubble "$key" dismissed? $dismissed');
-    return !dismissed;
-  }
-
-  static Future<void> resetBubbles() async {
-    final box = await _ensureBox();
-    if (box == null) return;
-    for (final key in _bubbleKeys) {
-      await box.delete('bubbleDismissed_$key');
-    }
   }
 
   // ─────────────────────────── usage counters ─────────────────────────

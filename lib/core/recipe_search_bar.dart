@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -79,50 +81,29 @@ class _RecipeSearchBarState extends State<RecipeSearchBar> {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
-
     final focused = _focusNode.hasFocus;
-    final bg = theme.colorScheme.surfaceContainerHighest;
-    final borderColor = focused
-        ? theme.colorScheme.primary
-        : theme.colorScheme.outline.withValues(alpha: 0.35);
-    final glow = theme.colorScheme.primary.withValues(
-      alpha: focused ? 0.18 : 0.0,
-    );
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 160),
       curve: Curves.easeOut,
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: 1.1),
+        color: theme.colorScheme.surfaceVariant.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(22), // pill look
         boxShadow: [
           if (focused)
             BoxShadow(
-              color: glow,
-              blurRadius: 12,
-              spreadRadius: 1,
+              color: theme.colorScheme.primary.withOpacity(0.12),
+              blurRadius: 8,
               offset: const Offset(0, 2),
             ),
         ],
       ),
       child: Row(
         children: [
-          // Leading icon in a soft chip
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Center(child: Icon(LucideIcons.search, size: 18)),
-          ),
-          const SizedBox(width: 10),
-
-          // Field
+          const Icon(LucideIcons.search, size: 18, color: Colors.grey),
+          const SizedBox(width: 8),
           Expanded(
             child: TextField(
               controller: _controller,
@@ -132,19 +113,17 @@ class _RecipeSearchBarState extends State<RecipeSearchBar> {
                 border: InputBorder.none,
                 isDense: true,
                 hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                  fontSize: 14,
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
                 ),
               ),
-              style: theme.textTheme.bodyMedium,
+              style: theme.textTheme.bodyMedium?.copyWith(fontSize: 15),
               textInputAction: TextInputAction.search,
               onSubmitted: (v) => widget.onChanged(v.trim()),
               autocorrect: false,
               enableSuggestions: false,
-              textCapitalization: TextCapitalization.none,
             ),
           ),
-
-          // Clear button
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 140),
             transitionBuilder: (c, a) => FadeTransition(
@@ -152,18 +131,18 @@ class _RecipeSearchBarState extends State<RecipeSearchBar> {
               child: ScaleTransition(scale: a, child: c),
             ),
             child: _showClear
-                ? Semantics(
+                ? IconButton(
                     key: const ValueKey('clear'),
-                    label: t.clearSearch,
-                    button: true,
-                    child: IconButton(
-                      tooltip: t.clearSearch,
-                      onPressed: _clear,
-                      icon: const Icon(LucideIcons.x, size: 18),
-                      padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints(),
-                      splashRadius: 18,
+                    tooltip: t.clearSearch,
+                    onPressed: _clear,
+                    icon: const Icon(
+                      LucideIcons.x,
+                      size: 16,
+                      color: Colors.grey,
                     ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    splashRadius: 18,
                   )
                 : const SizedBox(key: ValueKey('spacer'), width: 4),
           ),

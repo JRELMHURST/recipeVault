@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:recipe_vault/l10n/app_localizations.dart';
-import 'package:recipe_vault/features/recipe_vault/recipe_chip_filter_bar.dart';
+import 'package:recipe_vault/core/recipe_chip_filter_bar.dart';
 
 // ✅ Category keys (All / Favourites / etc.)
 import 'package:recipe_vault/features/recipe_vault/categories.dart';

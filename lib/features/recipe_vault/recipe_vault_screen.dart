@@ -11,12 +11,12 @@ import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
 
 import 'package:recipe_vault/features/recipe_vault/recipe_dialog.dart';
-import 'package:recipe_vault/features/recipe_vault/recipe_search_bar.dart';
+import 'package:recipe_vault/core/recipe_search_bar.dart';
 import 'package:recipe_vault/features/recipe_vault/category_speed_dial.dart';
 import 'package:recipe_vault/features/recipe_vault/recipe_vault_controller.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
 
-import 'package:recipe_vault/widgets/empty_vault_placeholder.dart';
+import 'package:recipe_vault/core/empty_vault_placeholder.dart';
 import 'package:recipe_vault/features/processing/processing_overlay.dart';
 
 // Views

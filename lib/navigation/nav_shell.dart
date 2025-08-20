@@ -46,7 +46,7 @@ class NavShell extends StatelessWidget {
 
     Widget vaultIcon(bool selected) => Image.asset(
       'assets/icon/lock_icon.png',
-      height: selected ? 56 : 48,
+      height: selected ? 48 : 46,
       // Remove the color line if you want the original PNG colors.
       color: selected ? active : inactive,
     );

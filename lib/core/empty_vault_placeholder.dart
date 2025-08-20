@@ -1,7 +1,6 @@
 // lib/core/empty_vault_placeholder.dart
 // ignore_for_file: deprecated_member_use
 
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
@@ -21,6 +20,16 @@ class EmptyVaultPlaceholder extends StatelessWidget {
     "assets/icon/coffee.PNG",
   ];
 
+  /// Deterministic index that changes once per day.
+  int _dailyIndex() {
+    final today = DateTime.now();
+    final d0 = DateTime(today.year, today.month, today.day); // midnight local
+    // Days since epoch; will increment by 1 each midnight
+    final daysSinceEpoch =
+        d0.millisecondsSinceEpoch ~/ Duration.millisecondsPerDay;
+    return daysSinceEpoch % _icons.length;
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
@@ -28,7 +37,7 @@ class EmptyVaultPlaceholder extends StatelessWidget {
     final cs = theme.colorScheme;
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
-    final choice = _icons[Random().nextInt(_icons.length)];
+    final choice = _icons[_dailyIndex()];
     final isEmoji = !choice.startsWith("assets/");
 
     return Center(
@@ -49,7 +58,7 @@ class EmptyVaultPlaceholder extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Circle with gradient outline
+                    // Circle with subtle gradient outline
                     Container(
                       width: 80,
                       height: 80,
@@ -58,15 +67,15 @@ class EmptyVaultPlaceholder extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           colors: [
-                            theme.colorScheme.primary.withOpacity(0.4),
-                            theme.colorScheme.secondary.withOpacity(0.4),
+                            theme.colorScheme.primary.withOpacity(0.35),
+                            theme.colorScheme.secondary.withOpacity(0.35),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withOpacity(0.06),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -75,17 +84,17 @@ class EmptyVaultPlaceholder extends StatelessWidget {
                       child: ClipOval(
                         child: Container(
                           color: Colors.white,
-                          child: Center(
-                            child: isEmoji
-                                ? Text(
-                                    choice,
-                                    style: const TextStyle(fontSize: 38),
-                                  )
-                                : Image.asset(
-                                    choice,
-                                    fit: BoxFit.cover, // fill the circle
-                                  ),
-                          ),
+                          alignment: Alignment.center,
+                          child: isEmoji
+                              ? Text(
+                                  choice,
+                                  // Slightly larger so it reads well inside the circle
+                                  style: const TextStyle(fontSize: 40),
+                                )
+                              : Image.asset(
+                                  choice,
+                                  fit: BoxFit.cover, // fill the circle
+                                ),
                         ),
                       ),
                     ),

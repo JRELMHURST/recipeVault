@@ -1,26 +1,32 @@
+// lib/core/empty_vault_placeholder.dart
+// ignore_for_file: deprecated_member_use
+
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class EmptyVaultPlaceholder extends StatelessWidget {
-  final VoidCallback onCreate;
+  const EmptyVaultPlaceholder({super.key});
 
-  const EmptyVaultPlaceholder({super.key, required this.onCreate});
+  static final _emojis = ["👨‍🍳", "👩‍🍳", "🍲", "🥗", "📖🍴"];
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
+    final cs = theme.colorScheme;
     final bottomInset = MediaQuery.of(context).padding.bottom;
+
+    final emoji = _emojis[Random().nextInt(_emojis.length)];
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: Card(
             elevation: 2,
-            color: theme.colorScheme.surface,
+            color: cs.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -31,60 +37,66 @@ class EmptyVaultPlaceholder extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Logo (accessible)
-                    Semantics(
-                      label: t.emptyVaultTitle,
-                      image: true,
-                      child: Image.asset(
-                        'assets/icon/round_vaultLogo.png',
-                        width: 72,
-                        height: 72,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Body
-                    Text(
-                      t.emptyVaultBody,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: onSurfaceVariant,
-                        height: 1.4,
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Primary CTA
-                    Semantics(
-                      button: true,
-                      label: t.createRecipe,
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: onCreate,
-                          icon: const Icon(Icons.add),
-                          label: Text(
-                            t.createRecipe,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    // Subtle circle with faint gradient outline
+                    Container(
+                      width: 80,
+                      height: 80,
+                      padding: const EdgeInsets.all(2), // thinner outline
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            theme.colorScheme.primary.withOpacity(0.4),
+                            theme.colorScheme.secondary.withOpacity(0.4),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
+                        ],
+                      ),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                        child: Center(
+                          child: Text(
+                            emoji,
+                            style: const TextStyle(fontSize: 38),
                           ),
                         ),
                       ),
                     ),
+                    const SizedBox(height: 20),
 
-                    // Breathing room for devices with gesture bars
-                    SizedBox(height: 10 + bottomInset),
+                    // Headline
+                    Text(
+                      t.emptyVaultTitle,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Supporting copy
+                    Text(
+                      t.emptyVaultBody,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        height: 1.45,
+                      ),
+                    ),
+
+                    SizedBox(height: 16 + bottomInset),
                   ],
                 ),
               ),

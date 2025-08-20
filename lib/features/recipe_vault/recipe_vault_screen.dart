@@ -14,10 +14,8 @@ import 'package:recipe_vault/features/recipe_vault/recipe_dialog.dart';
 import 'package:recipe_vault/core/recipe_search_bar.dart';
 import 'package:recipe_vault/features/recipe_vault/category_speed_dial.dart';
 import 'package:recipe_vault/features/recipe_vault/recipe_vault_controller.dart';
-import 'package:recipe_vault/data/services/image_processing_service.dart';
 
 import 'package:recipe_vault/core/empty_vault_placeholder.dart';
-import 'package:recipe_vault/features/processing/processing_overlay.dart';
 
 // Views
 import 'package:recipe_vault/features/recipe_vault/recipe_list_view.dart'
@@ -101,19 +99,7 @@ class _VaultBodyState extends State<_VaultBody> {
               Expanded(
                 child: filtered.isEmpty
                     ? (c.allRecipes.isEmpty
-                          ? EmptyVaultPlaceholder(
-                              onCreate: () async {
-                                // “Create” flow stays in UI (needs dialogs/context)
-                                final sub = context.read<SubscriptionService>();
-                                if (!sub.allowImageUpload) {
-                                  // Optionally show your paywall prompt here.
-                                }
-                                final files =
-                                    await ImageProcessingService.pickAndCompressImages();
-                                if (!mounted || files.isEmpty) return;
-                                ProcessingOverlay.show(context, files);
-                              },
-                            )
+                          ? const EmptyVaultPlaceholder()
                           : Center(
                               child: Text(
                                 t.noRecipesFound,

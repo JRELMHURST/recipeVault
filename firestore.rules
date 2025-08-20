@@ -14,7 +14,6 @@ service cloud.firestore {
     }
     // Only allow clients to touch benign profile prefs on /users/{uid}
     function userUpdateIsSafe() {
-      // keys the client is allowed to change on their user doc
       return request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly([
           'email',
@@ -26,34 +25,36 @@ service cloud.firestore {
     /* ─────────── per-user space ─────────── */
     match /users/{userId} {
 
-      // Read own user doc
-      allow get, list: if isOwner(userId);
+      // List/get own user doc
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
 
-      // Create own doc (backend normally creates this, but keep for first sign-in)
+      // Create/delete own doc (disable delete if you prefer backend-only)
       allow create: if isOwner(userId);
-
-      // Delete own doc (you may want to keep this backend-only; leave enabled if UI supports it)
       allow delete: if isOwner(userId);
 
-      // Client may update only allowlisted keys
-      allow update: if isOwner(userId) && userUpdateIsSafe();
-
-      // Admin can update anything on user doc
-      allow update: if isAdmin();
+      // Single consolidated update rule (owner with safe fields OR admin)
+      allow update: if (isOwner(userId) && userUpdateIsSafe()) || isAdmin();
 
       /* ── recipes (CRUD by owner) ── */
       match /recipes/{recipeId} {
-        allow get, list, create, update, delete: if isOwner(userId);
+        allow read, write: if isOwner(userId);
       }
 
       /* ── custom categories (CRUD by owner) ── */
       match /categories/{categoryId} {
-        allow get, list, create, update, delete: if isOwner(userId);
+        allow read, write: if isOwner(userId);
       }
 
       /* ── optional translated/alt content (CRUD by owner) ── */
       match /translations/{translationId} {
-        allow get, list, create, update, delete: if isOwner(userId);
+        allow read, write: if isOwner(userId);
+      }
+
+      /* ── per-user prefs (owner RW). e.g. /users/{uid}/prefs/app
+            { hiddenDefaultCategories: ['Breakfast', ...] } ── */
+      match /prefs/{docId} {
+        allow read, write: if isOwner(userId);
       }
 
       /* ── usage counters (backend writes only; client read‑only) ── */
@@ -73,11 +74,8 @@ service cloud.firestore {
 
     /* ─────────── write-only analytics (from signed-in clients) ─────────── */
     match /analytics/{docId} {
-      // Allow creating new events, but nothing else
       allow create: if isSignedIn();
       allow get, list, update, delete: if false;
     }
-
-    /* (add other top-level collections here as needed; default deny applies) */
   }
 }

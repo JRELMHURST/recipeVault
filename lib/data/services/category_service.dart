@@ -13,6 +13,7 @@ import 'package:recipe_vault/features/recipe_vault/categories.dart';
 /// - Never opens boxes without a signed-in user
 /// - Switches boxes on auth changes driven by AppBootstrap.onAuthChanged(uid)
 /// - Firestore mirror at /users/{uid}/categories/{name}
+/// - Hidden defaults are mirrored at /users/{uid}/prefs/app.hiddenDefaultCategories
 class CategoryService {
   // ─────────────────────────────── constants ───────────────────────────────
   static const List<String> _systemCategories = CategoryKeys.systemOnly;
@@ -126,6 +127,7 @@ class CategoryService {
   }
 
   /// Pulls categories from Firestore and replaces the local box with them.
+  /// Also syncs hidden defaults from /users/{uid}/prefs/app.hiddenDefaultCategories.
   static Future<void> syncFromFirestore() async {
     final uid = _requireUserOrNull();
     if (uid == null) {
@@ -135,6 +137,7 @@ class CategoryService {
     await _ensureBoxes(uid);
 
     try {
+      // Categories
       final ref = _fs.collection('users').doc(uid).collection('categories');
       final snap = await ref.get();
 
@@ -148,39 +151,114 @@ class CategoryService {
         }
       }
 
+      // Hidden defaults (soft-deletes) — source of truth = Firestore
+      await _syncHiddenDefaultsFromFirestore(uid);
+
+      // Ensure seed defaults exist locally (even if not in Firestore)
       await _ensureSeedUserDefaultsLocal(uid);
     } catch (e) {
       debugPrint('⚠️ Failed to sync categories from Firestore: $e');
     }
   }
 
-  // ─────────────────────── default visibility (legacy compat) ───────────────
+  // ─────────────────────── default visibility (soft delete) ────────────────
+  /// Hide one of the seed defaults (Breakfast/Main/Dessert).
+  /// Mirrors to Firestore under /users/{uid}/prefs/app.hiddenDefaultCategories.
   static Future<void> hideDefaultCategory(String category) async {
     final uid = _requireUserOrNull();
     if (uid == null) return;
     if (!_seedUserDefaults.contains(category)) return;
 
     await _ensureBoxes(uid);
+
+    // Local (Hive)
     final box = Hive.box<String>(_hiddenDefaultBox(uid));
     await box.put(category, category);
+
+    // Firestore mirror (append to array if not present)
+    try {
+      final doc = _fs
+          .collection('users')
+          .doc(uid)
+          .collection('prefs')
+          .doc('app');
+      final snap = await doc.get();
+      final current =
+          (snap.data()?['hiddenDefaultCategories'] as List?)?.cast<String>() ??
+          <String>[];
+      if (!current.contains(category)) current.add(category);
+      await doc.set({
+        'hiddenDefaultCategories': current,
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('⚠️ FS hideDefaultCategory("$category") failed: $e');
+    }
   }
 
+  /// Unhide one of the seed defaults (Breakfast/Main/Dessert).
+  /// Mirrors to Firestore under /users/{uid}/prefs/app.hiddenDefaultCategories.
   static Future<void> unhideDefaultCategory(String category) async {
     final uid = _requireUserOrNull();
     if (uid == null) return;
 
     await _ensureBoxes(uid);
+
+    // Local (Hive)
     final box = Hive.box<String>(_hiddenDefaultBox(uid));
     await box.delete(category);
+
+    // Firestore mirror (remove from array)
+    try {
+      final doc = _fs
+          .collection('users')
+          .doc(uid)
+          .collection('prefs')
+          .doc('app');
+      final snap = await doc.get();
+      final current =
+          (snap.data()?['hiddenDefaultCategories'] as List?)?.cast<String>() ??
+          <String>[];
+      current.removeWhere((c) => c == category);
+      await doc.set({
+        'hiddenDefaultCategories': current,
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('⚠️ FS unhideDefaultCategory("$category") failed: $e');
+    }
   }
 
+  /// Get the list of hidden seed defaults. Tries Firestore first to keep
+  /// multiple devices in sync; falls back to the local Hive cache if offline.
   static Future<List<String>> getHiddenDefaultCategories() async {
     final uid = _requireUserOrNull();
     if (uid == null) return const <String>[];
 
     await _ensureBoxes(uid);
-    final box = Hive.box<String>(_hiddenDefaultBox(uid));
-    return box.values.toList(growable: false);
+
+    // Try Firestore first (preferred source)
+    try {
+      final doc = await _fs
+          .collection('users')
+          .doc(uid)
+          .collection('prefs')
+          .doc('app')
+          .get();
+      final remote =
+          (doc.data()?['hiddenDefaultCategories'] as List?)?.cast<String>() ??
+          <String>[];
+
+      // Keep Hive in sync with remote
+      final box = Hive.box<String>(_hiddenDefaultBox(uid));
+      await box.clear();
+      for (final c in remote) {
+        await box.put(c, c);
+      }
+      return remote;
+    } catch (_) {
+      // Offline or first run: use Hive cache
+      final box = Hive.box<String>(_hiddenDefaultBox(uid));
+      return box.values.toList(growable: false);
+    }
   }
 
   // ─────────────────────────────── cache management ─────────────────────────
@@ -244,7 +322,12 @@ class CategoryService {
 
     // Legacy migration + seed defaults
     await _migrateLegacyFor(nextUid);
+
+    // Seed defaults always present locally
     await _ensureSeedUserDefaultsLocal(nextUid);
+
+    // Pull hidden defaults from Firestore into Hive for this user
+    await _syncHiddenDefaultsFromFirestore(nextUid);
   }
 
   static Future<void> _closeOpenBoxes() async {
@@ -307,6 +390,31 @@ class CategoryService {
       if (!existing.contains(name)) {
         await box.add(CategoryModel(id: name, name: name).toJson());
       }
+    }
+  }
+
+  /// Pull hidden defaults from Firestore into the Hive cache for this user.
+  static Future<void> _syncHiddenDefaultsFromFirestore(String uid) async {
+    try {
+      final doc = await _fs
+          .collection('users')
+          .doc(uid)
+          .collection('prefs')
+          .doc('app')
+          .get();
+      final remote =
+          (doc.data()?['hiddenDefaultCategories'] as List?)?.cast<String>() ??
+          <String>[];
+
+      final box = Hive.box<String>(_hiddenDefaultBox(uid));
+      await box.clear();
+      for (final c in remote) {
+        if (_seedUserDefaults.contains(c)) {
+          await box.put(c, c);
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to sync hidden defaults from Firestore: $e');
     }
   }
 

@@ -1,4 +1,11 @@
-// lib/app_bootstrap.dart
+// lib/app/app_bootstrap.dart
+// Centralized, idempotent app initialization.
+// - Firebase Core + App Check
+// - RevenueCat (configure only; no user binding here)
+// - Notifications
+// - Hive + adapters + optional legacy migration
+// - Per-auth change hooks for per-user services and RC AppUserID
+
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
@@ -11,12 +18,13 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import 'package:recipe_vault/firebase_options.dart';
+
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 import 'package:recipe_vault/data/models/category_model.dart';
 import 'package:recipe_vault/data/services/category_service.dart';
 import 'package:recipe_vault/data/services/notification_service.dart';
 import 'package:recipe_vault/data/services/user_preference_service.dart';
-// ✅ RC <-> Firebase UID binding + tier preloading
+
 import 'package:recipe_vault/billing/subscription_service.dart';
 
 class AppBootstrap {
@@ -28,11 +36,11 @@ class AppBootstrap {
   );
   static final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  /// Call once at app start (idempotent).
+  /// Call once at app start.
   static Future<void> ensureReady() async {
     if (_isReady) return;
 
-    /* 1) Firebase core */
+    // 1) Firebase core
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
@@ -45,13 +53,13 @@ class AppBootstrap {
       return; // nothing else will work
     }
 
-    // Optional emulators:
+    // // Optional local emulators:
     // if (kDebugMode) {
     //   functions.useFunctionsEmulator('localhost', 5001);
     //   firestore.useFirestoreEmulator('localhost', 8080);
     // }
 
-    /* 2) App Check */
+    // 2) App Check
     try {
       if (kIsWeb) {
         await FirebaseAppCheck.instance.activate(
@@ -76,7 +84,7 @@ class AppBootstrap {
       }
     }
 
-    /* 3) RevenueCat (SDK configure only) */
+    // 3) RevenueCat (configure SDK only; user binding handled on auth changes)
     try {
       if (kDebugMode) await Purchases.setLogLevel(LogLevel.debug);
       final cfg = PurchasesConfiguration(
@@ -92,7 +100,7 @@ class AppBootstrap {
       }
     }
 
-    /* 4) Notifications */
+    // 4) Notifications
     try {
       await NotificationService.init();
     } catch (e, st) {
@@ -102,8 +110,7 @@ class AppBootstrap {
       }
     }
 
-    /* 5) Hive core + adapters (no per-user boxes yet) */
-
+    // 5) Hive core + adapters (+ optional legacy category migration)
     try {
       await Hive.initFlutter();
 
@@ -114,10 +121,7 @@ class AppBootstrap {
         Hive.registerAdapter(CategoryModelAdapter());
       }
 
-      // Legacy presence heuristic
-      try {} catch (_) {}
-
-      // Optional legacy migration
+      // Optional legacy categories migration (String -> CategoryModel)
       try {
         if (await Hive.boxExists('categories')) {
           final catBox = await Hive.openBox('categories');
@@ -142,8 +146,6 @@ class AppBootstrap {
 
       await CategoryService.init();
       await UserPreferencesService.init();
-
-      // ✅ Prime subscription service so UI can react immediately
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('❌ Hive core setup failed: $e');
@@ -151,6 +153,7 @@ class AppBootstrap {
       }
     }
 
+    // 6) Keep per-user services + RevenueCat AppUserID in lockstep with Firebase Auth
     FirebaseAuth.instance.authStateChanges().listen((user) async {
       if (kDebugMode) {
         debugPrint(
@@ -178,9 +181,12 @@ class AppBootstrap {
         }
       }
 
-      // ✅ Keep RevenueCat AppUserID in lockstep with Firebase UID
+      // RevenueCat AppUserID ↔ Firebase UID
       try {
         await SubscriptionService().setAppUserId(user?.uid);
+        // NOTE: The provider in main.dart also does `SubscriptionService()..init()`
+        // which preloads state; keeping setAppUserId here avoids duplication while
+        // ensuring RC stays in sync with auth transitions.
       } catch (e, st) {
         if (kDebugMode) {
           debugPrint('⚠️ SubscriptionService.setAppUserId failed: $e');

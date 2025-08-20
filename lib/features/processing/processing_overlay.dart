@@ -10,7 +10,7 @@ import 'package:recipe_vault/data/services/image_processing_service.dart';
 
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/navigation/routes.dart';
-import 'package:recipe_vault/widgets/processing_messages.dart';
+import 'package:recipe_vault/features/processing/processing_messages.dart';
 
 class ProcessingOverlay {
   static OverlayEntry? _currentOverlay;

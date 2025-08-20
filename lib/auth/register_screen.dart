@@ -48,7 +48,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     LoadingOverlay.show(context);
     try {
-      await AuthService().registerWithEmail(email, password);
+      // 👇 FIX: use named parameters to match AuthService.registerWithEmail
+      await AuthService().registerWithEmail(email: email, password: password);
+
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;

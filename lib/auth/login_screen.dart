@@ -49,7 +49,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final email = emailController.text.trim();
       final password = passwordController.text.trim();
 
-      await AuthService().signInWithEmail(email, password);
+      // ❗️Use named parameters to match AuthService signature
+      await AuthService().signInWithEmail(email: email, password: password);
+
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
@@ -72,9 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _showError(AppLocalizations.of(context).cancel);
         return;
       }
-
       await VaultRecipeService.loadAndMergeAllRecipes();
-
       if (!mounted) return;
       safeGo(context, AppRoutes.vault);
     } catch (e) {
@@ -94,9 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _showError(AppLocalizations.of(context).cancel);
         return;
       }
-
       await VaultRecipeService.loadAndMergeAllRecipes();
-
       if (!mounted) return;
       safeGo(context, AppRoutes.vault);
     } catch (e) {

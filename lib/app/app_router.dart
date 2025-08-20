@@ -1,7 +1,9 @@
+// lib/app/app_router.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';
 
@@ -34,7 +36,7 @@ import 'package:recipe_vault/features/settings/about_screen.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
 
 GoRouter buildAppRouter(SubscriptionService subs) {
-  // This notifier ticks on auth changes so GoRouter refreshes redirects.
+  // Make GoRouter re-evaluate redirects on auth changes.
   final authTick = ValueNotifier(0);
   FirebaseAuth.instance.authStateChanges().listen((_) {
     authTick.value++;
@@ -43,7 +45,8 @@ GoRouter buildAppRouter(SubscriptionService subs) {
   return GoRouter(
     navigatorKey: NavKeys.root,
     initialLocation: AppRoutes.boot,
-    // refresh when subscription OR auth changes
+
+    // Refresh on subscription changes (ChangeNotifier) and auth changes.
     refreshListenable: Listenable.merge([subs, authTick]),
 
     redirect: (context, state) {
@@ -51,22 +54,21 @@ GoRouter buildAppRouter(SubscriptionService subs) {
       final loc = state.matchedLocation;
       final isManaging = state.uri.queryParameters['manage'] == '1';
 
-      // While subs are still resolving, pin on /boot (allow manage paywall)
+      // 1) While subs resolving → keep on /boot (except explicit manage paywall)
       final isResolving = subs.status == EntitlementStatus.checking;
       if (isResolving) {
         if (loc == AppRoutes.paywall && isManaging) return null;
         return loc == AppRoutes.boot ? null : AppRoutes.boot;
       }
 
-      // Not logged in → only allow /login and /register
+      // 2) Not logged in → allow only /login and /register
       if (user == null) {
         if (loc == AppRoutes.login || loc == AppRoutes.register) return null;
         return AppRoutes.login;
       }
 
-      // Logged in:
+      // 3) Logged in with access → keep out of boot/paywall/auth
       if (subs.hasAccess) {
-        // Keep paid users out of boot/paywall/auth
         if (loc == AppRoutes.boot ||
             loc == AppRoutes.paywall ||
             loc == AppRoutes.login ||
@@ -76,13 +78,13 @@ GoRouter buildAppRouter(SubscriptionService subs) {
         return null;
       }
 
-      // No access (paid‑only app) → show paywall (allow explicit manage)
-      if (loc == AppRoutes.paywall) return null;
+      // 4) Logged in without access (paid‑only app) → always show paywall
+      if (loc == AppRoutes.paywall) return null; // including ?manage=1
       return AppRoutes.paywall;
     },
 
     routes: [
-      // Root level
+      // ----- Root-level pages -----
       GoRoute(
         parentNavigatorKey: NavKeys.root,
         path: AppRoutes.boot,
@@ -113,7 +115,7 @@ GoRouter buildAppRouter(SubscriptionService subs) {
             fadePage(const RegisterScreen(), key: const ValueKey('register')),
       ),
 
-      // Shell with app bar/bottom nav
+      // ----- Shell with top/bottom nav -----
       ShellRoute(
         navigatorKey: NavKeys.shell,
         builder: (context, state, child) => NavShell(child: child),
@@ -135,7 +137,7 @@ GoRouter buildAppRouter(SubscriptionService subs) {
         ],
       ),
 
-      // Settings details (root)
+      // ----- Settings detail pages (root) -----
       GoRoute(
         parentNavigatorKey: NavKeys.root,
         path: AppRoutes.settingsAccount,
@@ -145,7 +147,7 @@ GoRouter buildAppRouter(SubscriptionService subs) {
         ),
         routes: [
           GoRoute(
-            path: 'change-password',
+            path: 'change-password', // AppRoutes.settingsChangePassword
             pageBuilder: (context, state) => fadePage(
               const ChangePasswordScreen(),
               key: const ValueKey('settings-change-password'),
@@ -195,7 +197,7 @@ GoRouter buildAppRouter(SubscriptionService subs) {
         ),
       ),
 
-      // Full-screen
+      // ----- Full-screen outside shell -----
       GoRoute(
         parentNavigatorKey: NavKeys.root,
         path: AppRoutes.results,

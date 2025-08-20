@@ -10,12 +10,12 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/billing/pricing_card.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/app/routes.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';
@@ -33,12 +33,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
   bool _isLoading = true;
   bool _isPurchasing = false;
   bool _loadFailed = false;
-
-  List<Package> _availablePackages = [];
   bool _isManaging = false;
 
-  // Active product identifiers from RevenueCat (lowercased)
-  Set<String> _activeProductIds = const {};
+  List<Package> _availablePackages = [];
+  Set<String> _activeProductIds = const {}; // RevenueCat entitlements
 
   @override
   void initState() {
@@ -63,13 +61,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
       _loadFailed = false;
     });
 
-    // Make sure local RC state is fresh (listener will update tier)
     await _subscriptionService.refresh();
 
     try {
       final offerings = await Purchases.getOfferings();
       final info = await Purchases.getCustomerInfo();
       final active = info.entitlements.active.values;
+
       _activeProductIds = {
         for (final e in active)
           if (e.productIdentifier.isNotEmpty) e.productIdentifier.toLowerCase(),
@@ -78,7 +76,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
       final packages = <Package>[];
       final seen = <String>{};
 
-      // offerings.all can be empty; guard null/empty
       offerings.all.forEach((_, offering) {
         for (final pkg in offering.availablePackages) {
           final id = pkg.storeProduct.identifier;
@@ -86,7 +83,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
         }
       });
 
-      // Sort: current entitlement first, then by priority
       final productId = _subscriptionService.productId;
       packages.sort((a, b) {
         bool isCurrentPkg(Package p) => _isPackageCurrent(p, productId);
@@ -117,11 +113,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 
-  // Lenient “current package” detection:
   bool _isPackageCurrent(Package pkg, String productId) {
     final pid = pkg.storeProduct.identifier.toLowerCase();
 
-    // (1) match RC product ids
     if (_activeProductIds.isNotEmpty) {
       if (_activeProductIds.any(
         (p) => p == pid || p.contains(pid) || pid.contains(p),
@@ -130,13 +124,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
       }
     }
 
-    // (2) fallback: match entitlement keyword against product id
     final ent = productId.toLowerCase();
     if (ent.isNotEmpty) {
       if (ent.contains('master') && pid.contains('master')) return true;
       if (ent.contains('home') && pid.contains('home')) return true;
     }
-
     return false;
   }
 
@@ -144,20 +136,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
     setState(() => _isPurchasing = true);
     LoadingOverlay.show(context);
     try {
-      // 1) Purchase via RevenueCat (listener will update entitlement/tier)
       final info = await Purchases.purchasePackage(package);
-
-      // 2) Kick a refresh so the listener/state propagates quickly
-      //    (this does NOT block routing; appRedirect listens to the service)
       unawaited(_subscriptionService.refresh());
-
-      // 3) Fire-and-forget backend reconcile. Best effort; do not block UX.
       unawaited(_triggerReconcileBestEffort());
 
       if (!mounted) return;
       LoadingOverlay.hide();
 
-      // If RC already shows active, great; if not, let the user know it's on the way.
       final hasEntitlement =
           info.entitlements.active.isNotEmpty ||
           _subscriptionService.hasActiveSubscription;
@@ -168,11 +153,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
           ),
         );
       }
-      // No manual navigation here — the global router guard will redirect
-      // to the vault as soon as SubscriptionService.hasAccess flips true.
     } on PlatformException {
       if (!mounted) return;
-      LoadingOverlay.hide(); // user cancelled
+      LoadingOverlay.hide();
     } catch (e) {
       if (!mounted) return;
       LoadingOverlay.hide();
@@ -203,16 +186,29 @@ class _PaywallScreenState extends State<PaywallScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context);
+    final t = AppLocalizations.of(context);
 
     final status = context.watch<SubscriptionService>().status;
     final isResolving = status == EntitlementStatus.checking;
     final showSpinner = _isLoading || isResolving;
 
+    // 🔎 subscription plan label for consistency
+    final tier = context.watch<SubscriptionService>().tier;
+    final planLabel = switch (tier) {
+      'home_chef' => t.planHomeChef,
+      'master_chef' => t.planMasterChef,
+      _ => '',
+    };
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(loc.chefModeTitle),
+        toolbarHeight: 88,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        centerTitle: true,
+        automaticallyImplyLeading: _isManaging,
         leading: _isManaging
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -233,17 +229,64 @@ class _PaywallScreenState extends State<PaywallScreen> {
               icon: const Icon(Icons.refresh),
             ),
         ],
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+        ),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary.withOpacity(.96),
+                theme.colorScheme.primary.withOpacity(.80),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(24),
+            ),
+          ),
+        ),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              t.chefModeTitle,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                fontSize: 22,
+                letterSpacing: .6,
+                color: Colors.white,
+                shadows: const [
+                  Shadow(
+                    blurRadius: 2,
+                    offset: Offset(0, 1),
+                    color: Colors.black26,
+                  ),
+                ],
+              ),
+            ),
+            if (planLabel.isNotEmpty)
+              Text(
+                planLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.white.withOpacity(0.85),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+          ],
+        ),
       ),
       body: showSpinner
           ? const Center(child: CircularProgressIndicator())
-          : _buildContent(context, theme, loc),
+          : _buildContent(context, theme, t),
     );
   }
 
   Widget _buildContent(
     BuildContext context,
     ThemeData theme,
-    AppLocalizations loc,
+    AppLocalizations t,
   ) {
     final productId = _subscriptionService.productId;
 
@@ -258,7 +301,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
-            loc.paywallHeader,
+            t.paywallHeader,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontSize: 16,
               height: 1.4,
@@ -276,7 +319,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 24),
-
                     if (_availablePackages.isNotEmpty) ...[
                       ..._availablePackages.map((pkg) {
                         final isCurrent = _isPackageCurrent(pkg, productId);
@@ -284,10 +326,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             (pkg.storeProduct.subscriptionPeriod ?? '')
                                 .toUpperCase() ==
                             'P1Y';
-
                         final String? badge = isCurrent
-                            ? loc.badgeCurrentPlan
-                            : (isYearly ? loc.badgeBestValue : null);
+                            ? t.badgeCurrentPlan
+                            : (isYearly ? t.badgeBestValue : null);
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
@@ -309,9 +350,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         child: Column(
                           children: [
                             Text(
-                              _loadFailed
-                                  ? 'Couldn’t load plans.'
-                                  : loc.noPlans,
+                              _loadFailed ? 'Couldn’t load plans.' : t.noPlans,
                               textAlign: TextAlign.center,
                               style: const TextStyle(color: Colors.grey),
                             ),
@@ -325,9 +364,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         ),
                       ),
                     ],
-
                     const SizedBox(height: 32),
-                    Center(child: _buildLegalNotice(context)),
+                    Center(child: _buildLegalNotice(context, t)),
                   ],
                 ),
               ),
@@ -338,10 +376,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
     );
   }
 
-  Widget _buildLegalNotice(BuildContext context) {
+  Widget _buildLegalNotice(BuildContext context, AppLocalizations t) {
     final theme = Theme.of(context);
-    final loc = AppLocalizations.of(context);
-
     return Column(
       children: [
         RichText(
@@ -349,9 +385,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
           text: TextSpan(
             style: theme.textTheme.bodySmall,
             children: [
-              TextSpan(text: loc.legalAgreePrefix),
+              TextSpan(text: t.legalAgreePrefix),
               TextSpan(
-                text: loc.legalTerms,
+                text: t.legalTerms,
                 style: const TextStyle(decoration: TextDecoration.underline),
                 recognizer: TapGestureRecognizer()
                   ..onTap = () => launchUrl(
@@ -359,9 +395,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
                     mode: LaunchMode.externalApplication,
                   ),
               ),
-              TextSpan(text: loc.legalAnd),
+              TextSpan(text: t.legalAnd),
               TextSpan(
-                text: loc.legalPrivacy,
+                text: t.legalPrivacy,
                 style: const TextStyle(decoration: TextDecoration.underline),
                 recognizer: TapGestureRecognizer()
                   ..onTap = () => launchUrl(
@@ -375,7 +411,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ),
         const SizedBox(height: 12),
         Text(
-          loc.legalAutoRenew,
+          t.legalAutoRenew,
           style: theme.textTheme.bodySmall?.copyWith(
             fontStyle: FontStyle.italic,
             color: Colors.grey,
@@ -384,7 +420,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          loc.legalManageApple,
+          t.legalManageApple,
           style: theme.textTheme.bodySmall?.copyWith(
             fontStyle: FontStyle.italic,
             color: Colors.grey,
@@ -401,7 +437,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             }
           },
           icon: const Icon(Icons.cancel_outlined),
-          label: Text(loc.manageOrCancelCta),
+          label: Text(t.manageOrCancelCta),
         ),
       ],
     );

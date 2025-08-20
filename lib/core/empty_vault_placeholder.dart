@@ -60,15 +60,14 @@ class EmptyVaultPlaceholder extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
             child: Card(
-              elevation: 1.5,
+              elevation: 2,
               color: cs.surface,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: cs.outlineVariant.withOpacity(.25)),
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(color: cs.outline.withOpacity(.35), width: 1),
               ),
               child: Padding(
-                // tighter vertical padding
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -79,9 +78,9 @@ class EmptyVaultPlaceholder extends StatelessWidget {
                       start: cs.primary,
                       end: cs.secondary,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 14),
 
-                    // Body — compact rhythm + slight letter‑spacing
+                    // Body — elongated rhythm + slight letter-spacing
                     Text(
                       t.emptyVaultBody,
                       textAlign: TextAlign.center,
@@ -91,23 +90,23 @@ class EmptyVaultPlaceholder extends StatelessWidget {
                       ),
                       strutStyle: const StrutStyle(
                         forceStrutHeight: true,
-                        height: 1.4,
+                        height: 1.55,
                       ),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: bodySize,
                         color: cs.onSurfaceVariant.withOpacity(.95),
-                        height: 1.4,
-                        letterSpacing: .15,
+                        height: 1.55,
+                        letterSpacing: .25,
                       ),
                     ),
 
                     // decorative hairline to add depth
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
                     Opacity(
-                      opacity: .14,
+                      opacity: .18,
                       child: Container(
-                        height: 1,
-                        width: 160,
+                        height: 1.2,
+                        width: 180,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [cs.primary, cs.secondary],
@@ -116,28 +115,28 @@ class EmptyVaultPlaceholder extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 20),
 
                     // ── CIRCLE UNDER TEXT ───────────────────────────────────
                     Container(
-                      width: 76,
-                      height: 76,
-                      padding: const EdgeInsets.all(2),
+                      width: 84,
+                      height: 84,
+                      padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           colors: [
-                            cs.primary.withOpacity(.28),
-                            cs.secondary.withOpacity(.28),
+                            cs.primary.withOpacity(.25),
+                            cs.secondary.withOpacity(.25),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
+                            color: Colors.black.withOpacity(.06),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
@@ -146,13 +145,13 @@ class EmptyVaultPlaceholder extends StatelessWidget {
                           color: Colors.white,
                           alignment: Alignment.center,
                           child: isEmoji
-                              ? const Text("🍲", style: TextStyle(fontSize: 34))
+                              ? const Text("🍲", style: TextStyle(fontSize: 38))
                               : Image.asset(choice, fit: BoxFit.cover),
                         ),
                       ),
                     ),
 
-                    SizedBox(height: 12 + bottomInset),
+                    SizedBox(height: 18 + bottomInset),
                   ],
                 ),
               ),

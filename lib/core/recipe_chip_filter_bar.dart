@@ -1,21 +1,22 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class RecipeChipFilterBar extends StatefulWidget {
-  final List<String> categories; // 👉 pass the full set (system + custom)
+  final List<String> categories; // system + custom (raw labels allowed)
   final String selectedCategory;
   final void Function(String category) onCategorySelected;
-  final void Function(String category)? onCategoryDeleted;
-  final List<RecipeCardModel> allRecipes; // current recipe list
+  final void Function(String category)? onCategoryDeleted; // optional
+  final List<RecipeCardModel> allRecipes; // full list for counts
 
   const RecipeChipFilterBar({
     super.key,
     required this.categories,
     required this.selectedCategory,
     required this.onCategorySelected,
-    required this.onCategoryDeleted,
+    this.onCategoryDeleted,
     required this.allRecipes,
   });
 
@@ -29,15 +30,14 @@ class _RecipeChipFilterBarState extends State<RecipeChipFilterBar> {
     'Favourites',
     'Translated',
   ];
-
   final _scrollCtrl = ScrollController();
 
-  String _canonical(AppLocalizations l10n, String category) {
-    if (category == 'All' || category == l10n.systemAll) return 'All';
-    if (category == 'Favourites' || category == l10n.favourites) {
+  String _canonical(AppLocalizations t, String category) {
+    if (category == 'All' || category == t.systemAll) return 'All';
+    if (category == 'Favourites' || category == t.favourites) {
       return 'Favourites';
     }
-    if (category == 'Translated' || category == l10n.systemTranslated) {
+    if (category == 'Translated' || category == t.systemTranslated) {
       return 'Translated';
     }
     return category;
@@ -45,21 +45,20 @@ class _RecipeChipFilterBarState extends State<RecipeChipFilterBar> {
 
   bool _isProtected(String key) => _systemCategories.contains(key);
 
-  String _localized(AppLocalizations l10n, String key) {
+  String _localized(AppLocalizations t, String key) {
     switch (key) {
       case 'All':
-        return l10n.systemAll;
+        return t.systemAll;
       case 'Favourites':
-        return l10n.favourites;
+        return t.favourites;
       case 'Translated':
-        return l10n.systemTranslated;
+        return t.systemTranslated;
       default:
         return key;
     }
   }
 
-  /// Count recipes in a given category
-  int _countInCategory(AppLocalizations l10n, String key) {
+  int _countInCategory(AppLocalizations t, String key) {
     if (key == 'All') return widget.allRecipes.length;
     if (key == 'Favourites') {
       return widget.allRecipes.where((r) => r.isFavourite == true).length;
@@ -68,42 +67,38 @@ class _RecipeChipFilterBarState extends State<RecipeChipFilterBar> {
       return widget.allRecipes.where((r) => r.isTranslated == true).length;
     }
     return widget.allRecipes.where((r) {
-      final mapped = r.categories.map((c) => _canonical(l10n, c));
+      final mapped = r.categories.map((c) => _canonical(t, c));
       return mapped.contains(key);
     }).length;
   }
 
-  /// Build a stable list: system + user (alpha). Ensure selected present.
-  List<String> _buildDisplayKeys(AppLocalizations l10n) {
+  /// Stable list: system first, then user (custom order for Breakfast/Main/Dessert)
+  List<String> _buildDisplayKeys(AppLocalizations t) {
     final incoming = widget.categories
-        .map((c) => _canonical(l10n, c))
+        .map((c) => _canonical(t, c))
         .where((c) => c.trim().isNotEmpty)
         .toSet()
         .toList();
 
-    // user categories only (exclude system)
     final userOnly = incoming
         .where((c) => !_systemCategories.contains(c))
         .toList();
 
-    // ⬇️ Custom order: Dessert should appear before Main. Others stay alphabetical.
     const customOrder = ['Breakfast', 'Main', 'Dessert'];
     userOnly.sort((a, b) {
       final ia = customOrder.indexOf(a);
       final ib = customOrder.indexOf(b);
       if (ia != -1 || ib != -1) {
-        if (ia == -1) return 1; // a not custom → after custom
-        if (ib == -1) return -1; // b not custom → after custom
-        return ia.compareTo(ib); // both custom → keep declared order
+        if (ia == -1) return 1;
+        if (ib == -1) return -1;
+        return ia.compareTo(ib);
       }
       return a.toLowerCase().compareTo(b.toLowerCase());
     });
 
-    // system first, then user categories
     final keys = <String>[..._systemCategories, ...userOnly];
 
-    // ensure current selection is present
-    final selectedKey = _canonical(l10n, widget.selectedCategory);
+    final selectedKey = _canonical(t, widget.selectedCategory);
     if (!keys.contains(selectedKey)) keys.add(selectedKey);
 
     return keys;
@@ -111,150 +106,123 @@ class _RecipeChipFilterBarState extends State<RecipeChipFilterBar> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
     final onSurface = theme.colorScheme.onSurface;
-    final fadeColor = theme.scaffoldBackgroundColor;
 
-    final selectedKey = _canonical(l10n, widget.selectedCategory);
-    final keys = _buildDisplayKeys(l10n);
+    final selectedKey = _canonical(t, widget.selectedCategory);
+    final keys = _buildDisplayKeys(t);
     if (keys.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
       height: 44,
-      child: Stack(
-        children: [
-          ListView.separated(
-            key: const PageStorageKey('recipe-chip-filter'),
-            controller: _scrollCtrl,
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            itemCount: keys.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (_, i) {
-              final key = keys[i];
-              final isSelected = key == selectedKey;
-              final isProtected = _isProtected(key);
-              final count = _countInCategory(l10n, key);
-              final isEnabled = count > 0 || isSelected;
+      child: ListView.separated(
+        key: const PageStorageKey('recipe-chip-filter'),
+        controller: _scrollCtrl,
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        itemCount: keys.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final key = keys[i];
+          final isSelected = key == selectedKey;
+          final isProtected = _isProtected(key);
+          final count = _countInCategory(t, key);
+          final isEnabled = count > 0 || isSelected;
 
-              // Optional system icons (no emoji)
-              IconData? iconData;
-              switch (key) {
-                case 'All':
-                  iconData = Icons.list_alt_rounded;
-                  break;
-                case 'Favourites':
-                  iconData = Icons.star_rounded;
-                  break;
-                case 'Translated':
-                  iconData = Icons.translate_rounded;
-                  break;
-              }
+          // ✅ delete only when custom + empty + callback present
+          final canDelete =
+              !isProtected && count == 0 && widget.onCategoryDeleted != null;
 
-              final icon = iconData == null
-                  ? null
-                  : Icon(
-                      iconData,
-                      size: 18,
-                      color: isSelected ? Colors.white : primary,
-                    );
+          IconData? iconData;
+          switch (key) {
+            case 'All':
+              iconData = Icons.public_rounded; // 🌍 globe for All
+              break;
+            case 'Favourites':
+              iconData = Icons.star_rounded;
+              break;
+            case 'Translated':
+              iconData = Icons.translate_rounded;
+              break;
+          }
 
-              // Style tweaks
-              final baseBg = theme.colorScheme.surfaceVariant.withOpacity(0.22);
-              final labelColor = isSelected
-                  ? Colors.white
-                  : (isEnabled ? onSurface : onSurface.withOpacity(0.45));
+          final icon = iconData == null
+              ? null
+              : Icon(
+                  iconData,
+                  size: 18,
+                  color: isSelected ? Colors.white : primary,
+                );
 
-              return Opacity(
-                opacity: isEnabled ? 1 : 0.75,
-                child: InputChip(
-                  avatar: icon,
-                  label: Text(
-                    _localized(l10n, key),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w600,
-                      letterSpacing: .2,
-                      color: labelColor,
-                    ),
-                  ),
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 10),
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  clipBehavior: Clip.antiAlias,
-                  selected: isSelected,
-                  selectedColor: primary,
-                  backgroundColor: baseBg,
-                  onSelected: (_) => widget.onCategorySelected(key),
+          final baseBg = theme.colorScheme.surfaceVariant.withOpacity(0.22);
+          final labelColor = isSelected
+              ? Colors.white
+              : (isEnabled ? onSurface : onSurface.withOpacity(0.45));
 
-                  // Only allow deleting custom chips that are unused
-                  deleteIcon: (!isProtected && count == 0)
-                      ? const Icon(Icons.close, size: 16)
-                      : null,
-                  deleteButtonTooltipMessage: (!isProtected && count == 0)
-                      ? l10n.chipDeleteCategoryTooltip
-                      : null,
-                  onDeleted: (!isProtected && count == 0)
-                      ? () => widget.onCategoryDeleted?.call(key)
-                      : null,
-
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(
-                      color: isSelected
-                          ? primary.withOpacity(.9)
-                          : theme.colorScheme.outline.withOpacity(.40),
-                      width: 1.1,
-                    ),
-                  ),
-                  elevation: isSelected ? 2 : 0,
-                  pressElevation: 3,
-                ),
-              );
-            },
-          ),
-
-          // edge fades
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 16,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [fadeColor, fadeColor.withOpacity(0.0)],
+          return Opacity(
+            opacity: isEnabled ? 1 : 0.75,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 72),
+              child: InputChip(
+                avatar: icon,
+                label: Text(
+                  _localized(t, key),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                    letterSpacing: .2,
+                    color: labelColor,
                   ),
                 ),
+                labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+                visualDensity: const VisualDensity(
+                  horizontal: -1,
+                  vertical: -2,
+                ),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                clipBehavior: Clip.antiAlias,
+                selected: isSelected,
+                selectedColor: primary,
+                backgroundColor: baseBg,
+                onSelected: (_) => widget.onCategorySelected(key),
+
+                // 🔗 deletion delegated to parent
+                deleteIcon: canDelete
+                    ? const Icon(Icons.close, size: 16)
+                    : null,
+                deleteButtonTooltipMessage: canDelete
+                    ? t.chipDeleteCategoryTooltip
+                    : null,
+                onDeleted: canDelete
+                    ? () async {
+                        HapticFeedback.selectionClick();
+                        if (selectedKey == key) {
+                          widget.onCategorySelected('All');
+                        }
+                        await Future.microtask(
+                          () => widget.onCategoryDeleted!(key),
+                        );
+                      }
+                    : null,
+
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: isSelected
+                        ? primary.withOpacity(.9)
+                        : theme.colorScheme.outline.withOpacity(.40),
+                    width: 1.1,
+                  ),
+                ),
+                elevation: isSelected ? 2 : 0,
+                pressElevation: 3,
               ),
             ),
-          ),
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: 16,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerRight,
-                    end: Alignment.centerLeft,
-                    colors: [fadeColor, fadeColor.withOpacity(0.0)],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

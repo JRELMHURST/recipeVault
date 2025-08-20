@@ -10,7 +10,7 @@ import 'package:recipe_vault/core/recipe_chip_filter_bar.dart';
 // ✅ Category keys (All / Favourites / etc.)
 import 'package:recipe_vault/features/recipe_vault/categories.dart';
 
-// ✅ Controller (provides categories, selection, and hide action)
+// ✅ Controller (provides categories, selection, hide, delete)
 import 'package:recipe_vault/features/recipe_vault/recipe_vault_controller.dart';
 
 /// Filter bar for the vault using localized labels but storing key values.
@@ -18,8 +18,6 @@ import 'package:recipe_vault/features/recipe_vault/recipe_vault_controller.dart'
 ///   (e.g., from RecipeVaultScreen), OR
 /// - Omit them and this widget will read the controller from Provider and
 ///   use its own localization mappers.
-///
-/// This keeps it flexible and backwards-compatible.
 class VaultFilter extends StatelessWidget {
   const VaultFilter({
     super.key,
@@ -28,13 +26,8 @@ class VaultFilter extends StatelessWidget {
     this.labelToKey,
   });
 
-  /// Optional injected controller. If null, uses context.watch<RecipeVaultController>().
   final RecipeVaultController? controller;
-
-  /// Optional mapping from internal key -> localized label.
   final String Function(String key)? keyToLabel;
-
-  /// Optional mapping from localized label -> internal key.
   final String Function(String label)? labelToKey;
 
   // ---- Default mappers (used if no mappers are injected) ----
@@ -64,13 +57,18 @@ class VaultFilter extends StatelessWidget {
     if (label == t.defaultBreakfast) return CategoryKeys.breakfast;
     if (label == t.defaultMain) return CategoryKeys.main;
     if (label == t.defaultDessert) return CategoryKeys.dessert;
-    return label; // fall back to custom category name
+    return label; // custom category name
+  }
+
+  bool _isDefaultCategory(String key) {
+    return key == CategoryKeys.breakfast ||
+        key == CategoryKeys.main ||
+        key == CategoryKeys.dessert;
   }
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
-
     final ctrl = controller ?? context.watch<RecipeVaultController>();
 
     final k2l = keyToLabel ?? ((k) => _defaultKeyToLabel(k, t));
@@ -83,7 +81,17 @@ class VaultFilter extends StatelessWidget {
       categories: displayedCategories,
       selectedCategory: displayedSelected,
       onCategorySelected: (label) => ctrl.setSelectedCategory(l2k(label)),
-      onCategoryDeleted: (label) => ctrl.hideDefaultCategory(l2k(label)),
+
+      // ✅ safe deletion handling
+      onCategoryDeleted: (label) async {
+        final key = l2k(label);
+        if (_isDefaultCategory(key)) {
+          await ctrl.hideDefaultCategory(key);
+        } else {
+          await ctrl.deleteCustomCategory(key); // make sure this exists
+        }
+      },
+
       allRecipes: ctrl.allRecipes.values.toList(),
     );
   }

@@ -22,10 +22,12 @@ class _RecipeVaultAppState extends State<RecipeVaultApp> {
   late final GoRouter _router;
 
   @override
-  void didChangeDependencies() {
-    // Build router once we can read providers.
-    _router = buildAppRouter(context.read<SubscriptionService>());
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
+    // Safe to use context.read in initState for a non-listening lookup.
+    // Providers are created in main() before this widget is built.
+    final subs = context.read<SubscriptionService>();
+    _router = buildAppRouter(subs);
   }
 
   @override

@@ -1,3 +1,4 @@
+// lib/navigation/redirects.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
@@ -13,38 +14,39 @@ String? appRedirect(
 ) {
   final loc = state.matchedLocation;
   final isManaging = state.uri.queryParameters['manage'] == '1';
+
   final user = FirebaseAuth.instance.currentUser;
-  final isLoggedIn =
-      user != null && !user.isAnonymous; // 👈 treat anon as logged out
+  final isLoggedIn = user != null && !user.isAnonymous;
 
-  // 0) App bootstrap not finished → keep on /boot
-  if (!AppBootstrap.isReady) return AppRoutes.boot;
-
-  // 1) Not logged in (or anonymous) → only /login or /register allowed
-  if (!isLoggedIn) {
-    if (loc == AppRoutes.login || loc == AppRoutes.register) return null;
-    return AppRoutes.login;
+  // 0) App bootstrap not finished → stay on /boot
+  if (!AppBootstrap.isReady) {
+    return loc == AppRoutes.boot ? null : AppRoutes.boot;
   }
 
-  // 2) Subscriptions still resolving? Stay on /boot unless timeout hit
-  final resolving = subs.status == EntitlementStatus.checking;
-  if (resolving && !AppBootstrap.timeoutReached) {
+  // 1) Not logged in → only allow login/register
+  if (!isLoggedIn) {
+    final onAuthPage = loc == AppRoutes.login || loc == AppRoutes.register;
+    return onAuthPage ? null : AppRoutes.login;
+  }
+
+  // 2) Subscriptions still resolving → hold on /boot (unless managing)
+  if (subs.status == EntitlementStatus.checking &&
+      !AppBootstrap.timeoutReached) {
     if (loc == AppRoutes.paywall && isManaging) return null;
     return AppRoutes.boot;
   }
 
-  // 3) Logged in with access → keep them out of boot/paywall/auth
-  if (subs.hasAccess) {
-    if (loc == AppRoutes.boot ||
-        loc == AppRoutes.paywall ||
-        loc == AppRoutes.login ||
-        loc == AppRoutes.register) {
-      return AppRoutes.vault;
-    }
-    return null;
+  // 3) Logged in with valid access → block boot/auth/paywall
+  if (subs.hasActiveSubscription || subs.hasSpecialAccess) {
+    final onBlocked = {
+      AppRoutes.boot,
+      AppRoutes.login,
+      AppRoutes.register,
+      AppRoutes.paywall,
+    }.contains(loc);
+    return onBlocked ? AppRoutes.vault : null;
   }
 
-  // 4) Logged in but no access → paywall (supports ?manage=1)
-  if (loc == AppRoutes.paywall) return null;
-  return AppRoutes.paywall;
+  // 4) Logged in but no access → must be on /paywall
+  return loc == AppRoutes.paywall ? null : AppRoutes.paywall;
 }

@@ -295,11 +295,16 @@ class UserSessionService {
       _logDebug('🧾 Active RC products: [$active]');
 
       // 2) Trigger backend reconcile (Cloud Function) — Firestore is updated server-side
+      // 2) Trigger backend reconcile (best‑effort, non‑blocking)
       try {
         final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
         final callable = functions.httpsCallable("reconcileUserFromRC");
-        await callable.call(<String, dynamic>{}); // uid inferred from auth
-        _logDebug('☁️ Reconcile triggered successfully');
+        unawaited(
+          callable
+              .call(<String, dynamic>{})
+              .then<void>((_) {}, onError: (_) {}),
+        );
+        _logDebug('☁️ Reconcile triggered (best effort)');
       } catch (e) {
         _logDebug('⚠️ Failed to trigger reconcile: $e');
       }

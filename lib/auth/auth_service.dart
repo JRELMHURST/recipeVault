@@ -2,7 +2,6 @@
 // Auth + identity glue that keeps FirebaseAuth, Firestore, and RevenueCat in lockstep.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -21,7 +20,7 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
   bool get isLoggedIn =>
       currentUser != null &&
-      !(currentUser?.isAnonymous ?? true); // 👈 exclude anonymous
+      !(currentUser?.isAnonymous ?? true); // exclude anon
 
   /// Reads a locally saved preferred recipe locale (optional).
   Future<String?> _getPreferredRecipeLocale() async {
@@ -43,8 +42,7 @@ class AuthService {
       email: email.trim(),
       password: password,
     );
-    final user = credential.user!;
-    await _postAuthHousekeeping(user, forceCreateUserDoc: false);
+    await _postAuthHousekeeping(credential.user!, forceCreateUserDoc: false);
     return credential;
   }
 
@@ -77,8 +75,10 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
-      final user = userCredential.user!;
-      await _postAuthHousekeeping(user, forceCreateUserDoc: true);
+      await _postAuthHousekeeping(
+        userCredential.user!,
+        forceCreateUserDoc: true,
+      );
       return userCredential;
     } catch (e, stack) {
       debugPrint('🔴 Google sign-in failed: $e\n$stack');
@@ -105,8 +105,10 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(oauth);
-      final user = userCredential.user!;
-      await _postAuthHousekeeping(user, forceCreateUserDoc: true);
+      await _postAuthHousekeeping(
+        userCredential.user!,
+        forceCreateUserDoc: true,
+      );
       return userCredential;
     } catch (e, stack) {
       debugPrint('🔴 Apple sign-in failed: $e\n$stack');
@@ -129,9 +131,11 @@ class AuthService {
     } catch (_) {
       /* ignore */
     }
+
     await _auth.signOut();
   }
 
+  /// Full app logout + local data purge (use with care).
   Future<void> fullLogout() async {
     final uid = currentUser?.uid;
     await signOut();
@@ -170,7 +174,7 @@ class AuthService {
 
   static Future<bool> ensureUserDocument(User user) async {
     // Skip anonymous just in case this is called elsewhere unexpectedly
-    if (user.isAnonymous) return false; // 👈 guard
+    if (user.isAnonymous) return false; // guard
 
     final ref = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final snap = await ref.get();
@@ -179,8 +183,6 @@ class AuthService {
 
     final data = <String, dynamic>{
       'email': user.email,
-      'productId': 'none',
-      'tier': 'none',
       if (preferredLocale != null) 'preferredRecipeLocale': preferredLocale,
       if (!snap.exists) 'createdAt': FieldValue.serverTimestamp(),
       'lastLogin': FieldValue.serverTimestamp(),
@@ -201,40 +203,6 @@ class AuthService {
   Future<bool> ensureUserDocumentInstance(User user) =>
       ensureUserDocument(user);
 
-  // ───────────────── RevenueCat ↔ Server reconcile ─────────────────
-
-  Future<void> _reconcileFromRC(User user) async {
-    // Skip anonymous to avoid pointless callable/errors
-    if (user.isAnonymous) return; // 👈 guard
-
-    try {
-      await user.getIdToken(true); // fresh token
-      final functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
-      final callable = functions.httpsCallable('reconcileUserFromRC');
-
-      int attempts = 3;
-      while (attempts-- > 0) {
-        try {
-          await callable.call(<String, dynamic>{});
-          if (kDebugMode) {
-            debugPrint('✅ Forced reconcile from RC for ${user.uid}');
-          }
-          break;
-        } on FirebaseFunctionsException catch (e) {
-          if (e.code == 'unauthenticated' && attempts > 0) {
-            await Future.delayed(const Duration(milliseconds: 400));
-            await user.getIdToken(true);
-            continue;
-          }
-          rethrow;
-        }
-      }
-    } catch (e, stack) {
-      debugPrint('⚠️ Failed reconcile from RC: $e');
-      if (kDebugMode) debugPrint('$stack');
-    }
-  }
-
   // ───────────────── Post‑auth glue (single place) ─────────────────
 
   Future<void> _postAuthHousekeeping(
@@ -246,7 +214,7 @@ class AuthService {
       if (kDebugMode) {
         debugPrint('↪️ Skipping post-auth hooks for anonymous user.');
       }
-      return; // 👈 critical for clean routing/RC state
+      return;
     }
 
     // 1) Tie RevenueCat to Firebase UID and refresh subs
@@ -270,8 +238,7 @@ class AuthService {
       if (kDebugMode) debugPrint('⚠️ ensureUserDocument failed: $e');
     }
 
-    // 3) Ask backend to reconcile RC → Firestore (best effort)
-    await _reconcileFromRC(user);
+    // 3) No client-side reconcile; rely on webhook → app will refresh via RC listener/router.
   }
 
   // ───────────────── Debug helpers ─────────────────

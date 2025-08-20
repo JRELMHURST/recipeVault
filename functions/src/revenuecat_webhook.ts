@@ -21,72 +21,126 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
     if (!verifyRevenueCatSignature(req.rawBody, sig, secret)) {
       console.warn("Invalid RC signature");
       res.status(401).send("unauthorized");
-      return; // ✅ do not return the Response
+      return;
     }
 
     const payload = req.body;
+
+    // 1) Fast-path for RC test/ping or unknown events
+    const eventType: string | undefined = payload?.event?.type;
+    if (!eventType) {
+      console.info("RC webhook: no event.type, ack");
+      res.status(200).send("ok");
+      return;
+    }
+    // (Optional) Gate to subscription-related events only
+    const interesting = [
+      "INITIAL_PURCHASE", "NON_RENEWING_PURCHASE", "PRODUCT_CHANGE",
+      "CANCELLATION", "UNCANCELLATION", "BILLING_ISSUE", "RENEWAL",
+      "SUBSCRIPTION_PAUSED", "SUBSCRIPTION_RESUMED", "EXPIRATION",
+      "TRANSFER"
+    ];
+    if (!interesting.includes(eventType)) {
+      console.info(`RC webhook: ignoring event ${eventType}`);
+      res.status(200).send("ok");
+      return;
+    }
+
     const { uid, productId } = resolveTierFromPayload(payload);
     if (!uid) {
       console.warn("RC payload without app_user_id; skipping");
       res.status(200).send("ok");
-      return; // ✅
+      return;
     }
 
-    // Idempotency
-    const eventId = payload?.event?.id || crypto.createHash("sha256").update(req.rawBody).digest("hex");
+    // 2) Idempotency
+    const eventId =
+      payload?.event?.id ||
+      crypto.createHash("sha256").update(req.rawBody).digest("hex");
+
     const dedupeRef = db.doc(`rc_events/${eventId}`);
     try {
       await dedupeRef.create({ uid, at: admin.firestore.FieldValue.serverTimestamp() });
-    } catch (e: any) {
+    } catch {
       // Already processed
       res.status(200).send("ok");
-      return; // ✅
+      return;
     }
 
-    const r = toResult(productId);
+    // 3) Normalize entitlement -> our fields
+    const r = toResult(productId); // { productId, tier, entitlementStatus, graceUntil }
 
-    const entitlementHash = computeEntitlementHash({
-      productId: r.productId,
-      tier: r.tier,
-      entitlementStatus: r.entitlementStatus,
-      graceUntil: r.graceUntil,
-    });
+    // If we somehow can’t map productId, degrade safely to none/inactive
+    const normalized = {
+      productId: (r.productId ?? "none").toLowerCase(),
+      tier: r.tier ?? "none",
+      entitlementStatus: r.entitlementStatus ?? "inactive",
+      graceUntil: r.graceUntil ?? null,
+    };
+
+    // 4) Compute hash to avoid no-op writes
+    const entitlementHash = computeEntitlementHash(normalized);
 
     const userRef = db.doc(`users/${uid}`);
     const userSnap = await userRef.get();
     const prevHash = userSnap.exists ? userSnap.get("entitlementHash") : undefined;
-
     const changed = prevHash !== entitlementHash;
+
+    // 5) Optional per-user audit (much easier to inspect than a global collection)
+    const auditRef = db.doc(`users/${uid}/rcEvents/${eventId}`);
+
+    // Use RC’s event time if present (ISO8601), fallback to server TS
+    const eventAt =
+      payload?.event?.occurred_at // RC uses occurred_at/created_at depending on version; keep both if needed
+        ? admin.firestore.Timestamp.fromDate(new Date(payload.event.occurred_at))
+        : admin.firestore.FieldValue.serverTimestamp();
+
     if (changed) {
       await userRef.set(
         {
-          productId: (r.productId ?? "none").toLowerCase(),
-          tier: r.tier,
-          entitlementStatus: r.entitlementStatus,
-          graceUntil: r.graceUntil,
+          productId: normalized.productId,
+          tier: normalized.tier,
+          entitlementStatus: normalized.entitlementStatus,
+          graceUntil: normalized.graceUntil,
           entitlementHash,
-          lastLogin: admin.firestore.FieldValue.serverTimestamp(),
+          // Don’t touch "lastLogin" from a webhook—use a dedicated field:
+          lastEntitlementEventAt: eventAt,
         },
         { merge: true }
       );
     }
+
+    // Write a compact audit doc (ok if it already exists due to idempotency)
+    await auditRef.set(
+      {
+        eventId,
+        type: eventType,
+        productId: normalized.productId,
+        tier: normalized.tier,
+        entitlementStatus: normalized.entitlementStatus,
+        graceUntil: normalized.graceUntil,
+        at: eventAt,
+        changed,
+      },
+      { merge: true }
+    );
 
     console.info({
       msg: "revenuecatWebhook reconciled",
       source: "webhook",
       eventId,
       uid,
-      productId: r.productId,
-      tier: r.tier,
-      entitlementStatus: r.entitlementStatus,
+      productId: normalized.productId,
+      tier: normalized.tier,
+      entitlementStatus: normalized.entitlementStatus,
       changed,
     });
 
-    res.status(200).send("ok"); // ✅ send response
-    return;                      // ✅ but don't return the Response
+    res.status(200).send("ok");
+    return;
   } catch (e) {
     console.error("RC webhook error", e);
-    res.status(500).send("error"); // ✅ send response
-    return;                        // ✅ end the Promise<void>
+    res.status(500).send("error");
+    return;
   }
 });

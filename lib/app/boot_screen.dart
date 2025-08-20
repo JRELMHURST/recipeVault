@@ -18,9 +18,14 @@ class BootScreen extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const FlutterLogo(
-                    size: 56,
-                  ), // replace with your logo if you have one
+                  // 🔒 Your app logo
+                  Image.asset(
+                    'assets/icon/round_vaultLogo.png',
+                    height: 56,
+                    width: 56,
+                    fit: BoxFit.contain,
+                    semanticLabel: 'RecipeVault',
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Starting RecipeVault…',

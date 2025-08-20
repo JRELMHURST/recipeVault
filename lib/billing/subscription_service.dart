@@ -237,21 +237,25 @@ class SubscriptionService extends ChangeNotifier {
         try {
           await Purchases.logOut();
         } on PlatformException catch (e) {
-          // RC code 22 = LOGOUT_CALLED_WITH_ANONYMOUS_USER → safe to ignore
-          if ((e.code == '22') ||
-              (e.details is Map &&
-                  (e.details['readableErrorCode'] ==
-                      'LOGOUT_CALLED_WITH_ANONYMOUS_USER'))) {
-            debugPrint('RC: already anonymous; ignoring logOut.');
-          } else {
+          // 22 = LOGOUT_CALLED_WITH_ANONYMOUS_USER
+          final code = e.code;
+          final readable = (e.details is Map)
+              ? (e.details['readableErrorCode'] as String?)
+              : null;
+          if (code != '22' && readable != 'LOGOUT_CALLED_WITH_ANONYMOUS_USER') {
             rethrow;
           }
+          debugPrint('RC: already anonymous; ignoring logOut.');
         }
-      } else {
-        await _seedFromCacheIfAny(firebaseUid);
-        await Purchases.logIn(firebaseUid);
+        // 👇 Don’t call refresh() when there’s no user — just reset locally
+        await reset();
+        return;
       }
-      await refresh();
+
+      // Logged-in path:
+      await _seedFromCacheIfAny(firebaseUid);
+      await Purchases.logIn(firebaseUid);
+      await refresh(); // safe now: user is present
     } catch (e) {
       debugPrint('RevenueCat setAppUserId error: $e');
     }

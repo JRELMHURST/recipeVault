@@ -1,5 +1,7 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
+import 'dart:async';
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -33,10 +35,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
   bool _loadFailed = false;
 
   List<Package> _availablePackages = [];
-  // explicit manage flow (?manage=1)
   bool _isManaging = false;
 
-  // ⬇️ Active product identifiers from RevenueCat (lowercased)
+  // Active product identifiers from RevenueCat (lowercased)
   Set<String> _activeProductIds = const {};
 
   @override
@@ -62,7 +63,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       _loadFailed = false;
     });
 
-    // Ensure RC/Firestore are current.
+    // Make sure local RC state is fresh (listener will update tier)
     await _subscriptionService.refresh();
 
     try {
@@ -116,7 +117,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     if (mounted) setState(() => _isLoading = false);
   }
 
-  // ✅ Lenient “current package” detection:
+  // Lenient “current package” detection:
   bool _isPackageCurrent(Package pkg, String productId) {
     final pid = pkg.storeProduct.identifier.toLowerCase();
 
@@ -143,45 +144,59 @@ class _PaywallScreenState extends State<PaywallScreen> {
     setState(() => _isPurchasing = true);
     LoadingOverlay.show(context);
     try {
-      // Direct RC purchase (no PurchaseHelper)
+      // 1) Purchase via RevenueCat (listener will update entitlement/tier)
       final info = await Purchases.purchasePackage(package);
 
-      // 🔄 Force backend reconcile (RC → Firestore) just like before
-      try {
-        final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
-        final callable = functions.httpsCallable("reconcileUserFromRC");
-        await callable.call(<String, dynamic>{}); // auth context supplies uid
-        if (kDebugMode) debugPrint("✅ Reconcile triggered after purchase");
-      } catch (e) {
-        if (kDebugMode) debugPrint("⚠️ Failed to trigger reconcile: $e");
-      }
+      // 2) Kick a refresh so the listener/state propagates quickly
+      //    (this does NOT block routing; appRedirect listens to the service)
+      unawaited(_subscriptionService.refresh());
 
-      // Pull fresh RC + FS state into the app.
-      await _subscriptionService.refresh();
+      // 3) Fire-and-forget backend reconcile. Best effort; do not block UX.
+      unawaited(_triggerReconcileBestEffort());
 
       if (!mounted) return;
       LoadingOverlay.hide();
 
+      // If RC already shows active, great; if not, let the user know it's on the way.
       final hasEntitlement =
           info.entitlements.active.isNotEmpty ||
           _subscriptionService.hasActiveSubscription;
-
-      // Router redirect will move us if entitled; otherwise inform the user.
-      if (!hasEntitlement && mounted) {
+      if (!hasEntitlement) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Purchase completed but not active yet.'),
+            content: Text('Processing your purchase… this may take a moment.'),
           ),
         );
       }
+      // No manual navigation here — the global router guard will redirect
+      // to the vault as soon as SubscriptionService.hasAccess flips true.
     } on PlatformException {
       if (!mounted) return;
       LoadingOverlay.hide(); // user cancelled
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      LoadingOverlay.hide(); // silent errors
+      LoadingOverlay.hide();
+      debugPrint('🔴 Purchase flow error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Something went wrong. Please try again.'),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isPurchasing = false);
+    }
+  }
+
+  Future<void> _triggerReconcileBestEffort() async {
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
+      final callable = functions.httpsCallable("reconcileUserFromRC");
+      unawaited(
+        callable.call(<String, dynamic>{}).then<void>((_) {}, onError: (_) {}),
+      );
+      if (kDebugMode) debugPrint("✅ Reconcile triggered (best effort)");
+    } catch (e) {
+      if (kDebugMode) debugPrint("⚠️ Reconcile best-effort failed: $e");
     }
   }
 
@@ -191,8 +206,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final loc = AppLocalizations.of(context);
 
     final status = context.watch<SubscriptionService>().status;
-
-    // While subscriptions are resolving, keep the spinner up (also matches router guard).
     final isResolving = status == EntitlementStatus.checking;
     final showSpinner = _isLoading || isResolving;
 
@@ -203,7 +216,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
         leading: _isManaging
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: () async {
+                onPressed: () {
                   if (context.canPop()) {
                     safePop(context);
                   } else {
@@ -264,7 +277,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   children: [
                     const SizedBox(height: 24),
 
-                    // Packages list OR empty/failure state
                     if (_availablePackages.isNotEmpty) ...[
                       ..._availablePackages.map((pkg) {
                         final isCurrent = _isPackageCurrent(pkg, productId);
@@ -307,7 +319,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             OutlinedButton.icon(
                               onPressed: _loadSubscriptionData,
                               icon: const Icon(Icons.refresh),
-                              // Replaced missing loc.retry with a safe literal
                               label: const Text('Try again'),
                             ),
                           ],

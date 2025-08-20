@@ -17,7 +17,7 @@ import 'package:recipe_vault/features/recipe_vault/recipe_vault_controller.dart'
 import 'package:recipe_vault/data/services/image_processing_service.dart';
 
 import 'package:recipe_vault/widgets/empty_vault_placeholder.dart';
-import 'package:recipe_vault/widgets/processing_overlay.dart';
+import 'package:recipe_vault/features/processing/processing_overlay.dart';
 
 // Views
 import 'package:recipe_vault/features/recipe_vault/recipe_list_view.dart'

@@ -12,7 +12,7 @@ import 'package:recipe_vault/navigation/nav_utils.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
-import 'package:recipe_vault/widgets/processing_overlay.dart';
+import 'package:recipe_vault/features/processing/processing_overlay.dart';
 
 class NavShell extends StatelessWidget {
   const NavShell({super.key, required this.child});

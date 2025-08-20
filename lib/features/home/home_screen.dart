@@ -10,7 +10,7 @@ import 'package:recipe_vault/features/recipe_vault/recipe_vault_screen.dart';
 import 'package:recipe_vault/features/home/home_app_bar.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
 import 'package:recipe_vault/features/settings/settings_screen.dart';
-import 'package:recipe_vault/widgets/processing_overlay.dart';
+import 'package:recipe_vault/features/processing/processing_overlay.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 // ✅ Prefs service (has PrefsViewMode)

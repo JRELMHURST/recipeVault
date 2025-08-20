@@ -32,15 +32,11 @@ class _RecipeChipFilterBarState extends State<RecipeChipFilterBar> {
   ];
   final _scrollCtrl = ScrollController();
 
-  String _canonical(AppLocalizations t, String category) {
-    if (category == 'All' || category == t.systemAll) return 'All';
-    if (category == 'Favourites' || category == t.favourites) {
-      return 'Favourites';
-    }
-    if (category == 'Translated' || category == t.systemTranslated) {
-      return 'Translated';
-    }
-    return category;
+  String _canonical(AppLocalizations t, String c) {
+    if (c == 'All' || c == t.systemAll) return 'All';
+    if (c == 'Favourites' || c == t.favourites) return 'Favourites';
+    if (c == 'Translated' || c == t.systemTranslated) return 'Translated';
+    return c;
   }
 
   bool _isProtected(String key) => _systemCategories.contains(key);
@@ -72,7 +68,6 @@ class _RecipeChipFilterBarState extends State<RecipeChipFilterBar> {
     }).length;
   }
 
-  /// Stable list: system first, then user (custom order for Breakfast/Main/Dessert)
   List<String> _buildDisplayKeys(AppLocalizations t) {
     final incoming = widget.categories
         .map((c) => _canonical(t, c))
@@ -108,38 +103,43 @@ class _RecipeChipFilterBarState extends State<RecipeChipFilterBar> {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
-    final onSurface = theme.colorScheme.onSurface;
+    final cs = theme.colorScheme;
 
     final selectedKey = _canonical(t, widget.selectedCategory);
     final keys = _buildDisplayKeys(t);
     if (keys.isEmpty) return const SizedBox.shrink();
 
+    // Colors tuned for readability
+    final onPrimary = cs.onPrimary;
+    final idleText = cs.onSurface.withOpacity(0.87);
+    final disabledText = cs.onSurface.withOpacity(0.60);
+    final idleBg = cs.surfaceVariant.withOpacity(0.26);
+    final idleBorder = cs.outline.withOpacity(0.55);
+
     return SizedBox(
-      height: 44,
+      height: 46, // a touch taller to fit emoji/icons + label
       child: ListView.separated(
         key: const PageStorageKey('recipe-chip-filter'),
         controller: _scrollCtrl,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         itemCount: keys.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (_, i) {
           final key = keys[i];
           final isSelected = key == selectedKey;
-          final isProtected = _isProtected(key);
           final count = _countInCategory(t, key);
-          final isEnabled = count > 0 || isSelected;
+          final enabled = count > 0 || isSelected;
+          final protected = _isProtected(key);
 
-          // ✅ delete only when custom + empty + callback present
           final canDelete =
-              !isProtected && count == 0 && widget.onCategoryDeleted != null;
+              !protected && count == 0 && widget.onCategoryDeleted != null;
 
           IconData? iconData;
           switch (key) {
             case 'All':
-              iconData = Icons.public_rounded; // 🌍 globe for All
-              break;
+              iconData = Icons.public_rounded;
+              break; // globe
             case 'Favourites':
               iconData = Icons.star_rounded;
               break;
@@ -148,78 +148,103 @@ class _RecipeChipFilterBarState extends State<RecipeChipFilterBar> {
               break;
           }
 
-          final icon = iconData == null
-              ? null
-              : Icon(
-                  iconData,
-                  size: 18,
-                  color: isSelected ? Colors.white : primary,
-                );
+          final labelStyle = theme.textTheme.labelMedium?.copyWith(
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+            letterSpacing: 0.25,
+            // High-contrast text
+            color: isSelected ? onPrimary : (enabled ? idleText : disabledText),
+          );
 
-          final baseBg = theme.colorScheme.surfaceVariant.withOpacity(0.22);
-          final labelColor = isSelected
-              ? Colors.white
-              : (isEnabled ? onSurface : onSurface.withOpacity(0.45));
-
-          return Opacity(
-            opacity: isEnabled ? 1 : 0.75,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 72),
-              child: InputChip(
-                avatar: icon,
-                label: Text(
-                  _localized(t, key),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                    letterSpacing: .2,
-                    color: labelColor,
+          final chip = InputChip(
+            avatar: iconData == null
+                ? null
+                : Icon(
+                    iconData,
+                    size: 18,
+                    color: isSelected ? onPrimary : cs.primary,
                   ),
-                ),
-                labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-                visualDensity: const VisualDensity(
-                  horizontal: -1,
-                  vertical: -2,
-                ),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                clipBehavior: Clip.antiAlias,
-                selected: isSelected,
-                selectedColor: primary,
-                backgroundColor: baseBg,
-                onSelected: (_) => widget.onCategorySelected(key),
+            label: Text(
+              _localized(t, key),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: labelStyle,
+            ),
+            // room for icon + label
+            labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+            visualDensity: const VisualDensity(horizontal: -1, vertical: -2),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            clipBehavior: Clip.antiAlias,
 
-                // 🔗 deletion delegated to parent
-                deleteIcon: canDelete
-                    ? const Icon(Icons.close, size: 16)
-                    : null,
-                deleteButtonTooltipMessage: canDelete
-                    ? t.chipDeleteCategoryTooltip
-                    : null,
-                onDeleted: canDelete
-                    ? () async {
-                        HapticFeedback.selectionClick();
-                        if (selectedKey == key) {
-                          widget.onCategorySelected('All');
-                        }
-                        await Future.microtask(
-                          () => widget.onCategoryDeleted!(key),
-                        );
-                      }
-                    : null,
+            selected: isSelected,
+            selectedColor: cs.primary,
+            backgroundColor: idleBg,
+            onSelected: (_) => widget.onCategorySelected(key),
 
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: isSelected
-                        ? primary.withOpacity(.9)
-                        : theme.colorScheme.outline.withOpacity(.40),
-                    width: 1.1,
-                  ),
-                ),
-                elevation: isSelected ? 2 : 0,
-                pressElevation: 3,
+            deleteIcon: canDelete ? const Icon(Icons.close, size: 16) : null,
+            deleteButtonTooltipMessage: canDelete
+                ? t.chipDeleteCategoryTooltip
+                : null,
+            onDeleted: canDelete
+                ? () async {
+                    HapticFeedback.selectionClick();
+                    if (selectedKey == key) widget.onCategorySelected('All');
+                    await Future.microtask(
+                      () => widget.onCategoryDeleted!(key),
+                    );
+                  }
+                : null,
+
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: isSelected ? cs.primary.withOpacity(.95) : idleBorder,
+                width: 1.2,
               ),
+            ),
+            elevation: isSelected ? 2 : 0,
+            pressElevation: 3,
+          );
+
+          // Add a tiny count badge (only if > 0 and not "All" to avoid noise)
+          final showBadge = key != 'All' && count > 0;
+          return ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 78),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                chip,
+                if (showBadge)
+                  Positioned(
+                    right: -2,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? onPrimary.withOpacity(.18)
+                            : cs.primary.withOpacity(.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSelected
+                              ? onPrimary.withOpacity(.35)
+                              : cs.primary.withOpacity(.45),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          height: 1.0,
+                          color: isSelected ? onPrimary : cs.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           );
         },

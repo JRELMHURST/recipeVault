@@ -8,7 +8,18 @@ import 'package:recipe_vault/l10n/app_localizations.dart';
 class EmptyVaultPlaceholder extends StatelessWidget {
   const EmptyVaultPlaceholder({super.key});
 
-  static final _emojis = ["👨‍🍳", "👩‍🍳", "🍲", "🥗", "📖🍴"];
+  // Mix emojis + asset paths
+  static final _icons = [
+    "👨‍🍳",
+    "👩‍🍳",
+    "🍲",
+    "🥗",
+    "🍴",
+    "assets/icon/pizza.PNG",
+    "assets/icon/pie.PNG",
+    "assets/icon/icecream.PNG",
+    "assets/icon/coffee.PNG",
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +28,8 @@ class EmptyVaultPlaceholder extends StatelessWidget {
     final cs = theme.colorScheme;
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
-    final emoji = _emojis[Random().nextInt(_emojis.length)];
+    final choice = _icons[Random().nextInt(_icons.length)];
+    final isEmoji = !choice.startsWith("assets/");
 
     return Center(
       child: Padding(
@@ -37,11 +49,11 @@ class EmptyVaultPlaceholder extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Subtle circle with faint gradient outline
+                    // Circle with gradient outline
                     Container(
                       width: 80,
                       height: 80,
-                      padding: const EdgeInsets.all(2), // thinner outline
+                      padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
@@ -60,15 +72,19 @@ class EmptyVaultPlaceholder extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
+                      child: ClipOval(
+                        child: Container(
                           color: Colors.white,
-                        ),
-                        child: Center(
-                          child: Text(
-                            emoji,
-                            style: const TextStyle(fontSize: 38),
+                          child: Center(
+                            child: isEmoji
+                                ? Text(
+                                    choice,
+                                    style: const TextStyle(fontSize: 38),
+                                  )
+                                : Image.asset(
+                                    choice,
+                                    fit: BoxFit.cover, // fill the circle
+                                  ),
                           ),
                         ),
                       ),

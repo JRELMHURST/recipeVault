@@ -99,6 +99,10 @@ flutter:
     - assets/icon/round_vaultLogo.png
     - assets/icon/lock_icon.png
     - assets/icon/cheeky_badger_round.png
+    - assets/icon/pizza.PNG
+    - assets/icon/pie.PNG
+    - assets/icon/icecream.PNG
+    - assets/icon/coffee.PNG
 
 flutter_launcher_icons:
   image_path: assets/icon/recipe_vault_appLogo.png

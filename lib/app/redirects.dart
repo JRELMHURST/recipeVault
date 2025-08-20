@@ -1,4 +1,3 @@
-// lib/navigation/redirects.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
@@ -15,21 +14,23 @@ String? appRedirect(
   final loc = state.matchedLocation;
   final isManaging = state.uri.queryParameters['manage'] == '1';
   final user = FirebaseAuth.instance.currentUser;
+  final isLoggedIn =
+      user != null && !user.isAnonymous; // 👈 treat anon as logged out
 
   // 0) App bootstrap not finished → keep on /boot
   if (!AppBootstrap.isReady) return AppRoutes.boot;
 
-  // 1) Subscriptions still resolving? Stay on /boot unless timeout hit
+  // 1) Not logged in (or anonymous) → only /login or /register allowed
+  if (!isLoggedIn) {
+    if (loc == AppRoutes.login || loc == AppRoutes.register) return null;
+    return AppRoutes.login;
+  }
+
+  // 2) Subscriptions still resolving? Stay on /boot unless timeout hit
   final resolving = subs.status == EntitlementStatus.checking;
   if (resolving && !AppBootstrap.timeoutReached) {
     if (loc == AppRoutes.paywall && isManaging) return null;
     return AppRoutes.boot;
-  }
-
-  // 2) Not logged in → only /login or /register allowed
-  if (user == null) {
-    if (loc == AppRoutes.login || loc == AppRoutes.register) return null;
-    return AppRoutes.login;
   }
 
   // 3) Logged in with access → keep them out of boot/paywall/auth
@@ -40,7 +41,7 @@ String? appRedirect(
         loc == AppRoutes.register) {
       return AppRoutes.vault;
     }
-    return null; // stay on whatever they requested
+    return null;
   }
 
   // 4) Logged in but no access → paywall (supports ?manage=1)

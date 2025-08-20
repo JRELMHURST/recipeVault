@@ -513,6 +513,22 @@
   "@changePasswordTitle": {
     "description": "Title for the change password screen."
   },
+  "passwordTooShort": "Tá an focal faire ró-ghearr (6 charachtar ar a laghad).",
+  "@passwordTooShort": {
+    "description": "Teachtaireacht earráide nuair nach bhfuil an focal faire fada go leor."
+  },
+  "emailInUse": "Tá an seoladh ríomhphoist seo in úsáid cheana féin.",
+  "@emailInUse": {
+    "description": "Taispeántar nuair atá an seoladh ríomhphoist cláraithe cheana."
+  },
+  "invalidEmail": "Seoladh ríomhphoist neamhbhailí.",
+  "@invalidEmail": {
+    "description": "Taispeántar nuair nach bhfuil formáid an ríomhphoist ceart."
+  },
+  "registrationDisabled": "Tá clárú díchumasaithe go sealadach.",
+  "@registrationDisabled": {
+    "description": "Taispeántar nuair atá clárúcháin nua múchta ar an bhfreastalaí."
+  },
   "passwordUpdated": "Nuashonraíodh an focal faire go rathúil",
   "@passwordUpdated": {
     "description": "Toast/snackbar after a successful password change."

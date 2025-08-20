@@ -513,6 +513,22 @@
   "@changePasswordTitle": {
     "description": "Title for the change password screen."
   },
+  "passwordTooShort": "Het wachtwoord is te kort (minimaal 6 tekens).",
+  "@passwordTooShort": {
+    "description": "Foutmelding wanneer het wachtwoord niet lang genoeg is."
+  },
+  "emailInUse": "Dit e-mailadres is al in gebruik.",
+  "@emailInUse": {
+    "description": "Weergegeven wanneer het e-mailadres al geregistreerd is."
+  },
+  "invalidEmail": "Ongeldig e-mailadres.",
+  "@invalidEmail": {
+    "description": "Weergegeven wanneer het e-mailadres ongeldig is."
+  },
+  "registrationDisabled": "Registratie is tijdelijk uitgeschakeld.",
+  "@registrationDisabled": {
+    "description": "Weergegeven wanneer nieuwe registraties zijn uitgeschakeld door de server."
+  },
   "passwordUpdated": "Wachtwoord succesvol bijgewerkt",
   "@passwordUpdated": {
     "description": "Toast/snackbar after a successful password change."

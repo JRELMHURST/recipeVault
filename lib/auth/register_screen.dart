@@ -1,5 +1,6 @@
-// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+// ignore_for_file: deprecated_member_use
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
@@ -25,6 +26,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
+  // Simple email check (client-side only; Firebase still validates server-side)
+  final _emailRegex = RegExp(r"^[^\s@]+@[^\s@]+\.[^\s@]+$");
+
   @override
   void dispose() {
     emailController.dispose();
@@ -41,6 +45,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final password = passwordController.text.trim();
     final confirm = confirmPasswordController.text.trim();
 
+    // ✅ Basic local validation
+    if (email.isEmpty || !_emailRegex.hasMatch(email)) {
+      _showError(loc.invalidEmail);
+      return;
+    }
+    if (password.length < 6) {
+      _showError(loc.passwordTooShort);
+      return;
+    }
     if (password != confirm) {
       _showError(loc.passwordsDoNotMatch);
       return;
@@ -48,15 +61,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     LoadingOverlay.show(context);
     try {
-      // 👇 FIX: use named parameters to match AuthService.registerWithEmail
       await AuthService().registerWithEmail(email: email, password: password);
-
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      // Route to vault; redirect logic will handle paywall if needed
+      // Redirect logic decides if they see vault or paywall
       safeGo(context, AppRoutes.vault);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      _showError(_mapAuthError(e, loc));
     } catch (e) {
+      if (!mounted) return;
       _showError('${loc.registrationFailed}: $e');
     } finally {
       LoadingOverlay.hide();
@@ -78,7 +93,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
       safeGo(context, AppRoutes.vault);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      _showError(_mapAuthError(e, loc));
     } catch (e) {
+      if (!mounted) return;
       _showError('${loc.googleSignupFailed}: $e');
     } finally {
       LoadingOverlay.hide();
@@ -100,7 +119,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
       safeGo(context, AppRoutes.vault);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      _showError(_mapAuthError(e, loc));
     } catch (e) {
+      if (!mounted) return;
       _showError('${loc.appleSignupFailed}: $e');
     } finally {
       LoadingOverlay.hide();
@@ -114,6 +137,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  // ✅ Map FirebaseAuth error codes to friendly messages
+  String _mapAuthError(FirebaseAuthException e, AppLocalizations loc) {
+    switch (e.code) {
+      case 'weak-password':
+        return loc.passwordTooShort;
+      case 'email-already-in-use':
+        return loc.emailInUse;
+      case 'invalid-email':
+        return loc.invalidEmail;
+      case 'operation-not-allowed':
+        return loc.registrationDisabled;
+      default:
+        return loc.unknownError;
+    }
   }
 
   @override

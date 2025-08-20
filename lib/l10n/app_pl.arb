@@ -513,6 +513,22 @@
   "@changePasswordTitle": {
     "description": "Title for the change password screen."
   },
+  "passwordTooShort": "Hasło jest za krótkie (minimum 6 znaków).",
+  "@passwordTooShort": {
+    "description": "Komunikat błędu, gdy hasło jest zbyt krótkie."
+  },
+  "emailInUse": "Ten adres e-mail jest już używany.",
+  "@emailInUse": {
+    "description": "Wyświetlane, gdy adres e-mail jest już zarejestrowany."
+  },
+  "invalidEmail": "Nieprawidłowy adres e-mail.",
+  "@invalidEmail": {
+    "description": "Wyświetlane, gdy podany adres e-mail jest nieprawidłowy."
+  },
+  "registrationDisabled": "Rejestracja jest tymczasowo wyłączona.",
+  "@registrationDisabled": {
+    "description": "Wyświetlane, gdy rejestracja nowych kont jest wyłączona po stronie serwera."
+  },
   "passwordUpdated": "Hasło zostało pomyślnie zaktualizowane",
   "@passwordUpdated": {
     "description": "Toast/snackbar after a successful password change."

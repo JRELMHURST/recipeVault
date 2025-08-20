@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
@@ -9,7 +10,6 @@ import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_recipe_service.dart';
 
-// ✅ Centralised routes + safe navigation helpers
 import 'package:recipe_vault/app/routes.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';
 
@@ -23,7 +23,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-  late FocusNode _emailFocus;
+  late final FocusNode _emailFocus;
+  bool _busy = false;
 
   @override
   void initState() {
@@ -43,30 +44,43 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _signInWithEmail() async {
+    final loc = AppLocalizations.of(context);
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showError(
+        loc.unknownError,
+      ); // or add a dedicated “Please fill both fields”
+      return;
+    }
+
     FocusScope.of(context).unfocus();
+    setState(() => _busy = true);
     LoadingOverlay.show(context);
     try {
-      final email = emailController.text.trim();
-      final password = passwordController.text.trim();
-
-      // ❗️Use named parameters to match AuthService signature
       await AuthService().signInWithEmail(email: email, password: password);
-
       await VaultRecipeService.loadAndMergeAllRecipes();
 
       if (!mounted) return;
-      // Let redirects decide, but point at vault
+      // Optional: let global redirects decide destination.
+      // If you prefer an explicit nudge, keep this:
       safeGo(context, AppRoutes.vault);
-    } catch (e) {
+    } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       _showError(_friendlyAuthError(e));
+    } catch (e) {
+      if (!mounted) return;
+      _showError(AppLocalizations.of(context).unknownError);
     } finally {
       LoadingOverlay.hide();
+      if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _signInWithGoogle() async {
     FocusScope.of(context).unfocus();
+    setState(() => _busy = true);
     LoadingOverlay.show(context);
     try {
       final credential = await AuthService().signInWithGoogle();
@@ -77,16 +91,22 @@ class _LoginScreenState extends State<LoginScreen> {
       await VaultRecipeService.loadAndMergeAllRecipes();
       if (!mounted) return;
       safeGo(context, AppRoutes.vault);
-    } catch (e) {
+    } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       _showError(_friendlyAuthError(e));
+    } catch (_) {
+      if (!mounted) return;
+      _showError(AppLocalizations.of(context).unknownError);
     } finally {
       LoadingOverlay.hide();
+      if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _signInWithApple() async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
     FocusScope.of(context).unfocus();
+    setState(() => _busy = true);
     LoadingOverlay.show(context);
     try {
       final credential = await AuthService().signInWithApple();
@@ -97,11 +117,15 @@ class _LoginScreenState extends State<LoginScreen> {
       await VaultRecipeService.loadAndMergeAllRecipes();
       if (!mounted) return;
       safeGo(context, AppRoutes.vault);
-    } catch (e) {
+    } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       _showError(_friendlyAuthError(e));
+    } catch (_) {
+      if (!mounted) return;
+      _showError(AppLocalizations.of(context).unknownError);
     } finally {
       LoadingOverlay.hide();
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -111,15 +135,23 @@ class _LoginScreenState extends State<LoginScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  String _friendlyAuthError(Object e) {
-    final message = e.toString().toLowerCase();
+  String _friendlyAuthError(FirebaseAuthException e) {
     final loc = AppLocalizations.of(context);
-    if (message.contains('invalid-credential')) return loc.error;
-    if (message.contains('user-not-found')) return loc.no;
-    if (message.contains('wrong-password')) return loc.networkError;
-    if (message.contains('too-many-requests')) return loc.unknownError;
-    if (message.contains('network-request-failed')) return loc.networkError;
-    return loc.unknownError;
+    switch (e.code) {
+      case 'invalid-credential':
+      case 'invalid-email':
+      case 'user-not-found':
+      case 'wrong-password':
+        return loc.error; // map to your localized “Invalid email or password”
+      case 'user-disabled':
+        return loc.no; // replace with a proper “Account disabled” string
+      case 'too-many-requests':
+        return loc.unknownError; // replace with “Too many attempts” in l10n
+      case 'network-request-failed':
+        return loc.networkError;
+      default:
+        return loc.unknownError;
+    }
   }
 
   void _goToRegister() => safeGo(context, AppRoutes.register);
@@ -189,6 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             TextField(
                               controller: emailController,
                               focusNode: _emailFocus,
+                              enabled: !_busy,
                               keyboardType: TextInputType.emailAddress,
                               textInputAction: TextInputAction.next,
                               autofillHints: const [AutofillHints.email],
@@ -201,6 +234,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             const SizedBox(height: 16),
                             TextField(
                               controller: passwordController,
+                              enabled: !_busy,
                               obscureText: true,
                               textInputAction: TextInputAction.done,
                               autofillHints: const [AutofillHints.password],
@@ -215,7 +249,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: _signInWithEmail,
+                                onPressed: _busy ? null : _signInWithEmail,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.deepPurple,
                                   padding: const EdgeInsets.symmetric(
@@ -235,7 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             OutlinedButton.icon(
                               icon: const Icon(Icons.login),
                               label: Text(loc.signInWithGoogle),
-                              onPressed: _signInWithGoogle,
+                              onPressed: _busy ? null : _signInWithGoogle,
                             ),
                             const SizedBox(height: 12),
                             if (defaultTargetPlatform == TargetPlatform.iOS)
@@ -254,7 +288,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     horizontal: 16,
                                   ),
                                 ),
-                                onPressed: _signInWithApple,
+                                onPressed: _busy ? null : _signInWithApple,
                               ),
                           ],
                         ),
@@ -262,7 +296,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 20),
                     TextButton(
-                      onPressed: _goToRegister,
+                      onPressed: _busy ? null : _goToRegister,
                       child: Text(loc.registerCta),
                     ),
                   ],

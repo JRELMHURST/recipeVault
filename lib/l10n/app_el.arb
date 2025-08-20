@@ -505,6 +505,22 @@
   "@changePasswordTitle": {
     "description": "Title for the change password screen."
   },
+  "passwordTooShort": "Ο κωδικός είναι πολύ σύντομος (τουλάχιστον 6 χαρακτήρες).",
+  "@passwordTooShort": {
+    "description": "Μήνυμα σφάλματος όταν ο κωδικός είναι μικρότερος από το ελάχιστο μήκος."
+  },
+  "emailInUse": "Αυτό το email χρησιμοποιείται ήδη.",
+  "@emailInUse": {
+    "description": "Εμφανίζεται όταν η διεύθυνση email είναι ήδη καταχωρημένη."
+  },
+  "invalidEmail": "Μη έγκυρη διεύθυνση email.",
+  "@invalidEmail": {
+    "description": "Εμφανίζεται όταν η μορφή του email δεν είναι έγκυρη."
+  },
+  "registrationDisabled": "Η εγγραφή είναι προσωρινά απενεργοποιημένη.",
+  "@registrationDisabled": {
+    "description": "Εμφανίζεται όταν οι νέες εγγραφές είναι απενεργοποιημένες στο backend."
+  },
   "passwordUpdated": "Ο κωδικός πρόσβασης ενημερώθηκε με επιτυχία",
   "@passwordUpdated": {
     "description": "Toast/snackbar after a successful password change."

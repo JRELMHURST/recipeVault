@@ -19,7 +19,9 @@ class AuthService {
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
-  bool get isLoggedIn => currentUser != null;
+  bool get isLoggedIn =>
+      currentUser != null &&
+      !(currentUser?.isAnonymous ?? true); // 👈 exclude anonymous
 
   /// Reads a locally saved preferred recipe locale (optional).
   Future<String?> _getPreferredRecipeLocale() async {
@@ -33,7 +35,6 @@ class AuthService {
 
   // ───────────────── SIGN IN / REGISTER ─────────────────
 
-  /// Email + Password (named params to match call-sites in UI).
   Future<UserCredential> signInWithEmail({
     required String email,
     required String password,
@@ -47,7 +48,6 @@ class AuthService {
     return credential;
   }
 
-  /// Register with Email + Password (optionally set displayName).
   Future<UserCredential> registerWithEmail({
     required String email,
     required String password,
@@ -65,7 +65,6 @@ class AuthService {
     return credential;
   }
 
-  /// Google sign-in.
   Future<UserCredential?> signInWithGoogle() async {
     try {
       final googleUser = await _googleSignIn.signIn();
@@ -87,7 +86,6 @@ class AuthService {
     }
   }
 
-  /// Apple sign-in.
   Future<UserCredential?> signInWithApple() async {
     try {
       final appleCredential = await SignInWithApple.getAppleIDCredential(
@@ -121,9 +119,7 @@ class AuthService {
   Future<void> signOut() async {
     // Keep RevenueCat + local state consistent with “signed out”.
     try {
-      await SubscriptionService().setAppUserId(
-        null,
-      ); // handles RC logOut safely
+      await SubscriptionService().setAppUserId(null); // safely logs out RC
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ setAppUserId(null) failed: $e');
     }
@@ -131,12 +127,11 @@ class AuthService {
     try {
       await _googleSignIn.signOut();
     } catch (_) {
-      // ignore
+      /* ignore */
     }
     await _auth.signOut();
   }
 
-  /// Full local cleanup (use for destructive flows like delete-account).
   Future<void> fullLogout() async {
     final uid = currentUser?.uid;
     await signOut();
@@ -173,8 +168,10 @@ class AuthService {
 
   // ───────────────── Firestore User Doc ─────────────────
 
-  /// Create/merge the user document; idempotent.
   static Future<bool> ensureUserDocument(User user) async {
+    // Skip anonymous just in case this is called elsewhere unexpectedly
+    if (user.isAnonymous) return false; // 👈 guard
+
     final ref = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final snap = await ref.get();
 
@@ -201,14 +198,15 @@ class AuthService {
     }
   }
 
-  /// Non‑static proxy so other code calling `AuthService().ensureUserDocument(...)`
-  /// won’t break.
   Future<bool> ensureUserDocumentInstance(User user) =>
       ensureUserDocument(user);
 
   // ───────────────── RevenueCat ↔ Server reconcile ─────────────────
 
   Future<void> _reconcileFromRC(User user) async {
+    // Skip anonymous to avoid pointless callable/errors
+    if (user.isAnonymous) return; // 👈 guard
+
     try {
       await user.getIdToken(true); // fresh token
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
@@ -223,7 +221,6 @@ class AuthService {
           }
           break;
         } on FirebaseFunctionsException catch (e) {
-          // In practice this throws 'unauthenticated' if token is stale.
           if (e.code == 'unauthenticated' && attempts > 0) {
             await Future.delayed(const Duration(milliseconds: 400));
             await user.getIdToken(true);
@@ -244,21 +241,27 @@ class AuthService {
     User user, {
     required bool forceCreateUserDoc,
   }) async {
-    // 1) Tie RevenueCat to Firebase UID (and refresh subscription state).
+    // Anonymous sessions should NOT bind RC or write user docs
+    if (user.isAnonymous) {
+      if (kDebugMode) {
+        debugPrint('↪️ Skipping post-auth hooks for anonymous user.');
+      }
+      return; // 👈 critical for clean routing/RC state
+    }
+
+    // 1) Tie RevenueCat to Firebase UID and refresh subs
     try {
       await SubscriptionService().setAppUserId(user.uid);
-      // init() already ran at app boot; refresh is enough here.
       await SubscriptionService().refresh();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Subscriptions refresh failed: $e');
     }
 
-    // 2) Ensure/merge Firestore user doc.
+    // 2) Ensure/merge Firestore user doc
     try {
       if (forceCreateUserDoc) {
         await ensureUserDocument(user);
       } else {
-        // merge-only update lastLogin for existing user
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'lastLogin': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
@@ -267,7 +270,7 @@ class AuthService {
       if (kDebugMode) debugPrint('⚠️ ensureUserDocument failed: $e');
     }
 
-    // 3) Ask the backend to reconcile RC → Firestore (best effort).
+    // 3) Ask backend to reconcile RC → Firestore (best effort)
     await _reconcileFromRC(user);
   }
 
@@ -275,8 +278,8 @@ class AuthService {
 
   void logCurrentUser() {
     final user = _auth.currentUser;
-    if (user == null) {
-      debugPrint('🔐 No user currently signed in.');
+    if (user == null || user.isAnonymous) {
+      debugPrint('🔐 No real user currently signed in (null or anonymous).');
     } else {
       debugPrint(
         '👤 Logged in as: ${user.email ?? user.displayName ?? user.uid}',
@@ -290,8 +293,8 @@ class AuthService {
   }
 
   static DocumentReference<Map<String, dynamic>>? userDocRefCurrent() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return null;
-    return FirebaseFirestore.instance.collection('users').doc(uid);
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null || u.isAnonymous) return null;
+    return FirebaseFirestore.instance.collection('users').doc(u.uid);
   }
 }

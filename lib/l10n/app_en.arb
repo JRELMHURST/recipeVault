@@ -513,6 +513,22 @@
   "@changePasswordTitle": {
     "description": "Title for the change password screen."
   },
+  "passwordTooShort": "Password must be at least 6 characters.",
+  "@passwordTooShort": {
+    "description": "Validation message shown when a password is shorter than the minimum length."
+  },
+  "emailInUse": "That email is already in use.",
+  "@emailInUse": {
+    "description": "Shown when Firebase reports email-already-in-use."
+  },
+  "invalidEmail": "Please enter a valid email address.",
+  "@invalidEmail": {
+    "description": "Generic invalid email message (also used when empty)."
+  },
+  "registrationDisabled": "Registration is currently unavailable.",
+  "@registrationDisabled": {
+    "description": "Shown when Firebase returns operation-not-allowed for sign-up."
+  },
   "passwordUpdated": "Password updated successfully",
   "@passwordUpdated": {
     "description": "Toast/snackbar after a successful password change."

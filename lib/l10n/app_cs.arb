@@ -513,6 +513,22 @@
   "@changePasswordTitle": {
     "description": "Title for the change password screen."
   },
+  "passwordTooShort": "Heslo je příliš krátké (minimálně 6 znaků).",
+  "@passwordTooShort": {
+    "description": "Validation error when the password is shorter than the minimum length."
+  },
+  "emailInUse": "Tento e-mail je již používán.",
+  "@emailInUse": {
+    "description": "Shown when the email address is already registered."
+  },
+  "invalidEmail": "Neplatný e-mail.",
+  "@invalidEmail": {
+    "description": "Shown when the email format is invalid."
+  },
+  "registrationDisabled": "Registrace je dočasně vypnuta.",
+  "@registrationDisabled": {
+    "description": "Shown when sign-ups are turned off in the backend."
+  },
   "passwordUpdated": "Heslo bylo úspěšně změněno",
   "@passwordUpdated": {
     "description": "Toast/snackbar after a successful password change."

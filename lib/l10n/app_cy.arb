@@ -513,6 +513,22 @@
     "@changePasswordTitle": {
         "description": "Title for the change password screen."
     },
+    "passwordTooShort": "Mae'r cyfrinair yn rhy fyr (isafswm o 6 nod).",
+    "@passwordTooShort": {
+        "description": "Validation error when the password is shorter than the minimum length."
+    },
+    "emailInUse": "Mae'r e-bost hwn eisoes yn cael ei ddefnyddio.",
+    "@emailInUse": {
+        "description": "Shown when the email address is already registered."
+    },
+    "invalidEmail": "E-bost annilys.",
+    "@invalidEmail": {
+        "description": "Shown when the email format is invalid."
+    },
+    "registrationDisabled": "Mae cofrestru wedi'i analluogi dros dro.",
+    "@registrationDisabled": {
+        "description": "Shown when sign-ups are turned off in the backend."
+    },
     "passwordUpdated": "Cyfrinair wedi’i ddiweddaru’n llwyddiannus",
     "@passwordUpdated": {
         "description": "Toast/snackbar after a successful password change."

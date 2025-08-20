@@ -513,6 +513,22 @@
   "@changePasswordTitle": {
     "description": "Title for the change password screen."
   },
+  "passwordTooShort": "Паролата трябва да е поне 6 символа.",
+  "@passwordTooShort": {
+    "description": "Validation message shown when a password is shorter than the minimum length."
+  },
+  "emailInUse": "Този имейл вече се използва.",
+  "@emailInUse": {
+    "description": "Shown when Firebase reports email-already-in-use."
+  },
+  "invalidEmail": "Моля, въведете валиден имейл адрес.",
+  "@invalidEmail": {
+    "description": "Generic invalid email message (also used when empty)."
+  },
+  "registrationDisabled": "Регистрацията е временно недостъпна.",
+  "@registrationDisabled": {
+    "description": "Shown when Firebase returns operation-not-allowed for sign-up."
+  },
   "passwordUpdated": "Паролата е обновена успешно",
   "@passwordUpdated": {
     "description": "Toast/snackbar after a successful password change."

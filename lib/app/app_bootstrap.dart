@@ -29,12 +29,12 @@ class AppBootstrap {
   );
   static final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  // ── Readiness signalling for the router ───────────────────────────────────
+  // ── Readiness signalling for the router ──────────────────────────────
   static final ValueNotifier<bool> _ready = ValueNotifier<bool>(false);
   static ValueListenable<bool> get readyListenable => _ready;
   static bool get isReady => _ready.value;
 
-  // One‑shot timeout so the router can stop showing /boot after a while
+  // One-shot timeout so the router can stop showing /boot after a while
   static const Duration _bootTimeout = Duration(seconds: 8);
   static final ValueNotifier<bool> _timeoutReached = ValueNotifier<bool>(false);
   static ValueListenable<bool> get timeoutListenable => _timeoutReached;
@@ -47,7 +47,7 @@ class AppBootstrap {
     if (_initialised) return;
     _initialised = true;
 
-    // Fire a one‑shot signal at timeout so GoRouter re-runs redirects
+    // Fire a one-shot signal at timeout so GoRouter re-runs redirects
     Future<void>.delayed(_bootTimeout).then((_) {
       if (!_timeoutReached.value) _timeoutReached.value = true;
     });
@@ -58,17 +58,11 @@ class AppBootstrap {
         options: DefaultFirebaseOptions.currentPlatform,
       );
     } catch (e, st) {
-      debugPrint('❌ Firebase init failed: $e');
+      debugPrint('❌ BOOT: Firebase init failed: $e');
       debugPrintStack(stackTrace: st);
       _ready.value = true; // let the router render an error/alternative
       return;
     }
-
-    // // Optional local emulators
-    // if (kDebugMode) {
-    //   functions.useFunctionsEmulator('localhost', 5001);
-    //   firestore.useFirestoreEmulator('localhost', 8080);
-    // }
 
     // 2) App Check
     try {
@@ -89,21 +83,25 @@ class AppBootstrap {
         );
       }
     } catch (e, st) {
-      debugPrint('⚠️ App Check failed: $e');
+      debugPrint('⚠️ BOOT: App Check failed: $e');
       debugPrintStack(stackTrace: st);
     }
 
-    // 3) RevenueCat — configure SDK only (user binding via auth listener)
+    // 3) RevenueCat — only configure on supported platforms
     try {
-      if (kDebugMode) await Purchases.setLogLevel(LogLevel.debug);
-      final cfg = PurchasesConfiguration(
-        Platform.isIOS
-            ? 'appl_oqbgqmtmctjzzERpEkswCejmukh'
-            : 'goog_oqbgqmtmctjzzERpEkswCejmukh',
-      );
-      await Purchases.configure(cfg);
+      if (Platform.isIOS || Platform.isAndroid) {
+        if (kDebugMode) await Purchases.setLogLevel(LogLevel.debug);
+        final cfg = PurchasesConfiguration(
+          Platform.isIOS
+              ? 'appl_oqbgqmtmctjzzERpEkswCejmukh'
+              : 'goog_oqbgqmtmctjzzERpEkswCejmukh',
+        );
+        await Purchases.configure(cfg);
+      } else {
+        debugPrint('ℹ️ BOOT: RevenueCat not configured (unsupported platform)');
+      }
     } catch (e, st) {
-      debugPrint('❌ RevenueCat configure failed: $e');
+      debugPrint('❌ BOOT: RevenueCat configure failed: $e');
       debugPrintStack(stackTrace: st);
     }
 
@@ -111,7 +109,7 @@ class AppBootstrap {
     try {
       await NotificationService.init();
     } catch (e, st) {
-      debugPrint('⚠️ NotificationService init failed: $e');
+      debugPrint('⚠️ BOOT: NotificationService init failed: $e');
       debugPrintStack(stackTrace: st);
     }
 
@@ -136,50 +134,62 @@ class AppBootstrap {
           for (final key in legacyKeys) {
             final old = catBox.get(key) as String;
             await catBox.put(key, CategoryModel(id: key.toString(), name: old));
-            debugPrint('🔁 Migrated legacy category "$old" → CategoryModel');
+            debugPrint(
+              '🔁 BOOT: Migrated legacy category "$old" → CategoryModel',
+            );
           }
           await catBox.close();
         }
       } catch (e, st) {
-        debugPrint('⚠️ Legacy category migration failed: $e');
+        debugPrint('⚠️ BOOT: Legacy category migration failed: $e');
         debugPrintStack(stackTrace: st);
       }
 
       await CategoryService.init();
       await UserPreferencesService.init();
     } catch (e, st) {
-      debugPrint('❌ Hive core setup failed: $e');
+      debugPrint('❌ BOOT: Hive core setup failed: $e');
       debugPrintStack(stackTrace: st);
     }
 
-    // 6) Keep per‑user services + RC AppUserID in lockstep with Auth
+    // 6) Keep per-user services + RC AppUserID in lockstep with Auth
     FirebaseAuth.instance.authStateChanges().listen((user) async {
       debugPrint(
         user == null
-            ? '🧍 FirebaseAuth: No user signed in'
-            : '✅ FirebaseAuth: Signed in uid=${user.uid}',
+            ? '🧍 BOOT: FirebaseAuth → No user signed in'
+            : '✅ BOOT: FirebaseAuth → Signed in uid=${user.uid}',
       );
 
       try {
         await CategoryService.onAuthChanged(user?.uid);
       } catch (e, st) {
-        debugPrint('⚠️ CategoryService.onAuthChanged failed: $e');
+        debugPrint('⚠️ BOOT: CategoryService.onAuthChanged failed: $e');
         debugPrintStack(stackTrace: st);
       }
       try {
         await UserPreferencesService.onAuthChanged(user?.uid);
       } catch (e, st) {
-        debugPrint('⚠️ UserPreferencesService.onAuthChanged failed: $e');
+        debugPrint('⚠️ BOOT: UserPreferencesService.onAuthChanged failed: $e');
         debugPrintStack(stackTrace: st);
       }
-
       try {
         await SubscriptionService().setAppUserId(user?.uid);
       } catch (e, st) {
-        debugPrint('⚠️ SubscriptionService.setAppUserId failed: $e');
+        debugPrint('⚠️ BOOT: SubscriptionService.setAppUserId failed: $e');
         debugPrintStack(stackTrace: st);
       }
     });
+
+    // Immediately sync current auth state (avoid waiting for first tick)
+    final initialUser = FirebaseAuth.instance.currentUser;
+    try {
+      await CategoryService.onAuthChanged(initialUser?.uid);
+      await UserPreferencesService.onAuthChanged(initialUser?.uid);
+      await SubscriptionService().setAppUserId(initialUser?.uid);
+    } catch (e, st) {
+      debugPrint('⚠️ BOOT: Initial auth sync failed: $e');
+      debugPrintStack(stackTrace: st);
+    }
 
     // Core bootstrap finished → allow router to proceed
     _ready.value = true;

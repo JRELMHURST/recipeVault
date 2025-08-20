@@ -28,21 +28,15 @@ class ImageProcessingService {
 
   static final ImagePicker _picker = ImagePicker();
 
-  /// Notifies UI to display an upgrade/limit banner (consumed by screens/widgets).
-  static final ValueNotifier<String?> upgradeBannerMessage = ValueNotifier(
-    null,
-  );
-  static void clearUpgradeBanner() => upgradeBannerMessage.value = null;
-
   // ───────────────────────── PLAN GATES ─────────────────────────
 
   /// Throws with a friendly message if uploads aren’t allowed.
   static Future<void> _ensureUploadAllowedOrThrow() async {
     final subs = SubscriptionService();
     if (!subs.allowImageUpload) {
-      upgradeBannerMessage.value =
-          '✨ Upload images with the Home Chef or Master Chef plan.';
-      throw Exception('Upload blocked due to plan limit.');
+      throw Exception(
+        '✨ Upload images with the Home Chef or Master Chef plan.',
+      );
     }
   }
 
@@ -50,9 +44,9 @@ class ImageProcessingService {
   static Future<void> _ensureProcessingAllowedOrThrow() async {
     final subs = SubscriptionService();
     if (!subs.allowTranslation) {
-      upgradeBannerMessage.value =
-          '✨ Unlock Chef Mode with Home Chef or Master Chef to process recipes.';
-      throw Exception('Translation blocked due to plan limit.');
+      throw Exception(
+        '✨ Unlock Chef Mode with Home Chef or Master Chef to process recipes.',
+      );
     }
   }
 
@@ -247,9 +241,6 @@ class ImageProcessingService {
         throw Exception('Formatted recipe was empty.');
       }
 
-      // Clear any sticky upgrade messages on success
-      clearUpgradeBanner();
-
       _logDebug(
         '✅ CF success. lang=${data['detectedLanguage']} translated=${data['translationUsed']}',
       );
@@ -258,15 +249,12 @@ class ImageProcessingService {
     } on FirebaseFunctionsException catch (e) {
       _logDebug('🛑 CF exception: ${e.code} — ${e.message}');
       switch (e.code) {
-        // Hybrid path: backend enforces; map to friendly UX.
         case 'permission-denied':
-          upgradeBannerMessage.value =
-              '✨ Unlock Chef Mode with the Home Chef or Master Chef plan!';
-          throw Exception('Translation blocked due to plan limit.');
+          throw Exception(
+            '✨ Unlock Chef Mode with the Home Chef or Master Chef plan!',
+          );
         case 'resource-exhausted':
-          upgradeBannerMessage.value =
-              '🚧 Monthly quota reached. Upgrade for more!';
-          throw Exception('Usage limit reached.');
+          throw Exception('🚧 Monthly quota reached. Upgrade for more!');
         case 'deadline-exceeded':
         case 'unavailable':
           // Small retry helps against transient errors.
@@ -282,7 +270,6 @@ class ImageProcessingService {
                   })
                   .timeout(timeout);
           final retryData = (retry.data as Map).cast<String, dynamic>();
-          clearUpgradeBanner();
           return ProcessedRecipeResult.fromMap(retryData);
         default:
           throw Exception('Processing failed: ${e.message}');

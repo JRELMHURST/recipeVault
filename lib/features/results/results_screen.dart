@@ -20,7 +20,7 @@ import 'package:recipe_vault/widgets/recipe_card.dart';
 import 'package:recipe_vault/widgets/recipe_image_header.dart';
 import 'package:recipe_vault/core/theme.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
-import 'package:recipe_vault/data/models/processed_recipe_result.dart';
+import 'package:recipe_vault/features/processing/processed_recipe_result.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class ResultsScreen extends StatefulWidget {

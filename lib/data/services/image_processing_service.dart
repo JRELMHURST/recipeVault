@@ -14,7 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:recipe_vault/firebase_storage.dart'; // FirebaseStorageService
-import 'package:recipe_vault/data/models/processed_recipe_result.dart';
+import 'package:recipe_vault/features/processing/processed_recipe_result.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
 
 class ImageProcessingService {

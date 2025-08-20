@@ -1,4 +1,6 @@
 // lib/navigation/nav_shell.dart
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // HapticFeedback
 import 'package:go_router/go_router.dart';
@@ -20,9 +22,10 @@ class NavShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final location = GoRouterState.of(context).matchedLocation;
 
-    // Which tab should be highlighted?
+    // Which tab is active?
     final isSettings =
         location == AppRoutes.settings ||
         location.startsWith('${AppRoutes.settings}/');
@@ -56,6 +59,7 @@ class NavShell extends StatelessWidget {
       ),
       body: child,
       bottomNavigationBar: NavigationBar(
+        backgroundColor: theme.colorScheme.surface,
         selectedIndex: selectedIndex,
         onDestinationSelected: (i) async {
           switch (i) {
@@ -74,20 +78,23 @@ class NavShell extends StatelessWidget {
               break;
           }
         },
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        indicatorColor: theme.colorScheme.primary.withOpacity(0.14),
         destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.add_a_photo_outlined),
-            label: 'Create',
+          NavigationDestination(
+            icon: const Icon(Icons.add_a_photo_outlined),
+            label: loc.tabCreate, // ← localized
           ),
           NavigationDestination(
             icon: vaultIcon(false),
             selectedIcon: vaultIcon(true),
-            label: 'Vault',
+            label: loc.tabVault, // ← localized
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
+          NavigationDestination(
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings),
+            label: loc
+                .tabProfile, // If your copy says “Settings”, swap to loc.settings
           ),
         ],
       ),

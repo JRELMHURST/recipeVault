@@ -20,7 +20,7 @@ import 'package:recipe_vault/auth/register_screen.dart';
 
 import 'package:recipe_vault/features/recipe_vault/recipe_vault_screen.dart';
 import 'package:recipe_vault/features/results/results_screen.dart';
-import 'package:recipe_vault/data/models/processed_recipe_result.dart';
+import 'package:recipe_vault/features/processing/processed_recipe_result.dart';
 
 // Settings
 import 'package:recipe_vault/features/settings/settings_screen.dart';

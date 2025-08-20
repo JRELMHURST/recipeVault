@@ -5,7 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class EmptyVaultPlaceholder extends StatelessWidget {
-  const EmptyVaultPlaceholder({super.key});
+  const EmptyVaultPlaceholder({super.key, this.topSpacing = 12});
+
+  /// How close to the chips the card starts.
+  final double topSpacing;
 
   // Mix emojis + asset paths
   static final _icons = [
@@ -20,14 +23,11 @@ class EmptyVaultPlaceholder extends StatelessWidget {
     "assets/icon/coffee.PNG",
   ];
 
-  /// Deterministic index that changes once per day.
   int _dailyIndex() {
     final today = DateTime.now();
-    final d0 = DateTime(today.year, today.month, today.day); // midnight local
-    // Days since epoch; will increment by 1 each midnight
-    final daysSinceEpoch =
-        d0.millisecondsSinceEpoch ~/ Duration.millisecondsPerDay;
-    return daysSinceEpoch % _icons.length;
+    final d0 = DateTime(today.year, today.month, today.day);
+    final days = d0.millisecondsSinceEpoch ~/ Duration.millisecondsPerDay;
+    return days % _icons.length;
   }
 
   @override
@@ -35,47 +35,107 @@ class EmptyVaultPlaceholder extends StatelessWidget {
     final t = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final bottomInset = MediaQuery.of(context).padding.bottom;
+    final media = MediaQuery.of(context);
+    final bottomInset = media.padding.bottom;
+
+    // Clamp text scale for tidy layout.
+    final clampedScaler = TextScaler.linear(
+      media.textScaler.scale(1.0).clamp(0.9, 1.15),
+    );
+
+    // Gentle responsive sizes (bounded).
+    final w = media.size.width.clamp(320.0, 520.0);
+    final titleSize = _lerpDouble(22, 26, ((w - 320) / 200).clamp(0, 1));
+    final bodySize = _lerpDouble(15, 16.2, ((w - 320) / 200).clamp(0, 1));
 
     final choice = _icons[_dailyIndex()];
     final isEmoji = !choice.startsWith("assets/");
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Card(
-            elevation: 2,
-            color: cs.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+    return MediaQuery(
+      data: media.copyWith(textScaler: clampedScaler),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16, topSpacing, 16, 0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Card(
+              elevation: 1.5,
+              color: cs.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(color: cs.outlineVariant.withOpacity(.25)),
+              ),
+              child: Padding(
+                // tighter vertical padding
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Circle with subtle gradient outline
+                    // ── TEXT FIRST ───────────────────────────────────────────
+                    _GradientTitle(
+                      text: t.emptyVaultTitle,
+                      fontSize: titleSize,
+                      start: cs.primary,
+                      end: cs.secondary,
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Body — compact rhythm + slight letter‑spacing
+                    Text(
+                      t.emptyVaultBody,
+                      textAlign: TextAlign.center,
+                      textHeightBehavior: const TextHeightBehavior(
+                        applyHeightToFirstAscent: false,
+                        applyHeightToLastDescent: false,
+                      ),
+                      strutStyle: const StrutStyle(
+                        forceStrutHeight: true,
+                        height: 1.4,
+                      ),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: bodySize,
+                        color: cs.onSurfaceVariant.withOpacity(.95),
+                        height: 1.4,
+                        letterSpacing: .15,
+                      ),
+                    ),
+
+                    // decorative hairline to add depth
+                    const SizedBox(height: 12),
+                    Opacity(
+                      opacity: .14,
+                      child: Container(
+                        height: 1,
+                        width: 160,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [cs.primary, cs.secondary],
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ── CIRCLE UNDER TEXT ───────────────────────────────────
                     Container(
-                      width: 80,
-                      height: 80,
+                      width: 76,
+                      height: 76,
                       padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
                           colors: [
-                            theme.colorScheme.primary.withOpacity(0.35),
-                            theme.colorScheme.secondary.withOpacity(0.35),
+                            cs.primary.withOpacity(.28),
+                            cs.secondary.withOpacity(.28),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
+                            color: Colors.black.withOpacity(.05),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -86,42 +146,13 @@ class EmptyVaultPlaceholder extends StatelessWidget {
                           color: Colors.white,
                           alignment: Alignment.center,
                           child: isEmoji
-                              ? Text(
-                                  choice,
-                                  // Slightly larger so it reads well inside the circle
-                                  style: const TextStyle(fontSize: 40),
-                                )
-                              : Image.asset(
-                                  choice,
-                                  fit: BoxFit.cover, // fill the circle
-                                ),
+                              ? const Text("🍲", style: TextStyle(fontSize: 34))
+                              : Image.asset(choice, fit: BoxFit.cover),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
 
-                    // Headline
-                    Text(
-                      t.emptyVaultTitle,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        height: 1.1,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Supporting copy
-                    Text(
-                      t.emptyVaultBody,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        height: 1.45,
-                      ),
-                    ),
-
-                    SizedBox(height: 16 + bottomInset),
+                    SizedBox(height: 12 + bottomInset),
                   ],
                 ),
               ),
@@ -132,3 +163,62 @@ class EmptyVaultPlaceholder extends StatelessWidget {
     );
   }
 }
+
+// Gradient headline with subtle depth
+class _GradientTitle extends StatelessWidget {
+  const _GradientTitle({
+    required this.text,
+    required this.fontSize,
+    required this.start,
+    required this.end,
+  });
+
+  final String text;
+  final double fontSize;
+  final Color start;
+  final Color end;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return LayoutBuilder(
+      builder: (context, c) {
+        final shader = LinearGradient(
+          colors: [start, end],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ).createShader(Rect.fromLTWH(0, 0, c.maxWidth, fontSize * 1.3));
+
+        return Text(
+          text,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          textHeightBehavior: const TextHeightBehavior(
+            applyHeightToFirstAscent: false,
+            applyHeightToLastDescent: false,
+          ),
+          strutStyle: const StrutStyle(leading: 0.4, height: 1.14),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+            fontSize: fontSize,
+            height: 1.12,
+            letterSpacing: .2,
+            foreground: Paint()..shader = shader,
+            shadows: const [
+              Shadow(
+                blurRadius: 2,
+                offset: Offset(0, 1),
+                color: Colors.black26,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// small, typed lerp helper
+double _lerpDouble(num a, num b, num t) => (a + (b - a) * t).toDouble();

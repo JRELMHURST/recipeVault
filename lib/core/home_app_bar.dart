@@ -1,5 +1,4 @@
-// lib/core/home_app_bar.dart (replace your current HomeAppBar)
-
+// lib/core/home_app_bar.dart
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
@@ -33,8 +32,6 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-
-    // Title (Home/Vault shows tier; other tabs show their own labels)
     final titleText = _getAppBarTitle(loc, selectedIndex, subs.tier);
 
     return AppBar(
@@ -44,26 +41,17 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       shadowColor: Colors.transparent,
       automaticallyImplyLeading: false,
       centerTitle: true,
-
-      // Better status bar contrast
       systemOverlayStyle: SystemUiOverlayStyle(
         statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
         statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
       ),
-
-      // Rounded bottom edge
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
       ),
-
-      // Gradient background
       flexibleSpace: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              cs.primary.withOpacity(0.96),
-              cs.primary.withOpacity(0.80),
-            ],
+            colors: [cs.primary.withOpacity(.96), cs.primary.withOpacity(.80)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -73,7 +61,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
 
-      // Leading: toggle (vault) or refresh (profile), else nothing
+      // Leading: vault view toggle or settings refresh
       leading: switch (selectedIndex) {
         1 when viewModeIcon != null && onToggleViewMode != null => Tooltip(
           message: loc.appBarToggleViewMode,
@@ -106,37 +94,17 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         _ => const SizedBox.shrink(),
       },
 
-      // Centered title + tier pill
-      title: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            titleText,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 22,
-              letterSpacing: 0.6,
-              shadows: const [
-                Shadow(
-                  blurRadius: 2,
-                  offset: Offset(0, 1),
-                  color: Colors.black26,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      title: _GradientTitle(text: titleText),
 
-      // Only show DailyMessageBubble on vault
+      // Daily tips bubble (ramen icon)
       actions: [
         if (selectedIndex == 1)
           const Padding(
             padding: EdgeInsets.only(right: 12),
-            child: DailyMessageBubble(),
+            child: DailyMessageBubble(
+              iconData: Icons.ramen_dining_rounded,
+              tooltip: 'Daily cooking tip',
+            ),
           ),
       ],
     );
@@ -155,5 +123,45 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       'master_chef' => loc.planMasterChef,
       _ => loc.appTitle,
     };
+  }
+}
+
+/// Gradient-styled title text only (no emoji badge)
+class _GradientTitle extends StatelessWidget {
+  const _GradientTitle({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final shader = LinearGradient(
+          colors: [Colors.white, Colors.white.withOpacity(.9)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ).createShader(Rect.fromLTWH(0, 0, constraints.maxWidth, 40));
+
+        return Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+            fontSize: 22,
+            letterSpacing: .6,
+            foreground: Paint()..shader = shader,
+            shadows: const [
+              Shadow(
+                blurRadius: 2,
+                offset: Offset(0, 1),
+                color: Colors.black26,
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

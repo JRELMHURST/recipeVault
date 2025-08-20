@@ -84,7 +84,7 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Uložte si screenshoty receptů na jedno místo ✨\n\nPřetvořte nebo přeložte neuspořádané screenshoty do přehledných karet receptů.",
+  "emptyVaultBody": "Proměňte své neuspořádané snímky obrazovky v organizované receptové karty.",
   "@emptyVaultBody": {
     "description": "Text povzbuzující uživatele k importu screenshotů a vytvoření prvního receptu"
   },

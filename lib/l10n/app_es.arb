@@ -84,7 +84,7 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Guarda tus capturas de recetas en un solo lugar ✨\n\nConvierte o traduce capturas desordenadas en tarjetas de recetas organizadas.",
+  "emptyVaultBody": "Convierte tus capturas de pantalla desordenadas en fichas de recetas organizadas.",
   "@emptyVaultBody": {
     "description": "Texto que anima al usuario a importar capturas de pantalla y crear su primera receta"
   },

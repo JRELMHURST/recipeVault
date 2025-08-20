@@ -84,7 +84,7 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Salva i tuoi screenshot di ricette in un unico posto ✨\n\nTrasforma o traduci screenshot disordinati in schede ricetta organizzate.",
+  "emptyVaultBody": "Trasforma i tuoi screenshot disordinati in schede di ricette organizzate.",
   "@emptyVaultBody": {
     "description": "Testo che incoraggia l’utente a importare screenshot e creare la sua prima ricetta"
   },

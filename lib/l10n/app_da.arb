@@ -84,7 +84,7 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Gem dine opskrift-screenshots ét sted ✨\n\nLav eller oversæt rodede screenshots til organiserede opskriftskort.",
+  "emptyVaultBody": "Forvandl dine rodede skærmbilleder til organiserede opskriftskort.",
   "@emptyVaultBody": {
     "description": "Tekst der opfordrer brugeren til at importere screenshots og oprette deres første opskrift"
   },

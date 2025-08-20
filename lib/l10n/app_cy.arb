@@ -84,7 +84,7 @@
     "@emptyVaultTitle": {
         "description": "Title shown when the vault has no recipes"
     },
-    "emptyVaultBody": "Cadwch eich sgrinluniau ryseitiau mewn un lle ✨\n\nTrowch neu gyfieithwch sgrinluniau blêr yn gardiau ryseitiau trefnus.",
+    "emptyVaultBody": "Trowch eich sgrinluniau blêr yn gardiau rysáit trefnus.",
     "@emptyVaultBody": {
         "description": "Testun yn annog y defnyddiwr i fewnforio sgrinluniau a chreu ei rysáit cyntaf"
     },

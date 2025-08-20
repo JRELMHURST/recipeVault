@@ -84,7 +84,7 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Sábháil do screenshots oidis in aon áit amháin ✨\n\nAthraigh nó aistrigh screenshots mearbhallacha go cártaí oidis eagraithe.",
+  "emptyVaultBody": "Déan do seatanna scáileáin míshlachtmhara a iompú ina gcártaí oidis eagraithe.",
   "@emptyVaultBody": {
     "description": "Téacs ag spreagadh an úsáideora chun screenshots a iompórtáil agus a chéad oideas a chruthú"
   },

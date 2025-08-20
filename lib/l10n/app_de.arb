@@ -84,7 +84,7 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Speichere deine Rezept-Screenshots an einem Ort ✨\n\nWandle unübersichtliche Screenshots in organisierte Rezeptkarten um oder übersetze sie.",
+  "emptyVaultBody": "Verwandle deine unordentlichen Screenshots in organisierte Rezeptkarten.",
   "@emptyVaultBody": {
     "description": "Text, der den Benutzer ermutigt, Screenshots zu importieren und sein erstes Rezept zu erstellen"
   },

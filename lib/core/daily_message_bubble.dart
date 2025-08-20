@@ -9,7 +9,14 @@ import 'package:recipe_vault/core/daily_message_service.dart';
 import 'package:recipe_vault/core/daily_tip_banner_controller.dart';
 
 class DailyMessageBubble extends StatefulWidget {
-  const DailyMessageBubble({super.key});
+  final IconData iconData;
+  final String tooltip;
+
+  const DailyMessageBubble({
+    super.key,
+    this.iconData = Icons.lightbulb, // default
+    this.tooltip = 'Daily tip', // default
+  });
 
   @override
   State<DailyMessageBubble> createState() => _DailyMessageBubbleState();
@@ -20,7 +27,7 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
   final _controller = DailyTipBannerController();
   bool _busy = false;
 
-  // 🔔 unread state (blue when true)
+  // 🔔 unread state (amber when true)
   bool _isUnread = false;
 
   GoRouter? _router;
@@ -29,7 +36,6 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
   @override
   void initState() {
     super.initState();
-    // Load today's read state (safe fallback if service method absent)
     _loadReadState();
   }
 
@@ -38,7 +44,6 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
       final read = await DailyMessageService.isTodayRead();
       if (mounted) setState(() => _isUnread = !read);
     } catch (_) {
-      // If service doesn't support the call yet, default to "read"
       if (mounted) setState(() => _isUnread = false);
     }
   }
@@ -51,7 +56,6 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
       _detachRouterListener();
       _router = r;
       _routerListener = () {
-        // Close any open banner immediately on route change
         _controller.close(immediate: true);
       };
       _router!.routerDelegate.addListener(_routerListener!);
@@ -71,10 +75,7 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
     _busy = true;
 
     try {
-      // Always close before reopening
       await _controller.close(immediate: true);
-
-      // Let the overlay clean up before reinserting
       await Future.delayed(const Duration(milliseconds: 16));
       if (!mounted) return;
 
@@ -95,16 +96,14 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
           title: t.dailyTipTitle,
           body: body,
           isDark: isDark,
-          onClose: () => _controller.close(), // lightweight close
+          iconData: widget.iconData,
+          onClose: () => _controller.close(),
         ),
       );
 
-      // ✅ Mark as read once shown
       try {
         await DailyMessageService.markTodayRead();
-      } catch (_) {
-        // ignore if service doesn't support it yet
-      }
+      } catch (_) {}
       if (mounted) setState(() => _isUnread = false);
     } finally {
       _busy = false;
@@ -120,20 +119,17 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
 
   @override
   Widget build(BuildContext context) {
-    Theme.of(context);
-
-    // Gold if unread; white if already read
     final iconColor = _isUnread ? Colors.amber : Colors.white;
 
     return IconButton(
-      tooltip: AppLocalizations.of(context).dailyTipTitle,
+      tooltip: widget.tooltip,
       onPressed: _showTipBanner,
       icon: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         transitionBuilder: (child, anim) =>
             ScaleTransition(scale: anim, child: child),
         child: Icon(
-          Icons.lightbulb,
+          widget.iconData,
           key: ValueKey<bool>(_isUnread),
           color: iconColor,
         ),
@@ -146,12 +142,14 @@ class _BannerBody extends StatelessWidget {
   final String title;
   final String body;
   final bool isDark;
+  final IconData iconData;
   final VoidCallback onClose;
 
   const _BannerBody({
     required this.title,
     required this.body,
     required this.isDark,
+    required this.iconData,
     required this.onClose,
   });
 
@@ -176,7 +174,7 @@ class _BannerBody extends StatelessWidget {
                     : [Colors.teal.shade600, Colors.teal.shade400],
               ),
             ),
-            child: const Icon(Icons.lightbulb, color: Colors.white),
+            child: Icon(iconData, color: Colors.white),
           ),
           const SizedBox(width: 12),
 

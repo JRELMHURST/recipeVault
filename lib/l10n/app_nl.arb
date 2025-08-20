@@ -84,7 +84,7 @@
   "@emptyVaultTitle": {
     "description": "Title shown when the vault has no recipes"
   },
-  "emptyVaultBody": "Bewaar je recept-screenshots op één plek ✨\n\nZet rommelige screenshots om of vertaal ze naar georganiseerde receptkaarten.",
+  "emptyVaultBody": "Verander je rommelige screenshots in georganiseerde receptenkaartjes.",
   "@emptyVaultBody": {
     "description": "Tekst die de gebruiker aanmoedigt om screenshots te importeren en hun eerste recept te maken"
   },

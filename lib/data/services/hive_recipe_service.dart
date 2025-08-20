@@ -4,12 +4,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
-import 'package:recipe_vault/auth/uid_provider.dart';
 
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 
 class HiveRecipeService {
-  static String get _uid => UIDProvider.requireUid();
+  static String get _uid {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null) {
+      throw StateError(
+        '❌ No authenticated user — UID required to access Hive recipes.',
+      );
+    }
+    return u.uid;
+  }
+
   static String get _boxName => 'recipes_$_uid';
 
   static Box<RecipeCardModel>? _box;
@@ -124,12 +132,10 @@ class HiveRecipeService {
   }
 
   // ───────── Cloud sync helpers (user-owned only) ─────────
-  // Merge writes so first-time docs don’t fail.
 
   static Future<void> syncFavouriteToCloud(RecipeCardModel recipe) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
-    // Only sync if the recipe belongs to the current user
     if (recipe.userId != uid) return;
 
     try {

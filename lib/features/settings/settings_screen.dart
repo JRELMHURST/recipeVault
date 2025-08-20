@@ -3,12 +3,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
 import 'package:recipe_vault/app/routes.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -33,7 +31,6 @@ class SettingsScreen extends StatelessWidget {
             children: [
               // Header (plan/app banner)
               const SizedBox(height: 8),
-              _PlanHeaderBanner(),
 
               const SizedBox(height: 24),
 
@@ -248,64 +245,6 @@ class SettingsScreen extends StatelessWidget {
           context.push(route);
         }
       },
-    );
-  }
-}
-
-/// Floating premium-style banner that keeps text perfectly centered.
-/// If tier is free/none → shows the app title instead of "Free plan".
-class _PlanHeaderBanner extends StatelessWidget {
-  const _PlanHeaderBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final t = AppLocalizations.of(context);
-    final tier = context.watch<SubscriptionService>().tier;
-
-    final label = switch (tier) {
-      'home_chef' => t.planHomeChef,
-      'master_chef' => t.planMasterChef,
-      _ => t.appTitle, // ← free/default shows app name
-    };
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          // soft, premium gradient
-          gradient: LinearGradient(
-            colors: [
-              theme.colorScheme.primary.withOpacity(0.90),
-              theme.colorScheme.primary.withOpacity(0.72),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withOpacity(0.25),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            label, // no emojis
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -1,8 +1,9 @@
-// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:recipe_vault/core/responsive_wrapper.dart';
@@ -15,7 +16,7 @@ import 'package:recipe_vault/widgets/loading_overlay.dart';
 // Providers
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/core/language_provider.dart';
-import 'package:recipe_vault/billing/subscription_service.dart'; // 👈 plan source
+import 'package:recipe_vault/billing/subscription_service.dart';
 
 // 🚦 routes + safe nav helpers
 import 'package:recipe_vault/app/routes.dart';
@@ -34,8 +35,6 @@ class AccountSettingsScreen extends StatelessWidget {
       return Scaffold(body: Center(child: Text(t.noUserSignedIn)));
     }
 
-    final displayName = user.displayName ?? t.noName;
-
     final langProvider = context.watch<LanguageProvider>();
     final currentLangKey = langProvider.selected;
     final currentLangLabel =
@@ -46,69 +45,78 @@ class AccountSettingsScreen extends StatelessWidget {
     final planLabel = switch (tier) {
       'home_chef' => t.planHomeChef,
       'master_chef' => t.planMasterChef,
-      _ => t.appTitle, // Free/none shows app name
+      _ => t.appTitle,
     };
 
     return Scaffold(
-      appBar: AppBar(title: Text(t.accountSettingsTitle), centerTitle: true),
+      appBar: AppBar(
+        toolbarHeight: 88,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        centerTitle: true,
+        automaticallyImplyLeading: true,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarBrightness: theme.brightness == Brightness.dark
+              ? Brightness.dark
+              : Brightness.light,
+          statusBarIconBrightness: theme.brightness == Brightness.dark
+              ? Brightness.light
+              : Brightness.dark,
+        ),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+        ),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary.withOpacity(.96),
+                theme.colorScheme.primary.withOpacity(.80),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(24),
+            ),
+          ),
+        ),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              t.accountSettingsTitle,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                fontSize: 22,
+                letterSpacing: .6,
+                color: Colors.white,
+                shadows: const [
+                  Shadow(
+                    blurRadius: 2,
+                    offset: Offset(0, 1),
+                    color: Colors.black26,
+                  ),
+                ],
+              ),
+            ),
+            if (planLabel.isNotEmpty && planLabel != t.appTitle)
+              Text(
+                planLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.white.withOpacity(0.85),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+          ],
+        ),
+      ),
       body: SafeArea(
         child: ResponsiveWrapper(
           child: ListView(
             padding: const EdgeInsets.only(bottom: 24),
             children: [
-              // ===== Header: pill with Name + subtle plan (centered) =====
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 18,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        theme.colorScheme.primary.withOpacity(0.85),
-                        theme.colorScheme.primary,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x22000000),
-                        blurRadius: 16,
-                        offset: Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        displayName,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        planLabel,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withOpacity(0.85),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
               const SizedBox(height: 24),
 
               // ===== Security Section =====

@@ -1,10 +1,12 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
+import 'package:recipe_vault/billing/subscription_service.dart';
 
 class AppearanceSettingsScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;
@@ -69,15 +71,80 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    // 🔎 Plan label
+    final tier = context.watch<SubscriptionService>().tier;
+    final planLabel = switch (tier) {
+      'home_chef' => t.planHomeChef,
+      'master_chef' => t.planMasterChef,
+      _ => '',
+    };
 
     return Scaffold(
-      appBar: AppBar(title: Text(t.appearanceTitle), centerTitle: true),
+      appBar: AppBar(
+        toolbarHeight: 88,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        centerTitle: true,
+        automaticallyImplyLeading: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+        ),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primary.withOpacity(.96),
+                theme.colorScheme.primary.withOpacity(.80),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(24),
+            ),
+          ),
+        ),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              t.appearanceTitle,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                fontSize: 22,
+                letterSpacing: .6,
+                color: Colors.white,
+                shadows: const [
+                  Shadow(
+                    blurRadius: 2,
+                    offset: Offset(0, 1),
+                    color: Colors.black26,
+                  ),
+                ],
+              ),
+            ),
+            if (planLabel.isNotEmpty)
+              Text(
+                planLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.white.withOpacity(0.85),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+          ],
+        ),
+      ),
       body: ResponsiveWrapper(
         maxWidth: 520,
         padding: const EdgeInsets.only(bottom: 24),
         child: ListView(
           children: [
             const SizedBox(height: 24),
+
+            // ===== Theme Section =====
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Card(
@@ -127,6 +194,8 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
             ),
 
             const SizedBox(height: 16),
+
+            // ===== Text Size Section =====
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Card(

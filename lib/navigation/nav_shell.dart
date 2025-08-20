@@ -1,13 +1,18 @@
 // lib/navigation/nav_shell.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // HapticFeedback
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:recipe_vault/features/home/home_app_bar.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_view_mode_notifier.dart';
 import 'package:recipe_vault/navigation/routes.dart';
-import 'package:recipe_vault/navigation/create_action.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';
+
+import 'package:recipe_vault/l10n/app_localizations.dart';
+import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/data/services/image_processing_service.dart';
+import 'package:recipe_vault/widgets/processing_overlay.dart';
 
 class NavShell extends StatelessWidget {
   const NavShell({super.key, required this.child});
@@ -55,7 +60,7 @@ class NavShell extends StatelessWidget {
         onDestinationSelected: (i) async {
           switch (i) {
             case 0:
-              await handleCreateAction(context);
+              await _handleCreateAction(context);
               break;
             case 1:
               if (location != AppRoutes.vault) {
@@ -88,4 +93,80 @@ class NavShell extends StatelessWidget {
       ),
     );
   }
+}
+
+/* ─────────────────────────── Create action (inline) ─────────────────────────── */
+
+Future<void> _handleCreateAction(BuildContext context) async {
+  final loc = AppLocalizations.of(context);
+  final subs = context.read<SubscriptionService>();
+
+  // Gate: require paid to upload images
+  if (!subs.allowImageUpload) {
+    HapticFeedback.mediumImpact();
+
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogCtx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.lock_outline_rounded, size: 48),
+              const SizedBox(height: 16),
+              Text(
+                loc.upgradeToUnlockTitle,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(loc.createFromImagesPaid, textAlign: TextAlign.center),
+              const SizedBox(height: 8),
+              Text(loc.upgradeToUnlockBody, textAlign: TextAlign.center),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(dialogCtx).pop(); // close dialog
+                    // Route after dialog fully closes
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (context.mounted) {
+                        safeGo(context, AppRoutes.paywall);
+                      }
+                    });
+                  },
+                  child: Text(loc.seePlanOptions),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogCtx).pop(),
+                child: Text(loc.cancel),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    return;
+  }
+
+  // Paid: pick images → processing overlay → ensure we're on Vault
+  final files = await ImageProcessingService.pickAndCompressImages();
+  if (!context.mounted) return;
+
+  if (files.isNotEmpty) {
+    ProcessingOverlay.show(context, files);
+    final current = GoRouterState.of(context).matchedLocation;
+    if (current != AppRoutes.vault) {
+      safeGo(context, AppRoutes.vault);
+    }
+  }
+  // If user canceled, do nothing.
 }

@@ -1,27 +1,4 @@
-// lib/core/feature_flags.dart
-//
-// Centralised feature flags for runtime-ish toggles.
-// All values are compile-time consts, but can be overridden per-build
-// with --dart-define. Example:
-//
-//   flutter run \
-//     --dart-define=ONBOARDING_BUBBLES=false \
-//     --dart-define=DAILY_TIP_AUTO_CLOSE=true \
-//     --dart-define=DAILY_TIP_AUTO_CLOSE_MS=6000 \
-//     --dart-define=DAILY_TIP_DEBUG_LOGGING=true
-//
-// In production, prefer Remote Config for truly dynamic toggles.
-
-library;
-
 import 'package:flutter/foundation.dart';
-
-/// --- Onboarding/tutorial bubbles ---
-/// Advisory only; your router/controllers should still be the source of truth.
-const bool kOnboardingBubblesEnabled = bool.fromEnvironment(
-  'ONBOARDING_BUBBLES',
-  defaultValue: false,
-);
 
 /// --- Daily Tip banner behaviour ---
 const bool kDailyTipAutoCloseEnabled = bool.fromEnvironment(

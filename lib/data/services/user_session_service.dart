@@ -15,9 +15,6 @@ import 'package:recipe_vault/data/services/category_service.dart';
 import 'package:hive/hive.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 
-// ✅ Feature flags
-import 'package:recipe_vault/core/feature_flags.dart';
-
 class UserSessionService {
   static bool _isInitialised = false;
   static Completer<void>? _bubbleFlagsReady;
@@ -279,16 +276,6 @@ class UserSessionService {
     _isInitialised = false;
     _bubbleFlagsReady = null;
     _logDebug('🔄 Session reset');
-  }
-
-  static Future<void> retryEntitlementSync() async {
-    _logDebug('🔁 Retrying entitlement sync...');
-    await SubscriptionService().refresh();
-    await syncRevenueCatEntitlement();
-
-    if (kOnboardingBubblesEnabled) {
-      _logDebug('ℹ️ Onboarding is new-user only; retry does nothing.');
-    }
   }
 
   static Future<void> syncRevenueCatEntitlement() async {

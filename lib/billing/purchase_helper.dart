@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart'; // PlatformException
@@ -8,7 +10,10 @@ class PurchaseHelper {
   /// Initialise RevenueCat with the public API key.
   /// Pass the Firebase UID if you have it to avoid anonymous RC ids.
   static Future<void> initRevenueCat(String apiKey, {String? appUserId}) async {
-    await Purchases.setLogLevel(LogLevel.debug);
+    // Be noisy only in debug builds.
+    if (kDebugMode) {
+      await Purchases.setLogLevel(LogLevel.debug);
+    }
     final config = PurchasesConfiguration(apiKey);
     if (appUserId != null && appUserId.isNotEmpty) {
       config.appUserID = appUserId;

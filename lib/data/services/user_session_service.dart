@@ -8,7 +8,6 @@ import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/auth/auth_service.dart'; // AuthService
 import 'package:recipe_vault/billing/purchase_helper.dart';
-import 'package:recipe_vault/billing/tier_utils.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/data/services/user_preference_service.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
@@ -300,7 +299,9 @@ class UserSessionService {
       // Fetch RC customer info
       final customerInfo = await Purchases.getCustomerInfo();
       final productId = PurchaseHelper.getActiveProductId(customerInfo);
-      final tier = resolveTier(productId);
+      final tier = await SubscriptionService().getResolvedTier(
+        forceRefresh: true,
+      );
 
       // Update in-memory tier so the UI reacts immediately
       SubscriptionService().updateTier(tier);

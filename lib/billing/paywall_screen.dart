@@ -15,6 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/navigation/routes.dart';
 import 'package:recipe_vault/navigation/nav_utils.dart';
+import 'package:recipe_vault/billing/purchase_helper.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -25,13 +26,12 @@ class PaywallScreen extends StatefulWidget {
 
 class _PaywallScreenState extends State<PaywallScreen> {
   late final SubscriptionService _subscriptionService;
+
   bool _isLoading = true;
   bool _isPurchasing = false;
   bool _loadFailed = false;
 
   List<Package> _availablePackages = [];
-  VoidCallback? _tierListener;
-
   // explicit manage flow (?manage=1)
   bool _isManaging = false;
 
@@ -45,7 +45,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
       context,
       listen: false,
     );
-    _attachTierListener();
     _loadSubscriptionData();
   }
 
@@ -56,40 +55,20 @@ class _PaywallScreenState extends State<PaywallScreen> {
     _isManaging = state.uri.queryParameters['manage'] == '1';
   }
 
-  @override
-  void dispose() {
-    if (_tierListener != null) {
-      _subscriptionService.tierNotifier.removeListener(_tierListener!);
-    }
-    super.dispose();
-  }
-
-  void _attachTierListener() {
-    _tierListener = () {
-      // Defer navigation to post‑frame to avoid build-phase updates
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        if (!_isManaging && _subscriptionService.hasActiveSubscription) {
-          _redirectHome(); // uses safeGo()
-        }
-      });
-    };
-    _subscriptionService.tierNotifier.addListener(_tierListener!);
-  }
-
   Future<void> _loadSubscriptionData() async {
     setState(() {
       _isLoading = true;
       _loadFailed = false;
     });
 
+    // Ensure RC/Firestore are current.
     await _subscriptionService.refresh();
 
     try {
-      final offerings = await Purchases.getOfferings();
+      final offerings = await PurchaseHelper.getOfferings();
 
       // 🔎 also fetch current active product ids for highlighting
-      final info = await Purchases.getCustomerInfo();
+      final info = await PurchaseHelper.getCustomerInfo();
       final active = info.entitlements.active.values;
       _activeProductIds = {
         for (final e in active)
@@ -165,10 +144,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
     setState(() => _isPurchasing = true);
     LoadingOverlay.show(context);
     try {
-      final info = await Purchases.purchasePackage(package);
+      final info = await PurchaseHelper.purchasePackage(package);
 
-      await _subscriptionService.syncRevenueCatEntitlement(forceRefresh: true);
-      await _subscriptionService.loadSubscriptionStatus();
+      // Pull fresh RC + FS state into the app.
+      await _subscriptionService.refresh();
 
       if (!mounted) return;
       LoadingOverlay.hide();
@@ -177,7 +156,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
           info.entitlements.active.isNotEmpty ||
           _subscriptionService.hasActiveSubscription;
 
-      if (hasEntitlement) _redirectHome(); // safeGo()
+      // Do NOT navigate here; router redirect will move us away if entitled.
+      if (!hasEntitlement && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Purchase completed but not active yet.'),
+          ),
+        );
+      }
     } on PlatformException {
       if (!mounted) return;
       LoadingOverlay.hide(); // user cancelled
@@ -189,15 +175,16 @@ class _PaywallScreenState extends State<PaywallScreen> {
     }
   }
 
-  void _redirectHome() {
-    // 🛟 Avoid “setState during build” by deferring with safeGo()
-    safeGo(context, AppRoutes.vault);
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context);
+
+    final status = context.watch<SubscriptionService>().status;
+
+    // While subscriptions are resolving, keep the spinner up (also matches router guard).
+    final isResolving = status == EntitlementStatus.checking;
+    final showSpinner = _isLoading || isResolving;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -216,7 +203,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               )
             : null,
         actions: [
-          if (!_isLoading)
+          if (!showSpinner)
             IconButton(
               tooltip: 'Refresh',
               onPressed: _loadSubscriptionData,
@@ -224,7 +211,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             ),
         ],
       ),
-      body: _isLoading
+      body: showSpinner
           ? const Center(child: CircularProgressIndicator())
           : _buildContent(context, theme, loc),
     );
@@ -310,7 +297,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             OutlinedButton.icon(
                               onPressed: _loadSubscriptionData,
                               icon: const Icon(Icons.refresh),
-                              // 🔁 replaced loc.retry (missing) with a safe literal
+                              // Replaced missing loc.retry with a safe literal
                               label: const Text('Try again'),
                             ),
                           ],

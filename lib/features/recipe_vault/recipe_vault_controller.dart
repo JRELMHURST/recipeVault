@@ -3,8 +3,6 @@
 
 import 'dart:async';
 import 'dart:collection';
-
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
@@ -17,17 +15,14 @@ import 'package:recipe_vault/features/recipe_vault/vault_view_mode_notifier.dart
 // Centralised prefs adapter
 import 'package:recipe_vault/features/recipe_vault/view_mode_prefs.dart';
 
-// Repository (local Hive + remote Firestore)
-import 'package:recipe_vault/data/repositories/vault_repository.dart';
+// Services (local Hive + remote Firestore handled here)
+import 'package:recipe_vault/data/services/category_service.dart';
+import 'package:recipe_vault/features/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
 
 /// Controller for Recipe Vault — app-logic only (no BuildContext/UI side-effects).
 class RecipeVaultController extends ChangeNotifier {
-  RecipeVaultController({VaultRepository? repo})
-    : _repo = repo ?? VaultRepository.forCurrentUser();
-
-  // ── Data source ──────────────────────────────────────────────────────────
-  VaultRepository _repo;
+  RecipeVaultController();
 
   // ── State ────────────────────────────────────────────────────────────────
   bool _isLoading = true;
@@ -49,7 +44,7 @@ class RecipeVaultController extends ChangeNotifier {
 
   /// Remote (Firestore) listener
   String? _currentUserId;
-  StreamSubscription<List<RecipeCardModel>>? _remoteSub;
+  StreamSubscription<void>? _remoteSub; // we listen via callback wrapper
 
   /// Init guard
   bool _initialised = false;
@@ -87,17 +82,14 @@ class RecipeVaultController extends ChangeNotifier {
     if (_initialised) return;
     _initialised = true;
 
-    // Build a repo bound to this user (null → local-only).
-    _repo = VaultRepository.forUser(userId);
-
     // View mode
     _viewMode = initialViewMode ?? await ViewModePrefs.load();
 
-    // Categories & local recipes
+    // Categories & recipes (merged from remote->local where possible)
     await Future.wait([
-      _initializeDefaultCategories(), // no-op; CategoryService.init seeds user defaults
+      _initializeDefaultCategories(), // no-op (kept for compatibility)
       _loadCustomCategories(),
-      _loadAllLocalRecipes(),
+      _reloadFromSource(), // uses VaultRecipeService.loadAndMergeAllRecipes()
     ]);
 
     // Remote sync (if signed in)
@@ -114,21 +106,29 @@ class RecipeVaultController extends ChangeNotifier {
     if (_currentUserId == userId && _remoteSub != null) return;
 
     _currentUserId = userId;
-    _repo = VaultRepository.forUser(userId);
 
+    // Cancel previous listener if any
     await _remoteSub?.cancel();
-    final stream = _repo.watchRemoteRecipes();
-    if (stream == null) return;
+    VaultRecipeService.cancelVaultListener();
 
-    _remoteSub = stream.listen(
-      _onRemoteRecipesList,
-      onError: (e) => debugPrint('⚠️ Recipe stream error: $e'),
-    );
+    // Attach new listener: when remote changes, reload & merge
+    VaultRecipeService.listenToVaultChanges(() async {
+      try {
+        await _reloadFromSource();
+        notifyListeners();
+      } catch (e) {
+        debugPrint('⚠️ Live recipe refresh failed: $e');
+      }
+    });
+
+    // Keep a dummy subscription to manage lifecycle symmetry (optional)
+    _remoteSub = Stream<void>.empty().listen((_) {});
   }
 
   @override
   void dispose() {
     _remoteSub?.cancel();
+    VaultRecipeService.cancelVaultListener();
     super.dispose();
   }
 
@@ -141,14 +141,12 @@ class RecipeVaultController extends ChangeNotifier {
   }
 
   Future<void> _loadCustomCategories() async {
-    final savedNames = await _repo.loadAllCategoryNames();
-    final hidden = await _repo.loadHiddenDefaultCategories();
+    final saved = await CategoryService.getAllCategories();
+    final savedNames = saved.map((c) => c.name).toList(growable: false);
+
+    final hidden = await CategoryService.getHiddenDefaultCategories();
     final hiddenSet = hidden.toSet();
 
-    // Build list:
-    // - Always include "All"
-    // - Include protected system categories unless hidden (Favourites/Translated)
-    // - Include ALL user categories (including seeded Breakfast/Main/Dessert)
     _allCategories = [
       CategoryKeys.all,
       ...CategoryKeys.systemOnly.where((c) => !hiddenSet.contains(c)),
@@ -156,19 +154,9 @@ class RecipeVaultController extends ChangeNotifier {
     ];
   }
 
-  Future<void> _loadAllLocalRecipes() async {
-    final list = await _repo.loadLocalRecipes();
-    _allRecipes = {for (final r in list) r.id: r};
-  }
-
-  Future<void> _onRemoteRecipesList(List<RecipeCardModel> remote) async {
-    try {
-      final merged = await _repo.mergeRemoteWithLocal(remote);
-      _allRecipes = {for (final r in merged) r.id: r};
-      notifyListeners();
-    } catch (e) {
-      debugPrint('⚠️ Live recipe merge failed: $e');
-    }
+  Future<void> _reloadFromSource() async {
+    final merged = await VaultRecipeService.loadAndMergeAllRecipes();
+    _allRecipes = {for (final r in merged) r.id: r};
   }
 
   // ── Mutations ────────────────────────────────────────────────────────────
@@ -178,14 +166,8 @@ class RecipeVaultController extends ChangeNotifier {
     _allRecipes.remove(recipe.id);
     notifyListeners();
 
-    await _repo.deleteLocal(recipe.id);
-    await _repo.deleteRemote(recipe.id);
-
-    if (recipe.imageUrl?.isNotEmpty == true) {
-      try {
-        await FirebaseStorage.instance.refFromURL(recipe.imageUrl!).delete();
-      } catch (_) {}
-    }
+    // One call handles Hive + Firestore + Storage cleanup
+    await VaultRecipeService.delete(recipe);
   }
 
   Future<void> toggleFavourite(RecipeCardModel recipe) async {
@@ -193,8 +175,7 @@ class RecipeVaultController extends ChangeNotifier {
     _allRecipes[updated.id] = updated;
     notifyListeners();
 
-    await _repo.saveLocal(updated);
-    await _repo.upsertRemote(updated);
+    await VaultRecipeService.save(updated); // Hive + Firestore merge
   }
 
   Future<void> assignCategories(
@@ -205,8 +186,7 @@ class RecipeVaultController extends ChangeNotifier {
     _allRecipes[updated.id] = updated;
     notifyListeners();
 
-    await _repo.saveLocal(updated);
-    await _repo.upsertRemote(updated);
+    await VaultRecipeService.save(updated); // Hive + Firestore merge
   }
 
   /// Needs BuildContext for the image picker dialog.
@@ -225,12 +205,11 @@ class RecipeVaultController extends ChangeNotifier {
     _allRecipes[updated.id] = updated;
     notifyListeners();
 
-    await _repo.saveLocal(updated);
-    await _repo.upsertRemote(updated);
+    await VaultRecipeService.save(updated);
   }
 
   Future<void> hideDefaultCategory(String key) async {
-    await _repo.hideDefaultCategory(key);
+    await CategoryService.hideDefaultCategory(key);
     await _loadCustomCategories();
     notifyListeners();
   }
@@ -264,7 +243,7 @@ class RecipeVaultController extends ChangeNotifier {
       _selectedCategory = CategoryKeys.all;
     }
 
-    await Future.wait([_loadCustomCategories(), _loadAllLocalRecipes()]);
+    await Future.wait([_loadCustomCategories(), _reloadFromSource()]);
 
     _isLoading = false;
     notifyListeners();

@@ -1,4 +1,6 @@
-import "./firebase.js";
+/**
+ * Utility helpers for OCR and GPT text processing
+ */
 
 /**
  * Cleans OCR or user-generated text to improve language detection,
@@ -6,8 +8,8 @@ import "./firebase.js";
  */
 export function cleanText(input: string): string {
   return input
-    .replace(/[^À-ſa-zA-Z0-9\s.,:;()%-]/g, '') // Allow accented characters, alphanumerics, and basic punctuation
-    .replace(/\s{2,}/g, ' ') // Collapse multiple spaces
+    .replace(/[^À-ſa-zA-Z0-9\s.,:;()%-]/g, "") // Allow accented characters, alphanumerics, basic punctuation
+    .replace(/\s{2,}/g, " ") // Collapse multiple spaces
     .trim(); // Remove leading/trailing whitespace
 }
 
@@ -19,6 +21,6 @@ export function previewText(label: string, text: string, maxChars = 300): void {
   console.log(`📄 ${label} preview:`);
   console.log(text.slice(0, maxChars));
   if (text.length > maxChars) {
-    console.log('... (truncated)');
+    console.log("... (truncated)");
   }
 }

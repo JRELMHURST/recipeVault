@@ -1,4 +1,3 @@
-// functions/src/extract_and_format_recipe.ts
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { getStorage } from "firebase-admin/storage";
@@ -17,6 +16,7 @@ import {
 // 🔑 Secrets
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
+/* ─────────── Helpers ─────────── */
 function normalizeLangBase(code: string | undefined | null): string {
   if (!code) return "";
   return code.toLowerCase().split(/[_-]/)[0] || "";
@@ -53,6 +53,7 @@ async function deleteUploadedImage(url: string) {
   }
 }
 
+/* ─────────── Main Cloud Function ─────────── */
 export const extractAndFormatRecipe = onCall(
   { secrets: [OPENAI_API_KEY] },
   async (request: CallableRequest<{
@@ -70,12 +71,12 @@ export const extractAndFormatRecipe = onCall(
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError("unauthenticated", "User must be authenticated.");
 
-    // 🔐 Subscription gate
+    // 🔐 Subscription check
     const tier = await getResolvedTier(uid);
     if (tier === "none") {
       throw new HttpsError(
         "permission-denied",
-        "A free trial or subscription is required to process screenshots."
+        "✨ Unlock Chef Mode with the Home Chef or Master Chef plan!"
       );
     }
     console.log(`🎟️ Subscription tier: ${tier}`);
@@ -127,12 +128,16 @@ export const extractAndFormatRecipe = onCall(
 
       let usedText = cleanInput;
       let translationUsed = false;
+      let usageKind: "recipeUsage" | "translatedRecipeUsage" = "recipeUsage";
 
       if (!srcBase) {
         console.log("🤷 Detection unknown — skipping translation.");
+        await enforceAndConsume(uid, "recipeUsage", 1);
       } else if (!alreadyTarget) {
         // 🚦 Transactionally consume 1 translated recipe card credit
         await enforceAndConsume(uid, "translatedRecipeUsage", 1);
+        usageKind = "translatedRecipeUsage";
+
         try {
           console.log(`🚧 Translating "${detectedLanguage}" → ${targetLanguageTag}...`);
           const translated = await translateText(
@@ -150,25 +155,28 @@ export const extractAndFormatRecipe = onCall(
             console.warn("⚠️ Translation returned empty. Continuing with original text.");
             // Refund translated recipe card credit
             await incrementMonthlyUsage(uid, "translatedRecipeUsage", -1).catch(() => {});
+            // Instead consume a normal recipe credit
+            await enforceAndConsume(uid, "recipeUsage", 1);
+            usageKind = "recipeUsage";
           }
         } catch (err) {
+          // Refund credit on failure
           try { await incrementMonthlyUsage(uid, "translatedRecipeUsage", -1); } catch {}
           throw err;
         }
       } else {
         console.log(`🟢 Skipping translation – already ${targetLanguageTag}`);
-        // 🚦 Consume 1 normal recipe card credit
-        await enforceAndConsume(uid, "aiUsage", 1);
+        await enforceAndConsume(uid, "recipeUsage", 1);
       }
 
-      // —— GPT formatting (consumes correct usage kind internally too)
+      // —— GPT formatting
       const finalText = decode(usedText.trim());
       const formattedRecipe = await generateFormattedRecipe(
         uid,
         finalText,
         translationUsed ? (srcBase || "unknown") : (tgtBase || "en"),
         targetFlutterLocale,
-        translationUsed ? "translatedRecipeUsage" : "aiUsage"
+        usageKind
       );
 
       console.log(`🏁 Done in ${Date.now() - start}ms`);

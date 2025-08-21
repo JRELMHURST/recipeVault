@@ -5,7 +5,7 @@ import { HttpsError } from "firebase-functions/v2/https";
 const firestore = getFirestore();
 
 /** Types of usage we track (collection names match these keys) */
-export type UsageKind = "aiUsage" | "translatedRecipeUsage" | "imageUsage";
+export type UsageKind = "recipeUsage" | "translatedRecipeUsage" | "imageUsage";
 
 /** Internal subscription tiers */
 export type Tier = "home_chef" | "master_chef" | "none";
@@ -27,7 +27,7 @@ export const tierLimits: Record<
 type LimitKey = "translatedRecipeCards" | "recipes" | "images";
 const limitKeyByKind: Record<UsageKind, LimitKey> = {
   translatedRecipeUsage: "translatedRecipeCards",
-  aiUsage: "recipes",
+  recipeUsage: "recipes",
   imageUsage: "images",
 };
 
@@ -113,9 +113,9 @@ export async function enforcePolicy(uid: string, kind: UsageKind): Promise<void>
   const limit = getMonthlyLimit(tier, kind);
   if (used >= limit) {
     const code =
-      kind === "translatedRecipeUsage" ? "TRANS_RECIPE_LIMIT" :
-      kind === "aiUsage"               ? "RECIPES_LIMIT" :
-      "IMAGES_LIMIT";
+      kind === "translatedRecipeUsage" ? "TRANSLATED_RECIPE_LIMIT" :
+      kind === "recipeUsage"           ? "RECIPE_LIMIT" :
+      "IMAGE_LIMIT";
     throw new HttpsError("resource-exhausted", `MONTHLY_LIMIT: ${code}`);
   }
 }
@@ -140,13 +140,13 @@ export async function enforceAndConsume(uid: string, kind: UsageKind, by = 1): P
     const snap = await tx.get(docRef);
     const data = snap.exists ? (snap.data() ?? {}) : {};
     const current = Number(data[key] ?? 0);
-    if (current + by > limit) {
-      const code =
-        kind === "translatedRecipeUsage" ? "TRANS_RECIPE_LIMIT" :
-        kind === "aiUsage"               ? "RECIPES_LIMIT" :
-        "IMAGES_LIMIT";
-      throw new HttpsError("resource-exhausted", `MONTHLY_LIMIT: ${code}`);
-    }
+if (current + by > limit) {
+  const code =
+    kind === "translatedRecipeUsage" ? "TRANSLATED_RECIPE_LIMIT" :
+    kind === "recipeUsage"           ? "RECIPE_LIMIT" :
+    "IMAGE_LIMIT";
+  throw new HttpsError("resource-exhausted", `MONTHLY_LIMIT: ${code}`);
+}
     tx.set(
       docRef,
       {
@@ -163,7 +163,7 @@ export async function enforceTranslatedRecipePolicy(uid: string): Promise<void> 
   await enforcePolicy(uid, "translatedRecipeUsage");
 }
 export async function enforceGptRecipePolicy(uid: string): Promise<void> {
-  await enforcePolicy(uid, "aiUsage");
+  await enforcePolicy(uid, "recipeUsage");
 }
 export async function enforceImagePolicy(uid: string): Promise<void> {
   await enforcePolicy(uid, "imageUsage");

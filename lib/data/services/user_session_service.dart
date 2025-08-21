@@ -20,7 +20,7 @@ class UserSessionService {
   static bool _isInitialised = false;
   static Completer<void>? _bubbleFlagsReady;
   static StreamSubscription<DocumentSnapshot>? _userDocSubscription;
-  static StreamSubscription<DocumentSnapshot>? _aiUsageSub;
+  static StreamSubscription<DocumentSnapshot>? _recipeUsageSub;
   static StreamSubscription<DocumentSnapshot>? _translationSub;
 
   static bool get isInitialised => _isInitialised;
@@ -127,10 +127,10 @@ class UserSessionService {
           );
 
       // ── AI usage stream ──
-      _aiUsageSub = FirebaseFirestore.instance
+      _recipeUsageSub = FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
-          .collection('aiUsage')
+          .collection('recipeUsage')
           .doc('usage')
           .snapshots()
           .listen((doc) async {
@@ -263,11 +263,11 @@ class UserSessionService {
 
   static Future<void> _cancelAllStreams() async {
     await _userDocSubscription?.cancel();
-    await _aiUsageSub?.cancel();
+    await _recipeUsageSub?.cancel();
     await _translationSub?.cancel();
 
     _userDocSubscription = null;
-    _aiUsageSub = null;
+    _recipeUsageSub = null;
     _translationSub = null;
 
     VaultRecipeService.cancelVaultListener();

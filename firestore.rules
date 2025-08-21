@@ -51,14 +51,13 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
-      /* ── per-user prefs (owner RW). e.g. /users/{uid}/prefs/app
-            { hiddenDefaultCategories: ['Breakfast', ...] } ── */
+      /* ── per-user prefs (owner RW). e.g. /users/{uid}/prefs/app ── */
       match /prefs/{docId} {
         allow read, write: if isOwner(userId);
       }
 
       /* ── usage counters (backend writes only; client read-only) ── */
-      match /aiUsage/{docId} {
+      match /recipeUsage/{docId} {
         allow get, list: if isOwner(userId);
         allow create, update, delete: if false;
       }
@@ -70,6 +69,12 @@ service cloud.firestore {
         allow get, list: if isOwner(userId);
         allow create, update, delete: if false;
       }
+    }
+
+    /* ─────────── read-only tier limits ─────────── */
+    match /tierLimits/{docId} {
+      allow get, list: if true;     // anyone can read
+      allow create, update, delete: if false; // only backend/admin via Admin SDK
     }
 
     /* ─────────── write-only analytics (from signed-in clients) ─────────── */

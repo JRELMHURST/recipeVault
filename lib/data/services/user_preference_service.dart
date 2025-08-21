@@ -26,7 +26,7 @@ extension PrefsViewModeX on PrefsViewMode {
 class UserPreferencesService {
   // ─────────────────────────────── keys ───────────────────────────────
   static const String _keyViewMode = 'viewMode';
-  static const String _keyAiUsage = 'aiUsage';
+  static const String _keyrecipeUsage = 'recipeUsage';
   static const String _keyTranslationUsage = 'translationUsage';
   static const String _keyImageUsage = 'imageUsage'; // NEW ✅
 
@@ -135,7 +135,7 @@ class UserPreferencesService {
   }) async {
     final box = await _ensureBox();
     if (box == null) return;
-    if (ai != null) await box.put(_keyAiUsage, ai);
+    if (ai != null) await box.put(_keyrecipeUsage, ai);
     if (translations != null) await box.put(_keyTranslationUsage, translations);
     if (images != null) await box.put(_keyImageUsage, images); // NEW ✅
     if (kDebugMode) {
@@ -145,9 +145,9 @@ class UserPreferencesService {
     }
   }
 
-  static Future<int> getCachedAiUsage() async {
+  static Future<int> getCachedrecipeUsage() async {
     final box = await _ensureBox();
-    return box?.get(_keyAiUsage, defaultValue: 0) as int? ?? 0;
+    return box?.get(_keyrecipeUsage, defaultValue: 0) as int? ?? 0;
   }
 
   static Future<int> getCachedTranslationUsage() async {

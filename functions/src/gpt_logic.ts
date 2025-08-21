@@ -1,19 +1,18 @@
-// functions/src/gpt_logic.ts
 import OpenAI from "openai";
 import {
   enforceAndConsume,
   incrementMonthlyUsage, // used only for refund on failure
-  UsageKind,
 } from "./usage_service.js";
 
+// 📦 Response structure from GPT
 type GptRecipeResponse = {
   formattedRecipe: string;
   notes?: string;
 };
 
-const MODEL = "gpt-3.5-turbo"; // ⬅️ old API call model kept
+const MODEL = "gpt-3.5-turbo"; // ✅ legacy model kept for consistency
 
-// 🌍 Map locale → language name + labels
+// 🌍 Map locale → human-readable language name + labels
 const LOCALE_META: Record<
   string,
   {
@@ -35,7 +34,7 @@ const LOCALE_META: Record<
   de: { languageName: "German", labels: { title: "Titel", ingredients: "Zutaten", instructions: "Zubereitung", hints: "Tipps & Hinweise", noTips: "Keine zusätzlichen Tipps." } },
   el: { languageName: "Greek", labels: { title: "Τίτλος", ingredients: "Υλικά", instructions: "Εκτέλεση", hints: "Συμβουλές & Κόλπα", noTips: "Δεν υπάρχουν επιπλέον συμβουλές." } },
   es: { languageName: "Spanish", labels: { title: "Título", ingredients: "Ingredientes", instructions: "Preparación", hints: "Consejos y trucos", noTips: "Sin consejos adicionales." } },
-  fr: { languageName: "French", labels: { title: "Titre", ingredients: "Ingrédients", instructions: "Préparation", hints: "Astuces & Consiels", noTips: "Aucune astuce supplémentaire." } },
+  fr: { languageName: "French", labels: { title: "Titre", ingredients: "Ingrédients", instructions: "Préparation", hints: "Astuces & Conseils", noTips: "Aucune astuce supplémentaire." } },
   ga: { languageName: "Irish (Gaeilge)", labels: { title: "Teideal", ingredients: "Comhábhair", instructions: "Modh", hints: "Leideanna & Cleasa", noTips: "Gan leideanna breise." } },
   it: { languageName: "Italian", labels: { title: "Titolo", ingredients: "Ingredienti", instructions: "Preparazione", hints: "Consigli & Suggerimenti", noTips: "Nessun consiglio aggiuntivo." } },
   nl: { languageName: "Dutch", labels: { title: "Titel", ingredients: "Ingrediënten", instructions: "Bereiding", hints: "Tips & Tricks", noTips: "Geen extra tips." } },
@@ -43,7 +42,7 @@ const LOCALE_META: Record<
   cy: { languageName: "Welsh", labels: { title: "Teitl", ingredients: "Cynhwysion", instructions: "Paratoi", hints: "Awgrymiadau a Chynghorion", noTips: "Dim awgrymiadau pellach." } },
 };
 
-// Normalise things like "en-GB" → "en_GB" → fallback
+// 🔠 Normalise things like "en-GB" → "en_GB" → fallback
 function resolveLocaleMeta(locale: string | undefined) {
   if (!locale) return LOCALE_META.en_GB;
   const norm = locale.replace("-", "_");
@@ -53,27 +52,27 @@ function resolveLocaleMeta(locale: string | undefined) {
 }
 
 /**
- * Formats a recipe into a consistent structure in the user's locale,
+ * 🎨 Formats a recipe into a consistent structure in the user’s locale,
  * with transactional quota enforcement and refund on failure.
  *
- * @param usageKind - which quota to consume ("aiUsage" for native recipes, "translatedRecipeUsage" for translated ones)
+ * @param usageKind - "recipeUsage" for native recipes, "translatedRecipeUsage" for translated ones
  */
 export async function generateFormattedRecipe(
   uid: string,
   text: string,
   sourceLang: string,
   targetLocale: string,
-  usageKind: UsageKind = "aiUsage"
+  usageKind: "recipeUsage" | "translatedRecipeUsage" = "recipeUsage"
 ): Promise<string> {
-  if (!uid) throw new Error("❌ Missing UID for usage enforcement");
+  if (!uid) throw new Error("❌ gpt: Missing UID for usage enforcement");
 
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("❌ Missing OPENAI_API_KEY in environment variables");
+  if (!apiKey) throw new Error("❌ gpt: Missing OPENAI_API_KEY in environment variables");
 
   const { languageName, labels } = resolveLocaleMeta(targetLocale);
   const openai = new OpenAI({ apiKey });
 
-  // 🚦 Atomically check + consume 1 credit BEFORE the API call.
+  // 🚦 Consume quota BEFORE GPT call
   await enforceAndConsume(uid, usageKind, 1);
 
   try {
@@ -115,9 +114,9 @@ Only return a single JSON object in this format:
 
     const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""`;
 
-    // ⬅️ API call now matches the old one exactly
+    // 🧠 GPT call
     const completion = await openai.chat.completions.create({
-      model: MODEL, // "gpt-3.5-turbo"
+      model: MODEL,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -127,18 +126,18 @@ Only return a single JSON object in this format:
     });
 
     const rawContent = completion.choices[0]?.message?.content?.trim();
+    if (!rawContent) throw new Error("❌ gpt: Empty response from model");
 
-    // Parse like old version (direct JSON expected)
-    let parsed: GptRecipeResponse | null = null;
+    let parsed: GptRecipeResponse;
     try {
-      parsed = JSON.parse(rawContent || "{}") as GptRecipeResponse;
+      parsed = JSON.parse(rawContent) as GptRecipeResponse;
     } catch {
-      console.error("❌ Failed to parse GPT response:", rawContent);
+      console.error("❌ gpt: Failed to parse GPT response:", rawContent);
       throw new Error("Invalid GPT response format");
     }
 
-    if (!parsed || typeof parsed.formattedRecipe !== "string") {
-      throw new Error("Missing 'formattedRecipe' key in GPT response");
+    if (!parsed.formattedRecipe) {
+      throw new Error("❌ gpt: Missing 'formattedRecipe' key in GPT response");
     }
 
     const formatted = parsed.formattedRecipe.trim();
@@ -146,11 +145,11 @@ Only return a single JSON object in this format:
 
     return notes ? `${formatted}\n\n${labels.hints}:\n${notes}` : formatted;
   } catch (err) {
-    // ❗ If anything fails after consumption, refund 1 credit
+    // ❗ Refund credit if GPT fails
     try {
       await incrementMonthlyUsage(uid, usageKind, -1);
     } catch (refundErr) {
-      console.error("⚠️ Refund of usage failed:", refundErr);
+      console.error("⚠️ gpt: Refund of usage failed:", refundErr);
     }
     throw err;
   }

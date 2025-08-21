@@ -1,4 +1,3 @@
-// functions/src/delete_account.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
@@ -27,7 +26,7 @@ async function deleteSubcollectionBatching(
 }
 
 export const deleteAccount = onCall(
-  { enforceAppCheck: false }, // ✅ flip to true if your clients support App Check
+  { enforceAppCheck: false }, // ✅ flip to true once App Check is rolled out in clients
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {
@@ -52,11 +51,10 @@ export const deleteAccount = onCall(
       details: {
         recipesDeleted: 0,
         categoriesDeleted: 0,
-        aiUsageDeleted: 0,
+        recipeUsageDeleted: 0,
         translatedRecipeUsageDeleted: 0,
         imageUsageDeleted: 0,
         prefsDeleted: 0,
-        translationsDeleted: 0,
       },
     };
 
@@ -66,11 +64,10 @@ export const deleteAccount = onCall(
     try {
       result.details.recipesDeleted = await deleteSubcollectionBatching(userDocRef, "recipes");
       result.details.categoriesDeleted = await deleteSubcollectionBatching(userDocRef, "categories");
-      result.details.aiUsageDeleted = await deleteSubcollectionBatching(userDocRef, "aiUsage");
+      result.details.recipeUsageDeleted = await deleteSubcollectionBatching(userDocRef, "recipeUsage");
       result.details.translatedRecipeUsageDeleted = await deleteSubcollectionBatching(userDocRef, "translatedRecipeUsage");
       result.details.imageUsageDeleted = await deleteSubcollectionBatching(userDocRef, "imageUsage");
       result.details.prefsDeleted = await deleteSubcollectionBatching(userDocRef, "prefs");
-      result.details.translationsDeleted = await deleteSubcollectionBatching(userDocRef, "translations");
 
       result.subcollectionsDeleted = true;
       console.log("🧹 Subcollections deleted:", result.details);
@@ -88,7 +85,7 @@ export const deleteAccount = onCall(
 
     // 🗃️ Delete user storage (default bucket unless multi-bucket setup)
     try {
-      const bucket = storage.bucket(); // ✅ safer: uses default bucket
+      const bucket = storage.bucket();
       await bucket.deleteFiles({ prefix: `users/${uid}/` });
       result.storageDeleted = true;
     } catch (err) {

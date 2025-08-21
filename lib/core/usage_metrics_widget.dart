@@ -111,7 +111,7 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
       return const SizedBox.shrink();
     }
 
-    final recipesUsed = sub.aiUsage;
+    final recipesUsed = sub.recipeUsage;
     final translationsUsed = sub.translationUsage;
     final recipeLimit = sub.aiLimit;
     final translationLimit = sub.translatedRecipeLimit;

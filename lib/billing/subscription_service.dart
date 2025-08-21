@@ -59,14 +59,14 @@ class SubscriptionService extends ChangeNotifier {
 
   // Usage (per yyyy-mm) — mirror backend keys
   final Map<String, Map<String, int>> _usageData = {
-    'aiUsage': {},
+    'recipeUsage': {},
     'translatedRecipeUsage': {},
     'imageUsage': {},
   };
 
   // Tier limits (loaded from Firestore)
   final Map<String, int> _tierLimits = {
-    'aiUsage': 0,
+    'recipeUsage': 0,
     'translatedRecipeUsage': 0,
     'imageUsage': 0,
   };
@@ -177,12 +177,12 @@ class SubscriptionService extends ChangeNotifier {
     return _usageData[kind]?[key] ?? 0;
   }
 
-  int get aiUsage => _getUsage('aiUsage');
+  int get recipeUsage => _getUsage('recipeUsage');
   int get translatedRecipeUsage => _getUsage('translatedRecipeUsage');
   int get imageUsage => _getUsage('imageUsage');
 
   // Tier limits
-  int get aiLimit => _tierLimits['aiUsage'] ?? 0;
+  int get aiLimit => _tierLimits['recipeUsage'] ?? 0;
   int get translatedRecipeLimit => _tierLimits['translatedRecipeUsage'] ?? 0;
   int get imageLimit => _tierLimits['imageUsage'] ?? 0;
 

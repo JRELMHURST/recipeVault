@@ -9,3 +9,6 @@ export { getPublicStats } from "./get_public_stats.js";
 // 🧾 RevenueCat integration
 export { revenuecatWebhook } from "./revenuecat_webhook.js";
 export { reconcileUserFromRC } from "./reconcile.js";
+
+// 🌱 Seeding
+export { seedUserOnCreate } from "./seed_user.js";

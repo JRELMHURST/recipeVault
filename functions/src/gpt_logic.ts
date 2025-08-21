@@ -105,11 +105,14 @@ ${labels.hints}:
 - If not available, use: "${labels.noTips}"
 ---
 
-Only return a single JSON object in this format:
+Return only a single JSON object **inside a JSON code block** like this:
+
+\`\`\`json
 {
   "formattedRecipe": "<formatted recipe>",
   "notes": "<optional notes or tips, or '${labels.noTips}'>"
 }
+\`\`\`
 `.trim();
 
     const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""`;
@@ -128,9 +131,15 @@ Only return a single JSON object in this format:
     const rawContent = completion.choices[0]?.message?.content?.trim();
     if (!rawContent) throw new Error("❌ gpt: Empty response from model");
 
+    // ✅ Strip markdown code block wrapper if present
+    const jsonText = rawContent
+      .replace(/^```json/i, "")
+      .replace(/```$/, "")
+      .trim();
+
     let parsed: GptRecipeResponse;
     try {
-      parsed = JSON.parse(rawContent) as GptRecipeResponse;
+      parsed = JSON.parse(jsonText) as GptRecipeResponse;
     } catch {
       console.error("❌ gpt: Failed to parse GPT response:", rawContent);
       throw new Error("Invalid GPT response format");
@@ -141,9 +150,10 @@ Only return a single JSON object in this format:
     }
 
     const formatted = parsed.formattedRecipe.trim();
-    const notes = (parsed.notes || "").trim();
+    const notes = (parsed.notes || "").trim() || labels.noTips;
 
-    return notes ? `${formatted}\n\n${labels.hints}:\n${notes}` : formatted;
+    // ✅ Always append Hints & Tips block
+    return `${formatted}\n\n${labels.hints}:\n${notes}`;
   } catch (err) {
     // ❗ Refund credit if GPT fails
     try {

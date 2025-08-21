@@ -29,49 +29,76 @@ export interface RCWebhookPayload {
 
 /** ===== Active product resolution (centralised) ===== */
 
-/** Resolve from a full webhook payload (existing behaviour) */
+/** Resolve from a full webhook payload */
 export function resolveActiveProductId(payload: RCWebhookPayload): string | null {
   return resolveActiveProductIdFromSubscriber(payload.subscriber ?? {}, payload.product_id);
 }
 
-/** Resolve from a bare subscriber object (for REST GET /v1/subscribers/{uid}) */
+/**
+ * Resolve the currently active productId from a RevenueCat subscriber object.
+ * Prefers entitlements, then optional directProductId hint, then subscriptions.
+ */
 export function resolveActiveProductIdFromSubscriber(
   subscriber: RCSubscriber,
   directProductId?: string | null
 ): string | null {
-  const s = subscriber ?? {};
+  if (!subscriber) {
+    console.warn("[RC] resolveActiveProductIdFromSubscriber → no subscriber object");
+    return null;
+  }
 
-  // 1) Entitlements first
-  if (s.entitlements) {
-    for (const [, ent] of Object.entries(s.entitlements)) {
-      if (ent?.is_active && ent?.product_identifier) {
-        return String(ent.product_identifier);
-      }
+  const entitlements = subscriber.entitlements ?? {};
+  const subs = subscriber.subscriptions ?? {};
+
+  // 🔍 Snapshot keys for debugging
+  console.info("[RC] Subscriber snapshot", {
+    entitlementKeys: Object.keys(entitlements),
+    subscriptionKeys: Object.keys(subs),
+    directProductId,
+  });
+
+  // 1) Entitlements (source of truth per RevenueCat)
+  for (const [key, ent] of Object.entries(entitlements)) {
+    if (ent?.is_active && ent?.product_identifier) {
+      console.info("[RC] Resolved via entitlement", {
+        entitlementKey: key,
+        productId: ent.product_identifier,
+      });
+      return String(ent.product_identifier);
     }
   }
 
-  // 2) Direct product id (optional hint from caller)
-  if (directProductId) return String(directProductId);
+  // 2) Direct productId hint
+  if (directProductId) {
+    console.info("[RC] Resolved via directProductId", directProductId);
+    return String(directProductId);
+  }
 
-  // 3) Subscriptions fallback (active = no expiry or future expiry)
-  if (s.subscriptions) {
-    for (const [pid, sub] of Object.entries(s.subscriptions)) {
-      const expiresAt = sub?.expires_date ? new Date(sub.expires_date) : null;
-      const isActive = !expiresAt || expiresAt > new Date();
-      if (isActive) return String(pid);
+  // 3) Subscriptions fallback (still valid by expiry)
+  for (const [pid, sub] of Object.entries(subs)) {
+    const expiresAt = sub?.expires_date ? new Date(sub.expires_date) : null;
+    const isActive = !expiresAt || expiresAt > new Date();
+    if (isActive) {
+      console.info("[RC] Resolved via subscription", { productId: pid, expiresAt });
+      return String(pid);
     }
   }
+
+  // Nothing found
+  console.warn("[RC] No active entitlement or subscription found → returning null");
   return null;
 }
 
 /** Normalise `app_user_id` → Firebase UID (unchanged) */
 export function resolveAppUserId(payload: RCWebhookPayload): string | null {
   if (payload.app_user_id) return String(payload.app_user_id);
-  if (payload.subscriber?.original_app_user_id) return String(payload.subscriber.original_app_user_id);
+  if (payload.subscriber?.original_app_user_id) {
+    return String(payload.subscriber.original_app_user_id);
+  }
   return null;
 }
 
-/** Map product → tier (unchanged) */
+/** Map product → tier */
 export function resolveTierFromPayload(payload: RCWebhookPayload): {
   uid: string | null;
   productId: string | null;
@@ -88,11 +115,9 @@ export function resolveTierFromPayload(payload: RCWebhookPayload): {
  *  Accepts Firestore Timestamp | Date | string | null | unknown.
  *  ───────────────────────────────────────────────────────── */
 
-/** Convert Timestamp/Date/string/unknown to ISO string or null (no imports needed). */
 function normaliseDateLike(v: unknown): string | null {
   if (v == null) return null;
 
-  // Date
   if (v instanceof Date) return v.toISOString();
 
   // Firestore Timestamp (duck-typed)
@@ -112,18 +137,17 @@ function normaliseDateLike(v: unknown): string | null {
     return new Date(ms).toISOString();
   }
 
-  // Already a string
   if (typeof v === "string") return v;
 
   return null;
 }
 
-/** Synchronous hash: stable across webhook & callable paths. */
+/** Stable entitlement hash (used by callable + webhook) */
 export function computeEntitlementHash(input: {
   productId: string | null | undefined;
   tier: Tier;
   entitlementStatus?: string | null | undefined;
-  graceUntil?: unknown; // Firestore Timestamp | Date | string | null | unknown
+  graceUntil?: unknown;
 }): string {
   const payload = {
     productId: (input.productId ?? "none").toLowerCase(),

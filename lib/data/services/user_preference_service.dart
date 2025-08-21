@@ -28,6 +28,7 @@ class UserPreferencesService {
   static const String _keyViewMode = 'viewMode';
   static const String _keyAiUsage = 'aiUsage';
   static const String _keyTranslationUsage = 'translationUsage';
+  static const String _keyImageUsage = 'imageUsage'; // NEW ✅
 
   // ─────────────────────────────── hive state ─────────────────────────
   static String? _activeUid;
@@ -40,14 +41,11 @@ class UserPreferencesService {
 
   // ─────────────────────────────── lifecycle ──────────────────────────
 
-  /// Call at app start. Safe to call before sign-in; no-op until a UID exists.
   static Future<void> init() async {
     await _ensureBoxForCurrentUser();
   }
 
-  /// Called by app_bootstrap on auth state changes.
   static Future<void> onAuthChanged(String? uid) async {
-    // If null → signed out: close any open box.
     if (uid == null) {
       await close();
       if (kDebugMode) {
@@ -55,12 +53,9 @@ class UserPreferencesService {
       }
       return;
     }
-    // Switch to the new user's box if needed.
     await _openBoxFor(uid);
   }
 
-  /// Ensures the per-user box is opened for the *current* Firebase UID.
-  /// If not signed in, this is a no-op.
   static Future<void> _ensureBoxForCurrentUser() async {
     final uid = _currentUid();
     if (uid == null) {
@@ -74,7 +69,6 @@ class UserPreferencesService {
   static Future<void> _openBoxFor(String uid) async {
     if (_activeUid == uid && _box?.isOpen == true) return;
 
-    // Close previous user’s box if open.
     if (_box?.isOpen == true) {
       try {
         await _box!.close();
@@ -96,7 +90,6 @@ class UserPreferencesService {
     }
   }
 
-  /// Returns an open box or `null` when not signed in (no throw).
   static Future<Box?> _ensureBox() async {
     await _ensureBoxForCurrentUser();
     return (_box?.isOpen == true) ? _box : null;
@@ -117,7 +110,7 @@ class UserPreferencesService {
 
   static Future<void> saveViewMode(PrefsViewMode mode) async {
     final box = await _ensureBox();
-    if (box == null) return; // not signed in yet
+    if (box == null) return;
     await box.put(_keyViewMode, mode.index);
     if (kDebugMode) debugPrint('📂 Saved view mode: ${mode.name}');
   }
@@ -135,13 +128,20 @@ class UserPreferencesService {
 
   // ─────────────────────────── usage counters ─────────────────────────
 
-  static Future<void> setCachedUsage({int? ai, int? translations}) async {
+  static Future<void> setCachedUsage({
+    int? ai,
+    int? translations,
+    int? images, // NEW ✅
+  }) async {
     final box = await _ensureBox();
     if (box == null) return;
     if (ai != null) await box.put(_keyAiUsage, ai);
     if (translations != null) await box.put(_keyTranslationUsage, translations);
+    if (images != null) await box.put(_keyImageUsage, images); // NEW ✅
     if (kDebugMode) {
-      debugPrint('📂 Cached usage: AI=$ai, Translations=$translations');
+      debugPrint(
+        '📂 Cached usage: AI=$ai, Translations=$translations, Images=$images',
+      );
     }
   }
 
@@ -153,6 +153,11 @@ class UserPreferencesService {
   static Future<int> getCachedTranslationUsage() async {
     final box = await _ensureBox();
     return box?.get(_keyTranslationUsage, defaultValue: 0) as int? ?? 0;
+  }
+
+  static Future<int> getCachedImageUsage() async {
+    final box = await _ensureBox();
+    return box?.get(_keyImageUsage, defaultValue: 0) as int? ?? 0; // NEW ✅
   }
 
   // ───────────────────────────── misc get/set ─────────────────────────
@@ -174,7 +179,6 @@ class UserPreferencesService {
 
   // ─────────────── clearing helpers (logout / delete account) ───────────────
 
-  /// Clears *all* local preference data for the specified uid.
   static Future<void> clearAllUserData(String uid) async {
     await deleteLocalDataForUser(uid);
     await clearAllPreferences(uid);
@@ -186,7 +190,6 @@ class UserPreferencesService {
     await _closeAndDeleteBox(name);
   }
 
-  /// Legacy keys that might have been written to SharedPreferences; clean them up.
   static Future<void> clearAllPreferences(String uid) async {
     try {
       final prefs = await SharedPreferences.getInstance();

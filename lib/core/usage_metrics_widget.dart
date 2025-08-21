@@ -21,14 +21,11 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
   late Animation<double> _recipeAnimation;
   late Animation<double> _translationAnimation;
 
-  // Track last values so we can re-run the animation only when something changed.
+  // Track last values so we only animate when something changes
   int _lastRecipesUsed = -1;
   int _lastTranslationsUsed = -1;
-  bool _lastIsMasterChef = false;
-
-  // Cache current computed limits to build the bars.
-  int _maxRecipes = 20;
-  int _maxTranslations = 5;
+  int _lastRecipeLimit = -1;
+  int _lastTranslationLimit = -1;
 
   bool _firstFrameDone = false;
 
@@ -52,7 +49,6 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
     // Kick an initial refresh of subscription data if needed.
     final sub = context.read<SubscriptionService>();
     if (!sub.isLoaded) {
-      // Fire and forget; widget will rebuild when provider notifies.
       unawaited(sub.refreshAndNotify());
     }
   }
@@ -66,14 +62,13 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
   void _refreshAnimationIfNeeded({
     required int recipesUsed,
     required int translationsUsed,
-    required bool isMasterChef,
+    required int recipeLimit,
+    required int translationLimit,
   }) {
     final limitsChanged =
-        (_lastIsMasterChef != isMasterChef) || (!_firstFrameDone);
-
-    // Update limits from tier.
-    _maxRecipes = isMasterChef ? 100 : 20;
-    _maxTranslations = isMasterChef ? 20 : 5;
+        (_lastRecipeLimit != recipeLimit ||
+        _lastTranslationLimit != translationLimit ||
+        !_firstFrameDone);
 
     final usageChanged =
         (_lastRecipesUsed != recipesUsed) ||
@@ -84,14 +79,15 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
 
     _lastRecipesUsed = recipesUsed;
     _lastTranslationsUsed = translationsUsed;
-    _lastIsMasterChef = isMasterChef;
+    _lastRecipeLimit = recipeLimit;
+    _lastTranslationLimit = translationLimit;
     _firstFrameDone = true;
 
-    final recipePercent = (recipesUsed / _maxRecipes).clamp(0.0, 1.0);
-    final translationPercent = (translationsUsed / _maxTranslations).clamp(
-      0.0,
-      1.0,
-    );
+    final recipePercent = (recipeLimit == 0 ? 0.0 : recipesUsed / recipeLimit)
+        .clamp(0.0, 1.0);
+    final translationPercent =
+        (translationLimit == 0 ? 0.0 : translationsUsed / translationLimit)
+            .clamp(0.0, 1.0);
 
     _recipeAnimation = Tween<double>(
       begin: 0,
@@ -111,20 +107,20 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
     final sub = context.watch<SubscriptionService>();
     final loc = AppLocalizations.of(context);
 
-    // Respect visibility flags from SubscriptionService.
     if (!sub.showUsageWidget || !sub.trackUsage) {
       return const SizedBox.shrink();
     }
 
     final recipesUsed = sub.aiUsage;
     final translationsUsed = sub.translationUsage;
-    final isMasterChef = sub.isMasterChef;
+    final recipeLimit = sub.aiLimit;
+    final translationLimit = sub.translatedRecipeLimit;
 
-    // Update bars/animation when numbers or tier change.
     _refreshAnimationIfNeeded(
       recipesUsed: recipesUsed,
       translationsUsed: translationsUsed,
-      isMasterChef: isMasterChef,
+      recipeLimit: recipeLimit,
+      translationLimit: translationLimit,
     );
 
     return Container(
@@ -164,19 +160,19 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
                     icon: Icons.auto_awesome,
                     label: loc.labelAiRecipes,
                     used: recipesUsed,
-                    max: _maxRecipes,
+                    max: recipeLimit,
                     colour: AppColours.turquoise,
                     percent: _recipeAnimation.value,
-                    subtitle: loc.usageOutOfThisMonth(_maxRecipes),
+                    subtitle: loc.usageOutOfThisMonth(recipeLimit),
                   ),
                   _usageMetric(
                     icon: Icons.translate,
                     label: loc.labelTranslations,
                     used: translationsUsed,
-                    max: _maxTranslations,
+                    max: translationLimit,
                     colour: AppColours.lavender,
                     percent: _translationAnimation.value,
-                    subtitle: loc.usageMonthlyLimit(_maxTranslations),
+                    subtitle: loc.usageMonthlyLimit(translationLimit),
                   ),
                 ],
               );

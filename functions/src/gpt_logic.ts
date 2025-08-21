@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import {
   enforceAndConsume,
   incrementMonthlyUsage, // used only for refund on failure
+  UsageKind,
 } from "./usage_service.js";
 
 type GptRecipeResponse = {
@@ -10,7 +11,7 @@ type GptRecipeResponse = {
   notes?: string;
 };
 
-const MODEL = "gpt-3.5-turbo-0125"; // ✅ switched to 3.5 turbo
+const MODEL = "gpt-3.5-turbo"; // ⬅️ old API call model kept
 
 // 🌍 Map locale → language name + labels
 const LOCALE_META: Record<
@@ -34,7 +35,7 @@ const LOCALE_META: Record<
   de: { languageName: "German", labels: { title: "Titel", ingredients: "Zutaten", instructions: "Zubereitung", hints: "Tipps & Hinweise", noTips: "Keine zusätzlichen Tipps." } },
   el: { languageName: "Greek", labels: { title: "Τίτλος", ingredients: "Υλικά", instructions: "Εκτέλεση", hints: "Συμβουλές & Κόλπα", noTips: "Δεν υπάρχουν επιπλέον συμβουλές." } },
   es: { languageName: "Spanish", labels: { title: "Título", ingredients: "Ingredientes", instructions: "Preparación", hints: "Consejos y trucos", noTips: "Sin consejos adicionales." } },
-  fr: { languageName: "French", labels: { title: "Titre", ingredients: "Ingrédients", instructions: "Préparation", hints: "Astuces & Conseils", noTips: "Aucune astuce supplémentaire." } },
+  fr: { languageName: "French", labels: { title: "Titre", ingredients: "Ingrédients", instructions: "Préparation", hints: "Astuces & Consiels", noTips: "Aucune astuce supplémentaire." } },
   ga: { languageName: "Irish (Gaeilge)", labels: { title: "Teideal", ingredients: "Comhábhair", instructions: "Modh", hints: "Leideanna & Cleasa", noTips: "Gan leideanna breise." } },
   it: { languageName: "Italian", labels: { title: "Titolo", ingredients: "Ingredienti", instructions: "Preparazione", hints: "Consigli & Suggerimenti", noTips: "Nessun consiglio aggiuntivo." } },
   nl: { languageName: "Dutch", labels: { title: "Titel", ingredients: "Ingrediënten", instructions: "Bereiding", hints: "Tips & Tricks", noTips: "Geen extra tips." } },
@@ -54,12 +55,15 @@ function resolveLocaleMeta(locale: string | undefined) {
 /**
  * Formats a recipe into a consistent structure in the user's locale,
  * with transactional quota enforcement and refund on failure.
+ *
+ * @param usageKind - which quota to consume ("aiUsage" for native recipes, "translatedRecipeUsage" for translated ones)
  */
 export async function generateFormattedRecipe(
   uid: string,
   text: string,
   sourceLang: string,
-  targetLocale: string
+  targetLocale: string,
+  usageKind: UsageKind = "aiUsage"
 ): Promise<string> {
   if (!uid) throw new Error("❌ Missing UID for usage enforcement");
 
@@ -69,8 +73,8 @@ export async function generateFormattedRecipe(
   const { languageName, labels } = resolveLocaleMeta(targetLocale);
   const openai = new OpenAI({ apiKey });
 
-  // 🚦 Atomically check + consume 1 recipe credit BEFORE the API call.
-  await enforceAndConsume(uid, "aiUsage", 1);
+  // 🚦 Atomically check + consume 1 credit BEFORE the API call.
+  await enforceAndConsume(uid, usageKind, 1);
 
   try {
     const systemPrompt = `
@@ -102,20 +106,18 @@ ${labels.hints}:
 - If not available, use: "${labels.noTips}"
 ---
 
-Return only a single JSON object **inside a JSON code block** like:
-
-\`\`\`json
+Only return a single JSON object in this format:
 {
-  "formattedRecipe": "<full formatted recipe text here using the labels above>",
-  "notes": "<extracted tips list or '${labels.noTips}'>"
+  "formattedRecipe": "<formatted recipe>",
+  "notes": "<optional notes or tips, or '${labels.noTips}'>"
 }
-\`\`\`
 `.trim();
 
     const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""`;
 
+    // ⬅️ API call now matches the old one exactly
     const completion = await openai.chat.completions.create({
-      model: MODEL,
+      model: MODEL, // "gpt-3.5-turbo"
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
@@ -124,38 +126,31 @@ Return only a single JSON object **inside a JSON code block** like:
       max_tokens: 1500,
     });
 
-    const rawContent = completion.choices[0]?.message?.content?.trim() || "";
+    const rawContent = completion.choices[0]?.message?.content?.trim();
 
-    // Strip code fences if present
-    const jsonCandidate = rawContent
-      .replace(/^```json\s*/i, "")
-      .replace(/```$/i, "")
-      .trim();
-
-    const tryParse = (s: string): GptRecipeResponse | null => {
-      try { return JSON.parse(s) as GptRecipeResponse; } catch { return null; }
-    };
-
-    const parsed =
-      tryParse(jsonCandidate) ||
-      tryParse((rawContent.match(/```json\s*([\s\S]*?)\s*```/i)?.[1] || "").trim());
-
-    if (!parsed || typeof parsed.formattedRecipe !== "string") {
-      console.error("❌ Failed to parse GPT response:\n", rawContent);
+    // Parse like old version (direct JSON expected)
+    let parsed: GptRecipeResponse | null = null;
+    try {
+      parsed = JSON.parse(rawContent || "{}") as GptRecipeResponse;
+    } catch {
+      console.error("❌ Failed to parse GPT response:", rawContent);
       throw new Error("Invalid GPT response format");
     }
 
-    const formatted = parsed.formattedRecipe.trim();
-    const notes = (parsed.notes || labels.noTips).trim();
-    const hasHintsSection = new RegExp(`(^|\\n)${labels.hints}\\s*:`, "i").test(formatted);
+    if (!parsed || typeof parsed.formattedRecipe !== "string") {
+      throw new Error("Missing 'formattedRecipe' key in GPT response");
+    }
 
-    return hasHintsSection ? formatted : `${formatted}\n\n${labels.hints}:\n${notes}`;
+    const formatted = parsed.formattedRecipe.trim();
+    const notes = (parsed.notes || "").trim();
+
+    return notes ? `${formatted}\n\n${labels.hints}:\n${notes}` : formatted;
   } catch (err) {
     // ❗ If anything fails after consumption, refund 1 credit
     try {
-      await incrementMonthlyUsage(uid, "aiUsage", -1);
+      await incrementMonthlyUsage(uid, usageKind, -1);
     } catch (refundErr) {
-      console.error("⚠️ Refund of AI usage failed:", refundErr);
+      console.error("⚠️ Refund of usage failed:", refundErr);
     }
     throw err;
   }

@@ -57,12 +57,12 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
-      /* ── usage counters (backend writes only; client read‑only) ── */
+      /* ── usage counters (backend writes only; client read-only) ── */
       match /aiUsage/{docId} {
         allow get, list: if isOwner(userId);
         allow create, update, delete: if false;
       }
-      match /translationUsage/{docId} {
+      match /translatedRecipeUsage/{docId} {
         allow get, list: if isOwner(userId);
         allow create, update, delete: if false;
       }

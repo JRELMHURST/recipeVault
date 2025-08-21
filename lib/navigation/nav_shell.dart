@@ -165,7 +165,7 @@ Future<void> _handleCreateAction(BuildContext context) async {
   }
 
   // Paid: pick images → processing overlay → ensure we're on Vault
-  final files = await ImageProcessingService.pickAndCompressImages();
+  final files = await ImageProcessingService.pickAndCompressImages(context);
   if (!context.mounted) return;
 
   if (files.isNotEmpty) {

@@ -27,7 +27,7 @@ async function deleteSubcollectionBatching(
 }
 
 export const deleteAccount = onCall(
-  { enforceAppCheck: false }, // consider true if your clients support it
+  { enforceAppCheck: false }, // ✅ flip to true if your clients support App Check
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {
@@ -53,8 +53,10 @@ export const deleteAccount = onCall(
         recipesDeleted: 0,
         categoriesDeleted: 0,
         aiUsageDeleted: 0,
-        translationUsageDeleted: 0,
+        translatedRecipeUsageDeleted: 0,
         imageUsageDeleted: 0,
+        prefsDeleted: 0,
+        translationsDeleted: 0,
       },
     };
 
@@ -62,26 +64,13 @@ export const deleteAccount = onCall(
 
     // 🔄 Delete subcollections
     try {
-      result.details.recipesDeleted = await deleteSubcollectionBatching(
-        userDocRef,
-        "recipes"
-      );
-      result.details.categoriesDeleted = await deleteSubcollectionBatching(
-        userDocRef,
-        "categories"
-      );
-      result.details.aiUsageDeleted = await deleteSubcollectionBatching(
-        userDocRef,
-        "aiUsage"
-      );
-      result.details.translationUsageDeleted = await deleteSubcollectionBatching(
-        userDocRef,
-        "translationUsage"
-      );
-      result.details.imageUsageDeleted = await deleteSubcollectionBatching(
-        userDocRef,
-        "imageUsage"
-      );
+      result.details.recipesDeleted = await deleteSubcollectionBatching(userDocRef, "recipes");
+      result.details.categoriesDeleted = await deleteSubcollectionBatching(userDocRef, "categories");
+      result.details.aiUsageDeleted = await deleteSubcollectionBatching(userDocRef, "aiUsage");
+      result.details.translatedRecipeUsageDeleted = await deleteSubcollectionBatching(userDocRef, "translatedRecipeUsage");
+      result.details.imageUsageDeleted = await deleteSubcollectionBatching(userDocRef, "imageUsage");
+      result.details.prefsDeleted = await deleteSubcollectionBatching(userDocRef, "prefs");
+      result.details.translationsDeleted = await deleteSubcollectionBatching(userDocRef, "translations");
 
       result.subcollectionsDeleted = true;
       console.log("🧹 Subcollections deleted:", result.details);
@@ -97,9 +86,9 @@ export const deleteAccount = onCall(
       console.error("❌ Failed deleting user document:", err);
     }
 
-    // 🗃️ Delete user storage (explicit bucket)
+    // 🗃️ Delete user storage (default bucket unless multi-bucket setup)
     try {
-      const bucket = storage.bucket("recipevault-bg-ai.firebasestorage.app"); // ✅ forced to this bucket
+      const bucket = storage.bucket(); // ✅ safer: uses default bucket
       await bucket.deleteFiles({ prefix: `users/${uid}/` });
       result.storageDeleted = true;
     } catch (err) {

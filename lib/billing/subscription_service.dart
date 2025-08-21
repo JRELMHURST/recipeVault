@@ -8,7 +8,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:hive/hive.dart';
 
@@ -31,17 +30,45 @@ class SubscriptionService extends ChangeNotifier {
   String? _lastLoggedTier;
 
   CustomerInfo? _customerInfo;
-  EntitlementInfo? _activeEntitlement;
+  EntitlementInfo? _activeEntitlement; // cached active entitlement
+
+  /// Expose entitlement safely for trial/expiry info etc.
+  EntitlementInfo? get activeEntitlement => _activeEntitlement;
+
+  /// Is the user in a RevenueCat trial?
+  bool get isInTrial => _activeEntitlement?.periodType == PeriodType.trial;
+
+  /// Expiration date of the current entitlement (if any).
+  DateTime? get expirationDate {
+    final exp = _activeEntitlement?.expirationDate;
+    return exp != null ? DateTime.tryParse(exp) : null;
+  }
+
+  /// Will return true if entitlement is still active but expiring soon (< 7 days).
+  bool get isExpiringSoon {
+    final exp = expirationDate;
+    if (exp == null) return false;
+    return exp.isAfter(DateTime.now()) &&
+        exp.isBefore(DateTime.now().add(const Duration(days: 7)));
+  }
 
   // Cached packages (optional helpers for paywall)
   Package? homeChefPackage;
   Package? masterChefMonthlyPackage;
   Package? masterChefYearlyPackage;
 
-  // Usage (per yyyy-mm)
+  // Usage (per yyyy-mm) — mirror backend keys
   final Map<String, Map<String, int>> _usageData = {
     'aiUsage': {},
-    'translationUsage': {},
+    'translatedRecipeUsage': {},
+    'imageUsage': {},
+  };
+
+  // Tier limits (loaded from Firestore)
+  final Map<String, int> _tierLimits = {
+    'aiUsage': 0,
+    'translatedRecipeUsage': 0,
+    'imageUsage': 0,
   };
 
   // RC listener guard
@@ -95,7 +122,6 @@ class SubscriptionService extends ChangeNotifier {
       }
 
       if (changed) {
-        // nudge UI highlights without triggering rebuild loops during init
         SchedulerBinding.instance.addPostFrameCallback((_) {
           tierNotifier.value = _tier;
         });
@@ -114,13 +140,10 @@ class SubscriptionService extends ChangeNotifier {
   bool get isMasterChef => _tier == 'master_chef';
   bool get hasActiveSubscription => isHomeChef || isMasterChef;
 
-  // Single source of truth: status + ready
   EntitlementStatus get status {
-    // While the app is starting or we're fetching RC/FS, treat as checking
     if (_isInitialising || _isLoadingTier || _customerInfo == null) {
       return EntitlementStatus.checking;
     }
-    // Special access forces feature gates but status still reflects "active"
     if (hasActiveSubscription || _hasSpecialAccess) {
       return EntitlementStatus.active;
     }
@@ -129,7 +152,6 @@ class SubscriptionService extends ChangeNotifier {
 
   bool get ready => status != EntitlementStatus.checking;
 
-  // Ever had access (persisted)
   Future<bool> get everHadAccess async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return false;
@@ -148,65 +170,28 @@ class SubscriptionService extends ChangeNotifier {
 
   bool get hasSpecialAccess => _hasSpecialAccess;
 
-  String get tierIcon {
-    if (_hasSpecialAccess) return '⭐';
-    return switch (_tier) {
-      'master_chef' => '',
-      'home_chef' => '',
-      'none' => '🚫',
-      _ => '❓',
-    };
-  }
-
-  String get entitlementLabel => switch (_entitlementId) {
-    'master_chef_monthly' => 'Master Chef – Monthly',
-    'master_chef_yearly' => 'Master Chef – Yearly',
-    'home_chef_monthly' => 'Home Chef – Monthly',
-    _ => 'No active subscription',
-  };
-
-  bool get isYearly => _entitlementId.endsWith('_yearly');
-
-  String get billingCycle {
-    if (_entitlementId.contains('yearly')) return 'Yearly';
-    if (_entitlementId.contains('monthly')) return 'Monthly';
-    return 'None';
-  }
-
-  DateTime? get trialEndDate {
-    final e = _activeEntitlement;
-    if (e == null || e.periodType != PeriodType.trial) return null;
-    final raw = e.expirationDate;
-    return raw != null ? DateTime.tryParse(raw) : null;
-  }
-
-  String get trialEndDateFormatted {
-    final d = trialEndDate;
-    return d != null ? DateFormat('d/M/yyyy').format(d) : 'N/A';
-  }
-
-  bool get isInTrial {
-    final end = trialEndDate;
-    return end != null && DateTime.now().isBefore(end);
-  }
-
-  bool get hasAccess => allowSaveToVault; // single gate
-  String get currentTier => _tier;
-
-  int get aiUsage {
+  // ── Usage getters (current month) ─────────────────────────────────────────
+  int _getUsage(String kind) {
     final now = DateTime.now();
     final key = '${now.year}-${now.month.toString().padLeft(2, '0')}';
-    return _usageData['aiUsage']?[key] ?? 0;
+    return _usageData[kind]?[key] ?? 0;
   }
 
-  int get translationUsage {
-    final now = DateTime.now();
-    final key = '${now.year}-${now.month.toString().padLeft(2, '0')}';
-    return _usageData['translationUsage']?[key] ?? 0;
-  }
+  int get aiUsage => _getUsage('aiUsage');
+  int get translatedRecipeUsage => _getUsage('translatedRecipeUsage');
+  int get imageUsage => _getUsage('imageUsage');
+
+  // Tier limits
+  int get aiLimit => _tierLimits['aiUsage'] ?? 0;
+  int get translatedRecipeLimit => _tierLimits['translatedRecipeUsage'] ?? 0;
+  int get imageLimit => _tierLimits['imageUsage'] ?? 0;
 
   bool get showUsageWidget => hasActiveSubscription || _hasSpecialAccess;
   bool get trackUsage => hasActiveSubscription || _hasSpecialAccess;
+
+  // 🆕 Extra compatibility getters (aliases only)
+  int get translationUsage => translatedRecipeUsage;
+  String getResolvedTier() => _tier;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   Future<void> init() async {
@@ -237,7 +222,6 @@ class SubscriptionService extends ChangeNotifier {
         try {
           await Purchases.logOut();
         } on PlatformException catch (e) {
-          // 22 = LOGOUT_CALLED_WITH_ANONYMOUS_USER
           final code = e.code;
           final readable = (e.details is Map)
               ? (e.details['readableErrorCode'] as String?)
@@ -247,15 +231,13 @@ class SubscriptionService extends ChangeNotifier {
           }
           debugPrint('RC: already anonymous; ignoring logOut.');
         }
-        // 👇 Don’t call refresh() when there’s no user — just reset locally
         await reset();
         return;
       }
 
-      // Logged-in path:
       await _seedFromCacheIfAny(firebaseUid);
       await Purchases.logIn(firebaseUid);
-      await refresh(); // safe now: user is present
+      await refresh();
     } catch (e) {
       debugPrint('RevenueCat setAppUserId error: $e');
     }
@@ -270,6 +252,19 @@ class SubscriptionService extends ChangeNotifier {
   Future<void> refreshAndNotify() async {
     await refresh();
     notifyListeners();
+  }
+
+  /// 🆕 Legacy shim for UI code that still calls this.
+  Future<void> syncRevenueCatEntitlement({bool forceRefresh = false}) async {
+    if (forceRefresh) {
+      _activeEntitlement = null;
+      _tier = 'none';
+      _entitlementId = 'none';
+      await refresh();
+      notifyListeners();
+    } else {
+      await refreshAndNotify();
+    }
   }
 
   Future<void> reset() async {
@@ -316,7 +311,6 @@ class SubscriptionService extends ChangeNotifier {
       tierNotifier.value = _tier;
       _logTierOnce(source: 'loadSubscriptionStatus');
 
-      // Firestore (server-side overrides / flags)
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -343,8 +337,6 @@ class SubscriptionService extends ChangeNotifier {
       }
 
       await _loadUsageData(user.uid);
-
-      // Persist cache + everHadAccess
       await _saveCache(user.uid, _tier, active: hasActiveSubscription);
 
       notifyListeners();
@@ -352,6 +344,36 @@ class SubscriptionService extends ChangeNotifier {
       debugPrint('🔴 Failed to load subscription: $e');
     } finally {
       _isLoadingTier = false;
+    }
+  }
+
+  // ── Usage fetch ───────────────────────────────────────────────────────────
+  Future<void> _loadUsageData(String uid) async {
+    for (final kind in _usageData.keys) {
+      try {
+        final snap = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection(kind)
+            .doc('usage')
+            .get();
+        _usageData[kind] = Map<String, int>.from(snap.data() ?? {});
+      } catch (e) {
+        debugPrint('⚠️ Failed to load $kind: $e');
+        _usageData[kind] = {};
+      }
+    }
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('tierLimits')
+          .doc(_tier)
+          .get();
+      if (snap.exists) {
+        _tierLimits.addAll(Map<String, int>.from(snap.data() ?? {}));
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to load tier limits: $e');
     }
   }
 
@@ -381,35 +403,6 @@ class SubscriptionService extends ChangeNotifier {
       }
     }
     if (changedTier || changedEnt) notifyListeners();
-  }
-
-  // ── Usage fetch ───────────────────────────────────────────────────────────
-  Future<void> _loadUsageData(String uid) async {
-    try {
-      final aiSnap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('aiUsage')
-          .doc('usage')
-          .get();
-      _usageData['aiUsage'] = Map<String, int>.from(aiSnap.data() ?? {});
-    } catch (e) {
-      debugPrint('⚠️ Failed to load AI usage: $e');
-    }
-
-    try {
-      final txSnap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('translationUsage')
-          .doc('usage')
-          .get();
-      _usageData['translationUsage'] = Map<String, int>.from(
-        txSnap.data() ?? {},
-      );
-    } catch (e) {
-      debugPrint('⚠️ Failed to load translation usage: $e');
-    }
   }
 
   // ── RevenueCat package cache ──────────────────────────────────────────────
@@ -503,100 +496,5 @@ class SubscriptionService extends ChangeNotifier {
       debugPrint('⏳ Retrying RevenueCat fetch… remaining=$attempts');
     }
     return info;
-  }
-
-  // ── Tier resolution API ───────────────────────────────────────────────────
-  Future<String> getResolvedTier({bool forceRefresh = false}) async {
-    if (!forceRefresh && _tier != 'none') return _tier;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return 'none';
-
-    final uid = user.uid;
-    final firestore = FirebaseFirestore.instance;
-
-    // Get RC entitlements (source of truth for plan)
-    final customerInfo = await _getCustomerInfoWithRetry(
-      preferRetry: _isBrandNewUser(user),
-    );
-    final entitlements = customerInfo.entitlements.active;
-    final rcTier = _resolveTierFromEntitlements(entitlements);
-    final productId =
-        (_getActiveEntitlement(entitlements, rcTier)?.productIdentifier ??
-                'none')
-            .toLowerCase();
-
-    // Read server-controlled flags/overrides
-    final doc = await firestore.collection('users').doc(uid).get();
-    final data = doc.data();
-    final fsTier = (data?['tier'] as String?)?.trim() ?? 'none';
-    _hasSpecialAccess = data?['specialAccess'] == true;
-
-    // Prefer server override if present, otherwise RC
-    final resolved = fsTier != 'none' ? fsTier : rcTier;
-
-    // Update local state + cache
-    updateTier(resolved);
-    _entitlementId = productId;
-    await _saveCache(uid, resolved, active: resolved != 'none');
-
-    // Safe write: lastLogin
-    try {
-      await firestore.collection('users').doc(uid).set({
-        'lastLogin': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    } catch (e) {
-      debugPrint('⚠️ Firestore safe lastLogin write failed: $e');
-    }
-
-    return resolved;
-  }
-
-  Future<void> syncRevenueCatEntitlement({bool forceRefresh = false}) async {
-    if (!forceRefresh && _tier != 'none') return;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    final customerInfo = await _getCustomerInfoWithRetry(
-      preferRetry: _isBrandNewUser(user),
-    );
-    final ents = customerInfo.entitlements.active;
-    final rcTier = _resolveTierFromEntitlements(ents);
-    final productId =
-        (_getActiveEntitlement(ents, rcTier)?.productIdentifier ?? 'none')
-            .toLowerCase();
-
-    _tier = rcTier;
-    _entitlementId = productId;
-    _activeEntitlement = _getActiveEntitlement(ents, rcTier);
-
-    // Read server-controlled specialAccess (do NOT write it)
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-      _hasSpecialAccess = doc.data()?['specialAccess'] == true;
-    } catch (e) {
-      debugPrint('⚠️ Failed to read specialAccess: $e');
-    }
-
-    tierNotifier.value = _tier;
-
-    // Cache for hot restarts (+everHadAccess)
-    await _saveCache(user.uid, _tier, active: hasActiveSubscription);
-
-    // Safe write: lastLogin
-    try {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'lastLogin': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    } catch (e) {
-      debugPrint('⚠️ Firestore safe lastLogin write failed: $e');
-    }
-
-    _logTierOnce(source: 'syncRevenueCatEntitlement');
-    notifyListeners();
   }
 }

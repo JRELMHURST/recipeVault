@@ -79,7 +79,6 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l.recipeCreationLimited)));
-      // Nudge to paywall safely (post-frame)
       safeGo(context, AppRoutes.paywall);
       return;
     }
@@ -93,7 +92,8 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
       return;
     }
 
-    final files = await ImageProcessingService.pickAndCompressImages();
+    // ✅ Pass context here
+    final files = await ImageProcessingService.pickAndCompressImages(context);
     if (!mounted) return;
     if (files.isNotEmpty) {
       ProcessingOverlay.show(context, files);

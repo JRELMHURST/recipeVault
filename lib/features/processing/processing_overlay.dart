@@ -102,8 +102,8 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('User not signed in.');
 
-      await _setStep(0);
       final imageUrls = await ImageProcessingService.uploadFiles(
+        context,
         widget.imageFiles,
       );
       if (_hasCancelled) return;

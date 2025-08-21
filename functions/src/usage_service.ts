@@ -5,7 +5,7 @@ import { HttpsError } from "firebase-functions/v2/https";
 const firestore = getFirestore();
 
 /** Types of usage we track (collection names match these keys) */
-export type UsageKind = "aiUsage" | "translationUsage" | "imageUsage";
+export type UsageKind = "aiUsage" | "translatedRecipeUsage" | "imageUsage";
 
 /** Internal subscription tiers */
 export type Tier = "home_chef" | "master_chef" | "none";
@@ -13,16 +13,20 @@ export type Tier = "home_chef" | "master_chef" | "none";
 /** Centralised tier limits (no 'free/none') */
 export const tierLimits: Record<
   Exclude<Tier, "none">,
-  { translation: number; recipes: number; images: number }
+  {
+    translatedRecipeCards: number; // ✅ clearer for users
+    recipes: number;
+    images: number;
+  }
 > = {
-  home_chef:   { translation: 5,  recipes: 20,  images: 30 },
-  master_chef: { translation: 20, recipes: 100, images: 250 },
+  home_chef:   { translatedRecipeCards: 5,  recipes: 20,  images: 30 },
+  master_chef: { translatedRecipeCards: 20, recipes: 100, images: 250 },
 };
 
 /** Map UsageKind -> tierLimits key */
-type LimitKey = "translation" | "recipes" | "images";
+type LimitKey = "translatedRecipeCards" | "recipes" | "images";
 const limitKeyByKind: Record<UsageKind, LimitKey> = {
-  translationUsage: "translation",
+  translatedRecipeUsage: "translatedRecipeCards",
   aiUsage: "recipes",
   imageUsage: "images",
 };
@@ -109,8 +113,8 @@ export async function enforcePolicy(uid: string, kind: UsageKind): Promise<void>
   const limit = getMonthlyLimit(tier, kind);
   if (used >= limit) {
     const code =
-      kind === "translationUsage" ? "TRANS_LIMIT" :
-      kind === "aiUsage"          ? "RECIPES_LIMIT" :
+      kind === "translatedRecipeUsage" ? "TRANS_RECIPE_LIMIT" :
+      kind === "aiUsage"               ? "RECIPES_LIMIT" :
       "IMAGES_LIMIT";
     throw new HttpsError("resource-exhausted", `MONTHLY_LIMIT: ${code}`);
   }
@@ -138,8 +142,8 @@ export async function enforceAndConsume(uid: string, kind: UsageKind, by = 1): P
     const current = Number(data[key] ?? 0);
     if (current + by > limit) {
       const code =
-        kind === "translationUsage" ? "TRANS_LIMIT" :
-        kind === "aiUsage"          ? "RECIPES_LIMIT" :
+        kind === "translatedRecipeUsage" ? "TRANS_RECIPE_LIMIT" :
+        kind === "aiUsage"               ? "RECIPES_LIMIT" :
         "IMAGES_LIMIT";
       throw new HttpsError("resource-exhausted", `MONTHLY_LIMIT: ${code}`);
     }
@@ -155,13 +159,9 @@ export async function enforceAndConsume(uid: string, kind: UsageKind, by = 1): P
 }
 
 /** Convenience wrappers (discouraged for new code) */
-/** @deprecated Use enforceAndConsume(uid, "translationUsage", 1) only if you truly want to bill translation separately.
- *  For recipe cards, bill once via aiUsage in gpt_logic.
- */
-export async function enforceTranslationPolicy(uid: string): Promise<void> {
-  await enforcePolicy(uid, "translationUsage");
+export async function enforceTranslatedRecipePolicy(uid: string): Promise<void> {
+  await enforcePolicy(uid, "translatedRecipeUsage");
 }
-/** @deprecated Do not use; gpt_logic does transactional consume + refund itself. */
 export async function enforceGptRecipePolicy(uid: string): Promise<void> {
   await enforcePolicy(uid, "aiUsage");
 }

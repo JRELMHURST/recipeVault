@@ -12,6 +12,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 
 import 'package:recipe_vault/firebase_storage.dart'; // FirebaseStorageService
 import 'package:recipe_vault/features/processing/processed_recipe_result.dart';
@@ -31,9 +32,10 @@ class ImageProcessingService {
   // ───────────────────────── PLAN GATES ─────────────────────────
 
   /// Throws with a friendly message if uploads aren’t allowed.
-  static Future<void> _ensureUploadAllowedOrThrow() async {
-    final subs = SubscriptionService();
+  static Future<void> _ensureUploadAllowedOrThrow(BuildContext context) async {
+    final subs = context.read<SubscriptionService>();
     if (!subs.allowImageUpload) {
+      _logDebug("❌ Upload entitlement denied. Tier=${subs.tier}");
       throw Exception(
         '✨ Upload images with the Home Chef or Master Chef plan.',
       );
@@ -41,9 +43,12 @@ class ImageProcessingService {
   }
 
   /// Throws with a friendly message if OCR/translation isn’t allowed.
-  static Future<void> _ensureProcessingAllowedOrThrow() async {
-    final subs = SubscriptionService();
+  static Future<void> _ensureProcessingAllowedOrThrow(
+    BuildContext context,
+  ) async {
+    final subs = context.read<SubscriptionService>();
     if (!subs.allowTranslation) {
+      _logDebug("❌ Processing entitlement denied. Tier=${subs.tier}");
       throw Exception(
         '✨ Unlock Chef Mode with Home Chef or Master Chef to process recipes.',
       );
@@ -53,8 +58,8 @@ class ImageProcessingService {
   // ───────────────────────── PICK + COMPRESS ─────────────────────────
 
   /// Picks multiple images and compresses them (JPEG + orientation fixed).
-  static Future<List<File>> pickAndCompressImages() async {
-    await _ensureUploadAllowedOrThrow();
+  static Future<List<File>> pickAndCompressImages(BuildContext context) async {
+    await _ensureUploadAllowedOrThrow(context);
     final picked = await _picker.pickMultiImage();
     if (picked.isEmpty) return [];
     return _compressFiles(picked.map((x) => File(x.path)).toList());
@@ -102,19 +107,23 @@ class ImageProcessingService {
   // ────────────────────────────── UPLOADS ──────────────────────────────
 
   /// Uploads image files to Firebase Storage; returns download URLs.
-  static Future<List<String>> uploadFiles(List<File> files) async {
-    await _ensureUploadAllowedOrThrow();
+  static Future<List<String>> uploadFiles(
+    BuildContext context,
+    List<File> files,
+  ) async {
+    await _ensureUploadAllowedOrThrow(context);
     _logDebug('⏫ Uploading ${files.length} file(s) to Firebase Storage…');
     return FirebaseStorageService.uploadImages(files);
   }
 
   /// Upload a single recipe image to a user path with sane metadata.
   static Future<String> uploadRecipeImage({
+    required BuildContext context,
     required File imageFile,
     required String userId,
     required String recipeId,
   }) async {
-    await _ensureUploadAllowedOrThrow();
+    await _ensureUploadAllowedOrThrow(context);
     try {
       final ref = FirebaseStorage.instance.ref(
         'users/$userId/recipe_images/$recipeId.jpg',
@@ -171,7 +180,7 @@ class ImageProcessingService {
     bool allowCrop = true,
   }) async {
     try {
-      await _ensureUploadAllowedOrThrow();
+      await _ensureUploadAllowedOrThrow(context);
 
       final picked = await _picker.pickImage(source: source);
       if (picked == null) return null;
@@ -188,6 +197,7 @@ class ImageProcessingService {
       if (user == null) throw Exception('User not signed in');
 
       return await uploadRecipeImage(
+        context: context,
         imageFile: file,
         userId: user.uid,
         recipeId: recipeId,
@@ -206,7 +216,7 @@ class ImageProcessingService {
     Duration timeout = _cfTimeout,
   }) async {
     // Gate before any network calls.
-    await _ensureProcessingAllowedOrThrow();
+    await _ensureProcessingAllowedOrThrow(context);
 
     try {
       // Make sure callable sees fresh auth

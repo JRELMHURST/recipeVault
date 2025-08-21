@@ -10,11 +10,11 @@ import { translateText } from "./translate.js";
 import { generateFormattedRecipe } from "./gpt_logic.js";
 import {
   getResolvedTier,
-  enforceAndConsume,          // ✅ use transactional enforcement
-  incrementMonthlyUsage,      // used only for refunds if we choose to
+  enforceAndConsume,
+  incrementMonthlyUsage,
 } from "./usage_service.js";
 
-// 🔑 Secrets (OPENAI used by gpt_logic; RC secret not used here → remove if unused)
+// 🔑 Secrets
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
 function normalizeLangBase(code: string | undefined | null): string {
@@ -70,7 +70,7 @@ export const extractAndFormatRecipe = onCall(
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError("unauthenticated", "User must be authenticated.");
 
-    // 🔐 Hard gate before expensive work (fast fail for non‑subscribers)
+    // 🔐 Subscription gate
     const tier = await getResolvedTier(uid);
     if (tier === "none") {
       throw new HttpsError(
@@ -97,7 +97,7 @@ export const extractAndFormatRecipe = onCall(
       console.log(`📸 Starting processing of ${imageUrls.length} image(s)...`);
 
       // —— OCR (helper already enforces imageUsage transactionally)
-      const ocrText = await extractTextFromImages(uid, imageUrls); // ✅ pass uid
+      const ocrText = await extractTextFromImages(uid, imageUrls);
       if (!ocrText.trim()) {
         throw new HttpsError("invalid-argument", "No text detected in provided images.");
       }
@@ -131,8 +131,8 @@ export const extractAndFormatRecipe = onCall(
       if (!srcBase) {
         console.log("🤷 Detection unknown — skipping translation.");
       } else if (!alreadyTarget) {
-        // 🚦 Transactionally consume 1 translation credit before calling Translate
-        await enforceAndConsume(uid, "translationUsage", 1);
+        // 🚦 Transactionally consume 1 translated recipe card credit
+        await enforceAndConsume(uid, "translatedRecipeUsage", 1);
         try {
           console.log(`🚧 Translating "${detectedLanguage}" → ${targetLanguageTag}...`);
           const translated = await translateText(
@@ -148,25 +148,27 @@ export const extractAndFormatRecipe = onCall(
             console.log("✅ Translation successful");
           } else {
             console.warn("⚠️ Translation returned empty. Continuing with original text.");
-            // Refund the consumed credit if we decide empty means failure:
-            await incrementMonthlyUsage(uid, "translationUsage", -1).catch(() => {});
+            // Refund translated recipe card credit
+            await incrementMonthlyUsage(uid, "translatedRecipeUsage", -1).catch(() => {});
           }
         } catch (err) {
-          // Refund on failure
-          try { await incrementMonthlyUsage(uid, "translationUsage", -1); } catch {}
+          try { await incrementMonthlyUsage(uid, "translatedRecipeUsage", -1); } catch {}
           throw err;
         }
       } else {
         console.log(`🟢 Skipping translation – already ${targetLanguageTag}`);
+        // 🚦 Consume 1 normal recipe card credit
+        await enforceAndConsume(uid, "aiUsage", 1);
       }
 
-      // —— GPT formatting (helper transactionally consumes aiUsage + refunds on failure)
+      // —— GPT formatting (consumes correct usage kind internally too)
       const finalText = decode(usedText.trim());
       const formattedRecipe = await generateFormattedRecipe(
-        uid,                                      // ✅ required by helper
+        uid,
         finalText,
-        translationUsed ? (srcBase || "unknown")  : (tgtBase || "en"),
-        targetFlutterLocale
+        translationUsed ? (srcBase || "unknown") : (tgtBase || "en"),
+        targetFlutterLocale,
+        translationUsed ? "translatedRecipeUsage" : "aiUsage"
       );
 
       console.log(`🏁 Done in ${Date.now() - start}ms`);
@@ -174,11 +176,11 @@ export const extractAndFormatRecipe = onCall(
       return {
         formattedRecipe,
         originalText: ocrText,
-        detectedLanguage,          // e.g. "pl", "es", "en"
-        flutterLocale,             // detected source locale for reference
+        detectedLanguage,
+        flutterLocale,
         translationUsed,
-        targetLanguageTag,         // e.g. "pl" or "en-GB"
-        targetFlutterLocale,       // e.g. "pl" or "en_GB"
+        targetLanguageTag,
+        targetFlutterLocale,
         imageUrls,
         isTranslated: translationUsed,
         translatedFromLanguage: translationUsed ? detectedLanguage : null,

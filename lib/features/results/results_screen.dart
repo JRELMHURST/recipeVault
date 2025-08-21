@@ -323,6 +323,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           try {
                             final url =
                                 await ImageProcessingService.uploadRecipeImage(
+                                  context: context, // ✅ add context
                                   imageFile: croppedFile,
                                   userId: user.uid,
                                   recipeId: recipeId,

@@ -97,7 +97,7 @@ class UserSessionService {
         await Hive.openBox('userPrefs_$uid');
       }
 
-      final resolvedTier = await SubscriptionService().getResolvedTier();
+      final resolvedTier = SubscriptionService().getResolvedTier();
       _logDebug('🧾 Tier resolved via getResolvedTier(): $resolvedTier');
 
       // ✅ Ensure/merge Firestore user doc via unified AuthService

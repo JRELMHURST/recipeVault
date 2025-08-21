@@ -1,6 +1,8 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 import 'package:recipe_vault/app/app_bootstrap.dart';
 import 'package:recipe_vault/app/recipe_vault_app.dart';
@@ -14,6 +16,19 @@ import 'package:recipe_vault/features/recipe_vault/vault_view_mode_notifier.dart
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialise Firebase first
+  await Firebase.initializeApp();
+
+  // 🔒 Initialise App Check (best practice)
+  await FirebaseAppCheck.instance.activate(
+    // Debug provider for local builds
+    androidProvider: AndroidProvider.debug,
+    appleProvider: AppleProvider.appAttest, // ✅ use App Attest in prod
+    webProvider: ReCaptchaV3Provider('your-recaptcha-v3-site-key'),
+  );
+
+  // Ensure any app-specific bootstrapping is done
   await AppBootstrap.ensureReady();
 
   runApp(

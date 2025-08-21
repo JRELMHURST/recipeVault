@@ -19,44 +19,76 @@ export const reconcileUserFromRC = onCall(
 
     const targetUid =
       request.auth.token?.admin
-        ? (uidParam || (() => { throw new HttpsError("invalid-argument", "uid required for admin call"); })())
-        : (uidParam && uidParam !== callerUid
-            ? (() => { throw new HttpsError("permission-denied", "Clients may only reconcile their own account"); })()
-            : callerUid);
+        ? (uidParam ||
+            (() => {
+              throw new HttpsError("invalid-argument", "uid required for admin call");
+            })())
+        : uidParam && uidParam !== callerUid
+        ? (() => {
+            throw new HttpsError(
+              "permission-denied",
+              "Clients may only reconcile their own account"
+            );
+          })()
+        : callerUid;
 
     const apiKey = process.env.RC_API_KEY;
-    if (!apiKey) throw new HttpsError("failed-precondition", "Missing RC API key");
+    if (!apiKey)
+      throw new HttpsError("failed-precondition", "Missing RC API key");
 
-    // Use built-in fetch if on Node 18+ (drop node-fetch). Keeping generic:
+    // Fetch subscriber from RevenueCat
     const resp = await fetch(
       `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(targetUid)}`,
       { headers: { Authorization: `Bearer ${apiKey}` } }
     );
-    if (!resp.ok) throw new HttpsError("internal", `RC fetch failed: ${resp.status} ${await resp.text()}`);
+    if (!resp.ok) {
+      throw new HttpsError("internal", `RC fetch failed: ${resp.status} ${await resp.text()}`);
+    }
 
     const json: any = await resp.json();
     const subscriber = json?.subscriber ?? {};
 
-    // 🔁 Centralised productId resolution
-    const productId = resolveActiveProductIdFromSubscriber(subscriber);
+    // 🔍 Debug: log truncated subscriber payload (avoid huge logs)
+    console.info({
+      msg: "RC subscriber raw",
+      uid: targetUid,
+      entitlements: subscriber?.entitlements,
+      subscriptions: subscriber?.subscriptions,
+    });
 
+    // 🔁 Resolve productId + entitlement
+    const productId = resolveActiveProductIdFromSubscriber(subscriber);
     const r = toResult(productId);
 
-    // Shared hash
+    // 🔒 Hash for minimal-write detection
     const entitlementHash =
       typeof computeEntitlementHash === "function"
         ? computeEntitlementHash(r)
-        : crypto.createHash("sha256").update(JSON.stringify({ productId: r.productId ?? "none", tier: r.tier })).digest("hex");
+        : crypto
+            .createHash("sha256")
+            .update(JSON.stringify({ productId: r.productId ?? "none", tier: r.tier }))
+            .digest("hex");
 
     const userRef = db.doc(`users/${targetUid}`);
     const snap = await userRef.get();
     const prevHash = snap.exists ? snap.get("entitlementHash") : undefined;
 
+    // ✅ Backfill check: ensure required fields exist
+    const needsBackfill =
+      !snap.exists ||
+      !snap.get("tier") ||
+      !snap.get("productId") ||
+      !snap.get("entitlementStatus");
+
     const changed = prevHash !== entitlementHash;
-    if (changed) {
+
+    // 🔄 Always normalise productId
+    const safeProductId = (r.productId ?? "none").toLowerCase();
+
+    if (changed || needsBackfill) {
       await userRef.set(
         {
-          productId: (r.productId ?? "none").toLowerCase(),
+          productId: safeProductId,
           tier: r.tier,
           entitlementStatus: r.entitlementStatus,
           graceUntil: r.graceUntil,
@@ -75,6 +107,7 @@ export const reconcileUserFromRC = onCall(
       tier: r.tier,
       entitlementStatus: r.entitlementStatus,
       changed,
+      backfill: needsBackfill,
     });
 
     return {

@@ -1,12 +1,9 @@
 import { setGlobalOptions } from "firebase-functions/v2";
 import { initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import * as admin from "firebase-admin";
+import { getFirestore, Timestamp, FieldValue } from "firebase-admin/firestore";
 
-// 🌍 Default region for all Cloud Functions (London/Europe)
 setGlobalOptions({ region: "europe-west2" });
 
-// 🏁 Initialise Firebase Admin SDK (idempotent)
 try {
   initializeApp();
   console.log("✅ firebase: Admin initialised.");
@@ -19,8 +16,5 @@ try {
   }
 }
 
-// 🔥 Firestore instance for shared use
 export const firestore = getFirestore();
-
-// 🧱 Export full admin instance if needed (auth, storage, etc.)
-export default admin;
+export { Timestamp, FieldValue };

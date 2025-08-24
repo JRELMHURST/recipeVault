@@ -1,9 +1,11 @@
 // lib/auth/auth_service.dart
 // Auth + identity glue that keeps FirebaseAuth, Firestore, and RevenueCat in lockstep.
 
+import 'dart:io' show Platform;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb, debugPrint;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,13 +16,25 @@ import 'package:recipe_vault/data/services/user_preference_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+  // Allow serverClientId via --dart-define to support secure auth code flow (optional).
+  static const String _googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue: '',
+  );
+
+  // On mobile, use google_sign_in package; on web we use FirebaseAuth popups.
+  late final GoogleSignIn _googleSignIn = GoogleSignIn(
+    // scopes: ['email', 'profile'], // default scopes already include these
+    serverClientId: _googleServerClientId.isEmpty
+        ? null
+        : _googleServerClientId,
+  );
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
   bool get isLoggedIn =>
-      currentUser != null &&
-      !(currentUser?.isAnonymous ?? true); // exclude anon
+      currentUser != null && !(currentUser?.isAnonymous ?? true);
 
   /// Reads a locally saved preferred recipe locale (optional).
   Future<String?> _getPreferredRecipeLocale() async {
@@ -42,7 +56,14 @@ class AuthService {
       email: email.trim(),
       password: password,
     );
-    await _postAuthHousekeeping(credential.user!, forceCreateUserDoc: false);
+
+    final user = credential.user;
+    if (user == null) {
+      // This shouldn't happen on a successful sign-in, but guard just in case.
+      throw StateError('Sign-in succeeded but no user was returned.');
+    }
+
+    await _postAuthHousekeeping(user, forceCreateUserDoc: false);
     return credential;
   }
 
@@ -63,10 +84,32 @@ class AuthService {
     return credential;
   }
 
+  /// Google Sign‑In (web uses Firebase popup; mobile uses google_sign_in).
   Future<UserCredential?> signInWithGoogle() async {
     try {
+      if (kIsWeb) {
+        // Web: use FirebaseAuth popup for Google
+        final provider = GoogleAuthProvider();
+        // Example additional scopes if needed:
+        // provider.addScope('email'); provider.addScope('profile');
+        final cred = await _auth.signInWithPopup(provider);
+        await _postAuthHousekeeping(cred.user!, forceCreateUserDoc: true);
+        return cred;
+      }
+
+      // Mobile / desktop
+      if (!(Platform.isAndroid || Platform.isIOS)) {
+        if (kDebugMode) {
+          // For unsupported platforms, bail gracefully.
+          // (You could add desktop OAuth flows if needed.)
+          // ignore: avoid_print
+          print('Google sign-in is only set up for Android/iOS/Web.');
+        }
+        return null;
+      }
+
       final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
+      if (googleUser == null) return null; // user cancelled
 
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
@@ -86,8 +129,14 @@ class AuthService {
     }
   }
 
+  /// Sign in with Apple (supported on iOS). Returns null if not supported or canceled.
   Future<UserCredential?> signInWithApple() async {
     try {
+      if (kIsWeb || !Platform.isIOS) {
+        debugPrint('ℹ️ Apple sign-in is only supported on iOS.');
+        return null;
+      }
+
       final appleCredential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
@@ -119,17 +168,20 @@ class AuthService {
   // ───────────────── SIGN OUT / RESET ─────────────────
 
   Future<void> signOut() async {
-    // Keep RevenueCat + local state consistent with “signed out”.
+    // Keep RevenueCat + local state consistent with “signed out”
     try {
       await SubscriptionService().setAppUserId(null); // safely logs out RC
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ setAppUserId(null) failed: $e');
     }
 
-    try {
-      await _googleSignIn.signOut();
-    } catch (_) {
-      /* ignore */
+    // Best-effort sign-out of Google client on mobile
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      try {
+        await _googleSignIn.signOut();
+      } catch (_) {
+        /* ignore */
+      }
     }
 
     await _auth.signOut();
@@ -158,16 +210,24 @@ class AuthService {
       'userPrefs_$uid',
     ];
     for (final name in boxNames) {
-      if (Hive.isBoxOpen(name)) {
-        final box = Hive.box(name);
-        await box.clear();
-        await box.close();
-        await Hive.deleteBoxFromDisk(name);
-      } else if (await Hive.boxExists(name)) {
-        await Hive.deleteBoxFromDisk(name);
+      try {
+        if (Hive.isBoxOpen(name)) {
+          final box = Hive.box(name);
+          await box.clear();
+          await box.close();
+          await Hive.deleteBoxFromDisk(name);
+        } else if (await Hive.boxExists(name)) {
+          await Hive.deleteBoxFromDisk(name);
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to delete Hive box "$name": $e');
       }
     }
-    await UserPreferencesService.clearAllPreferences(uid);
+    try {
+      await UserPreferencesService.clearAllPreferences(uid);
+    } catch (e) {
+      debugPrint('⚠️ Failed to clear SharedPreferences for $uid: $e');
+    }
   }
 
   // ───────────────── Firestore User Doc ─────────────────
@@ -238,7 +298,7 @@ class AuthService {
       if (kDebugMode) debugPrint('⚠️ ensureUserDocument failed: $e');
     }
 
-    // 3) No client-side reconcile; rely on webhook → app will refresh via RC listener/router.
+    // 3) No client-side reconcile; rely on webhook → app refreshes via RC listener/router.
   }
 
   // ───────────────── Debug helpers ─────────────────

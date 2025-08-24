@@ -1,12 +1,15 @@
+// lib/billing/subscription_service.dart
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:collection/collection.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 
 /// Mapping helper — ideally generated from backend (TS ⇆ Dart)
 String productToTier(String productId) {
@@ -19,10 +22,16 @@ String productToTier(String productId) {
 enum EntitlementStatus { checking, active, inactive }
 
 class SubscriptionService extends ChangeNotifier {
-  // Singleton
+  // ── Singleton ─────────────────────────────────────────────────────────────
   static final SubscriptionService _instance = SubscriptionService._internal();
   factory SubscriptionService() => _instance;
   SubscriptionService._internal();
+
+  // RevenueCat platform support (avoid calls on web/desktop)
+  bool get _rcSupported =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android);
 
   // ── Public state/notifiers ────────────────────────────────────────────────
   final ValueNotifier<String> tierNotifier = ValueNotifier('none');
@@ -39,8 +48,9 @@ class SubscriptionService extends ChangeNotifier {
   CustomerInfo? _customerInfo;
   EntitlementInfo? _activeEntitlement;
 
-  // Firestore listener
-  Stream<DocumentSnapshot<Map<String, dynamic>>>? _fsSubListener;
+  // Firestore listener subscription
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+  _fsSubSubscription;
 
   /// Expose entitlement safely for trial/expiry info etc.
   EntitlementInfo? get activeEntitlement => _activeEntitlement;
@@ -139,7 +149,7 @@ class SubscriptionService extends ChangeNotifier {
   // ── Getters ───────────────────────────────────────────────────────────────
   String get tier => _tier;
 
-  /// ✅ Canonical getter — safe resolved tier (inc. specialAccess fallback)
+  /// Canonical getter — safe resolved tier (inc. specialAccess fallback)
   String get resolvedTier {
     if (_tier.isEmpty || _tier == 'none') {
       if (_hasSpecialAccess) return 'home_chef';
@@ -220,8 +230,7 @@ class SubscriptionService extends ChangeNotifier {
       // 🛡️ Defensive: if user is deleted, log them out and reset
       if (user != null) {
         try {
-          // Force refresh token → will throw if user no longer exists
-          await user.getIdToken(true);
+          await user.getIdToken(true); // throws if disabled/deleted
           await _seedFromCacheIfAny(user.uid);
           _attachFirestoreListener(user.uid);
         } on FirebaseAuthException catch (e) {
@@ -229,21 +238,29 @@ class SubscriptionService extends ChangeNotifier {
             debugPrint('⚠️ Current user no longer exists. Forcing logout.');
             await FirebaseAuth.instance.signOut();
             await reset();
-            return; // ⛔ skip rest of init
+            return;
           } else {
             rethrow;
           }
         }
       }
 
-      if (!_rcListenerAttached) {
+      if (_rcSupported && !_rcListenerAttached) {
         Purchases.addCustomerInfoUpdateListener(_onCustomerInfo);
         _rcListenerAttached = true;
       }
 
-      await Purchases.invalidateCustomerInfoCache();
-      await loadSubscriptionStatus();
-      await _loadAvailablePackages();
+      if (_rcSupported) {
+        await Purchases.invalidateCustomerInfoCache();
+        await loadSubscriptionStatus();
+        await _loadAvailablePackages();
+      } else {
+        // On unsupported platforms, still try to read overrides + usage.
+        if (user != null) {
+          await _loadUsageData(user.uid);
+          notifyListeners();
+        }
+      }
     } finally {
       _isInitialising = false;
     }
@@ -251,15 +268,19 @@ class SubscriptionService extends ChangeNotifier {
 
   Future<void> setAppUserId(String? firebaseUid) async {
     try {
+      if (!_rcSupported) {
+        // Still clear local state if logging out.
+        if (firebaseUid == null) await reset();
+        return;
+      }
+
       if (firebaseUid == null) {
         try {
           await Purchases.logOut();
         } on PlatformException catch (e) {
-          final code = e.code;
-          final readable = (e.details is Map)
-              ? (e.details['readableErrorCode'] as String?)
-              : null;
-          if (code != '22' && readable != 'LOGOUT_CALLED_WITH_ANONYMOUS_USER') {
+          // Use helper to read error code (avoid magic numbers)
+          final code = PurchasesErrorHelper.getErrorCode(e);
+          if (code != PurchasesErrorCode.logOutWithAnonymousUserError) {
             rethrow;
           }
           debugPrint('RC: already anonymous; ignoring logOut.');
@@ -279,6 +300,7 @@ class SubscriptionService extends ChangeNotifier {
 
   Future<void> refresh() async {
     if (_isLoadingTier) return;
+    if (!_rcSupported) return;
     await Purchases.invalidateCustomerInfoCache();
     await loadSubscriptionStatus();
   }
@@ -295,7 +317,14 @@ class SubscriptionService extends ChangeNotifier {
     _customerInfo = null;
     _hasSpecialAccess = false;
     tierNotifier.value = _tier;
-    await Purchases.invalidateCustomerInfoCache();
+
+    // Cancel Firestore listener when logging out or resetting
+    await _fsSubSubscription?.cancel();
+    _fsSubSubscription = null;
+
+    if (_rcSupported) {
+      await Purchases.invalidateCustomerInfoCache();
+    }
     notifyListeners();
   }
 
@@ -316,22 +345,25 @@ class SubscriptionService extends ChangeNotifier {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      _customerInfo = await _getCustomerInfoWithRetry(
-        preferRetry: _isBrandNewUser(user),
-      );
+      if (_rcSupported) {
+        _customerInfo = await _getCustomerInfoWithRetry(
+          preferRetry: _isBrandNewUser(user),
+        );
 
-      final ents = _customerInfo?.entitlements.active ?? const {};
-      final rcTier = _resolveTierFromEntitlements(ents);
-      final activeEntitlement = _getActiveEntitlement(ents, rcTier);
-      final rcEntitlementId = (activeEntitlement?.productIdentifier ?? 'none')
-          .toLowerCase();
+        final ents = _customerInfo?.entitlements.active ?? const {};
+        final rcTier = _resolveTierFromEntitlements(ents);
+        final activeEntitlement = _getActiveEntitlement(ents, rcTier);
+        final rcEntitlementId = (activeEntitlement?.productIdentifier ?? 'none')
+            .toLowerCase();
 
-      _tier = rcTier;
-      _entitlementId = rcEntitlementId;
-      _activeEntitlement = activeEntitlement;
-      tierNotifier.value = _tier;
-      _logTierOnce(source: 'loadSubscriptionStatus');
+        _tier = rcTier;
+        _entitlementId = rcEntitlementId;
+        _activeEntitlement = activeEntitlement;
+        tierNotifier.value = _tier;
+        _logTierOnce(source: 'loadSubscriptionStatus');
+      }
 
+      // Firestore overrides + special access
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -358,6 +390,8 @@ class SubscriptionService extends ChangeNotifier {
       }
 
       await _loadUsageData(user.uid);
+
+      // Cache after we’ve applied overrides
       await _saveCache(user.uid, _tier, active: hasActiveSubscription);
 
       notifyListeners();
@@ -410,7 +444,7 @@ class SubscriptionService extends ChangeNotifier {
     try {
       final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
       final fn = functions.httpsCallable('reconcileUserFromRC');
-      final resp = await fn.call(); // 🚫 no uid passed
+      final resp = await fn.call(); // auth context carries the UID
       debugPrint("🔄 Reconcile success: ${resp.data}");
     } catch (e, st) {
       debugPrint("❌ Reconcile failed: $e\n$st");
@@ -418,8 +452,9 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   void _onCustomerInfo(CustomerInfo info) async {
-    _customerInfo = info;
+    if (!_rcSupported) return;
 
+    _customerInfo = info;
     final ents = info.entitlements.active;
 
     debugPrint(
@@ -444,7 +479,7 @@ class SubscriptionService extends ChangeNotifier {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
         await _saveCache(uid, _tier, active: hasActiveSubscription);
-        await _reconcileWithBackend(); // 🆕 keep Firestore in sync
+        await _reconcileWithBackend(); // keep Firestore in sync
       }
     }
     if (changedTier || changedEnt) notifyListeners();
@@ -452,32 +487,39 @@ class SubscriptionService extends ChangeNotifier {
 
   // ── Firestore drift listener ──────────────────────────────────────────────
   void _attachFirestoreListener(String uid) {
-    _fsSubListener = FirebaseFirestore.instance
+    // Clean up any previous subscription
+    _fsSubSubscription?.cancel();
+    _fsSubSubscription = FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
-        .snapshots();
-    _fsSubListener!.listen((doc) {
-      final data = doc.data();
-      if (data == null) return;
+        .snapshots()
+        .listen((doc) {
+          final data = doc.data();
+          if (data == null) return;
 
-      final fsTier = (data['tier'] as String?)?.trim();
-      final fsSpecial = data['specialAccess'] == true;
+          final fsTier = (data['tier'] as String?)?.trim();
+          final fsSpecial = data['specialAccess'] == true;
 
-      if (fsTier != null && fsTier.isNotEmpty && fsTier != _tier) {
-        debugPrint('🔄 Firestore drift → applying $fsTier');
-        _tier = fsTier;
-        tierNotifier.value = _tier;
-        notifyListeners();
-      }
-      if (fsSpecial != _hasSpecialAccess) {
-        _hasSpecialAccess = fsSpecial;
-        notifyListeners();
-      }
-    });
+          bool changed = false;
+
+          if (fsTier != null && fsTier.isNotEmpty && fsTier != _tier) {
+            debugPrint('🔄 Firestore drift → applying $fsTier');
+            _tier = fsTier;
+            tierNotifier.value = _tier;
+            changed = true;
+          }
+          if (fsSpecial != _hasSpecialAccess) {
+            _hasSpecialAccess = fsSpecial;
+            changed = true;
+          }
+
+          if (changed) notifyListeners();
+        });
   }
 
   // ── RevenueCat package cache ──────────────────────────────────────────────
   Future<void> _loadAvailablePackages() async {
+    if (!_rcSupported) return;
     try {
       final offerings = await Purchases.getOfferings();
       final current = offerings.current;
@@ -537,6 +579,7 @@ class SubscriptionService extends ChangeNotifier {
   Future<CustomerInfo> _getCustomerInfoWithRetry({
     required bool preferRetry,
   }) async {
+    if (!_rcSupported) return CustomerInfo.fromJson(const {}); // no-op
     int attempts = preferRetry ? 3 : 1;
     Duration delay = const Duration(milliseconds: 400);
 
@@ -551,5 +594,15 @@ class SubscriptionService extends ChangeNotifier {
       debugPrint('⏳ Retrying RevenueCat fetch… remaining=$attempts');
     }
     return info;
+  }
+
+  // ── Cleanup ───────────────────────────────────────────────────────────────
+  @override
+  void dispose() {
+    _fsSubSubscription?.cancel();
+    _fsSubSubscription = null;
+    tierNotifier.dispose();
+    subscriptionErrorNotifier.dispose();
+    super.dispose();
   }
 }

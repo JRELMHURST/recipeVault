@@ -2,14 +2,11 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-
-import 'package:recipe_vault/firebase_options.dart';
 
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 import 'package:recipe_vault/data/models/category_model.dart';
@@ -22,7 +19,7 @@ import 'package:recipe_vault/billing/subscription_service.dart';
 class AppBootstrap {
   AppBootstrap._();
 
-  // Exposed services
+  // Exposed Firebase services (Firebase is initialized in main.dart)
   static final FirebaseFunctions functions = FirebaseFunctions.instanceFor(
     region: 'europe-west2',
   );
@@ -54,27 +51,26 @@ class AppBootstrap {
       if (!_timeoutReached.value) _timeoutReached.value = true;
     });
 
-    // 1) Firebase Core
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    } catch (e, st) {
-      debugPrint('❌ BOOT: Firebase init failed: $e');
-      debugPrintStack(stackTrace: st);
-      _ready.value = true; // let the router render an error/alternative
-      return;
-    }
+    // 1) Firebase Core is initialized in main.dart to avoid double init.
 
-    // 2) RevenueCat — only configure once, on supported platforms
+    // 2) RevenueCat — only configure once, on supported platforms (Android/iOS only)
     try {
       if (Platform.isIOS || Platform.isAndroid) {
         if (!_rcConfigured) {
           if (kDebugMode) await Purchases.setLogLevel(LogLevel.debug);
+
+          // Prefer passing keys via --dart-define for security.
+          final iosKey = const String.fromEnvironment(
+            'RC_API_KEY_IOS',
+            defaultValue: 'appl_oqbgqmtmctjzzERpEkswCejmukh',
+          );
+          final androidKey = const String.fromEnvironment(
+            'RC_API_KEY_ANDROID',
+            defaultValue: 'goog_oqbgqmtmctjzzERpEkswCejmukh',
+          );
+
           final cfg = PurchasesConfiguration(
-            Platform.isIOS
-                ? 'appl_oqbgqmtmctjzzERpEkswCejmukh'
-                : 'goog_oqbgqmtmctjzzERpEkswCejmukh',
+            Platform.isIOS ? iosKey : androidKey,
           );
           await Purchases.configure(cfg);
           _rcConfigured = true;
@@ -83,7 +79,7 @@ class AppBootstrap {
           debugPrint('ℹ️ BOOT: RevenueCat already configured, skipping');
         }
       } else {
-        debugPrint('ℹ️ BOOT: RevenueCat not configured (unsupported platform)');
+        debugPrint('ℹ️ BOOT: RevenueCat not configured (non‑mobile platform)');
       }
     } catch (e, st) {
       debugPrint('❌ BOOT: RevenueCat configure failed: $e');

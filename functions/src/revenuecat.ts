@@ -1,24 +1,30 @@
 // functions/src/revenuecat.ts
 import * as crypto from "crypto";
-import { Tier, productToTier } from "./mapping.js";
+import { Tier /*, EntitlementStatus */ } from "./types.js";
+import { productToTier } from "./mapping.js";
 
-/** Types for RevenueCat payloads (unchanged) */
+/** ---------- RevenueCat payload types ---------- */
 export interface Entitlement {
   is_active?: boolean;
+  // Some payloads may camelCase:
+  isActive?: boolean;
   product_identifier?: string;
   [key: string]: any;
 }
+
 export interface Subscription {
   expires_date?: string;
   product_identifier?: string;
   [key: string]: any;
 }
+
 export interface RCSubscriber {
   entitlements?: Record<string, Entitlement>;
   subscriptions?: Record<string, Subscription>;
   original_app_user_id?: string;
   [key: string]: any;
 }
+
 export interface RCWebhookPayload {
   event?: { type?: string; id?: string };
   app_user_id?: string;
@@ -27,16 +33,19 @@ export interface RCWebhookPayload {
   [key: string]: any;
 }
 
-/** ===== Active product resolution (centralised) ===== */
+/** ---------- Active product resolution ---------- */
 
-/** Resolve from a full webhook payload */
+/** Resolve from a full webhook payload. */
 export function resolveActiveProductId(payload: RCWebhookPayload): string | null {
-  return resolveActiveProductIdFromSubscriber(payload.subscriber ?? {}, payload.product_id);
+  return resolveActiveProductIdFromSubscriber(
+    payload.subscriber ?? {},
+    payload.product_id
+  );
 }
 
 /**
- * Resolve the currently active productId from a RevenueCat subscriber object.
- * Prefers entitlements, then optional directProductId hint, then subscriptions.
+ * Resolve the currently-active productId from an RC subscriber object.
+ * Prefers entitlements, then optional direct product hint, then active subscriptions.
  */
 export function resolveActiveProductIdFromSubscriber(
   subscriber: RCSubscriber,
@@ -50,30 +59,25 @@ export function resolveActiveProductIdFromSubscriber(
   const entitlements = subscriber.entitlements ?? {};
   const subs = subscriber.subscriptions ?? {};
 
-  // 🔍 Snapshot keys for debugging
+  // Debug snapshot
   console.info("[RC] Subscriber snapshot", {
     entitlementKeys: Object.keys(entitlements),
     subscriptionKeys: Object.keys(subs),
     directProductId,
   });
 
-// 1) Entitlements (source of truth per RevenueCat)
-for (const [key, ent] of Object.entries(entitlements)) {
-  console.info("[RC DEBUG] Checking entitlement", {
-    entitlementKey: key,
-    entitlement: ent,
-  });
-
-  if ((ent?.is_active || ent?.isActive) && ent?.product_identifier) {
-    console.info("[RC] Resolved via entitlement", {
-      entitlementKey: key,
-      productId: ent.product_identifier,
-    });
-    return String(ent.product_identifier);
+  // 1) Entitlements (source of truth per RC)
+  for (const [key, ent] of Object.entries(entitlements)) {
+    if ((ent?.is_active || ent?.isActive) && ent?.product_identifier) {
+      console.info("[RC] Resolved via entitlement", {
+        entitlementKey: key,
+        productId: ent.product_identifier,
+      });
+      return String(ent.product_identifier);
+    }
   }
-}
 
-  // 2) Direct productId hint
+  // 2) Direct productId hint (from webhook)
   if (directProductId) {
     console.info("[RC] Resolved via directProductId", directProductId);
     return String(directProductId);
@@ -89,12 +93,11 @@ for (const [key, ent] of Object.entries(entitlements)) {
     }
   }
 
-  // Nothing found
-  console.warn("[RC] No active entitlement or subscription found → returning null");
+  console.warn("[RC] No active entitlement or subscription found → null");
   return null;
 }
 
-/** Normalise `app_user_id` → Firebase UID (unchanged) */
+/** Normalize `app_user_id` → Firebase UID (if available). */
 export function resolveAppUserId(payload: RCWebhookPayload): string | null {
   if (payload.app_user_id) return String(payload.app_user_id);
   if (payload.subscriber?.original_app_user_id) {
@@ -103,7 +106,7 @@ export function resolveAppUserId(payload: RCWebhookPayload): string | null {
   return null;
 }
 
-/** Map product → tier */
+/** Map resolved product → Tier (business concept). */
 export function resolveTierFromPayload(payload: RCWebhookPayload): {
   uid: string | null;
   productId: string | null;
@@ -115,11 +118,11 @@ export function resolveTierFromPayload(payload: RCWebhookPayload): {
   return { uid, productId, tier };
 }
 
-/** ─────────────────────────────────────────────────────────
- *  Shared hash helper so webhook + callable stay identical
- *  Accepts Firestore Timestamp | Date | string | null | unknown.
- *  ───────────────────────────────────────────────────────── */
-
+/** ---------- Stable entitlement hash helpers ---------- */
+/**
+ * Accepts Firestore Timestamp | Date | string | null | unknown
+ * and returns ISO string or null.
+ */
 function normaliseDateLike(v: unknown): string | null {
   if (v == null) return null;
 
@@ -132,7 +135,7 @@ function normaliseDateLike(v: unknown): string | null {
       const d = anyV.toDate();
       if (d instanceof Date) return d.toISOString();
     } catch {
-      // ignore
+      /* ignore */
     }
   }
   if (typeof anyV?.seconds === "number") {
@@ -147,10 +150,15 @@ function normaliseDateLike(v: unknown): string | null {
   return null;
 }
 
-/** Stable entitlement hash (used by callable + webhook) */
+/**
+ * Stable hash used by webhook + callable to detect entitlement changes.
+ * Keep inputs minimal and normalized so the hash only changes on real state changes.
+ */
 export function computeEntitlementHash(input: {
   productId: string | null | undefined;
   tier: Tier;
+  // If you’d like stronger typing here, you can import EntitlementStatus and use it instead of string:
+  // entitlementStatus?: EntitlementStatus | null | undefined;
   entitlementStatus?: string | null | undefined;
   graceUntil?: unknown;
 }): string {
@@ -160,5 +168,8 @@ export function computeEntitlementHash(input: {
     status: input.entitlementStatus ?? null,
     graceUntil: normaliseDateLike(input.graceUntil),
   };
-  return crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+  return crypto
+    .createHash("sha256")
+    .update(JSON.stringify(payload))
+    .digest("hex");
 }

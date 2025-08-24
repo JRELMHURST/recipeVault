@@ -1,5 +1,4 @@
-// functions/src/revenuecat_webhook.ts
-import admin, { firestore } from "./firebase.js";
+import { firestore, Timestamp, FieldValue } from "./firebase.js";
 import { onRequest } from "firebase-functions/v2/https";
 import { resolveTierFromPayload, computeEntitlementHash } from "./revenuecat.js";
 import { verifyRevenueCatSignature } from "./rc-verify.js";
@@ -60,7 +59,7 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
 
     const dedupeRef = db.doc(`rc_events/${eventId}`);
     try {
-      await dedupeRef.create({ uid, at: admin.firestore.FieldValue.serverTimestamp() });
+      await dedupeRef.create({ uid, at: FieldValue.serverTimestamp() });
     } catch {
       res.status(200).send("ok"); // already processed
       return;
@@ -70,7 +69,7 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
     const r = toResult(productId, {
       expiresAt: payload?.event?.expiration_at ?? null,
       eventType: eventType,
-      graceDays: 3, // optional: adjust if you want grace handling
+      graceDays: 3,
     });
 
     const normalized = {
@@ -81,7 +80,12 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
     };
 
     // 4) Compute hash
-    const entitlementHash = computeEntitlementHash(normalized);
+    const entitlementHash = computeEntitlementHash({
+      productId: normalized.productId,
+      tier: normalized.tier,
+      entitlementStatus: normalized.entitlementStatus === "active" ? "active" : "inactive",
+      graceUntil: normalized.graceUntil,
+    });
 
     const userRef = db.doc(`users/${uid}`);
     const userSnap = await userRef.get();
@@ -93,8 +97,8 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
 
     const eventAt =
       payload?.event?.occurred_at
-        ? admin.firestore.Timestamp.fromDate(new Date(payload.event.occurred_at))
-        : admin.firestore.FieldValue.serverTimestamp();
+        ? Timestamp.fromDate(new Date(payload.event.occurred_at))
+        : FieldValue.serverTimestamp();
 
     if (changed) {
       await userRef.set(
@@ -102,7 +106,9 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
           productId: normalized.productId,
           tier: normalized.tier,
           entitlementStatus: normalized.entitlementStatus,
-          graceUntil: normalized.graceUntil,
+          graceUntil: normalized.graceUntil
+            ? Timestamp.fromDate(normalized.graceUntil)
+            : null,
           entitlementHash,
           lastEntitlementEventAt: eventAt,
         },
@@ -117,7 +123,9 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
         productId: normalized.productId,
         tier: normalized.tier,
         entitlementStatus: normalized.entitlementStatus,
-        graceUntil: normalized.graceUntil,
+        graceUntil: normalized.graceUntil
+          ? Timestamp.fromDate(normalized.graceUntil)
+          : null,
         at: eventAt,
         changed,
       },

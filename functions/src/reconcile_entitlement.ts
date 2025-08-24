@@ -1,4 +1,3 @@
-// functions/src/reconcile_entitlement.ts
 import type { Timestamp } from "firebase-admin/firestore";
 import { productToTier } from "./mapping.js";
 
@@ -22,9 +21,7 @@ export type ReconcileResult = {
   eventType?: string | null;
 };
 
-/**
- * Safely converts Firestore Timestamp / string / Date → Date
- */
+/** Safely converts Firestore Timestamp / string / Date → Date */
 function toDate(d: unknown): Date | null {
   if (!d) return null;
   if (d instanceof Date) return d;
@@ -44,10 +41,7 @@ function toDate(d: unknown): Date | null {
   return null;
 }
 
-/**
- * Computes entitlement tier + status from RevenueCat context.
- * Ensures consistent Firestore persistence of expiry + grace logic.
- */
+/** Computes entitlement tier + status from RevenueCat context. */
 export function toResult(
   productId: string | null,
   ctx: ReconcileContext = {}
@@ -63,8 +57,6 @@ export function toResult(
   if (tier !== "none" && expires) {
     if (expires <= now) {
       entitlementStatus = "expired";
-
-      // Grace period support
       if (ctx.graceDays && ctx.graceDays > 0) {
         const g = new Date(expires);
         g.setDate(g.getDate() + ctx.graceDays);
@@ -74,8 +66,7 @@ export function toResult(
     }
   }
 
-  // Event-type awareness (future expansion)
-  // Example: if billing issue, downgrade immediately regardless of expiry.
+  // Optional immediate downgrade on billing issue
   if (ctx.eventType === "BILLING_ISSUE" && entitlementStatus === "active") {
     entitlementStatus = "expired";
   }

@@ -1,4 +1,5 @@
 // lib/main.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -22,10 +23,11 @@ Future<void> main() async {
 
   // 🔒 Initialise App Check (best practice)
   await FirebaseAppCheck.instance.activate(
-    // Debug provider for local builds
-    androidProvider: AndroidProvider.debug,
-    appleProvider: AppleProvider.appAttest, // ✅ use App Attest in prod
-    webProvider: ReCaptchaV3Provider('your-recaptcha-v3-site-key'),
+    androidProvider: kDebugMode
+        ? AndroidProvider.debug
+        : AndroidProvider.playIntegrity,
+    appleProvider: AppleProvider.appAttestWithDeviceCheckFallback,
+    webProvider: ReCaptchaV3Provider('YOUR_REAL_RECAPTCHA_V3_SITE_KEY'),
   );
 
   // Ensure any app-specific bootstrapping is done

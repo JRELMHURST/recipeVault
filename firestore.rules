@@ -12,7 +12,8 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && request.auth.token.admin == true;
     }
-    // Only allow clients to touch benign profile prefs on /users/{uid}
+
+    // Owners can only touch safe profile fields
     function userUpdateIsSafe() {
       return request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly([
@@ -22,41 +23,52 @@ service cloud.firestore {
         ]);
     }
 
+    // Validate entitlement-related writes by admins/backend
+    function entitlementFieldsAreValid() {
+      return request.resource.data.tier in ['none', 'home_chef', 'master_chef']
+        && (request.resource.data.specialAccess is bool || !('specialAccess' in request.resource.data))
+        && (
+          !('entitlementStatus' in request.resource.data) ||
+          request.resource.data.entitlementStatus in ['active','expired','none']
+        );
+    }
+
     /* ─────────── per-user space ─────────── */
     match /users/{userId} {
 
-      // List/get own user doc
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      // User doc itself
+      allow get, list, create, delete: if isOwner(userId);
 
-      // Create/delete own doc (disable delete if you prefer backend-only)
-      allow create: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow update: if (
+        // Owners can only change safe profile fields
+        (isOwner(userId) && userUpdateIsSafe())
+        // Admins can update anything, but must respect entitlement validation
+        || (isAdmin() && entitlementFieldsAreValid())
+      );
 
-      // Single consolidated update rule (owner with safe fields OR admin)
-      allow update: if (isOwner(userId) && userUpdateIsSafe()) || isAdmin();
-
-      /* ── recipes (CRUD by owner) ── */
+      // Recipes (CRUD by owner)
       match /recipes/{recipeId} {
         allow read, write: if isOwner(userId);
       }
 
-      /* ── custom categories (CRUD by owner) ── */
+      // Custom categories (CRUD by owner)
       match /categories/{categoryId} {
         allow read, write: if isOwner(userId);
       }
 
-      /* ── optional translated/alt content (CRUD by owner) ── */
+      // Optional translated/alt content (CRUD by owner)
       match /translations/{translationId} {
         allow read, write: if isOwner(userId);
       }
 
-      /* ── per-user prefs (owner RW). e.g. /users/{uid}/prefs/app ── */
+      // Per-user prefs (owner RW). e.g. /users/{uid}/prefs/app
       match /prefs/{docId} {
         allow read, write: if isOwner(userId);
       }
 
-      /* ── usage counters (backend writes only; client read-only) ── */
+      /* ── usage counters ── 
+         Clients: read-only 
+         Backend/Admin SDK: unrestricted (rules ignored) */
       match /recipeUsage/{docId} {
         allow get, list: if isOwner(userId);
         allow create, update, delete: if false;
@@ -73,11 +85,11 @@ service cloud.firestore {
 
     /* ─────────── read-only tier limits ─────────── */
     match /tierLimits/{docId} {
-      allow get, list: if true;     // anyone can read
-      allow create, update, delete: if false; // only backend/admin via Admin SDK
+      allow get, list: if true; // anyone can read
+      allow create, update, delete: if false;
     }
 
-    /* ─────────── write-only analytics (from signed-in clients) ─────────── */
+    /* ─────────── write-only analytics ─────────── */
     match /analytics/{docId} {
       allow create: if isSignedIn();
       allow get, list, update, delete: if false;

@@ -57,16 +57,21 @@ export function resolveActiveProductIdFromSubscriber(
     directProductId,
   });
 
-  // 1) Entitlements (source of truth per RevenueCat)
-  for (const [key, ent] of Object.entries(entitlements)) {
-    if (ent?.is_active && ent?.product_identifier) {
-      console.info("[RC] Resolved via entitlement", {
-        entitlementKey: key,
-        productId: ent.product_identifier,
-      });
-      return String(ent.product_identifier);
-    }
+// 1) Entitlements (source of truth per RevenueCat)
+for (const [key, ent] of Object.entries(entitlements)) {
+  console.info("[RC DEBUG] Checking entitlement", {
+    entitlementKey: key,
+    entitlement: ent,
+  });
+
+  if ((ent?.is_active || ent?.isActive) && ent?.product_identifier) {
+    console.info("[RC] Resolved via entitlement", {
+      entitlementKey: key,
+      productId: ent.product_identifier,
+    });
+    return String(ent.product_identifier);
   }
+}
 
   // 2) Direct productId hint
   if (directProductId) {

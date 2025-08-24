@@ -35,22 +35,38 @@ function toFlutterLocaleTag(lang?: string, region?: string | null): string {
 async function deleteUploadedImage(url: string) {
   try {
     const match = url.match(/\/o\/([^?]+)\?/);
-    if (!match?.[1]) {
-      console.warn("❌ Could not extract path from URL:", url);
-      return;
-    }
+    if (!match?.[1]) return;
     const path = decodeURIComponent(match[1]);
     const file = getStorage().bucket().file(path);
     const [exists] = await file.exists();
-    if (!exists) {
-      console.warn(`⚠️ Skipped deletion – file not found: ${path}`);
-      return;
+    if (exists) {
+      await file.delete();
+      console.info({ msg: "🗑️ Deleted uploaded image", path });
     }
-    await file.delete();
-    console.log(`🗑️ Deleted uploaded image: ${path}`);
   } catch (err) {
-    console.warn(`⚠️ Error deleting image (${url}):`, err);
+    console.warn("⚠️ Error deleting image", url, err);
   }
+}
+
+/* ─────────── Retry util ─────────── */
+async function withRetries<T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  baseDelayMs = 500
+): Promise<T> {
+  let lastErr: any;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt === retries) break;
+      const backoff = baseDelayMs * Math.pow(2, attempt);
+      console.warn(`[extractAndFormatRecipe] ⚠️ Attempt ${attempt + 1} failed, retrying in ${backoff}ms…`, err);
+      await new Promise((res) => setTimeout(res, backoff));
+    }
+  }
+  throw lastErr;
 }
 
 /* ─────────── Main Cloud Function ─────────── */
@@ -58,8 +74,8 @@ export const extractAndFormatRecipe = onCall(
   { secrets: [OPENAI_API_KEY] },
   async (request: CallableRequest<{
     imageUrls: string[];
-    targetLanguage?: string; // e.g. "pl", "en"
-    targetRegion?: string;   // e.g. "GB", "PL"
+    targetLanguage?: string;
+    targetRegion?: string;
   }>) => {
     const start = Date.now();
 
@@ -79,7 +95,7 @@ export const extractAndFormatRecipe = onCall(
         "✨ Unlock Chef Mode with the Home Chef or Master Chef plan!"
       );
     }
-    console.log(`🎟️ Subscription tier: ${tier}`);
+    console.info({ msg: "🎟️ Subscription tier", uid, tier });
 
     const projectId =
       process.env.GCLOUD_PROJECT ||
@@ -91,34 +107,32 @@ export const extractAndFormatRecipe = onCall(
     // —— Target locale
     const targetLanguage = (request.data?.targetLanguage || "en").toLowerCase();
     const targetRegion = (request.data?.targetRegion || "GB") || undefined;
-    const targetLanguageTag = toBcp47(targetLanguage, targetRegion);     // e.g. en-GB
-    const targetFlutterLocale = toFlutterLocaleTag(targetLanguage, targetRegion); // e.g. en_GB
+    const targetLanguageTag = toBcp47(targetLanguage, targetRegion);
+    const targetFlutterLocale = toFlutterLocaleTag(targetLanguage, targetRegion);
 
     try {
-      console.log(`📸 Starting processing of ${imageUrls.length} image(s)...`);
+      console.info({ msg: "📸 Starting processing", uid, images: imageUrls.length });
 
-      // —— OCR (helper already enforces imageUsage transactionally)
-      const ocrText = await extractTextFromImages(uid, imageUrls);
+      // —— OCR (with retries)
+      const ocrText = await withRetries(() => extractTextFromImages(uid, imageUrls));
       if (!ocrText.trim()) {
         throw new HttpsError("invalid-argument", "No text detected in provided images.");
       }
       const cleanInput = ocrText.replace(/[ \t]+\n/g, "\n").trim();
-      console.log("🔎 OCR complete");
+      console.info({ msg: "🔎 OCR complete", uid });
 
       // —— Language detection
       let detectedLanguage = "unknown";
       let confidence = 0;
       let flutterLocale = "en_GB";
       try {
-        const detection = await detectLanguage(cleanInput, projectId);
+        const detection = await withRetries(() => detectLanguage(cleanInput, projectId));
         detectedLanguage = detection.languageCode || "unknown";
         confidence = detection.confidence ?? 0;
         flutterLocale = detection.flutterLocale || "en_GB";
-        console.log(
-          `🌐 Detected: ${detectedLanguage} (conf: ${confidence}) → flutterLocale: ${flutterLocale}`
-        );
+        console.info({ msg: "🌐 Language detected", detectedLanguage, confidence, flutterLocale });
       } catch (err) {
-        console.warn("⚠️ Language detection failed:", err);
+        console.warn("⚠️ Language detection failed", err);
       }
 
       // —— Decide if translation is needed
@@ -131,55 +145,48 @@ export const extractAndFormatRecipe = onCall(
       let usageKind: "recipeUsage" | "translatedRecipeUsage" = "recipeUsage";
 
       if (!srcBase) {
-        console.log("🤷 Detection unknown — skipping translation.");
         await enforceAndConsume(uid, "recipeUsage", 1);
       } else if (!alreadyTarget) {
-        // 🚦 Transactionally consume 1 translated recipe card credit
+        // consume translated credit
         await enforceAndConsume(uid, "translatedRecipeUsage", 1);
         usageKind = "translatedRecipeUsage";
 
         try {
-          console.log(`🚧 Translating "${detectedLanguage}" → ${targetLanguageTag}...`);
-          const translated = await translateText(
-            cleanInput,
-            detectedLanguage,
-            targetLanguageTag,
-            projectId
+          const translated = await withRetries(() =>
+            translateText(cleanInput, detectedLanguage, targetLanguageTag, projectId)
           );
           const cleanedTranslated = (translated || "").trim();
           if (cleanedTranslated) {
             usedText = cleanedTranslated;
             translationUsed = true;
-            console.log("✅ Translation successful");
+            console.info({ msg: "✅ Translation successful", from: detectedLanguage, to: targetLanguageTag });
           } else {
-            console.warn("⚠️ Translation returned empty. Continuing with original text.");
-            // Refund translated recipe card credit
+            console.warn("⚠️ Empty translation. Refunding and falling back.");
             await incrementMonthlyUsage(uid, "translatedRecipeUsage", -1).catch(() => {});
-            // Instead consume a normal recipe credit
             await enforceAndConsume(uid, "recipeUsage", 1);
             usageKind = "recipeUsage";
           }
         } catch (err) {
-          // Refund credit on failure
-          try { await incrementMonthlyUsage(uid, "translatedRecipeUsage", -1); } catch {}
+          await incrementMonthlyUsage(uid, "translatedRecipeUsage", -1).catch(() => {});
           throw err;
         }
       } else {
-        console.log(`🟢 Skipping translation – already ${targetLanguageTag}`);
         await enforceAndConsume(uid, "recipeUsage", 1);
       }
 
       // —— GPT formatting
       const finalText = decode(usedText.trim());
-      const formattedRecipe = await generateFormattedRecipe(
-        uid,
-        finalText,
-        translationUsed ? (srcBase || "unknown") : (tgtBase || "en"),
-        targetFlutterLocale,
-        usageKind
+      const formattedRecipe = await withRetries(() =>
+        generateFormattedRecipe(
+          uid,
+          finalText,
+          translationUsed ? (srcBase || "unknown") : (tgtBase || "en"),
+          targetFlutterLocale,
+          usageKind
+        )
       );
 
-      console.log(`🏁 Done in ${Date.now() - start}ms`);
+      console.info({ msg: "🏁 Recipe processed", uid, ms: Date.now() - start });
 
       return {
         formattedRecipe,
@@ -195,16 +202,12 @@ export const extractAndFormatRecipe = onCall(
         tier,
       };
     } catch (err: any) {
-      console.error("❌ extractAndFormatRecipe failed:", err);
+      console.error("❌ extractAndFormatRecipe failed", err);
       if (err instanceof HttpsError) throw err;
       throw new HttpsError("internal", `❌ Failed to process recipe: ${err?.message || "Unknown error"}`);
     } finally {
       // Always delete uploads
-      try {
-        await Promise.all((request.data?.imageUrls ?? []).map(deleteUploadedImage));
-      } catch (e) {
-        console.warn("⚠️ Failed to delete uploaded images:", e);
-      }
+      await Promise.all((request.data?.imageUrls ?? []).map(deleteUploadedImage));
     }
   }
 );

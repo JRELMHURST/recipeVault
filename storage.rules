@@ -13,9 +13,14 @@ service firebase.storage {
       return isSignedIn() && request.auth.token.admin == true;
     }
 
+    // ✅ Only allow known safe image formats
+    function isAllowedImage() {
+      return request.resource.name.matches('.*\\.(png|jpg|jpeg|webp)$');
+    }
+
     function isImageUpload() {
       return request.resource.contentType.matches('image/.*')
-        && request.resource.name.matches('.*\\.(png|jpg|jpeg|webp)$');
+        && isAllowedImage();
     }
 
     function sizeUnder(limitMB) {
@@ -24,17 +29,19 @@ service firebase.storage {
 
     /* ─────────── per-user uploads ─────────── */
     match /users/{userId}/{allPaths=**} {
-      // Owner can read anything under their folder
+      // Only the signed-in user can read/write their folder
       allow read: if isOwner(userId);
-
-      // Owner can write images up to 10MB
-      allow write: if isOwner(userId) && isImageUpload() && sizeUnder(10);
+      allow write: if isOwner(userId)
+        && isImageUpload()
+        && sizeUnder(10);
     }
 
     /* ─────────── public/shared images ─────────── */
     match /shared_recipes/{allPaths=**} {
       allow read: if true;
-      allow write: if isAdmin() && isImageUpload() && sizeUnder(10);
+      allow write: if isAdmin()
+        && isImageUpload()
+        && sizeUnder(10);
     }
 
     /* ─────────── default deny ─────────── */

@@ -41,7 +41,6 @@ class UserSessionService {
 
       final e = info.entitlements.active.values.first;
 
-      // If active and not a trial → no “trial ended” screen
       if (e.isActive && e.periodType != PeriodType.trial) return false;
 
       if (e.periodType == PeriodType.trial) {
@@ -64,8 +63,37 @@ class UserSessionService {
 
   static Future<void> syncEntitlementAndRefreshSession() async {
     _logDebug('🔄 Manually syncing entitlement + refreshing session...');
-    await SubscriptionService().syncRevenueCatEntitlement();
-    await init();
+    try {
+      // Refresh RC cache
+      await Purchases.invalidateCustomerInfoCache();
+      final info = await Purchases.getCustomerInfo();
+      final active = info.entitlements.active.values
+          .map((e) => e.productIdentifier)
+          .join(', ');
+      _logDebug('🧾 Active RC products: [$active]');
+
+      // 🔑 Best-effort reconcile on backend
+      try {
+        final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
+        final callable = functions.httpsCallable("reconcileUserFromRC");
+
+        unawaited(
+          callable.call().then<void>(
+            (_) => _logDebug('☁️ Reconcile triggered (best effort)'),
+            onError: (err) => _logDebug('⚠️ Reconcile failed to trigger: $err'),
+          ),
+        );
+      } catch (e) {
+        _logDebug('⚠️ Failed to trigger reconcile: $e');
+      }
+
+      // Refresh local subscription state + re-init
+      await SubscriptionService().refresh();
+      await init();
+    } catch (e, stack) {
+      _logDebug('⚠️ Failed to sync entitlement: $e');
+      if (kDebugMode) print(stack);
+    }
   }
 
   static Future<void> init() async {
@@ -91,16 +119,14 @@ class UserSessionService {
     final monthKey = DateFormat('yyyy-MM').format(DateTime.now());
 
     try {
-      // Ensure prefs box is ready
       await UserPreferencesService.init();
       if (!Hive.isBoxOpen('userPrefs_$uid')) {
         await Hive.openBox('userPrefs_$uid');
       }
 
-      final resolvedTier = SubscriptionService().getResolvedTier();
-      _logDebug('🧾 Tier resolved via getResolvedTier(): $resolvedTier');
+      final tier = SubscriptionService().tier;
+      _logDebug('🧾 Tier resolved: $tier');
 
-      // ✅ Ensure/merge Firestore user doc via unified AuthService
       final isNewUser = await AuthService.ensureUserDocument(user);
       if (isNewUser) {
         try {} catch (e, stack) {
@@ -109,7 +135,6 @@ class UserSessionService {
         }
       }
 
-      // ── User doc listener ──
       _userDocSubscription = FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -126,7 +151,6 @@ class UserSessionService {
             onError: (error) => _logDebug('⚠️ User doc listener error: $error'),
           );
 
-      // ── AI usage stream ──
       _recipeUsageSub = FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -151,7 +175,6 @@ class UserSessionService {
             );
           }, onError: (error) => _logDebug('⚠️ AI usage stream error: $error'));
 
-      // ── Translation usage stream ──
       _translationSub = FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -180,17 +203,9 @@ class UserSessionService {
                 _logDebug('⚠️ Translation usage stream error: $error'),
           );
 
-      final tier = SubscriptionService().tier;
-      _logDebug('🎟️ Tier resolved: $tier');
-
-      // Complete to unblock any awaiters
       _bubbleFlagsReady?.complete();
 
-      // ── Data loading ──
-      _logDebug('📂 Loading categories...');
       await CategoryService.load();
-
-      _logDebug('📂 Loading vault recipes...');
       await VaultRecipeService.load();
 
       _logDebug('📡 Starting vault listener...');
@@ -210,6 +225,9 @@ class UserSessionService {
 
   static Future<void> logoutReset() async {
     _logDebug('👋 Logging out + resetting session...');
+
+    await _cancelAllStreams(); // 🛑 stop listeners early
+    await SubscriptionService().reset();
 
     try {
       await Purchases.logOut();
@@ -277,44 +295,6 @@ class UserSessionService {
     _isInitialised = false;
     _bubbleFlagsReady = null;
     _logDebug('🔄 Session reset');
-  }
-
-  /// (Optional helper) Replaces old PurchaseHelper-based sync.
-  /// Fetches RC info, asks backend to reconcile Firestore, then refreshes our SubscriptionService.
-  static Future<void> syncRevenueCatEntitlement() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    try {
-      // 1) Ensure RC cache is fresh and read latest entitlements (for logging/diagnostics)
-      await Purchases.invalidateCustomerInfoCache();
-      final customerInfo = await Purchases.getCustomerInfo();
-      final active = customerInfo.entitlements.active.values
-          .map((e) => e.productIdentifier)
-          .join(', ');
-      _logDebug('🧾 Active RC products: [$active]');
-
-      // 2) Trigger backend reconcile (Cloud Function) — Firestore is updated server-side
-      // 2) Trigger backend reconcile (best‑effort, non‑blocking)
-      try {
-        final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
-        final callable = functions.httpsCallable("reconcileUserFromRC");
-        unawaited(
-          callable
-              .call(<String, dynamic>{})
-              .then<void>((_) {}, onError: (_) {}),
-        );
-        _logDebug('☁️ Reconcile triggered (best effort)');
-      } catch (e) {
-        _logDebug('⚠️ Failed to trigger reconcile: $e');
-      }
-
-      // 3) Pull fresh state into the app (updates router/UI via notifiers)
-      await SubscriptionService().refresh();
-    } catch (e, stack) {
-      _logDebug('⚠️ Failed to sync entitlement via backend: $e');
-      if (kDebugMode) print(stack);
-    }
   }
 
   static Future<void> waitForBubbleFlags() =>

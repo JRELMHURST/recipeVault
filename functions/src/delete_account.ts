@@ -26,21 +26,10 @@ async function deleteSubcollectionBatching(
 }
 
 export const deleteAccount = onCall(
-  { enforceAppCheck: false }, // ✅ flip to true once App Check is rolled out in clients
+  { enforceAppCheck: false }, // 🔒 flip true in prod
   async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) {
-      throw new HttpsError("unauthenticated", "User must be authenticated.");
-    }
-
-    const projectId =
-      process.env.GCLOUD_PROJECT || process.env.FUNCTIONS_PROJECT_ID || "";
-    if (!projectId) {
-      throw new HttpsError(
-        "failed-precondition",
-        "No project environment detected."
-      );
-    }
+    if (!uid) throw new HttpsError("unauthenticated", "User must be authenticated.");
 
     const userDocRef = firestore.collection("users").doc(uid);
     const result = {
@@ -48,59 +37,43 @@ export const deleteAccount = onCall(
       subcollectionsDeleted: false,
       storageDeleted: false,
       authDeleted: false,
-      details: {
-        recipesDeleted: 0,
-        categoriesDeleted: 0,
-        recipeUsageDeleted: 0,
-        translatedRecipeUsageDeleted: 0,
-        imageUsageDeleted: 0,
-        prefsDeleted: 0,
-      },
-    };
+      details: {},
+    } as any;
 
-    console.log(`🔥 Starting full account deletion for UID: ${uid}`);
+    console.log(`🔥 Deleting account for UID=${uid}`);
 
-    // 🔄 Delete subcollections
     try {
-      result.details.recipesDeleted = await deleteSubcollectionBatching(userDocRef, "recipes");
-      result.details.categoriesDeleted = await deleteSubcollectionBatching(userDocRef, "categories");
-      result.details.recipeUsageDeleted = await deleteSubcollectionBatching(userDocRef, "recipeUsage");
-      result.details.translatedRecipeUsageDeleted = await deleteSubcollectionBatching(userDocRef, "translatedRecipeUsage");
-      result.details.imageUsageDeleted = await deleteSubcollectionBatching(userDocRef, "imageUsage");
-      result.details.prefsDeleted = await deleteSubcollectionBatching(userDocRef, "prefs");
-
+      // subcollections
+      for (const col of [
+        "recipes",
+        "categories",
+        "recipeUsage",
+        "translationUsage",
+        "imageUsage",
+        "prefs",
+      ]) {
+        const count = await deleteSubcollectionBatching(userDocRef, col);
+        result.details[col] = count;
+      }
       result.subcollectionsDeleted = true;
-      console.log("🧹 Subcollections deleted:", result.details);
-    } catch (err) {
-      console.error("❌ Failed deleting subcollections:", err);
-    }
 
-    // 🧾 Delete user doc
-    try {
+      // doc
       await userDocRef.delete();
       result.firestoreDeleted = true;
-    } catch (err) {
-      console.error("❌ Failed deleting user document:", err);
-    }
 
-    // 🗃️ Delete user storage (default bucket unless multi-bucket setup)
-    try {
-      const bucket = storage.bucket();
-      await bucket.deleteFiles({ prefix: `users/${uid}/` });
+      // storage
+      await storage.bucket().deleteFiles({ prefix: `users/${uid}/` });
       result.storageDeleted = true;
-    } catch (err) {
-      console.error("❌ Failed deleting storage files:", err);
-    }
 
-    // 🔐 Delete Firebase Auth user LAST
-    try {
+      // auth user
       await auth.deleteUser(uid);
       result.authDeleted = true;
+
+      console.log(`✅ Account deletion complete for ${uid}`);
     } catch (err) {
-      console.error("❌ Failed deleting Firebase Auth user:", err);
+      console.error(`❌ Account deletion error for ${uid}`, err);
     }
 
-    console.log(`✅ Account deletion complete for UID: ${uid}`, result);
     return { success: true, ...result };
   }
 );

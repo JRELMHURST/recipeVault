@@ -77,9 +77,11 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () async {
-              await context
-                  .read<SubscriptionService>()
-                  .syncRevenueCatEntitlement(forceRefresh: true);
+              final subs = context.read<SubscriptionService>();
+              await subs.refresh(); // pulls latest from RevenueCat + Firestore
+              // Optionally push reconcile if you want immediate backend alignment
+              await subs.refreshAndNotify(); // keeps UI in sync
+
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

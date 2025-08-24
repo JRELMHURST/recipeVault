@@ -38,12 +38,12 @@ export const seedUserOnCreate = onDocumentCreated("users/{uid}", async (event) =
 
       // Subscription core
       tier: defaultTier,                       // 🚨 enforcement field
-      productId: null,                         // RC productIdentifier (audit only)
+      productId: "none",                       // RC productIdentifier (audit only, normalised)
       entitlementStatus: "none",               // "active" | "expired" | "none"
       expiresAt: null,                         // populated by RC webhook
       graceUntil: null,                        // populated by RC webhook
-      lastEntitlementEventAt: FieldValue.serverTimestamp(),
-      entitlementHash: "",                     // prevents duplicate writes
+      lastEntitlementEventAt: null,            // wait for actual RC event
+      entitlementHash: "seed",                 // prevents duplicate writes, explicit marker
 
       // Overrides / beta
       specialAccess: defaultAccess,

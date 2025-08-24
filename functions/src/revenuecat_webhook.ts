@@ -33,7 +33,7 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
       res.status(200).send("ok");
       return;
     }
-    // (Optional) Gate to subscription-related events only
+
     const interesting = [
       "INITIAL_PURCHASE", "NON_RENEWING_PURCHASE", "PRODUCT_CHANGE",
       "CANCELLATION", "UNCANCELLATION", "BILLING_ISSUE", "RENEWAL",
@@ -62,23 +62,25 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
     try {
       await dedupeRef.create({ uid, at: admin.firestore.FieldValue.serverTimestamp() });
     } catch {
-      // Already processed
-      res.status(200).send("ok");
+      res.status(200).send("ok"); // already processed
       return;
     }
 
-    // 3) Normalize entitlement -> our fields
-    const r = toResult(productId); // { productId, tier, entitlementStatus, graceUntil }
+    // 3) Normalise entitlement using full reconcile logic
+    const r = toResult(productId, {
+      expiresAt: payload?.event?.expiration_at ?? null,
+      eventType: eventType,
+      graceDays: 3, // optional: adjust if you want grace handling
+    });
 
-    // If we somehow can’t map productId, degrade safely to none/inactive
     const normalized = {
       productId: (r.productId ?? "none").toLowerCase(),
-      tier: r.tier ?? "none",
-      entitlementStatus: r.entitlementStatus ?? "inactive",
-      graceUntil: r.graceUntil ?? null,
+      tier: r.tier,
+      entitlementStatus: r.entitlementStatus,
+      graceUntil: r.graceUntil,
     };
 
-    // 4) Compute hash to avoid no-op writes
+    // 4) Compute hash
     const entitlementHash = computeEntitlementHash(normalized);
 
     const userRef = db.doc(`users/${uid}`);
@@ -86,12 +88,11 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
     const prevHash = userSnap.exists ? userSnap.get("entitlementHash") : undefined;
     const changed = prevHash !== entitlementHash;
 
-    // 5) Optional per-user audit (much easier to inspect than a global collection)
+    // 5) Per-user audit trail
     const auditRef = db.doc(`users/${uid}/rcEvents/${eventId}`);
 
-    // Use RC’s event time if present (ISO8601), fallback to server TS
     const eventAt =
-      payload?.event?.occurred_at // RC uses occurred_at/created_at depending on version; keep both if needed
+      payload?.event?.occurred_at
         ? admin.firestore.Timestamp.fromDate(new Date(payload.event.occurred_at))
         : admin.firestore.FieldValue.serverTimestamp();
 
@@ -103,14 +104,12 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
           entitlementStatus: normalized.entitlementStatus,
           graceUntil: normalized.graceUntil,
           entitlementHash,
-          // Don’t touch "lastLogin" from a webhook—use a dedicated field:
           lastEntitlementEventAt: eventAt,
         },
         { merge: true }
       );
     }
 
-    // Write a compact audit doc (ok if it already exists due to idempotency)
     await auditRef.set(
       {
         eventId,
@@ -137,10 +136,8 @@ export const revenuecatWebhook = onRequest({ region: "europe-west2" }, async (re
     });
 
     res.status(200).send("ok");
-    return;
   } catch (e) {
     console.error("RC webhook error", e);
     res.status(500).send("error");
-    return;
   }
 });

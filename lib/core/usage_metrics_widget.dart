@@ -112,7 +112,7 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
     }
 
     final recipesUsed = sub.recipeUsage;
-    final translationsUsed = sub.translationUsage;
+    final translationsUsed = sub.translatedRecipeUsage; // ✅ fixed
     final recipeLimit = sub.aiLimit;
     final translationLimit = sub.translatedRecipeLimit;
 

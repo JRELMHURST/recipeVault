@@ -31,25 +31,23 @@ class ImageProcessingService {
 
   // ───────────────────────── PLAN GATES ─────────────────────────
 
-  /// Throws with a friendly message if uploads aren’t allowed.
   static Future<void> _ensureUploadAllowedOrThrow(BuildContext context) async {
     final subs = context.read<SubscriptionService>();
     if (!subs.allowImageUpload) {
       _logDebug("❌ Upload entitlement denied. Tier=${subs.tier}");
-      throw Exception(
+      throw SubscriptionGateException(
         '✨ Upload images with the Home Chef or Master Chef plan.',
       );
     }
   }
 
-  /// Throws with a friendly message if OCR/translation isn’t allowed.
   static Future<void> _ensureProcessingAllowedOrThrow(
     BuildContext context,
   ) async {
     final subs = context.read<SubscriptionService>();
     if (!subs.allowTranslation) {
       _logDebug("❌ Processing entitlement denied. Tier=${subs.tier}");
-      throw Exception(
+      throw SubscriptionGateException(
         '✨ Unlock Chef Mode with Home Chef or Master Chef to process recipes.',
       );
     }
@@ -57,7 +55,6 @@ class ImageProcessingService {
 
   // ───────────────────────── PICK + COMPRESS ─────────────────────────
 
-  /// Picks multiple images and compresses them (JPEG + orientation fixed).
   static Future<List<File>> pickAndCompressImages(BuildContext context) async {
     await _ensureUploadAllowedOrThrow(context);
     final picked = await _picker.pickMultiImage();
@@ -65,7 +62,6 @@ class ImageProcessingService {
     return _compressFiles(picked.map((x) => File(x.path)).toList());
   }
 
-  /// Compresses to JPEG, clamps long side, preserves orientation.
   static Future<List<File>> _compressFiles(List<File> files) async {
     final tempDir = await getTemporaryDirectory();
     final out = <File>[];
@@ -98,7 +94,7 @@ class ImageProcessingService {
         }
       } catch (e) {
         _logDebug('⚠️ Compression failed for ${file.path}: $e');
-        out.add(file); // be permissive
+        out.add(file);
       }
     }
     return out;
@@ -106,7 +102,6 @@ class ImageProcessingService {
 
   // ────────────────────────────── UPLOADS ──────────────────────────────
 
-  /// Uploads image files to Firebase Storage; returns download URLs.
   static Future<List<String>> uploadFiles(
     BuildContext context,
     List<File> files,
@@ -116,7 +111,6 @@ class ImageProcessingService {
     return FirebaseStorageService.uploadImages(files);
   }
 
-  /// Upload a single recipe image to a user path with sane metadata.
   static Future<String> uploadRecipeImage({
     required BuildContext context,
     required File imageFile,
@@ -140,17 +134,18 @@ class ImageProcessingService {
       _logDebug('✅ Uploaded recipe image: $url');
       return url;
     } on TimeoutException {
-      throw Exception('Upload timed out. Please check your connection.');
+      throw NetworkTimeoutException(
+        'Upload timed out. Please check your connection.',
+      );
     } on FirebaseException catch (e) {
-      throw Exception('Storage error: ${e.code}');
+      throw StorageException('Storage error: ${e.code}');
     } catch (e) {
-      throw Exception('Failed to upload recipe image: $e');
+      throw StorageException('Failed to upload recipe image: $e');
     }
   }
 
   // ─────────────────────────────── CROP ───────────────────────────────
 
-  /// Optional crop flow via ImageCropper.
   static Future<File?> cropImage(File originalImage) async {
     final cropped = await ImageCropper().cropImage(
       sourcePath: originalImage.path,
@@ -172,7 +167,6 @@ class ImageProcessingService {
     return cropped == null ? null : File(cropped.path);
   }
 
-  /// Pick → (compress) → (crop) → upload. Returns download URL or null if cancelled.
   static Future<String?> pickAndUploadSingleImage({
     required BuildContext context,
     required String recipeId,
@@ -194,7 +188,7 @@ class ImageProcessingService {
       }
 
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception('User not signed in');
+      if (user == null) throw AuthException('User not signed in');
 
       return await uploadRecipeImage(
         context: context,
@@ -215,40 +209,33 @@ class ImageProcessingService {
     BuildContext context, {
     Duration timeout = _cfTimeout,
   }) async {
-    // Gate before any network calls.
     await _ensureProcessingAllowedOrThrow(context);
 
     try {
-      // Make sure callable sees fresh auth
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('Not signed in.');
-      }
+      if (user == null) throw AuthException('Not signed in.');
       await user.getIdToken(true);
 
       final locale = Localizations.localeOf(context);
-      final lang = locale.languageCode; // e.g. "en"
-      final region = locale.countryCode; // e.g. "GB"
-
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
       final callable = functions.httpsCallable('extractAndFormatRecipe');
 
       _logDebug(
-        '🤖 Calling CF with ${imageUrls.length} image(s) → $lang${region != null ? "_$region" : ""}',
+        '🤖 Calling CF with ${imageUrls.length} image(s) → ${locale.languageCode}_${locale.countryCode}',
       );
 
       final res = await callable
           .call({
             'imageUrls': imageUrls,
-            'targetLanguage': lang,
-            'targetRegion': region,
+            'targetLanguage': locale.languageCode,
+            'targetRegion': locale.countryCode,
           })
           .timeout(timeout);
 
       final data = (res.data as Map).cast<String, dynamic>();
       final formatted = (data['formattedRecipe'] as String?)?.trim() ?? '';
       if (formatted.isEmpty) {
-        throw Exception('Formatted recipe was empty.');
+        throw ProcessingException('Formatted recipe was empty.');
       }
 
       _logDebug(
@@ -260,14 +247,15 @@ class ImageProcessingService {
       _logDebug('🛑 CF exception: ${e.code} — ${e.message}');
       switch (e.code) {
         case 'permission-denied':
-          throw Exception(
+          throw SubscriptionGateException(
             '✨ Unlock Chef Mode with the Home Chef or Master Chef plan!',
           );
         case 'resource-exhausted':
-          throw Exception('🚧 Monthly quota reached. Upgrade for more!');
+          throw UsageLimitException(
+            '🚧 Monthly quota reached. Upgrade for more!',
+          );
         case 'deadline-exceeded':
         case 'unavailable':
-          // Small retry helps against transient errors.
           await Future.delayed(const Duration(milliseconds: 600));
           final locale = Localizations.localeOf(context);
           final retry =
@@ -279,16 +267,17 @@ class ImageProcessingService {
                     'targetRegion': locale.countryCode,
                   })
                   .timeout(timeout);
-          final retryData = (retry.data as Map).cast<String, dynamic>();
-          return ProcessedRecipeResult.fromMap(retryData);
+          return ProcessedRecipeResult.fromMap(
+            (retry.data as Map).cast<String, dynamic>(),
+          );
         default:
-          throw Exception('Processing failed: ${e.message}');
+          throw ProcessingException('Processing failed: ${e.message}');
       }
     } on TimeoutException {
-      throw Exception('Server took too long. Please try again.');
+      throw NetworkTimeoutException('Server took too long. Please try again.');
     } catch (e) {
       _logDebug('❌ General exception: $e');
-      throw Exception('Failed to process recipe: $e');
+      throw ProcessingException('Failed to process recipe: $e');
     }
   }
 
@@ -305,4 +294,48 @@ class ImageProcessingService {
   static void _logDebug(String message) {
     if (_debug) debugPrint(message);
   }
+}
+
+// ────────────────────────────── Custom Exceptions ──────────────────────────────
+
+class SubscriptionGateException implements Exception {
+  final String message;
+  SubscriptionGateException(this.message);
+  @override
+  String toString() => 'SubscriptionGateException: $message';
+}
+
+class UsageLimitException implements Exception {
+  final String message;
+  UsageLimitException(this.message);
+  @override
+  String toString() => 'UsageLimitException: $message';
+}
+
+class NetworkTimeoutException implements Exception {
+  final String message;
+  NetworkTimeoutException(this.message);
+  @override
+  String toString() => 'NetworkTimeoutException: $message';
+}
+
+class StorageException implements Exception {
+  final String message;
+  StorageException(this.message);
+  @override
+  String toString() => 'StorageException: $message';
+}
+
+class AuthException implements Exception {
+  final String message;
+  AuthException(this.message);
+  @override
+  String toString() => 'AuthException: $message';
+}
+
+class ProcessingException implements Exception {
+  final String message;
+  ProcessingException(this.message);
+  @override
+  String toString() => 'ProcessingException: $message';
 }

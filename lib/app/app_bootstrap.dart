@@ -4,7 +4,6 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -42,6 +41,9 @@ class AppBootstrap {
 
   static bool _initialised = false;
 
+  // Prevent RevenueCat from being configured twice
+  static bool _rcConfigured = false;
+
   /// Call once at app start (before runApp).
   static Future<void> ensureReady() async {
     if (_initialised) return;
@@ -64,39 +66,22 @@ class AppBootstrap {
       return;
     }
 
-    // 2) App Check
-    try {
-      if (kIsWeb) {
-        await FirebaseAppCheck.instance.activate(
-          webProvider: kReleaseMode
-              ? ReCaptchaV3Provider('YOUR_RECAPTCHA_SITE_KEY')
-              : ReCaptchaV3Provider('debug'),
-        );
-      } else if (Platform.isAndroid || Platform.isIOS) {
-        await FirebaseAppCheck.instance.activate(
-          androidProvider: kReleaseMode
-              ? AndroidProvider.playIntegrity
-              : AndroidProvider.debug,
-          appleProvider: kReleaseMode
-              ? AppleProvider.deviceCheck
-              : AppleProvider.debug,
-        );
-      }
-    } catch (e, st) {
-      debugPrint('⚠️ BOOT: App Check failed: $e');
-      debugPrintStack(stackTrace: st);
-    }
-
-    // 3) RevenueCat — only configure on supported platforms
+    // 2) RevenueCat — only configure once, on supported platforms
     try {
       if (Platform.isIOS || Platform.isAndroid) {
-        if (kDebugMode) await Purchases.setLogLevel(LogLevel.debug);
-        final cfg = PurchasesConfiguration(
-          Platform.isIOS
-              ? 'appl_oqbgqmtmctjzzERpEkswCejmukh'
-              : 'goog_oqbgqmtmctjzzERpEkswCejmukh',
-        );
-        await Purchases.configure(cfg);
+        if (!_rcConfigured) {
+          if (kDebugMode) await Purchases.setLogLevel(LogLevel.debug);
+          final cfg = PurchasesConfiguration(
+            Platform.isIOS
+                ? 'appl_oqbgqmtmctjzzERpEkswCejmukh'
+                : 'goog_oqbgqmtmctjzzERpEkswCejmukh',
+          );
+          await Purchases.configure(cfg);
+          _rcConfigured = true;
+          debugPrint('✅ BOOT: RevenueCat configured');
+        } else {
+          debugPrint('ℹ️ BOOT: RevenueCat already configured, skipping');
+        }
       } else {
         debugPrint('ℹ️ BOOT: RevenueCat not configured (unsupported platform)');
       }
@@ -105,7 +90,7 @@ class AppBootstrap {
       debugPrintStack(stackTrace: st);
     }
 
-    // 4) Notifications
+    // 3) Notifications
     try {
       await NotificationService.init();
     } catch (e, st) {
@@ -113,7 +98,7 @@ class AppBootstrap {
       debugPrintStack(stackTrace: st);
     }
 
-    // 5) Hive + adapters (+ optional legacy migration)
+    // 4) Hive + adapters (+ optional legacy migration)
     try {
       await Hive.initFlutter();
 
@@ -152,7 +137,7 @@ class AppBootstrap {
       debugPrintStack(stackTrace: st);
     }
 
-    // 6) Keep per-user services + RC AppUserID in lockstep with Auth
+    // 5) Keep per-user services + RC AppUserID in lockstep with Auth
     FirebaseAuth.instance.authStateChanges().listen((user) async {
       debugPrint(
         user == null

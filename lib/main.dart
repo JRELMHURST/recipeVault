@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 
@@ -15,35 +16,45 @@ import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_view_mode_notifier.dart';
 
+// If you’ve run `flutterfire configure`, uncomment the line below
+// and use `Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);`
+// import 'firebase_options.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialise Firebase first
+  // 1) Initialise Firebase
+  // If using FlutterFire CLI: await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await Firebase.initializeApp();
 
-  // 🔒 Initialise App Check (best practice)
+  // 2) App Check: production providers only (no debug tokens)
+  // - iOS: App Attest with DeviceCheck fallback (you registered both in Console)
+  // - Android: Play Integrity
+  // - Web: ReCAPTCHA v3 (site key via --dart-define)
   await FirebaseAppCheck.instance.activate(
-    androidProvider: kDebugMode
-        ? AndroidProvider.debug
-        : AndroidProvider.playIntegrity,
     appleProvider: AppleProvider.appAttestWithDeviceCheckFallback,
-    webProvider: ReCaptchaV3Provider('YOUR_REAL_RECAPTCHA_V3_SITE_KEY'),
+    androidProvider: AndroidProvider.playIntegrity,
+    webProvider: kIsWeb
+        ? ReCaptchaV3Provider(
+            String.fromEnvironment('RECAPTCHA_V3_SITE_KEY', defaultValue: ''),
+          )
+        : null,
   );
 
-  // Ensure any app-specific bootstrapping is done
+  // 3) App‑level bootstrap (preferences, Hive boxes, warm caches, etc.)
   await AppBootstrap.ensureReady();
 
+  // 4) Run app with eagerly‑initialised services
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         ChangeNotifierProvider(create: (_) => TextScaleNotifier()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
-        // Load saved view mode immediately (prevents UI flash)
         ChangeNotifierProvider(
           create: (_) => VaultViewModeNotifier()..loadFromPrefs(),
         ),
-        // Eagerly create & init subs so router/guards have it ready
+        // Eager: subs service so navigation guards & paywall have it ready
         ChangeNotifierProvider<SubscriptionService>(
           lazy: false,
           create: (_) => SubscriptionService()..init(),

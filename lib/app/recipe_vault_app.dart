@@ -1,4 +1,6 @@
+// lib/app/recipe_vault_app.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // ← for SystemUiOverlayStyle
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
@@ -25,7 +27,6 @@ class _RecipeVaultAppState extends State<RecipeVaultApp> {
   void initState() {
     super.initState();
     // Safe to use context.read in initState for a non-listening lookup.
-    // Providers are created in main() before this widget is built.
     final subs = context.read<SubscriptionService>();
     _router = buildAppRouter(subs);
   }
@@ -40,10 +41,13 @@ class _RecipeVaultAppState extends State<RecipeVaultApp> {
       debugShowCheckedModeBanner: false,
       routerConfig: _router,
       title: 'RecipeVault',
+
+      // 🌗 Themes
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeNotifier.themeMode,
-      // i18n
+
+      // 🌍 i18n
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       locale: _localeFromBcp47(langKey),
@@ -55,13 +59,34 @@ class _RecipeVaultAppState extends State<RecipeVaultApp> {
           orElse: () => supported.first,
         );
       },
-      // global text scale
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(
-          context,
-        ).copyWith(textScaler: TextScaler.linear(scaleFactor)),
-        child: child ?? const SizedBox.shrink(),
-      ),
+
+      // 🔤 Global text scale + system bars styling that reacts to theme
+      builder: (context, child) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+
+        final wrapped = AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
+            statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+            systemNavigationBarColor: theme.colorScheme.surface,
+            systemNavigationBarIconBrightness: isDark
+                ? Brightness.light
+                : Brightness.dark,
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(scaleFactor)),
+          child: wrapped,
+        );
+      },
     );
   }
 }

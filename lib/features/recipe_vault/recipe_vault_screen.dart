@@ -69,15 +69,24 @@ class _VaultBodyState extends State<_VaultBody> {
 
     final filtered = c.filteredRecipes;
 
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      // Soft background gradient for the whole screen
+      // Background that adapts to theme
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFFFDFDFE), // off-white
-              Color(0xFFF3EFFA), // very light lilac
-            ],
+            colors: isDark
+                ? <Color>[
+                    cs.surfaceContainerHighest, // deeper panel
+                    cs.surface, // subtle variation
+                  ]
+                : const <Color>[
+                    Color(0xFFFDFDFE), // off‑white
+                    Color(0xFFF3EFFA), // very light lilac
+                  ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -187,7 +196,7 @@ class _VaultBodyState extends State<_VaultBody> {
               border: Border.all(color: Colors.white, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.18),
+                  color: Colors.black.withValues(alpha: 0.18),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),

@@ -15,6 +15,8 @@ class EditRecipeScreen extends StatefulWidget {
 
 class _EditRecipeScreenState extends State<EditRecipeScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _scroll = ScrollController();
+
   late final TextEditingController _titleCtl;
   late final TextEditingController _ingCtl;
   late final TextEditingController _stepsCtl;
@@ -24,26 +26,54 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   final _stepsFocus = FocusNode();
 
   bool _saving = false;
+  bool _dirty = false;
+
+  // Snapshots of initial values for dirty checking
+  late final String _initialTitle;
+  late final String _initialIngredients;
+  late final String _initialSteps;
 
   @override
   void initState() {
     super.initState();
-    _titleCtl = TextEditingController(text: widget.recipe.title);
-    _ingCtl = TextEditingController(text: widget.recipe.ingredients.join('\n'));
-    _stepsCtl = TextEditingController(
-      text: widget.recipe.instructions.join('\n'),
-    );
+    _initialTitle = widget.recipe.title;
+    _initialIngredients = widget.recipe.ingredients.join('\n');
+    _initialSteps = widget.recipe.instructions.join('\n');
+
+    _titleCtl = TextEditingController(text: _initialTitle);
+    _ingCtl = TextEditingController(text: _initialIngredients);
+    _stepsCtl = TextEditingController(text: _initialSteps);
+
+    // Track edits to toggle Save enabled state
+    _titleCtl.addListener(_recomputeDirty);
+    _ingCtl.addListener(_recomputeDirty);
+    _stepsCtl.addListener(_recomputeDirty);
   }
 
   @override
   void dispose() {
+    _titleCtl.removeListener(_recomputeDirty);
+    _ingCtl.removeListener(_recomputeDirty);
+    _stepsCtl.removeListener(_recomputeDirty);
+
     _titleCtl.dispose();
     _ingCtl.dispose();
     _stepsCtl.dispose();
     _titleFocus.dispose();
     _ingFocus.dispose();
     _stepsFocus.dispose();
+    _scroll.dispose();
     super.dispose();
+  }
+
+  void _recomputeDirty() {
+    final nextDirty =
+        _titleCtl.text != _initialTitle ||
+        _ingCtl.text != _initialIngredients ||
+        _stepsCtl.text != _initialSteps;
+    if (nextDirty != _dirty) {
+      setState(() => _dirty = nextDirty);
+    }
   }
 
   List<String> _toLines(String raw) =>
@@ -51,10 +81,20 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
 
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context);
-    if (!(_formKey.currentState?.validate() ?? false)) {
+
+    // Validate and scroll to first error if any
+    final valid = _formKey.currentState?.validate() ?? false;
+    if (!valid) {
+      await Future.delayed(const Duration(milliseconds: 50));
+      _scroll.animateTo(
+        0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
       if ((_titleCtl.text.trim()).isEmpty) _titleFocus.requestFocus();
       return;
     }
+
     setState(() => _saving = true);
 
     final updated = widget.recipe.copyWith(
@@ -66,7 +106,12 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     await VaultRecipeService.save(updated);
 
     if (!mounted) return;
-    setState(() => _saving = false);
+    setState(() {
+      _saving = false;
+      _dirty = false;
+    });
+
+    // Return result to caller and show confirmation
     context.pop<RecipeCardModel>(updated);
     ScaffoldMessenger.of(
       context,
@@ -129,26 +174,27 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    final ingLines = _toLines(_ingCtl.text).length;
-    final stepLines = _toLines(_stepsCtl.text).length;
-
     return Scaffold(
       appBar: AppBar(title: Text(l10n.editRecipeTitle), centerTitle: true),
 
-      // 👇 Static FAB bottom-right
+      // Static FAB bottom-right (disabled while saving or when no changes)
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'edit-recipe-save-fab',
-        onPressed: _saving ? null : _save,
-        icon: _saving
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.save_rounded),
-        label: Text(
-          _saving ? l10n.editRecipeSaving : l10n.editRecipeSaveChanges,
+      floatingActionButton: Semantics(
+        button: true,
+        label: _saving ? l10n.editRecipeSaving : l10n.editRecipeSaveChanges,
+        child: FloatingActionButton.extended(
+          heroTag: 'edit-recipe-save-fab',
+          onPressed: (_saving || !_dirty) ? null : _save,
+          icon: _saving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.save_rounded),
+          label: Text(
+            _saving ? l10n.editRecipeSaving : l10n.editRecipeSaveChanges,
+          ),
         ),
       ),
 
@@ -156,6 +202,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
+            controller: _scroll,
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
             physics: const BouncingScrollPhysics(),
             child: Column(
@@ -192,8 +239,6 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   maxLines: 10,
                   decoration: _decoration(
                     label: l10n.editRecipeFieldIngredients,
-                    hint: 'One ingredient per line',
-                    helper: 'One per line • $ingLines lines',
                     prefixIcon: const Icon(Icons.list_alt_rounded),
                   ),
                 ),
@@ -212,8 +257,6 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   maxLines: 16,
                   decoration: _decoration(
                     label: l10n.editRecipeFieldSteps,
-                    hint: 'One step per line',
-                    helper: 'One per line • $stepLines lines',
                     prefixIcon: const Icon(Icons.notes_rounded),
                   ),
                 ),

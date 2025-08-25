@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart'; // ✅ use go_router pop
+import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_recipe_service.dart';
@@ -14,144 +14,212 @@ class EditRecipeScreen extends StatefulWidget {
 }
 
 class _EditRecipeScreenState extends State<EditRecipeScreen> {
-  late TextEditingController _titleController;
-  late TextEditingController _ingredientsController;
-  late TextEditingController _instructionsController;
-  bool _isSaving = false;
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _titleCtl;
+  late final TextEditingController _ingCtl;
+  late final TextEditingController _stepsCtl;
+
+  final _titleFocus = FocusNode();
+  final _ingFocus = FocusNode();
+  final _stepsFocus = FocusNode();
+
+  bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.recipe.title);
-    _ingredientsController = TextEditingController(
-      text: widget.recipe.ingredients.join('\n'),
-    );
-    _instructionsController = TextEditingController(
+    _titleCtl = TextEditingController(text: widget.recipe.title);
+    _ingCtl = TextEditingController(text: widget.recipe.ingredients.join('\n'));
+    _stepsCtl = TextEditingController(
       text: widget.recipe.instructions.join('\n'),
     );
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _ingredientsController.dispose();
-    _instructionsController.dispose();
+    _titleCtl.dispose();
+    _ingCtl.dispose();
+    _stepsCtl.dispose();
+    _titleFocus.dispose();
+    _ingFocus.dispose();
+    _stepsFocus.dispose();
     super.dispose();
   }
 
-  Future<void> _saveChanges() async {
-    setState(() => _isSaving = true);
+  List<String> _toLines(String raw) =>
+      raw.split('\n').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
 
-    // Normalize multi-line fields → list of non-empty trimmed lines
-    List<String> parseLines(String raw) => raw
-        .split('\n')
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
+  Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      if ((_titleCtl.text.trim()).isEmpty) _titleFocus.requestFocus();
+      return;
+    }
+    setState(() => _saving = true);
 
-    final updatedRecipe = widget.recipe.copyWith(
-      title: _titleController.text.trim().isEmpty
-          ? widget.recipe.title
-          : _titleController.text.trim(),
-      ingredients: parseLines(_ingredientsController.text),
-      instructions: parseLines(_instructionsController.text),
+    final updated = widget.recipe.copyWith(
+      title: _titleCtl.text.trim(),
+      ingredients: _toLines(_ingCtl.text),
+      instructions: _toLines(_stepsCtl.text),
     );
 
-    await VaultRecipeService.save(updatedRecipe);
+    await VaultRecipeService.save(updated);
 
     if (!mounted) return;
-    setState(() => _isSaving = false);
-
-    // ✅ go_router-friendly result return
-    context.pop<RecipeCardModel>(updatedRecipe);
+    setState(() => _saving = false);
+    context.pop<RecipeCardModel>(updated);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.recipeSaved)));
   }
 
-  Widget _buildTextField({
+  InputDecoration _decoration({
     required String label,
-    required TextEditingController controller,
-    required int maxLines,
-    TextInputAction action = TextInputAction.newline,
+    String? hint,
+    Widget? prefixIcon,
+    String? helper,
   }) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 8, bottom: 6),
-          child: Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
-              letterSpacing: 0.3,
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      helperText: helper,
+      filled: true,
+      isDense: false,
+      prefixIcon: prefixIcon,
+      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
+        alpha: 0.25,
+      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.35),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.6),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    );
+  }
+
+  Widget _sectionTitle(IconData icon, String text) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 18, bottom: 10),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: theme.colorScheme.primary),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              letterSpacing: .2,
             ),
           ),
-        ),
-        Card(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 1,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: TextField(
-              controller: controller,
-              textInputAction: action,
-              maxLines: maxLines,
-              style: theme.textTheme.bodyLarge,
-              decoration: const InputDecoration.collapsed(hintText: ''),
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    final ingLines = _toLines(_ingCtl.text).length;
+    final stepLines = _toLines(_stepsCtl.text).length;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.editRecipeTitle)),
+      appBar: AppBar(title: Text(l10n.editRecipeTitle), centerTitle: true),
+
+      // 👇 Static FAB bottom-right
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'edit-recipe-save-fab',
+        onPressed: _saving ? null : _save,
+        icon: _saving
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.save_rounded),
+        label: Text(
+          _saving ? l10n.editRecipeSaving : l10n.editRecipeSaveChanges,
+        ),
+      ),
+
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+        child: Form(
+          key: _formKey,
           child: SingleChildScrollView(
-            padding: EdgeInsets.only(bottom: bottomInset + 120),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
             physics: const BouncingScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildTextField(
-                  label: l10n.editRecipeFieldTitle,
-                  controller: _titleController,
+                // Title
+                TextFormField(
+                  controller: _titleCtl,
+                  focusNode: _titleFocus,
+                  textInputAction: TextInputAction.next,
                   maxLines: 1,
-                  action: TextInputAction.next,
+                  decoration: _decoration(
+                    label: l10n.editRecipeFieldTitle,
+                    hint: 'Give your recipe a short title',
+                    prefixIcon: const Icon(Icons.title_rounded),
+                  ),
+                  validator: (v) => (v?.trim().isEmpty ?? true)
+                      ? 'Please enter a title'
+                      : null,
+                  onFieldSubmitted: (_) => _ingFocus.requestFocus(),
                 ),
-                const SizedBox(height: 24),
-                _buildTextField(
-                  label: l10n.editRecipeFieldIngredients,
-                  controller: _ingredientsController,
-                  maxLines: 6,
+
+                // Ingredients
+                _sectionTitle(
+                  Icons.shopping_bag_outlined,
+                  l10n.editRecipeFieldIngredients,
                 ),
-                const SizedBox(height: 24),
-                _buildTextField(
-                  label: l10n.editRecipeFieldSteps,
-                  controller: _instructionsController,
+                TextFormField(
+                  controller: _ingCtl,
+                  focusNode: _ingFocus,
+                  textInputAction: TextInputAction.newline,
+                  keyboardType: TextInputType.multiline,
+                  minLines: 5,
                   maxLines: 10,
+                  decoration: _decoration(
+                    label: l10n.editRecipeFieldIngredients,
+                    hint: 'One ingredient per line',
+                    helper: 'One per line • $ingLines lines',
+                    prefixIcon: const Icon(Icons.list_alt_rounded),
+                  ),
+                ),
+
+                // Steps
+                _sectionTitle(
+                  Icons.format_list_numbered_rounded,
+                  l10n.editRecipeFieldSteps,
+                ),
+                TextFormField(
+                  controller: _stepsCtl,
+                  focusNode: _stepsFocus,
+                  textInputAction: TextInputAction.newline,
+                  keyboardType: TextInputType.multiline,
+                  minLines: 8,
+                  maxLines: 16,
+                  decoration: _decoration(
+                    label: l10n.editRecipeFieldSteps,
+                    hint: 'One step per line',
+                    helper: 'One per line • $stepLines lines',
+                    prefixIcon: const Icon(Icons.notes_rounded),
+                  ),
                 ),
               ],
             ),
           ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _isSaving ? null : _saveChanges,
-        icon: const Icon(Icons.save),
-        label: Text(
-          _isSaving ? l10n.editRecipeSaving : l10n.editRecipeSaveChanges,
         ),
       ),
     );

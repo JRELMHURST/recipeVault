@@ -23,8 +23,16 @@ class ImageProcessingService {
   static const int _jpegQualityAndroid = 80;
   static const int _jpegQualityIOS = 85;
   static const int _maxDimension = 2200; // clamp long side for uploads
+
   static const Duration _uploadTimeout = Duration(seconds: 30);
-  static const Duration _cfTimeout = Duration(seconds: 30);
+
+  // ⏱️ CF timeout – give OCR+translate+GPT breathing room
+  static const Duration _cfTimeout = Duration(seconds: 150);
+
+  // Two‑stage “first‑good-pages” strategy
+  static const int _primaryPages = 3; // try first N pages first
+  static const int _ocrSufficientChars = 900; // if OCR shorter, retry with all
+
   static const bool _debug = false;
 
   static final ImagePicker _picker = ImagePicker();
@@ -79,6 +87,7 @@ class ImageProcessingService {
           minWidth: _maxDimension,
           minHeight: _maxDimension,
           keepExif: true,
+          autoCorrectionAngle: true,
         );
 
         if (compressed != null) {
@@ -203,6 +212,7 @@ class ImageProcessingService {
   }
 
   // ───────── OCR → TRANSLATE → FORMAT (Cloud Function) ─────────
+  // Two‑stage: try first N images for speed; if OCR looks short, retry with all.
 
   static Future<ProcessedRecipeResult> extractAndFormatRecipe(
     List<String> imageUrls,
@@ -211,38 +221,59 @@ class ImageProcessingService {
   }) async {
     await _ensureProcessingAllowedOrThrow(context);
 
-    try {
+    // pick primary pages first
+    final primaryUrls = imageUrls.length > _primaryPages
+        ? imageUrls.take(_primaryPages).toList()
+        : imageUrls;
+
+    final locale = Localizations.localeOf(context);
+    final functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
+
+    // ⏱️ Increase callable timeout on client
+    final callable = functions.httpsCallable(
+      'extractAndFormatRecipe',
+      options: HttpsCallableOptions(timeout: timeout),
+    );
+
+    Future<ProcessedRecipeResult> callCF(List<String> urls) async {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw AuthException('Not signed in.');
       await user.getIdToken(true);
 
-      final locale = Localizations.localeOf(context);
-      final functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
-      final callable = functions.httpsCallable('extractAndFormatRecipe');
-
       _logDebug(
-        '🤖 Calling CF with ${imageUrls.length} image(s) → ${locale.languageCode}_${locale.countryCode}',
+        '🤖 Calling CF with ${urls.length} image(s) → ${locale.languageCode}_${locale.countryCode}',
       );
 
-      final res = await callable
-          .call({
-            'imageUrls': imageUrls,
-            'targetLanguage': locale.languageCode,
-            'targetRegion': locale.countryCode,
-          })
-          .timeout(timeout);
+      final res = await callable.call({
+        'imageUrls': urls,
+        'targetLanguage': locale.languageCode,
+        'targetRegion': locale.countryCode,
+      });
 
       final data = (res.data as Map).cast<String, dynamic>();
       final formatted = (data['formattedRecipe'] as String?)?.trim() ?? '';
       if (formatted.isEmpty) {
         throw ProcessingException('Formatted recipe was empty.');
       }
-
-      _logDebug(
-        '✅ CF success. lang=${data['detectedLanguage']} translated=${data['translationUsed']}',
-      );
-
       return ProcessedRecipeResult.fromMap(data);
+    }
+
+    try {
+      // 1) Fast path: fewer pages
+      final fast = await callCF(primaryUrls);
+
+      // If OCR text is short and we have more pages, retry with full set
+      final original = fast.originalText.trim();
+      if (imageUrls.length > primaryUrls.length &&
+          original.length < _ocrSufficientChars) {
+        _logDebug(
+          '↪️ OCR looked short (${original.length} chars). Retrying with all ${imageUrls.length} images…',
+        );
+        final full = await callCF(imageUrls);
+        return full;
+      }
+
+      return fast;
     } on FirebaseFunctionsException catch (e) {
       _logDebug('🛑 CF exception: ${e.code} — ${e.message}');
       switch (e.code) {
@@ -256,17 +287,19 @@ class ImageProcessingService {
           );
         case 'deadline-exceeded':
         case 'unavailable':
+          // quick retry once with same set
           await Future.delayed(const Duration(milliseconds: 600));
-          final locale = Localizations.localeOf(context);
           final retry =
               await FirebaseFunctions.instanceFor(region: 'europe-west2')
-                  .httpsCallable('extractAndFormatRecipe')
+                  .httpsCallable(
+                    'extractAndFormatRecipe',
+                    options: HttpsCallableOptions(timeout: timeout),
+                  )
                   .call({
-                    'imageUrls': imageUrls,
+                    'imageUrls': primaryUrls,
                     'targetLanguage': locale.languageCode,
                     'targetRegion': locale.countryCode,
-                  })
-                  .timeout(timeout);
+                  });
           return ProcessedRecipeResult.fromMap(
             (retry.data as Map).cast<String, dynamic>(),
           );

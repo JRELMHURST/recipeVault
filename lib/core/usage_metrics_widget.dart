@@ -1,3 +1,4 @@
+// lib/widgets/usage_metrics_widget.dart
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'dart:async';
@@ -19,13 +20,14 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late Animation<double> _recipeAnimation;
-  late Animation<double> _translationAnimation;
+  late Animation<double> _translatedRecipeAnimation;
 
   // Track last values so we only animate when something changes
   int _lastRecipesUsed = -1;
-  int _lastTranslationsUsed = -1;
+  int _lastTranslatedRecipesUsed = -1;
+
   int _lastRecipeLimit = -1;
-  int _lastTranslationLimit = -1;
+  int _lastTranslatedRecipeLimit = -1;
 
   bool _firstFrameDone = false;
 
@@ -37,7 +39,7 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
       duration: const Duration(milliseconds: 800),
     );
     _recipeAnimation = Tween<double>(begin: 0, end: 0).animate(_controller);
-    _translationAnimation = Tween<double>(
+    _translatedRecipeAnimation = Tween<double>(
       begin: 0,
       end: 0,
     ).animate(_controller);
@@ -46,7 +48,6 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Kick an initial refresh of subscription data if needed.
     final sub = context.read<SubscriptionService>();
     if (!sub.isLoaded) {
       unawaited(sub.refreshAndNotify());
@@ -61,32 +62,35 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
 
   void _refreshAnimationIfNeeded({
     required int recipesUsed,
-    required int translationsUsed,
+    required int translatedRecipesUsed,
     required int recipeLimit,
-    required int translationLimit,
+    required int translatedRecipeLimit,
   }) {
     final limitsChanged =
         (_lastRecipeLimit != recipeLimit ||
-        _lastTranslationLimit != translationLimit ||
+        _lastTranslatedRecipeLimit != translatedRecipeLimit ||
         !_firstFrameDone);
 
     final usageChanged =
         (_lastRecipesUsed != recipesUsed) ||
-        (_lastTranslationsUsed != translationsUsed) ||
+        (_lastTranslatedRecipesUsed != translatedRecipesUsed) ||
         limitsChanged;
 
     if (!usageChanged) return;
 
     _lastRecipesUsed = recipesUsed;
-    _lastTranslationsUsed = translationsUsed;
+    _lastTranslatedRecipesUsed = translatedRecipesUsed;
+
     _lastRecipeLimit = recipeLimit;
-    _lastTranslationLimit = translationLimit;
+    _lastTranslatedRecipeLimit = translatedRecipeLimit;
     _firstFrameDone = true;
 
     final recipePercent = (recipeLimit == 0 ? 0.0 : recipesUsed / recipeLimit)
         .clamp(0.0, 1.0);
-    final translationPercent =
-        (translationLimit == 0 ? 0.0 : translationsUsed / translationLimit)
+    final translatedPercent =
+        (translatedRecipeLimit == 0
+                ? 0.0
+                : translatedRecipesUsed / translatedRecipeLimit)
             .clamp(0.0, 1.0);
 
     _recipeAnimation = Tween<double>(
@@ -94,9 +98,9 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
       end: recipePercent,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    _translationAnimation = Tween<double>(
+    _translatedRecipeAnimation = Tween<double>(
       begin: 0,
-      end: translationPercent,
+      end: translatedPercent,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.forward(from: 0);
@@ -112,15 +116,16 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
     }
 
     final recipesUsed = sub.recipeUsage;
-    final translationsUsed = sub.translatedRecipeUsage; // ✅ fixed
+    final translatedRecipesUsed = sub.translatedRecipeUsage;
+
     final recipeLimit = sub.aiLimit;
-    final translationLimit = sub.translatedRecipeLimit;
+    final translatedRecipeLimit = sub.translatedRecipeLimit;
 
     _refreshAnimationIfNeeded(
       recipesUsed: recipesUsed,
-      translationsUsed: translationsUsed,
+      translatedRecipesUsed: translatedRecipesUsed,
       recipeLimit: recipeLimit,
-      translationLimit: translationLimit,
+      translatedRecipeLimit: translatedRecipeLimit,
     );
 
     return Container(
@@ -168,11 +173,11 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
                   _usageMetric(
                     icon: Icons.translate,
                     label: loc.labelTranslations,
-                    used: translationsUsed,
-                    max: translationLimit,
+                    used: translatedRecipesUsed,
+                    max: translatedRecipeLimit,
                     colour: AppColours.lavender,
-                    percent: _translationAnimation.value,
-                    subtitle: loc.usageMonthlyLimit(translationLimit),
+                    percent: _translatedRecipeAnimation.value,
+                    subtitle: loc.usageMonthlyLimit(translatedRecipeLimit),
                   ),
                 ],
               );
@@ -192,14 +197,12 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
     required double percent,
     required String subtitle,
   }) {
-    final loc = AppLocalizations.of(context);
-
     return Column(
       children: [
         Icon(icon, size: 20, color: colour),
         const SizedBox(height: 4),
         Text(
-          loc.usageCount(used, max),
+          '$used / $max',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.bold,
             fontSize: 13,

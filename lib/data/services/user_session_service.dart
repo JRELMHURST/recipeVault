@@ -1,3 +1,4 @@
+// lib/data/services/user_session_service.dart
 // ignore_for_file: use_build_context_synchronously, unnecessary_null_checks
 
 import 'dart:async';
@@ -22,7 +23,8 @@ class UserSessionService {
   static Completer<void>? _bubbleFlagsReady;
   static StreamSubscription<DocumentSnapshot>? _userDocSubscription;
   static StreamSubscription<DocumentSnapshot>? _recipeUsageSub;
-  static StreamSubscription<DocumentSnapshot>? _translationSub;
+  static StreamSubscription<DocumentSnapshot>? _translatedRecipeUsageSub;
+  static StreamSubscription<DocumentSnapshot>? _imageUsageSub;
 
   static bool get isInitialised => _isInitialised;
 
@@ -31,7 +33,6 @@ class UserSessionService {
       !FirebaseAuth.instance.currentUser!.isAnonymous;
 
   /// Decide which route to send the user to after boot
-  /// Ensures deleted/logged out users are redirected to login
   static String? getRedirectRoute(String loc) {
     final isLoggedIn =
         FirebaseAuth.instance.currentUser != null &&
@@ -162,34 +163,11 @@ class UserSessionService {
             onError: (error) => _logDebug('⚠️ User doc listener error: $error'),
           );
 
+      // recipeUsage
       _recipeUsageSub = FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .collection('recipeUsage')
-          .doc('usage')
-          .snapshots()
-          .listen((doc) async {
-            if (FirebaseAuth.instance.currentUser?.uid != uid) return;
-            final data = doc.data();
-            if (data == null) {
-              _logDebug('⚠️ AI usage doc has no data');
-              return;
-            }
-            final used = (data[monthKey] ?? 0) as int;
-            _logDebug('📊 AI usage [$monthKey]: $used');
-            if (!UserPreferencesService.isBoxOpen) {
-              await UserPreferencesService.init();
-            }
-            await UserPreferencesService.setCachedUsage(
-              ai: used,
-              translations: null,
-            );
-          }, onError: (error) => _logDebug('⚠️ AI usage stream error: $error'));
-
-      _translationSub = FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('translationRecipeUsage')
           .doc('usage')
           .snapshots()
           .listen(
@@ -197,21 +175,72 @@ class UserSessionService {
               if (FirebaseAuth.instance.currentUser?.uid != uid) return;
               final data = doc.data();
               if (data == null) {
-                _logDebug('⚠️ Translation usage doc has no data');
+                _logDebug('⚠️ Recipe usage doc has no data');
                 return;
               }
               final used = (data[monthKey] ?? 0) as int;
-              _logDebug('🌐 Translation usage [$monthKey]: $used');
+              _logDebug('📊 Recipe usage [$monthKey]: $used');
+              if (!UserPreferencesService.isBoxOpen) {
+                await UserPreferencesService.init();
+              }
+              await UserPreferencesService.setCachedUsage(recipes: used);
+            },
+            onError: (error) =>
+                _logDebug('⚠️ Recipe usage stream error: $error'),
+          );
+
+      // translatedRecipeUsage
+      _translatedRecipeUsageSub = FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('translatedRecipeUsage')
+          .doc('usage')
+          .snapshots()
+          .listen(
+            (doc) async {
+              if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+              final data = doc.data();
+              if (data == null) {
+                _logDebug('⚠️ Translated recipe usage doc has no data');
+                return;
+              }
+              final used = (data[monthKey] ?? 0) as int;
+              _logDebug('🌐 Translated recipe usage [$monthKey]: $used');
               if (!UserPreferencesService.isBoxOpen) {
                 await UserPreferencesService.init();
               }
               await UserPreferencesService.setCachedUsage(
-                ai: null,
-                translations: used,
+                translatedRecipes: used,
               );
             },
             onError: (error) =>
-                _logDebug('⚠️ Translation usage stream error: $error'),
+                _logDebug('⚠️ Translated recipe usage stream error: $error'),
+          );
+
+      // imageUsage
+      _imageUsageSub = FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('imageUsage')
+          .doc('usage')
+          .snapshots()
+          .listen(
+            (doc) async {
+              if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+              final data = doc.data();
+              if (data == null) {
+                _logDebug('⚠️ Image usage doc has no data');
+                return;
+              }
+              final used = (data[monthKey] ?? 0) as int;
+              _logDebug('🖼️ Image usage [$monthKey]: $used');
+              if (!UserPreferencesService.isBoxOpen) {
+                await UserPreferencesService.init();
+              }
+              await UserPreferencesService.setCachedUsage(images: used);
+            },
+            onError: (error) =>
+                _logDebug('⚠️ Image usage stream error: $error'),
           );
 
       _bubbleFlagsReady?.complete();
@@ -291,11 +320,13 @@ class UserSessionService {
   static Future<void> _cancelAllStreams() async {
     await _userDocSubscription?.cancel();
     await _recipeUsageSub?.cancel();
-    await _translationSub?.cancel();
+    await _translatedRecipeUsageSub?.cancel();
+    await _imageUsageSub?.cancel();
 
     _userDocSubscription = null;
     _recipeUsageSub = null;
-    _translationSub = null;
+    _translatedRecipeUsageSub = null;
+    _imageUsageSub = null;
 
     VaultRecipeService.cancelVaultListener();
   }

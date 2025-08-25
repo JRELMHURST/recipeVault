@@ -11,6 +11,7 @@ class AppColours {
   static const lemon = Color(0xFFFFD93D);
   static const mint = Color(0xFF7DDE92);
   static const steel = Color(0xFF6C7A89);
+  static const salmon = Color(0xFFFF7F7F);
 }
 
 class AppTheme {

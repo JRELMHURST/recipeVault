@@ -1,13 +1,12 @@
 // functions/src/revenuecat.ts
 import * as crypto from "crypto";
-import { Tier /*, EntitlementStatus */ } from "./types.js";
+import { Tier, EntitlementStatus } from "./types.js";
 import { productToTier } from "./mapping.js";
 
 /** ---------- RevenueCat payload types ---------- */
 export interface Entitlement {
   is_active?: boolean;
-  // Some payloads may camelCase:
-  isActive?: boolean;
+  isActive?: boolean;            // RC sometimes camelCases
   product_identifier?: string;
   [key: string]: any;
 }
@@ -29,7 +28,7 @@ export interface RCWebhookPayload {
   event?: { type?: string; id?: string };
   app_user_id?: string;
   subscriber?: RCSubscriber;
-  product_id?: string;
+  product_id?: string; // direct product hint
   [key: string]: any;
 }
 
@@ -59,14 +58,13 @@ export function resolveActiveProductIdFromSubscriber(
   const entitlements = subscriber.entitlements ?? {};
   const subs = subscriber.subscriptions ?? {};
 
-  // Debug snapshot
   console.info("[RC] Subscriber snapshot", {
     entitlementKeys: Object.keys(entitlements),
     subscriptionKeys: Object.keys(subs),
     directProductId,
   });
 
-  // 1) Entitlements (source of truth per RC)
+  // 1) Entitlements (preferred)
   for (const [key, ent] of Object.entries(entitlements)) {
     if ((ent?.is_active || ent?.isActive) && ent?.product_identifier) {
       console.info("[RC] Resolved via entitlement", {
@@ -83,7 +81,7 @@ export function resolveActiveProductIdFromSubscriber(
     return String(directProductId);
   }
 
-  // 3) Subscriptions fallback (still valid by expiry)
+  // 3) Subscriptions fallback (valid by expiry date)
   for (const [pid, sub] of Object.entries(subs)) {
     const expiresAt = sub?.expires_date ? new Date(sub.expires_date) : null;
     const isActive = !expiresAt || expiresAt > new Date();
@@ -152,14 +150,12 @@ function normaliseDateLike(v: unknown): string | null {
 
 /**
  * Stable hash used by webhook + callable to detect entitlement changes.
- * Keep inputs minimal and normalized so the hash only changes on real state changes.
+ * Keeps inputs minimal and normalized so the hash only changes on real state changes.
  */
 export function computeEntitlementHash(input: {
   productId: string | null | undefined;
   tier: Tier;
-  // If you’d like stronger typing here, you can import EntitlementStatus and use it instead of string:
-  // entitlementStatus?: EntitlementStatus | null | undefined;
-  entitlementStatus?: string | null | undefined;
+  entitlementStatus?: EntitlementStatus | null | undefined;
   graceUntil?: unknown;
 }): string {
   const payload = {

@@ -26,9 +26,9 @@ extension PrefsViewModeX on PrefsViewMode {
 class UserPreferencesService {
   // ─────────────────────────────── keys ───────────────────────────────
   static const String _keyViewMode = 'viewMode';
-  static const String _keyrecipeUsage = 'recipeUsage';
-  static const String _keyTranslationUsage = 'translationUsage';
-  static const String _keyImageUsage = 'imageUsage'; // NEW ✅
+  static const String _keyRecipeUsage = 'recipeUsage';
+  static const String _keyTranslatedRecipeUsage = 'translatedRecipeUsage';
+  static const String _keyImageUsage = 'imageUsage';
 
   // ─────────────────────────────── hive state ─────────────────────────
   static String? _activeUid;
@@ -129,35 +129,37 @@ class UserPreferencesService {
   // ─────────────────────────── usage counters ─────────────────────────
 
   static Future<void> setCachedUsage({
-    int? ai,
-    int? translations,
-    int? images, // NEW ✅
+    int? recipes,
+    int? translatedRecipes,
+    int? images,
   }) async {
     final box = await _ensureBox();
     if (box == null) return;
-    if (ai != null) await box.put(_keyrecipeUsage, ai);
-    if (translations != null) await box.put(_keyTranslationUsage, translations);
-    if (images != null) await box.put(_keyImageUsage, images); // NEW ✅
+    if (recipes != null) await box.put(_keyRecipeUsage, recipes);
+    if (translatedRecipes != null) {
+      await box.put(_keyTranslatedRecipeUsage, translatedRecipes);
+    }
+    if (images != null) await box.put(_keyImageUsage, images);
     if (kDebugMode) {
       debugPrint(
-        '📂 Cached usage: AI=$ai, Translations=$translations, Images=$images',
+        '📂 Cached usage: Recipes=$recipes, Translated=$translatedRecipes, Images=$images',
       );
     }
   }
 
-  static Future<int> getCachedrecipeUsage() async {
+  static Future<int> getCachedRecipeUsage() async {
     final box = await _ensureBox();
-    return box?.get(_keyrecipeUsage, defaultValue: 0) as int? ?? 0;
+    return box?.get(_keyRecipeUsage, defaultValue: 0) as int? ?? 0;
   }
 
-  static Future<int> getCachedTranslationUsage() async {
+  static Future<int> getCachedTranslatedRecipeUsage() async {
     final box = await _ensureBox();
-    return box?.get(_keyTranslationUsage, defaultValue: 0) as int? ?? 0;
+    return box?.get(_keyTranslatedRecipeUsage, defaultValue: 0) as int? ?? 0;
   }
 
   static Future<int> getCachedImageUsage() async {
     final box = await _ensureBox();
-    return box?.get(_keyImageUsage, defaultValue: 0) as int? ?? 0; // NEW ✅
+    return box?.get(_keyImageUsage, defaultValue: 0) as int? ?? 0;
   }
 
   // ───────────────────────────── misc get/set ─────────────────────────

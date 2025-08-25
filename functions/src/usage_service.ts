@@ -1,8 +1,8 @@
 // functions/src/usage_service.ts
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { firestore, FieldValue } from "./firebase.js";
 import { HttpsError } from "firebase-functions/v2/https";
 
-const firestore = getFirestore();
+
 
 /** Types of usage we track (collection names match these keys) */
 export type UsageKind = "recipeUsage" | "translatedRecipeUsage" | "imageUsage";
@@ -31,6 +31,13 @@ const limitKeyByKind: Record<UsageKind, LimitKey> = {
   imageUsage: "images",
 };
 
+/** Map UsageKind -> error code (single source of truth) */
+const errorCodeByKind: Record<UsageKind, string> = {
+  recipeUsage: "RECIPE_LIMIT",
+  translatedRecipeUsage: "TRANSLATED_RECIPE_LIMIT",
+  imageUsage: "IMAGE_LIMIT",
+};
+
 /** 📅 Current month key in Europe/London, e.g. "2025-08" */
 export function monthKey(tz: string = "Europe/London"): string {
   const now = new Date();
@@ -39,8 +46,8 @@ export function monthKey(tz: string = "Europe/London"): string {
     year: "numeric",
     month: "2-digit",
   }).formatToParts(now);
-  const year = parts.find(p => p.type === "year")?.value ?? "0000";
-  const month = parts.find(p => p.type === "month")?.value ?? "01";
+  const year = parts.find((p) => p.type === "year")?.value ?? "0000";
+  const month = parts.find((p) => p.type === "month")?.value ?? "01";
   return `${year}-${month}`;
 }
 
@@ -112,11 +119,7 @@ export async function enforcePolicy(uid: string, kind: UsageKind): Promise<void>
   const used = await getMonthlyUsage(uid, kind);
   const limit = getMonthlyLimit(tier, kind);
   if (used >= limit) {
-    const code =
-      kind === "translatedRecipeUsage" ? "TRANSLATED_RECIPE_LIMIT" :
-      kind === "recipeUsage"           ? "RECIPE_LIMIT" :
-      "IMAGE_LIMIT";
-    throw new HttpsError("resource-exhausted", `MONTHLY_LIMIT: ${code}`);
+    throw new HttpsError("resource-exhausted", `MONTHLY_LIMIT: ${errorCodeByKind[kind]}`);
   }
 }
 
@@ -140,13 +143,11 @@ export async function enforceAndConsume(uid: string, kind: UsageKind, by = 1): P
     const snap = await tx.get(docRef);
     const data = snap.exists ? (snap.data() ?? {}) : {};
     const current = Number(data[key] ?? 0);
-if (current + by > limit) {
-  const code =
-    kind === "translatedRecipeUsage" ? "TRANSLATED_RECIPE_LIMIT" :
-    kind === "recipeUsage"           ? "RECIPE_LIMIT" :
-    "IMAGE_LIMIT";
-  throw new HttpsError("resource-exhausted", `MONTHLY_LIMIT: ${code}`);
-}
+
+    if (current + by > limit) {
+      throw new HttpsError("resource-exhausted", `MONTHLY_LIMIT: ${errorCodeByKind[kind]}`);
+    }
+
     tx.set(
       docRef,
       {

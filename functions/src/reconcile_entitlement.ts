@@ -1,7 +1,15 @@
+// functions/src/reconcile_entitlement.ts
 import type { Timestamp } from "firebase-admin/firestore";
 import { productToTier } from "./mapping.js";
+import type { Tier } from "./types.js";
 
-export type EntitlementStatus = "active" | "expired" | "none";
+/**
+ * Internal entitlement status.
+ * - "active"   → entitlement currently valid (incl. grace window)
+ * - "inactive" → entitlement expired or invalid
+ * - "none"     → no entitlement (tier=none)
+ */
+export type EntitlementStatus = "active" | "inactive" | "none";
 
 export type ReconcileContext = {
   /** ISO string, Date, or Firestore Timestamp from RevenueCat expiry (optional). */
@@ -14,7 +22,7 @@ export type ReconcileContext = {
 
 export type ReconcileResult = {
   productId: string | null;
-  tier: "home_chef" | "master_chef" | "none";
+  tier: Tier;
   entitlementStatus: EntitlementStatus;
   graceUntil: Date | null; // always normalised to Date
   expiresAt: Date | null;  // stored alongside for audit/debug
@@ -56,7 +64,7 @@ export function toResult(
 
   if (tier !== "none" && expires) {
     if (expires <= now) {
-      entitlementStatus = "expired";
+      entitlementStatus = "inactive"; // ✅ align naming
       if (ctx.graceDays && ctx.graceDays > 0) {
         const g = new Date(expires);
         g.setDate(g.getDate() + ctx.graceDays);
@@ -68,7 +76,7 @@ export function toResult(
 
   // Optional immediate downgrade on billing issue
   if (ctx.eventType === "BILLING_ISSUE" && entitlementStatus === "active") {
-    entitlementStatus = "expired";
+    entitlementStatus = "inactive";
   }
 
   return {

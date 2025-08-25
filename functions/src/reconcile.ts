@@ -112,7 +112,7 @@ export const reconcileUserFromRC = onCall(
           db.doc(`users/${targetUid}`).set(
             {
               productId: "none",
-              tier: "none",
+              tier: "none" as Tier,
               entitlementStatus: "inactive",
               expiresAt: null,
               graceUntil: null,

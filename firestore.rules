@@ -13,16 +13,18 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.admin == true;
     }
 
-    // Owners can only touch safe profile fields (never entitlement/server-only fields)
-    function userUpdateIsSafe() {
-      // Only these keys may change in owner updates:
-      return request.resource.data.diff(resource.data).affectedKeys()
-        .hasOnly([
-          'email',
-          'platform',
-          'preferredRecipeLocale'
-        ]);
-    }
+   // Owners can only touch safe profile fields (never entitlement/server-only fields)
+  function safeOwnerKeys() {
+     return ['email','platform','preferredRecipeLocale'];
+   }
+   // Create: validate the entire document keys set by the owner
+  function userCreateIsSafe() {
+    return request.resource.data.keys().hasOnly(safeOwnerKeys());
+   }
+  // Update: validate only the changed keys
+  function userUpdateIsSafe() {
+    return request.resource.data.diff(resource.data).affectedKeys().hasOnly(safeOwnerKeys());
+  }
 
     // Validate entitlement-related writes from admin/backend
     function entitlementFieldsAreValid() {
@@ -64,8 +66,8 @@ service cloud.firestore {
       allow get: if isOwner(userId);
       allow list: if isAdmin();
 
-      // CREATE: owner may create only safe fields; admin/backend may create with entitlement fields too.
-      allow create: if (isOwner(userId) && userUpdateIsSafe()) || isAdmin();
+     // CREATE: owner may create only safe fields; admin/backend may create with entitlement fields too.
+    allow create: if (isOwner(userId) && userCreateIsSafe()) || isAdmin();
 
       // UPDATE: owner can change only safe fields; admin can change anything
       // but must pass entitlement validation if touching those fields.

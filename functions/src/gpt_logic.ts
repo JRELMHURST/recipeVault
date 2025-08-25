@@ -1,7 +1,8 @@
+// functions/src/gpt_logic.ts
 import OpenAI from "openai";
 import {
   enforceAndConsume,
-  incrementMonthlyUsage, // used only for refund on failure
+  incrementMonthlyUsage, // refund on failure
 } from "./usage_service.js";
 
 // 📦 Response structure from GPT
@@ -10,9 +11,9 @@ type GptRecipeResponse = {
   notes?: string;
 };
 
-const MODEL = "gpt-3.5-turbo"; // ✅ legacy model kept for consistency
+const MODEL = "gpt-4o-mini";
 
-// 🌍 Map locale → human-readable language name + labels
+// 🌍 Locale → language name + labels
 const LOCALE_META: Record<
   string,
   {
@@ -42,7 +43,7 @@ const LOCALE_META: Record<
   cy: { languageName: "Welsh", labels: { title: "Teitl", ingredients: "Cynhwysion", instructions: "Paratoi", hints: "Awgrymiadau a Chynghorion", noTips: "Dim awgrymiadau pellach." } },
 };
 
-// 🔠 Normalise things like "en-GB" → "en_GB" → fallback
+// 🔠 Normalise locale string
 function resolveLocaleMeta(locale: string | undefined) {
   if (!locale) return LOCALE_META.en_GB;
   const norm = locale.replace("-", "_");
@@ -52,10 +53,8 @@ function resolveLocaleMeta(locale: string | undefined) {
 }
 
 /**
- * 🎨 Formats a recipe into a consistent structure in the user’s locale,
- * with transactional quota enforcement and refund on failure.
- *
- * @param usageKind - "recipeUsage" for native recipes, "translatedRecipeUsage" for translated ones
+ * 🎨 Format a recipe into a consistent structure in the user’s locale,
+ * with quota enforcement and refund on failure.
  */
 export async function generateFormattedRecipe(
   uid: string,
@@ -79,15 +78,16 @@ export async function generateFormattedRecipe(
     const systemPrompt = `
 You are a recipe assistant. The original recipe was written in ${sourceLang.toUpperCase()}, but the text below is already translated (if translation was necessary).
 
-Write the final output in **${languageName}** and follow that language's spelling and culinary conventions (units, ingredient names). Keep a clear, friendly tone.
+Write the final output in **${languageName}**, using its culinary conventions (units, ingredient names).
+Keep a clear, friendly tone.
 
-Your job is to:
+Your job:
 1) Use the exact section labels shown below, localised for ${languageName}.
-2) Ensure ingredients use "- " bullets (a dash and a space) and remove duplicates.
-3) Keep a numbered list for steps.
-4) If there are no tips, use the provided localised placeholder.
+2) Ingredients must use "- " bullets (dash + space) and no duplicates.
+3) Steps must be a numbered list.
+4) If no tips are present, insert the localised placeholder.
 
-Format exactly like this:
+Format like:
 
 ---
 ${labels.title}: <title>
@@ -101,23 +101,24 @@ ${labels.instructions}:
 2. Step two.
 
 ${labels.hints}:
-- Add advice, substitutions or serving suggestions.
-- If not available, use: "${labels.noTips}"
+- Advice / substitutions / serving suggestions.
+- Or: "${labels.noTips}"
 ---
 
-Return only a single JSON object **inside a JSON code block** like this:
+Return only a JSON object in a \`\`\`json code block, like:
 
 \`\`\`json
 {
   "formattedRecipe": "<formatted recipe>",
-  "notes": "<optional notes or tips, or '${labels.noTips}'>"
+  "notes": "<optional notes or '${labels.noTips}'>"
 }
 \`\`\`
 `.trim();
 
     const userPrompt = `Here is the recipe text:\n"""\n${text}\n"""`;
 
-    // 🧠 GPT call
+    console.info({ msg: "🤖 gpt: calling model", uid, usageKind, model: MODEL });
+
     const completion = await openai.chat.completions.create({
       model: MODEL,
       messages: [
@@ -131,17 +132,18 @@ Return only a single JSON object **inside a JSON code block** like this:
     const rawContent = completion.choices[0]?.message?.content?.trim();
     if (!rawContent) throw new Error("❌ gpt: Empty response from model");
 
-    // ✅ Strip markdown code block wrapper if present
+    // ✅ Strip markdown code fences (` ```json`, ```JSON`, etc.)
     const jsonText = rawContent
-      .replace(/^```json/i, "")
-      .replace(/```$/, "")
+      .replace(/^\s*```json/i, "")
+      .replace(/^\s*```JSON/i, "")
+      .replace(/```$/i, "")
       .trim();
 
     let parsed: GptRecipeResponse;
     try {
       parsed = JSON.parse(jsonText) as GptRecipeResponse;
     } catch {
-      console.error("❌ gpt: Failed to parse GPT response:", rawContent);
+      console.error("❌ gpt: Failed to parse GPT response", { rawContent });
       throw new Error("Invalid GPT response format");
     }
 
@@ -152,14 +154,21 @@ Return only a single JSON object **inside a JSON code block** like this:
     const formatted = parsed.formattedRecipe.trim();
     const notes = (parsed.notes || "").trim() || labels.noTips;
 
-    // ✅ Always append Hints & Tips block
+    console.info({
+      msg: "✅ gpt: recipe formatted",
+      uid,
+      usageKind,
+      chars: formatted.length,
+    });
+
     return `${formatted}\n\n${labels.hints}:\n${notes}`;
   } catch (err) {
     // ❗ Refund credit if GPT fails
+    console.error("❌ gpt: error during formatting", { uid, usageKind, err });
     try {
       await incrementMonthlyUsage(uid, usageKind, -1);
     } catch (refundErr) {
-      console.error("⚠️ gpt: Refund of usage failed:", refundErr);
+      console.error("⚠️ gpt: refund of usage failed", { uid, refundErr });
     }
     throw err;
   }

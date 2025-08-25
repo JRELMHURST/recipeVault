@@ -12,37 +12,63 @@ const visionClient = new vision.ImageAnnotatorClient();
  *
  * @param uid - Firebase user ID (used for quota enforcement)
  * @param imageUrls - Array of image URLs or GCS URIs
- * @returns Detected text across all images
+ * @returns Detected text across all images (cleaned + merged)
  */
 export async function extractTextFromImages(
   uid: string,
   imageUrls: string[]
 ): Promise<string> {
+  if (!uid) {
+    throw new Error("❌ OCR called without UID.");
+  }
   if (!Array.isArray(imageUrls) || imageUrls.length === 0) {
     throw new Error("❌ No image URLs provided for OCR.");
   }
 
-  // 🚦 Atomically enforce quota (1 credit per image)
+  // 🚦 Enforce quota (1 credit per image)
   await enforceAndConsume(uid, "imageUsage", imageUrls.length);
 
-  console.log(`🔍 OCR started on ${imageUrls.length} image(s)...`);
+  console.info({
+    msg: "🔍 OCR started",
+    uid,
+    images: imageUrls.length,
+  });
 
   const ocrResults = await Promise.all(
     imageUrls.map(async (url, i) => {
       try {
         const [result] = await visionClient.documentTextDetection(url);
         const text = result.fullTextAnnotation?.text ?? "";
-        console.log(`📄 OCR result [${i + 1}]: ${text.slice(0, 100)}...`);
+        console.debug({
+          msg: "📄 OCR partial result",
+          index: i + 1,
+          chars: text.length,
+          preview: text.slice(0, 80).replace(/\s+/g, " "),
+        });
         return text;
       } catch (err) {
-        console.error(`❌ OCR failed [${i + 1}] for: ${url}`, err);
+        console.error({ msg: "❌ OCR failed", index: i + 1, url, err });
         return "";
       }
     })
   );
 
-  const mergedText = ocrResults.join("\n").trim();
-  console.log(`📝 OCR complete. Merged length: ${mergedText.length}`);
+  // Merge + clean
+  const mergedText = ocrResults
+    .join("\n")
+    .replace(/[ \t]+\n/g, "\n") // trim line endings
+    .replace(/\s{2,}/g, " ") // collapse spaces
+    .trim();
+
+  console.info({
+    msg: "📝 OCR complete",
+    uid,
+    totalChars: mergedText.length,
+  });
+
+  if (!mergedText) {
+    console.warn("⚠️ OCR produced empty text");
+  }
 
   return mergedText;
 }

@@ -1,7 +1,6 @@
-// functions/src/mapping.ts
-
-/** Internal subscription tiers in RecipeVault */
-export type Tier = "home_chef" | "master_chef" | "none";
+/** 📦 Internal subscription tiers in RecipeVault */
+export const ALL_TIERS = ["home_chef", "master_chef", "none"] as const;
+export type Tier = typeof ALL_TIERS[number];
 
 /**
  * 🔑 Central source of truth:
@@ -57,7 +56,7 @@ export function isProductInTier(
 
 /** 🚨 Safety: Assert that every tier except "none" has at least one product */
 (function assertTierCoverage() {
-  (["home_chef", "master_chef"] as const).forEach((t) => {
+  (ALL_TIERS.filter((t) => t !== "none")).forEach((t) => {
     if (TIER_TO_PRODUCTS[t].length === 0) {
       throw new Error(`Tier ${t} has no mapped products in PRODUCT_TO_TIER`);
     }

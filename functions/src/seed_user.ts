@@ -1,13 +1,18 @@
 // functions/src/seed_user.ts
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
-import { firestore } from "./firebase.js";
-import { FieldValue } from "firebase-admin/firestore";
+import { firestore, FieldValue } from "./firebase.js";
+import type { UsageKind, Tier } from "./usage_service.js";
 
 /**
  * 🔑 Seed user document + usage + prefs when a user is first created.
  */
 export const seedUserOnCreate = onDocumentCreated("users/{uid}", async (event) => {
   const uid = event.params.uid;
+
+  if (!uid) {
+    console.error("❌ seedUserOnCreate called with no UID");
+    return;
+  }
 
   const now = new Date();
   const monthKey = now.toISOString().slice(0, 7); // e.g. "2025-08"
@@ -18,11 +23,11 @@ export const seedUserOnCreate = onDocumentCreated("users/{uid}", async (event) =
   console.log(`👤 Seeding user: ${uid}`);
 
   // Defaults (align with reconcile_entitlement.ts + frontend subscription_service.dart)
-  const defaultTier = "none";
+  const defaultTier: Tier = "none";
   const defaultAccess = false;
 
   // ── Seed usage subcollections ───────────────────────────
-  const usageKinds = ["recipeUsage", "translatedRecipeUsage", "imageUsage"];
+  const usageKinds: UsageKind[] = ["recipeUsage", "translatedRecipeUsage", "imageUsage"];
   await Promise.all(
     usageKinds.map((kind) =>
       firestore
@@ -34,6 +39,7 @@ export const seedUserOnCreate = onDocumentCreated("users/{uid}", async (event) =
           {
             [monthKey]: 0,
             [nextMonthKey]: 0, // pre-seed next month to avoid rollover gaps
+            total: 0,          // ✅ keep lifetime counter consistent with usage_service
           },
           { merge: true }
         )
@@ -64,7 +70,7 @@ export const seedUserOnCreate = onDocumentCreated("users/{uid}", async (event) =
       // Subscription core
       tier: defaultTier,                  // 🚨 enforcement field
       productId: "none",                  // RC productIdentifier (audit only, normalised)
-      entitlementStatus: "inactive",      // "active" | "inactive" | "expired"
+      entitlementStatus: "inactive",      // "active" | "inactive" | "none"
       expiresAt: null,                    // populated by RC webhook
       graceUntil: null,                   // populated by RC webhook
       lastEntitlementEventAt: null,       // wait for actual RC event

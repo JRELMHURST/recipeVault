@@ -7,11 +7,7 @@ import { extractTextFromImages } from "./ocr.js";
 import { detectLanguage } from "./detect.js";
 import { translateText } from "./translate.js";
 import { generateFormattedRecipe } from "./gpt_logic.js";
-import {
-  getResolvedTier,
-  enforceAndConsume,
-  incrementMonthlyUsage,
-} from "./usage_service.js";
+import { getResolvedTier } from "./usage_service.js";
 
 // 🔑 Secrets
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
@@ -62,7 +58,10 @@ async function withRetries<T>(
       lastErr = err;
       if (attempt === retries) break;
       const backoff = baseDelayMs * Math.pow(2, attempt);
-      console.warn(`[extractAndFormatRecipe] ⚠️ Attempt ${attempt + 1} failed, retrying in ${backoff}ms…`, err);
+      console.warn(
+        `[extractAndFormatRecipe] ⚠️ Attempt ${attempt + 1} failed, retrying in ${backoff}ms…`,
+        err
+      );
       await new Promise((res) => setTimeout(res, backoff));
     }
   }
@@ -113,7 +112,7 @@ export const extractAndFormatRecipe = onCall(
     try {
       console.info({ msg: "📸 Starting processing", uid, images: imageUrls.length });
 
-      // —— OCR (with retries)
+      // —— OCR (with retries) — imageUsage is consumed inside extractTextFromImages
       const ocrText = await withRetries(() => extractTextFromImages(uid, imageUrls));
       if (!ocrText.trim()) {
         throw new HttpsError("invalid-argument", "No text detected in provided images.");
@@ -135,7 +134,7 @@ export const extractAndFormatRecipe = onCall(
         console.warn("⚠️ Language detection failed", err);
       }
 
-      // —— Decide if translation is needed
+      // —— Decide if translation is needed (no consumption here)
       const srcBase = normalizeLangBase(detectedLanguage);
       const tgtBase = normalizeLangBase(targetLanguage);
       const alreadyTarget = srcBase && tgtBase && srcBase === tgtBase;
@@ -144,13 +143,8 @@ export const extractAndFormatRecipe = onCall(
       let translationUsed = false;
       let usageKind: "recipeUsage" | "translatedRecipeUsage" = "recipeUsage";
 
-      if (!srcBase) {
-        await enforceAndConsume(uid, "recipeUsage", 1);
-      } else if (!alreadyTarget) {
-        // consume translated credit
-        await enforceAndConsume(uid, "translatedRecipeUsage", 1);
-        usageKind = "translatedRecipeUsage";
-
+      if (srcBase && !alreadyTarget) {
+        // Try translation; if it fails or returns empty, fall back to original text.
         try {
           const translated = await withRetries(() =>
             translateText(cleanInput, detectedLanguage, targetLanguageTag, projectId)
@@ -159,22 +153,21 @@ export const extractAndFormatRecipe = onCall(
           if (cleanedTranslated) {
             usedText = cleanedTranslated;
             translationUsed = true;
-            console.info({ msg: "✅ Translation successful", from: detectedLanguage, to: targetLanguageTag });
+            usageKind = "translatedRecipeUsage";
+            console.info({
+              msg: "✅ Translation successful",
+              from: detectedLanguage,
+              to: targetLanguageTag,
+            });
           } else {
-            console.warn("⚠️ Empty translation. Refunding and falling back.");
-            await incrementMonthlyUsage(uid, "translatedRecipeUsage", -1).catch(() => {});
-            await enforceAndConsume(uid, "recipeUsage", 1);
-            usageKind = "recipeUsage";
+            console.warn("⚠️ Empty translation. Falling back to original text.");
           }
         } catch (err) {
-          await incrementMonthlyUsage(uid, "translatedRecipeUsage", -1).catch(() => {});
-          throw err;
+          console.warn("⚠️ Translation failed. Falling back to original text.", err);
         }
-      } else {
-        await enforceAndConsume(uid, "recipeUsage", 1);
       }
 
-      // —— GPT formatting
+      // —— GPT formatting (this is where recipe/translation usage is consumed)
       const finalText = decode(usedText.trim());
       const formattedRecipe = await withRetries(() =>
         generateFormattedRecipe(
@@ -204,7 +197,10 @@ export const extractAndFormatRecipe = onCall(
     } catch (err: any) {
       console.error("❌ extractAndFormatRecipe failed", err);
       if (err instanceof HttpsError) throw err;
-      throw new HttpsError("internal", `❌ Failed to process recipe: ${err?.message || "Unknown error"}`);
+      throw new HttpsError(
+        "internal",
+        `❌ Failed to process recipe: ${err?.message || "Unknown error"}`
+      );
     } finally {
       // Always delete uploads
       await Promise.all((request.data?.imageUrls ?? []).map(deleteUploadedImage));

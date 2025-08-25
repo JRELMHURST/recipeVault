@@ -1,21 +1,21 @@
 // functions/src/deleteAccount.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import type { DocumentReference } from "firebase-admin/firestore";
+import { firestore, FieldValue } from "./firebase.js";
 import { getStorage } from "firebase-admin/storage";
 import "./firebase.js";
 
-const firestore = getFirestore();
 const auth = getAuth();
 const storage = getStorage();
 
 async function deleteSubcollectionBatching(
-  userDocRef: FirebaseFirestore.DocumentReference,
+  userDocRef: DocumentReference,
   colId: string
 ): Promise<number> {
   let deleted = 0;
-  // Loop batches until the subcollection is empty
-  // (limits to 500 per batch to stay within API constraints)
+  // Loop batches until the subcollection is empty (500 per batch to stay within API constraints)
+  // If you might have >10k docs per subcollection, consider using recursive delete via the Admin SDK.
   for (;;) {
     const snap = await userDocRef.collection(colId).limit(500).get();
     if (snap.empty) break;
@@ -69,7 +69,7 @@ export const deleteAccount = onCall(
         "recipes",
         "categories",
         "recipeUsage",
-        "translatedRecipeUsage", // ✅ correct name
+        "translatedRecipeUsage", // ✅ aligned
         "imageUsage",
         "prefs",
       ]) {
@@ -99,13 +99,16 @@ export const deleteAccount = onCall(
 
     // 4) Auth: delete the account
     try {
-      // Optional: mark a tombstone first (useful for analytics/audits)
+      // Optional tombstone (audit/analytics)
       try {
-        await firestore.collection("deletedUsers").doc(uid).set({
-          uid,
-          deletedAt: FieldValue.serverTimestamp(),
-        }, { merge: true });
-      } catch (_) {
+        await firestore.collection("deletedUsers").doc(uid).set(
+          {
+            uid,
+            deletedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } catch {
         /* non-fatal */
       }
 

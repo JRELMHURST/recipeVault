@@ -1,4 +1,4 @@
-// functions/src/detect_language.ts (or wherever you keep it)
+// functions/src/detect.ts (or wherever you keep it)
 import "./firebase.js";
 import { TranslationServiceClient } from "@google-cloud/translate";
 

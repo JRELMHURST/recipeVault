@@ -16,16 +16,13 @@ type ReconcilePayload = {
   productId: string | null;
   tier: Tier;
   status: "active" | "inactive";
-  /** ISO-8601 string or null (never a Date object) */
   expiresAtIso: string | null;
-  /** ISO-8601 string or null (never a Date object) */
   graceUntilIso: string | null;
   isInGrace: boolean;
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Simple exponential backoff helper */
 async function withRetries<T>(
   fn: () => Promise<Response | T>,
   retries = 3,
@@ -57,14 +54,12 @@ async function withRetries<T>(
 
 export const reconcileUserFromRC = onCall(
   {
-    // region is set globally via setGlobalOptions in firebase.ts
-    enforceAppCheck: true,
+    enforceAppCheck: false,
     secrets: ["RC_API_KEY"],
     cors: false,
   },
   async (request: CallableRequest): Promise<ReconcilePayload> => {
     try {
-      // Emulator convenience: allow calls without auth
       const isEmulator = process.env.FUNCTIONS_EMULATOR === "true";
       if (isEmulator && !request.auth) {
         console.warn("[RC Reconcile] ⚠️ Emulator mode: injecting fake auth");
@@ -124,6 +119,19 @@ export const reconcileUserFromRC = onCall(
           )
         );
 
+        // Also audit it
+        const auditId = `manual-${Date.now()}`;
+        await db.doc(`users/${targetUid}/rcEvents/${auditId}`).set({
+          type: "MANUAL_RECONCILE",
+          productId: "none",
+          tier: "none",
+          entitlementStatus: "inactive",
+          expiresAt: null,
+          graceUntil: null,
+          at: FieldValue.serverTimestamp(),
+          changed: true,
+        });
+
         return {
           uid: targetUid,
           productId: null,
@@ -144,23 +152,19 @@ export const reconcileUserFromRC = onCall(
         subscriptions: Object.keys(subscriber.subscriptions ?? {}),
       });
 
-      // ── Resolve entitlement & map to business result ─────
+      // ── Resolve entitlement ─────
       const productId = resolveActiveProductIdFromSubscriber(subscriber);
       const activeSub = productId ? subscriber.subscriptions?.[productId] : undefined;
       const expiresAtIso = activeSub?.expires_date ?? undefined;
       const expiresAt = expiresAtIso ? new Date(expiresAtIso) : null;
-
-      // Some RC responses expose `unsubscribe_detected_at`
       const eventType = (activeSub as any)?.unsubscribe_detected_at ? "CANCELLATION" : null;
 
       const result = toResult(productId, { expiresAt, eventType, graceDays: 3 });
       const safeProductId = (result.productId ?? "none").toLowerCase();
 
-      // Normalize to "active" | "inactive" for client
       const normalizedStatus: "active" | "inactive" =
         result.entitlementStatus === "active" ? "active" : "inactive";
 
-      // Hash to detect changes
       const entitlementHash = computeEntitlementHash({
         productId: result.productId ?? "none",
         tier: result.tier as Tier,
@@ -175,11 +179,7 @@ export const reconcileUserFromRC = onCall(
         : undefined;
 
       const needsBackfill =
-        !snap.exists ||
-        !snap.get("tier") ||
-        !snap.get("productId") ||
-        !snap.get("entitlementStatus");
-
+        !snap.exists || !snap.get("tier") || !snap.get("productId") || !snap.get("entitlementStatus");
       const changed = prevHash !== entitlementHash;
 
       console.info("[RC Reconcile] Decision", {
@@ -200,7 +200,6 @@ export const reconcileUserFromRC = onCall(
               productId: safeProductId,
               tier: result.tier as Tier,
               entitlementStatus: normalizedStatus,
-              // Store as Firestore Timestamp
               expiresAt: result.expiresAt ? Timestamp.fromDate(result.expiresAt) : null,
               graceUntil: result.graceUntil ? Timestamp.fromDate(result.graceUntil) : null,
               isInGrace: !!(result.graceUntil && result.graceUntil > new Date()),
@@ -215,8 +214,22 @@ export const reconcileUserFromRC = onCall(
         console.info(`[RC Reconcile] ℹ️ No Firestore update for ${targetUid}`);
       }
 
-      // Callable payload: only primitives / JSON-safe types
-      const payload: ReconcilePayload = {
+      // Always log an audit entry
+      const auditId = `manual-${Date.now()}`;
+      await db.doc(`users/${targetUid}/rcEvents/${auditId}`).set({
+        type: "MANUAL_RECONCILE",
+        productId: result.productId ?? "none",
+        tier: result.tier,
+        entitlementStatus: normalizedStatus,
+        expiresAt: result.expiresAt ? Timestamp.fromDate(result.expiresAt) : null,
+        graceUntil: result.graceUntil ? Timestamp.fromDate(result.graceUntil) : null,
+        at: FieldValue.serverTimestamp(),
+        prevHash,
+        newHash: entitlementHash,
+        changed,
+      });
+
+      return {
         uid: targetUid,
         productId: result.productId ?? null,
         tier: result.tier as Tier,
@@ -225,8 +238,6 @@ export const reconcileUserFromRC = onCall(
         graceUntilIso: result.graceUntil ? result.graceUntil.toISOString() : null,
         isInGrace: !!(result.graceUntil && result.graceUntil > new Date()),
       };
-
-      return payload;
     } catch (err: any) {
       if (err instanceof HttpsError) throw err;
       console.error("[RC Reconcile] ❌ Unhandled error", err);

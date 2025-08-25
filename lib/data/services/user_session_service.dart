@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:recipe_vault/app/routes.dart';
 
 import 'package:recipe_vault/auth/auth_service.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_recipe_service.dart';
@@ -14,8 +15,8 @@ import 'package:recipe_vault/data/services/user_preference_service.dart';
 import 'package:recipe_vault/billing/subscription_service.dart';
 import 'package:recipe_vault/data/services/category_service.dart';
 import 'package:hive/hive.dart';
-import 'package:recipe_vault/data/models/recipe_card_model.dart';
 
+/// Central user session lifecycle handler
 class UserSessionService {
   static bool _isInitialised = false;
   static Completer<void>? _bubbleFlagsReady;
@@ -28,6 +29,20 @@ class UserSessionService {
   static bool get isSignedIn =>
       FirebaseAuth.instance.currentUser != null &&
       !FirebaseAuth.instance.currentUser!.isAnonymous;
+
+  /// Decide which route to send the user to after boot
+  /// Ensures deleted/logged out users are redirected to login
+  static String? getRedirectRoute(String loc) {
+    final isLoggedIn =
+        FirebaseAuth.instance.currentUser != null &&
+        !FirebaseAuth.instance.currentUser!.isAnonymous;
+
+    if (!isLoggedIn) {
+      final onAuthPage = loc == AppRoutes.login || loc == AppRoutes.register;
+      return onAuthPage ? null : AppRoutes.login;
+    }
+    return null;
+  }
 
   static Future<bool> shouldShowTrialEndedScreen() async {
     try {
@@ -64,7 +79,6 @@ class UserSessionService {
   static Future<void> syncEntitlementAndRefreshSession() async {
     _logDebug('🔄 Manually syncing entitlement + refreshing session...');
     try {
-      // Refresh RC cache
       await Purchases.invalidateCustomerInfoCache();
       final info = await Purchases.getCustomerInfo();
       final active = info.entitlements.active.values
@@ -72,11 +86,9 @@ class UserSessionService {
           .join(', ');
       _logDebug('🧾 Active RC products: [$active]');
 
-      // 🔑 Best-effort reconcile on backend
       try {
         final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
         final callable = functions.httpsCallable("reconcileUserFromRC");
-
         unawaited(
           callable.call().then<void>(
             (_) => _logDebug('☁️ Reconcile triggered (best effort)'),
@@ -87,7 +99,6 @@ class UserSessionService {
         _logDebug('⚠️ Failed to trigger reconcile: $e');
       }
 
-      // Refresh local subscription state + re-init
       await SubscriptionService().refresh();
       await init();
     } catch (e, stack) {
@@ -226,7 +237,7 @@ class UserSessionService {
   static Future<void> logoutReset() async {
     _logDebug('👋 Logging out + resetting session...');
 
-    await _cancelAllStreams(); // 🛑 stop listeners early
+    await _cancelAllStreams();
     await SubscriptionService().reset();
 
     try {
@@ -236,37 +247,17 @@ class UserSessionService {
       _logDebug('❌ RevenueCat logout failed: $e');
     }
 
-    await _cancelAllStreams();
-
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      final boxName = 'recipes_$uid';
-      if (Hive.isBoxOpen(boxName)) {
-        try {
-          final box = Hive.box<RecipeCardModel>(boxName);
-          await box.clear();
-          await box.close();
-          _logDebug('📦 Cleared & closed box: $boxName');
-        } catch (e, stack) {
-          _logDebug('⚠️ Error clearing box $boxName: $e');
-          if (kDebugMode) print(stack);
-        }
-      } else {
-        try {
-          await Hive.deleteBoxFromDisk(boxName);
-          _logDebug('🧹 Deleted unopened Hive box: $boxName');
-        } catch (e) {
-          _logDebug('⚠️ Failed to delete unopened Hive box: $e');
-        }
-      }
+      await _safeCloseBox('recipes_$uid');
+      await _safeCloseBox('userPrefs_$uid');
+      await _safeCloseBox('customCategories_$uid');
+      await _safeCloseBox('hiddenDefaultCategories_$uid');
 
       try {
-        if (!Hive.isBoxOpen('userPrefs_$uid')) {
-          await Hive.openBox('userPrefs_$uid');
-        }
         await UserPreferencesService.clearAllUserData(uid);
       } catch (e) {
-        _logDebug('⚠️ Failed to clear userPrefs: $e');
+        _logDebug('⚠️ Failed to clear userPrefs service: $e');
       }
     }
 
@@ -277,6 +268,24 @@ class UserSessionService {
     _isInitialised = false;
     _bubbleFlagsReady = null;
     _logDebug('🧹 Session fully cleared');
+  }
+
+  static Future<void> _safeCloseBox(String name) async {
+    if (Hive.isBoxOpen(name)) {
+      try {
+        await Hive.box(name).close();
+        _logDebug('📦 Safely closed Hive box: $name');
+      } catch (e) {
+        _logDebug('⚠️ Failed to close Hive box $name: $e');
+      }
+    } else {
+      try {
+        await Hive.deleteBoxFromDisk(name);
+        _logDebug('🧹 Deleted unopened Hive box: $name');
+      } catch (e) {
+        _logDebug('⚠️ Failed to delete unopened Hive box $name: $e');
+      }
+    }
   }
 
   static Future<void> _cancelAllStreams() async {

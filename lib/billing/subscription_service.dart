@@ -238,7 +238,14 @@ class SubscriptionService extends ChangeNotifier {
         } on FirebaseAuthException catch (e) {
           if (e.code == 'user-not-found' || e.code == 'user-disabled') {
             debugPrint('⚠️ Current user no longer exists. Forcing logout.');
+
             await FirebaseAuth.instance.signOut();
+
+            // ✅ Block until authStateChanges() has actually emitted null
+            await FirebaseAuth.instance.authStateChanges().firstWhere(
+              (u) => u == null,
+            );
+
             await reset();
             return;
           } else {

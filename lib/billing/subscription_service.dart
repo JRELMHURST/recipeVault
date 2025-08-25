@@ -37,9 +37,11 @@ class SubscriptionService extends ChangeNotifier {
   final ValueNotifier<String> tierNotifier = ValueNotifier('none');
   final ValueNotifier<String?> subscriptionErrorNotifier = ValueNotifier(null);
 
+  // ── State ─────────────────────────────────────────────────────────────────
   String _tier = 'none';
   String _entitlementId = 'none';
   bool _hasSpecialAccess = false;
+  bool _didStartupReconcile = false;
 
   bool _isLoadingTier = false;
   bool _isInitialising = false;
@@ -316,11 +318,23 @@ class SubscriptionService extends ChangeNotifier {
     _activeEntitlement = null;
     _customerInfo = null;
     _hasSpecialAccess = false;
-    tierNotifier.value = _tier;
 
-    // Cancel Firestore listener when logging out or resetting
+    for (final k in _usageData.keys) {
+      _usageData[k]?.clear();
+    }
+    _tierLimits
+      ..['recipeUsage'] = 0
+      ..['translatedRecipeUsage'] = 0
+      ..['imageUsage'] = 0;
+
+    tierNotifier.value = _tier;
     await _fsSubSubscription?.cancel();
     _fsSubSubscription = null;
+
+    if (_rcSupported) {
+      await Purchases.invalidateCustomerInfoCache();
+    }
+    notifyListeners();
 
     if (_rcSupported) {
       await Purchases.invalidateCustomerInfoCache();
@@ -341,14 +355,21 @@ class SubscriptionService extends ChangeNotifier {
     if (_isLoadingTier) return;
     _isLoadingTier = true;
 
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+    final startUid =
+        FirebaseAuth.instance.currentUser?.uid; // ✅ capture at start
+    if (startUid == null) {
+      _isLoadingTier = false;
+      return;
+    }
 
+    try {
       if (_rcSupported) {
         _customerInfo = await _getCustomerInfoWithRetry(
-          preferRetry: _isBrandNewUser(user),
+          preferRetry: _isBrandNewUser(FirebaseAuth.instance.currentUser!),
         );
+
+        // ✅ guard: bail if user switched mid-fetch
+        if (startUid != FirebaseAuth.instance.currentUser?.uid) return;
 
         final ents = _customerInfo?.entitlements.active ?? const {};
         final rcTier = _resolveTierFromEntitlements(ents);
@@ -363,13 +384,16 @@ class SubscriptionService extends ChangeNotifier {
         _logTierOnce(source: 'loadSubscriptionStatus');
       }
 
-      // Firestore overrides + special access
+      // Firestore overrides
       final doc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(user.uid)
+          .doc(startUid) // ✅ use captured uid
           .get();
-      final data = doc.data();
 
+      // ✅ guard again before applying
+      if (startUid != FirebaseAuth.instance.currentUser?.uid) return;
+
+      final data = doc.data();
       if (data != null) {
         final fsTier = (data['tier'] as String?)?.trim();
         if (fsTier != null &&
@@ -389,10 +413,17 @@ class SubscriptionService extends ChangeNotifier {
         }
       }
 
-      await _loadUsageData(user.uid);
+      await _loadUsageData(startUid);
 
-      // Cache after we’ve applied overrides
-      await _saveCache(user.uid, _tier, active: hasActiveSubscription);
+      // Cache after overrides
+      await _saveCache(startUid, _tier, active: hasActiveSubscription);
+
+      // ✅ reconcile on first successful load if entitled
+      if (!_didStartupReconcile &&
+          (hasActiveSubscription || _hasSpecialAccess)) {
+        _didStartupReconcile = true;
+        unawaited(_reconcileWithBackend());
+      }
 
       notifyListeners();
     } catch (e) {
@@ -405,6 +436,7 @@ class SubscriptionService extends ChangeNotifier {
 
   // ── Usage fetch ───────────────────────────────────────────────────────────
   Future<void> _loadUsageData(String uid) async {
+    // per‑kind usage
     for (final kind in _usageData.keys) {
       try {
         final snap = await FirebaseFirestore.instance
@@ -418,6 +450,14 @@ class SubscriptionService extends ChangeNotifier {
         debugPrint('⚠️ Failed to load $kind: $e');
         _usageData[kind] = {};
       }
+    }
+
+    // tier limits (skip when none)
+    if (_tier == 'none' || _tier.isEmpty) {
+      _tierLimits['recipeUsage'] = 0;
+      _tierLimits['translatedRecipeUsage'] = 0;
+      _tierLimits['imageUsage'] = 0;
+      return;
     }
 
     try {

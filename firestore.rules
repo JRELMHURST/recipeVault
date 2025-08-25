@@ -26,7 +26,6 @@ service cloud.firestore {
 
     // Validate entitlement-related writes from admin/backend
     function entitlementFieldsAreValid() {
-      // Optional presence checks for server-only fields; enforce types if present.
       return
         (!('tier' in request.resource.data) ||
           request.resource.data.tier in ['none','home_chef','master_chef']) &&
@@ -35,7 +34,6 @@ service cloud.firestore {
           request.resource.data.productId is string) &&
 
         (!('entitlementStatus' in request.resource.data) ||
-          // Keep this aligned with your backend (‘active’ | ‘inactive’)
           request.resource.data.entitlementStatus in ['active','inactive']) &&
 
         (!('expiresAt' in request.resource.data) ||
@@ -64,10 +62,9 @@ service cloud.firestore {
 
       // READ: owners can read their doc; non-admins can't list all users
       allow get: if isOwner(userId);
-      allow list: if isAdmin(); // only admins may query the users collection
+      allow list: if isAdmin();
 
-      // CREATE: owner may create their doc but only with safe fields;
-      // admin/backend may create with entitlement fields too.
+      // CREATE: owner may create only safe fields; admin/backend may create with entitlement fields too.
       allow create: if (isOwner(userId) && userUpdateIsSafe()) || isAdmin();
 
       // UPDATE: owner can change only safe fields; admin can change anything
@@ -76,7 +73,7 @@ service cloud.firestore {
         (isOwner(userId) && userUpdateIsSafe()) ||
         (isAdmin() && entitlementFieldsAreValid());
 
-      // DELETE: usually disallow for clients; let backend handle account deletion.
+      // DELETE: clients shouldn’t delete accounts directly; backend handles it.
       allow delete: if isAdmin();
 
       // Recipes (CRUD by owner)
@@ -89,19 +86,19 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
-      // Optional translated/alt content (CRUD by owner)
+      // Optional translations (CRUD by owner)
       match /translations/{translationId} {
         allow read, write: if isOwner(userId);
       }
 
-      // Per-user prefs (owner RW). e.g. /users/{uid}/prefs/app
+      // Per-user prefs (owner RW)
       match /prefs/{docId} {
         allow read, write: if isOwner(userId);
       }
 
       /* ── usage counters ──
          Clients: read-only
-         Backend/Admin SDK: unrestricted (rules bypassed by Admin SDK) */
+         Backend/Admin SDK: writes (rules are bypassed by Admin SDK) */
       match /recipeUsage/{docId} {
         allow get, list: if isOwner(userId);
         allow create, update, delete: if false;
@@ -118,7 +115,7 @@ service cloud.firestore {
 
     /* ─────────── read-only tier limits ─────────── */
     match /tierLimits/{docId} {
-      allow get, list: if true;   // public read
+      allow get, list: if true;
       allow create, update, delete: if false;
     }
 

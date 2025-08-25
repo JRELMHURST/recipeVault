@@ -1,18 +1,24 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:recipe_vault/data/models/recipe_card_model.dart';
 
 class RecipeCard extends StatelessWidget {
-  final String recipeText;
+  // Legacy path (still used by ResultsScreen)
+  final String? recipeText;
 
-  const RecipeCard({super.key, required this.recipeText});
+  // New path (preferred for saved cards / dialog)
+  final RecipeCardModel? recipe;
+
+  const RecipeCard({super.key, required String this.recipeText})
+    : recipe = null;
+
+  const RecipeCard.fromModel(this.recipe, {super.key}) : recipeText = null;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colour = theme.colorScheme;
-
-    final parsed = _parseRecipe(recipeText);
 
     return LayoutBuilder(
       builder: (ctx, constraints) {
@@ -36,51 +42,13 @@ class RecipeCard extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Accent top bar
                   Container(height: 4, color: colour.primary),
-
-                  // Content
                   Container(
                     color: theme.cardColor,
                     padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Title
-                        Text(
-                          parsed.title,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            color: colour.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          softWrap: true,
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Ingredients
-                        if (parsed.ingredients.isNotEmpty) ...[
-                          _sectionHeader('🛒 Ingredients', theme),
-                          const SizedBox(height: 6),
-                          ...parsed.ingredients.map((i) => _bullet(i)),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Instructions
-                        if (parsed.instructions.isNotEmpty) ...[
-                          _sectionHeader('👨‍🍳 Instructions', theme),
-                          const SizedBox(height: 6),
-                          ...parsed.instructions.map((step) => _numbered(step)),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Hints
-                        if (parsed.hints.isNotEmpty) ...[
-                          _sectionHeader('💡 Hints & Tips', theme),
-                          const SizedBox(height: 6),
-                          ...parsed.hints.map((h) => _bullet(h)),
-                        ],
-                      ],
-                    ),
+                    child: recipe != null
+                        ? _buildFromModel(context, recipe!, theme)
+                        : _buildFromText(context, recipeText ?? "", theme),
                   ),
                 ],
               ),
@@ -88,6 +56,98 @@ class RecipeCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  // ---------- Render from model (no parsing, no weird slashes) ----------
+  Widget _buildFromModel(
+    BuildContext context,
+    RecipeCardModel model,
+    ThemeData theme,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Title
+        Text(
+          (model.title.isEmpty ? 'Untitled' : model.title),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            color: theme.colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+          softWrap: true,
+        ),
+        const SizedBox(height: 12),
+
+        // Ingredients
+        if (model.ingredients.isNotEmpty) ...[
+          _sectionHeader('🛒 Ingredients', theme),
+          const SizedBox(height: 6),
+          ...model.ingredients.map(_bullet),
+          const SizedBox(height: 16),
+        ],
+
+        // Instructions
+        if (model.instructions.isNotEmpty) ...[
+          _sectionHeader('👨‍🍳 Instructions', theme),
+          const SizedBox(height: 6),
+          ...model.instructions.asMap().entries.map(
+            (e) => _numbered(
+              // add numbering if missing
+              RegExp(r'^\d+[\).]\s').hasMatch(e.value)
+                  ? e.value
+                  : '${e.key + 1}. ${e.value}',
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // Hints
+        if (model.hints.isNotEmpty) ...[
+          _sectionHeader('💡 Hints & Tips', theme),
+          const SizedBox(height: 6),
+          ...model.hints.map(_bullet),
+        ],
+      ],
+    );
+  }
+
+  // ---------- Legacy path (still supports ResultsScreen text) ----------
+  Widget _buildFromText(BuildContext context, String text, ThemeData theme) {
+    final parsed = _parseRecipe(text);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          parsed.title,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            color: theme.colorScheme.primary,
+            fontWeight: FontWeight.bold,
+          ),
+          softWrap: true,
+        ),
+        const SizedBox(height: 12),
+
+        if (parsed.ingredients.isNotEmpty) ...[
+          _sectionHeader('🛒 Ingredients', theme),
+          const SizedBox(height: 6),
+          ...parsed.ingredients.map(_bullet),
+          const SizedBox(height: 16),
+        ],
+
+        if (parsed.instructions.isNotEmpty) ...[
+          _sectionHeader('👨‍🍳 Instructions', theme),
+          const SizedBox(height: 6),
+          ...parsed.instructions.map(_numbered),
+          const SizedBox(height: 16),
+        ],
+
+        if (parsed.hints.isNotEmpty) ...[
+          _sectionHeader('💡 Hints & Tips', theme),
+          const SizedBox(height: 6),
+          ...parsed.hints.map(_bullet),
+        ],
+      ],
     );
   }
 
@@ -126,6 +186,7 @@ class RecipeCard extends StatelessWidget {
     );
   }
 
+  // ------- simple parser for legacy text path -------
   _ParsedRecipe _parseRecipe(String text) {
     final lines = text.trim().split('\n');
     String title = 'Untitled';
@@ -133,9 +194,7 @@ class RecipeCard extends StatelessWidget {
     final List<String> instructions = [];
     final List<String> hints = [];
 
-    bool inIngredients = false;
-    bool inInstructions = false;
-    bool inHints = false;
+    bool inIngredients = false, inInstructions = false, inHints = false;
 
     for (final raw in lines) {
       final line = raw.trim();
@@ -145,21 +204,18 @@ class RecipeCard extends StatelessWidget {
         title = line.split(':').skip(1).join(':').trim();
         continue;
       }
-
       if (lower.startsWith('ingredients:')) {
         inIngredients = true;
         inInstructions = false;
         inHints = false;
         continue;
       }
-
       if (lower.startsWith('instructions:')) {
         inIngredients = false;
         inInstructions = true;
         inHints = false;
         continue;
       }
-
       if (lower.startsWith('hints & tips:') ||
           lower.startsWith('hints and tips:')) {
         inIngredients = false;
@@ -190,6 +246,5 @@ class _ParsedRecipe {
   final List<String> ingredients;
   final List<String> instructions;
   final List<String> hints;
-
   _ParsedRecipe(this.title, this.ingredients, this.instructions, this.hints);
 }

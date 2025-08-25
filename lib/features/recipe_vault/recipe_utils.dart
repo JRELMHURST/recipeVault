@@ -5,7 +5,7 @@ import 'package:recipe_vault/data/models/recipe_card_model.dart';
 String formatRecipeMarkdown(BuildContext context, RecipeCardModel recipe) {
   final t = AppLocalizations.of(context);
 
-  // Try to use a preformatted translation block if present for the current locale.
+  // 1) Prefer a preformatted translation if present
   final locale = Localizations.localeOf(context);
   final tag = _toBcp47(locale);
   final translated = recipe.formattedForLocaleTag(tag);
@@ -13,21 +13,25 @@ String formatRecipeMarkdown(BuildContext context, RecipeCardModel recipe) {
     return translated.trim();
   }
 
-  // --- Helpers ---------------------------------------------------------------
-
-  // Proper Markdown escape for common special chars.
+  // 2) Helpers
   String mdEscape(String s) => s.replaceAllMapped(
-    RegExp(r'([\\`*_{}$begin:math:display$$end:math:display$()#+\-.!|>])'),
+    // Escape the usual suspects for Markdown headings/lists
+    RegExp(r'([\\`*_{}()$begin:math:display$$end:math:display$#+\-!|>])'),
     (m) => '\\${m[1]}',
   );
 
-  String bulletify(Iterable<String> items) =>
-      items.map((e) => "- ${mdEscape(e.trim())}").join("\n");
+  Iterable<String> normList(Iterable<String> items) => items
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toSet() // dedupe
+      .toList();
 
-  // Strip "1. ", "1) ", "-", "*", "•", etc. at the start of an instruction line.
+  String bulletify(Iterable<String> items) =>
+      items.map((e) => "- ${mdEscape(e)}").join("\n");
+
+  // Strip "1. ", "1) ", "-", "*", "•", etc. from instruction starts
   final numberPrefix = RegExp(r'^\s*(?:\d+|[•\-\*])[\.\)]?\s+');
 
-  // Localize built-in category labels; leave user categories as-is.
   String localizeCategoryLabel(String raw) {
     switch (raw) {
       case 'All':
@@ -41,25 +45,19 @@ String formatRecipeMarkdown(BuildContext context, RecipeCardModel recipe) {
     }
   }
 
-  // --- Title -----------------------------------------------------------------
+  // 3) Title
   final title = recipe.title.trim().isEmpty ? "Untitled" : recipe.title.trim();
 
-  // --- Ingredients -----------------------------------------------------------
-  final ingredientsList = recipe.ingredients
-      .map((e) => e.trim())
-      .where((e) => e.isNotEmpty)
-      .toList();
-
+  // 4) Ingredients
+  final ingredientsList = normList(recipe.ingredients);
   final ingredients = ingredientsList.isEmpty
       ? "- ${mdEscape(t.noAdditionalTips)}"
       : bulletify(ingredientsList);
 
-  // --- Instructions (normalize numbering) ------------------------------------
-  final instructionList = recipe.instructions
-      .map((e) => e.replaceFirst(numberPrefix, '').trim())
-      .where((e) => e.isNotEmpty)
-      .toList();
-
+  // 5) Instructions (re-number cleanly)
+  final instructionList = normList(
+    recipe.instructions.map((e) => e.replaceFirst(numberPrefix, '').trim()),
+  ).toList();
   final instructions = instructionList.isEmpty
       ? "1. ${mdEscape(t.noAdditionalTips)}"
       : instructionList
@@ -68,28 +66,26 @@ String formatRecipeMarkdown(BuildContext context, RecipeCardModel recipe) {
             .map((e) => "${e.key + 1}. ${mdEscape(e.value)}")
             .join("\n");
 
-  // --- Hints -----------------------------------------------------------------
-  final hintsList = recipe.hints
-      .map((e) => e.trim())
-      .where((e) => e.isNotEmpty)
-      .toList();
-
-  final hints = hintsList.isEmpty
+  // 6) Hints
+  final rawHints = normList(
+    recipe.hints,
+  ).where((h) => !h.toLowerCase().contains('no additional tips')).toList();
+  final hints = rawHints.isEmpty
       ? "- ${mdEscape(t.noAdditionalTips)}"
-      : bulletify(hintsList);
+      : bulletify(rawHints);
 
-  // --- Categories (optional line) --------------------------------------------
+  // 7) Categories (optional)
   final cats = recipe.categories.map(localizeCategoryLabel).toList();
   final categoriesLine = cats.isNotEmpty
       ? "${mdEscape(t.categories)}: ${mdEscape(cats.join(', '))}\n\n"
       : "";
 
-  // --- Build final markdown ---------------------------------------------------
-  final buffer = StringBuffer();
-  buffer.writeln("# ${mdEscape(title)}\n");
-  if (categoriesLine.isNotEmpty) buffer.write(categoriesLine);
+  // 8) Build final markdown
+  final buf = StringBuffer();
+  buf.writeln("# ${mdEscape(title)}\n");
+  if (categoriesLine.isNotEmpty) buf.write(categoriesLine);
 
-  buffer
+  buf
     ..writeln("${mdEscape(t.ingredients)}:")
     ..writeln(ingredients)
     ..writeln()
@@ -99,11 +95,11 @@ String formatRecipeMarkdown(BuildContext context, RecipeCardModel recipe) {
     ..writeln("${mdEscape(t.hintsAndTips)}:")
     ..writeln(hints);
 
-  return buffer.toString().trim();
+  return buf.toString().trim();
 }
 
 String _toBcp47(Locale locale) {
-  final country = locale.countryCode;
-  if (country == null || country.isEmpty) return locale.languageCode;
-  return "${locale.languageCode}-$country";
+  final cc = locale.countryCode;
+  if (cc == null || cc.isEmpty) return locale.languageCode;
+  return "${locale.languageCode}-$cc";
 }

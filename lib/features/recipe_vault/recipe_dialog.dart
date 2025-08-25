@@ -4,50 +4,25 @@ import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
-import 'package:recipe_vault/features/recipe_vault/recipe_utils.dart';
 import 'package:recipe_vault/utils/recipe_pdf_generator.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 void showRecipeDialog(BuildContext context, RecipeCardModel recipe) {
-  final markdown = formatRecipeMarkdown(context, recipe);
-
   showDialog(
     context: context,
     builder: (_) => Dialog(
       insetPadding: const EdgeInsets.all(16),
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: _ShareableRecipeCard(
-        markdown: markdown,
-        title: recipe.title,
-        imageUrl: recipe.imageUrl,
-        recipeId: recipe.id,
-        userId: recipe.userId,
-        ingredients: recipe.ingredients,
-        instructions: recipe.instructions,
-      ),
+      child: _ShareableRecipeCard(recipe: recipe),
     ),
   );
 }
 
 class _ShareableRecipeCard extends StatefulWidget {
-  final String markdown;
-  final String title;
-  final String? imageUrl;
-  final String recipeId;
-  final String userId;
-  final List<String> ingredients;
-  final List<String> instructions;
+  final RecipeCardModel recipe;
 
-  const _ShareableRecipeCard({
-    required this.markdown,
-    required this.title,
-    required this.recipeId,
-    required this.userId,
-    required this.ingredients,
-    required this.instructions,
-    this.imageUrl,
-  });
+  const _ShareableRecipeCard({required this.recipe});
 
   @override
   State<_ShareableRecipeCard> createState() => _ShareableRecipeCardState();
@@ -68,16 +43,18 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
   @override
   void didUpdateWidget(covariant _ShareableRecipeCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.imageUrl != widget.imageUrl && widget.imageUrl != null) {
+    if (oldWidget.recipe.imageUrl != widget.recipe.imageUrl &&
+        (widget.recipe.imageUrl ?? '').isNotEmpty) {
       _loadAndUpdateIconColor();
     }
   }
 
   Future<void> _loadAndUpdateIconColor() async {
-    if (widget.imageUrl == null || widget.imageUrl!.isEmpty) return;
+    final url = widget.recipe.imageUrl;
+    if (url == null || url.isEmpty) return;
     try {
       final palette = await PaletteGenerator.fromImageProvider(
-        NetworkImage(widget.imageUrl!),
+        NetworkImage(url),
         size: const Size(100, 100),
       );
       final dominant = palette.dominantColor?.color;
@@ -97,28 +74,20 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
   }
 
   Future<void> _shareAsPdf(BuildContext context) async {
-    final recipe = RecipeCardModel(
-      id: widget.recipeId,
-      userId: widget.userId,
-      title: widget.title,
-      ingredients: widget.ingredients,
-      instructions: widget.instructions,
-      imageUrl: widget.imageUrl,
-      createdAt: DateTime.now(),
-    );
-    await RecipePdfGenerator.sharePdf(recipe);
+    await RecipePdfGenerator.sharePdf(widget.recipe);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final imageUrl = widget.recipe.imageUrl;
 
-    final header = (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
+    final header = (imageUrl != null && imageUrl.isNotEmpty)
         ? ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             child: Image.network(
-              widget.imageUrl!,
+              imageUrl,
               height: 200,
               width: double.infinity,
               fit: BoxFit.cover,
@@ -154,7 +123,7 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
                   color: theme.colorScheme.primary,
                 ),
               ),
-              semanticLabel: widget.title,
+              semanticLabel: widget.recipe.title,
             ),
           )
         : const SizedBox.shrink();
@@ -168,12 +137,12 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
               header,
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: RecipeCard(recipeText: widget.markdown),
+                // ✅ render directly from model (no markdown parser)
+                child: RecipeCard.fromModel(widget.recipe),
               ),
             ],
           ),
         ),
-        // Controls float over the image; if no image, we still show them in the top-right.
         Positioned(
           top: 8,
           right: 8,
@@ -206,7 +175,6 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
     required String tooltip,
     required VoidCallback onPressed,
   }) {
-    // Use current computed iconColor if ready; otherwise ensure visibility.
     final Color fg = _iconReady ? iconColor : Colors.white;
     return Container(
       decoration: BoxDecoration(

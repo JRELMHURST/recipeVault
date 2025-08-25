@@ -25,7 +25,6 @@ class AuthService {
 
   // On mobile, use google_sign_in package; on web we use FirebaseAuth popups.
   late final GoogleSignIn _googleSignIn = GoogleSignIn(
-    // scopes: ['email', 'profile'], // default scopes already include these
     serverClientId: _googleServerClientId.isEmpty
         ? null
         : _googleServerClientId,
@@ -46,6 +45,21 @@ class AuthService {
     }
   }
 
+  /// Simple platform label for Firestore (allowed by rules)
+  static String _platformLabel() {
+    if (kIsWeb) return 'web';
+    try {
+      if (Platform.isIOS) return 'ios';
+      if (Platform.isAndroid) return 'android';
+      if (Platform.isMacOS) return 'macos';
+      if (Platform.isWindows) return 'windows';
+      if (Platform.isLinux) return 'linux';
+    } catch (_) {
+      // ignore: avoid_catches_without_on_clauses
+    }
+    return 'unknown';
+  }
+
   // ───────────────── SIGN IN / REGISTER ─────────────────
 
   Future<UserCredential> signInWithEmail({
@@ -59,11 +73,10 @@ class AuthService {
 
     final user = credential.user;
     if (user == null) {
-      // This shouldn't happen on a successful sign-in, but guard just in case.
       throw StateError('Sign-in succeeded but no user was returned.');
     }
 
-    await _postAuthHousekeeping(user, forceCreateUserDoc: false);
+    await _postAuthHousekeeping(user);
     return credential;
   }
 
@@ -80,7 +93,7 @@ class AuthService {
     if (displayName != null && displayName.trim().isNotEmpty) {
       await user.updateDisplayName(displayName.trim());
     }
-    await _postAuthHousekeeping(user, forceCreateUserDoc: true);
+    await _postAuthHousekeeping(user);
     return credential;
   }
 
@@ -88,20 +101,15 @@ class AuthService {
   Future<UserCredential?> signInWithGoogle() async {
     try {
       if (kIsWeb) {
-        // Web: use FirebaseAuth popup for Google
         final provider = GoogleAuthProvider();
-        // Example additional scopes if needed:
-        // provider.addScope('email'); provider.addScope('profile');
         final cred = await _auth.signInWithPopup(provider);
-        await _postAuthHousekeeping(cred.user!, forceCreateUserDoc: true);
+        await _postAuthHousekeeping(cred.user!);
         return cred;
       }
 
       // Mobile / desktop
       if (!(Platform.isAndroid || Platform.isIOS)) {
         if (kDebugMode) {
-          // For unsupported platforms, bail gracefully.
-          // (You could add desktop OAuth flows if needed.)
           // ignore: avoid_print
           print('Google sign-in is only set up for Android/iOS/Web.');
         }
@@ -118,10 +126,7 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
-      await _postAuthHousekeeping(
-        userCredential.user!,
-        forceCreateUserDoc: true,
-      );
+      await _postAuthHousekeeping(userCredential.user!);
       return userCredential;
     } catch (e, stack) {
       debugPrint('🔴 Google sign-in failed: $e\n$stack');
@@ -154,10 +159,7 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(oauth);
-      await _postAuthHousekeeping(
-        userCredential.user!,
-        forceCreateUserDoc: true,
-      );
+      await _postAuthHousekeeping(userCredential.user!);
       return userCredential;
     } catch (e, stack) {
       debugPrint('🔴 Apple sign-in failed: $e\n$stack');
@@ -231,31 +233,33 @@ class AuthService {
   }
 
   // ───────────────── Firestore User Doc ─────────────────
+  // Writes ONLY fields allowed by Firestore rules for the owner:
+  //   email, platform, preferredRecipeLocale
 
   static Future<bool> ensureUserDocument(User user) async {
-    // Skip anonymous just in case this is called elsewhere unexpectedly
     if (user.isAnonymous) return false; // guard
 
     final ref = FirebaseFirestore.instance.collection('users').doc(user.uid);
     final snap = await ref.get();
 
     final preferredLocale = await AuthService()._getPreferredRecipeLocale();
+    final platform = _platformLabel();
 
     final data = <String, dynamic>{
-      'email': user.email,
-      if (preferredLocale != null) 'preferredRecipeLocale': preferredLocale,
-      if (!snap.exists) 'createdAt': FieldValue.serverTimestamp(),
-      'lastLogin': FieldValue.serverTimestamp(),
+      'email': (user.email ?? '').trim(),
+      'platform': platform,
+      if (preferredLocale != null && preferredLocale.trim().isNotEmpty)
+        'preferredRecipeLocale': preferredLocale.trim(),
     };
 
     if (!snap.exists) {
-      await ref.set(data);
-      debugPrint('📝 Created Firestore user doc → $data');
+      // Create with safe fields only; seed function will backfill server-only fields.
+      await ref.set(data, SetOptions(merge: true));
+      debugPrint('📝 Created Firestore user doc (safe fields) → $data');
       return true;
     } else {
-      await ref.set({
-        'lastLogin': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      // Merge safe fields; backend owns entitlement/timestamps.
+      await ref.set(data, SetOptions(merge: true));
       return false;
     }
   }
@@ -265,10 +269,7 @@ class AuthService {
 
   // ───────────────── Post‑auth glue (single place) ─────────────────
 
-  Future<void> _postAuthHousekeeping(
-    User user, {
-    required bool forceCreateUserDoc,
-  }) async {
+  Future<void> _postAuthHousekeeping(User user) async {
     // Anonymous sessions should NOT bind RC or write user docs
     if (user.isAnonymous) {
       if (kDebugMode) {
@@ -285,20 +286,14 @@ class AuthService {
       if (kDebugMode) debugPrint('⚠️ Subscriptions refresh failed: $e');
     }
 
-    // 2) Ensure/merge Firestore user doc
+    // 2) Ensure/merge Firestore user doc (safe fields only; seed CF adds server fields)
     try {
-      if (forceCreateUserDoc) {
-        await ensureUserDocument(user);
-      } else {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'lastLogin': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      }
+      await ensureUserDocument(user);
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ ensureUserDocument failed: $e');
     }
 
-    // 3) No client-side reconcile; rely on webhook → app refreshes via RC listener/router.
+    // 3) No client-side reconcile; rely on webhook/callable + RC listener/router.
   }
 
   // ───────────────── Debug helpers ─────────────────

@@ -52,6 +52,12 @@ function resolveLocaleMeta(locale: string | undefined) {
   return LOCALE_META[primary] ?? LOCALE_META.en_GB;
 }
 
+// 🛡️ Avoid double “Hints & Tips” blocks
+function hasHintsSection(text: string, hintsLabel: string): boolean {
+  const pattern = new RegExp(`^\\s*${hintsLabel}\\s*:`, "im");
+  return pattern.test(text);
+}
+
 /**
  * 🎨 Format a recipe into a consistent structure in the user’s locale,
  * with quota enforcement and refund on failure.
@@ -132,11 +138,10 @@ Return only a JSON object in a \`\`\`json code block, like:
     const rawContent = completion.choices[0]?.message?.content?.trim();
     if (!rawContent) throw new Error("❌ gpt: Empty response from model");
 
-    // ✅ Strip markdown code fences (` ```json`, ```JSON`, etc.)
+    // ✅ Strip markdown code fences (```json / ```JSON / ``` …)
     const jsonText = rawContent
-      .replace(/^\s*```json/i, "")
-      .replace(/^\s*```JSON/i, "")
-      .replace(/```$/i, "")
+      .replace(/^\s*```(?:json)?\s*/i, "")
+      .replace(/\s*```$/i, "")
       .trim();
 
     let parsed: GptRecipeResponse;
@@ -161,6 +166,12 @@ Return only a JSON object in a \`\`\`json code block, like:
       chars: formatted.length,
     });
 
+    // If the model already included a Hints section, don’t append another.
+    if (hasHintsSection(formatted, labels.hints)) {
+      return formatted;
+    }
+
+    // Otherwise, append our Hints block once.
     return `${formatted}\n\n${labels.hints}:\n${notes}`;
   } catch (err) {
     // ❗ Refund credit if GPT fails

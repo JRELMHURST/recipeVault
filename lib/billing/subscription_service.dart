@@ -484,17 +484,22 @@ class SubscriptionService extends ChangeNotifier {
 
   // ── RevenueCat push updates ───────────────────────────────────────────────
   Future<void> _reconcileWithBackend() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
       debugPrint("⚠️ Skipping reconcile: no signed-in user");
       return;
     }
 
     try {
+      // 🔑 Force refresh ID token
+      await user.getIdToken(true);
+
       final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
       final fn = functions.httpsCallable('reconcileUserFromRC');
       final resp = await fn.call();
       debugPrint("🔄 Reconcile success: ${resp.data}");
+    } on FirebaseAuthException catch (e) {
+      debugPrint("⚠️ Auth error during reconcile: ${e.code} → ${e.message}");
     } catch (e, st) {
       debugPrint("❌ Reconcile failed: $e\n$st");
     }

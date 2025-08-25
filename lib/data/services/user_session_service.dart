@@ -189,7 +189,7 @@ class UserSessionService {
       _translationSub = FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
-          .collection('translationUsage')
+          .collection('translationRecipeUsage')
           .doc('usage')
           .snapshots()
           .listen(

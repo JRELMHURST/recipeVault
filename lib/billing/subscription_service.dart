@@ -10,6 +10,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:recipe_vault/billing/tier_limits.dart';
 
 /// Mapping helper — ideally generated from backend (TS ⇆ Dart)
 String productToTier(String productId) {
@@ -264,7 +265,6 @@ class SubscriptionService extends ChangeNotifier {
         await loadSubscriptionStatus();
         await _loadAvailablePackages();
       } else {
-        // On unsupported platforms, still try to read overrides + usage.
         if (user != null) {
           await _loadUsageData(user.uid);
           notifyListeners();
@@ -278,7 +278,6 @@ class SubscriptionService extends ChangeNotifier {
   Future<void> setAppUserId(String? firebaseUid) async {
     try {
       if (!_rcSupported) {
-        // Still clear local state if logging out.
         if (firebaseUid == null) await reset();
         return;
       }
@@ -287,7 +286,6 @@ class SubscriptionService extends ChangeNotifier {
         try {
           await Purchases.logOut();
         } on PlatformException catch (e) {
-          // Use helper to read error code (avoid magic numbers)
           final code = PurchasesErrorHelper.getErrorCode(e);
           if (code != PurchasesErrorCode.logOutWithAnonymousUserError) {
             rethrow;
@@ -342,11 +340,6 @@ class SubscriptionService extends ChangeNotifier {
       await Purchases.invalidateCustomerInfoCache();
     }
     notifyListeners();
-
-    if (_rcSupported) {
-      await Purchases.invalidateCustomerInfoCache();
-    }
-    notifyListeners();
   }
 
   void updateTier(String newTier) {
@@ -362,8 +355,7 @@ class SubscriptionService extends ChangeNotifier {
     if (_isLoadingTier) return;
     _isLoadingTier = true;
 
-    final startUid =
-        FirebaseAuth.instance.currentUser?.uid; // ✅ capture at start
+    final startUid = FirebaseAuth.instance.currentUser?.uid;
     if (startUid == null) {
       _isLoadingTier = false;
       return;
@@ -375,7 +367,6 @@ class SubscriptionService extends ChangeNotifier {
           preferRetry: _isBrandNewUser(FirebaseAuth.instance.currentUser!),
         );
 
-        // ✅ guard: bail if user switched mid-fetch
         if (startUid != FirebaseAuth.instance.currentUser?.uid) return;
 
         final ents = _customerInfo?.entitlements.active ?? const {};
@@ -387,6 +378,8 @@ class SubscriptionService extends ChangeNotifier {
         _tier = rcTier;
         _entitlementId = rcEntitlementId;
         _activeEntitlement = activeEntitlement;
+
+        _applyFallbackLimitsIfAny(); // 👈 fallback immediately
         tierNotifier.value = _tier;
         _logTierOnce(source: 'loadSubscriptionStatus');
       }
@@ -394,10 +387,9 @@ class SubscriptionService extends ChangeNotifier {
       // Firestore overrides
       final doc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(startUid) // ✅ use captured uid
+          .doc(startUid)
           .get();
 
-      // ✅ guard again before applying
       if (startUid != FirebaseAuth.instance.currentUser?.uid) return;
 
       final data = doc.data();
@@ -422,10 +414,8 @@ class SubscriptionService extends ChangeNotifier {
 
       await _loadUsageData(startUid);
 
-      // Cache after overrides
       await _saveCache(startUid, _tier, active: hasActiveSubscription);
 
-      // ✅ reconcile on first successful load if entitled
       if (!_didStartupReconcile &&
           (hasActiveSubscription || _hasSpecialAccess)) {
         _didStartupReconcile = true;
@@ -443,7 +433,6 @@ class SubscriptionService extends ChangeNotifier {
 
   // ── Usage fetch ───────────────────────────────────────────────────────────
   Future<void> _loadUsageData(String uid) async {
-    // per‑kind usage
     for (final kind in _usageData.keys) {
       try {
         final snap = await FirebaseFirestore.instance
@@ -459,7 +448,6 @@ class SubscriptionService extends ChangeNotifier {
       }
     }
 
-    // tier limits (skip when none)
     if (_tier == 'none' || _tier.isEmpty) {
       _tierLimits['recipeUsage'] = 0;
       _tierLimits['translatedRecipeUsage'] = 0;
@@ -472,11 +460,25 @@ class SubscriptionService extends ChangeNotifier {
           .collection('tierLimits')
           .doc(_tier)
           .get();
+
       if (snap.exists) {
         _tierLimits.addAll(Map<String, int>.from(snap.data() ?? {}));
+      } else {
+        _applyFallbackLimitsIfAny(); // 👈 fallback if Firestore doc missing
       }
     } catch (e) {
+      _applyFallbackLimitsIfAny(); // 👈 fallback on error
       debugPrint('⚠️ Failed to load tier limits: $e');
+    }
+  }
+
+  void _applyFallbackLimitsIfAny() {
+    final fb = TierLimitsFallback.forTier(_tier);
+    if (fb != null) {
+      _tierLimits
+        ..['recipeUsage'] = fb['recipeUsage']!
+        ..['translatedRecipeUsage'] = fb['translatedRecipeUsage']!
+        ..['imageUsage'] = fb['imageUsage']!;
     }
   }
 
@@ -491,7 +493,7 @@ class SubscriptionService extends ChangeNotifier {
     try {
       final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
       final fn = functions.httpsCallable('reconcileUserFromRC');
-      final resp = await fn.call(); // auth context carries the UID
+      final resp = await fn.call();
       debugPrint("🔄 Reconcile success: ${resp.data}");
     } catch (e, st) {
       debugPrint("❌ Reconcile failed: $e\n$st");
@@ -520,12 +522,15 @@ class SubscriptionService extends ChangeNotifier {
     _entitlementId = rcEntitlementId;
     _activeEntitlement = activeEntitlement;
 
+    _applyFallbackLimitsIfAny(); // 👈 fallback here too
+
     if (changedTier) {
       tierNotifier.value = _tier;
       _logTierOnce(source: 'rc-listener');
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
         await _saveCache(uid, _tier, active: hasActiveSubscription);
+
         await _reconcileWithBackend(); // keep Firestore in sync
       }
     }
@@ -534,7 +539,6 @@ class SubscriptionService extends ChangeNotifier {
 
   // ── Firestore drift listener ──────────────────────────────────────────────
   void _attachFirestoreListener(String uid) {
-    // Clean up any previous subscription
     _fsSubSubscription?.cancel();
     _fsSubSubscription = FirebaseFirestore.instance
         .collection('users')

@@ -25,8 +25,8 @@ export interface ReconcilePayload {
   uid: string;
   productId: string | null;
   tier: Tier;
-  status: PublicStatus;  // <= only active/inactive leaves "none" internal
-  expiresAt: Date | null;
-  graceUntil: Date | null;
+  status: PublicStatus;
+  expiresAtIso: string | null;   // ISO string for client
+  graceUntilIso: string | null;  // same
   isInGrace: boolean;
 }

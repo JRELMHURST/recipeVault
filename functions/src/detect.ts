@@ -1,55 +1,47 @@
+// functions/src/detect_language.ts (or wherever you keep it)
 import "./firebase.js";
 import { TranslationServiceClient } from "@google-cloud/translate";
 
 const client = new TranslationServiceClient();
 
-/** 🔡 Unicode-friendly cleanup: keep diacritics, normalise, collapse whitespace */
+/** 🔡 Unicode-friendly cleanup */
 function cleanText(input: string): string {
   return input
     .normalize("NFKC")
-    .replace(/[\u200B-\u200D\uFEFF]/g, "") // zero-width
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
     .replace(/\r/g, "")
-    .replace(/[ \t]+\n/g, "\n") // strip trailing spaces before newline
-    .replace(/\s{2,}/g, " ") // collapse double spaces
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\s{2,}/g, " ")
     .trim();
 }
 
-/** ✂️ Limit to GCP API max (5k chars) */
+/** ✂️ Limit to 5k (ample for Detect API) */
 function truncate(input: string, max = 5000): string {
   return input.length > max ? input.slice(0, max) : input;
 }
 
-/** 🌍 Map GCP language codes → Flutter locale tag */
-function mapToFlutterLocale(code: string): string {
-  const base = code.toLowerCase();
-
+/** 🌍 Produce a hyphenated BCP‑47-ish tag like "en-GB" */
+function toHyphenLocale(code: string): string {
+  const lc = code.toLowerCase();
   const supported = new Set([
     "en", "en-gb", "bg", "cs", "da", "de", "el",
     "es", "fr", "ga", "it", "nl", "pl", "cy",
   ]);
 
-  // ✅ If exact match or BCP-47 style (xx-XX)
-  if (supported.has(base) || /^[a-z]{2}-[a-z]{2}$/i.test(base)) {
-    return base.replace("-", "_");
-  }
+  if (supported.has(lc)) return lc;                  // "en" | "en-gb" | ...
+  if (/^[a-z]{2}-[a-z]{2}$/i.test(code)) return lc;  // keep structure
 
-  // 🔙 Fallback: always safe
-  return "en_GB";
+  // Fallback to your app default (seed uses "en-GB")
+  return "en-gb";
 }
 
-/**
- * 🧪 Detect language using Google Cloud Translate API
- * @returns { languageCode, confidence, flutterLocale }
- *
- * ⚠️ No quota enforcement here — usage is billed at GPT step.
- */
 export async function detectLanguage(
   text: string,
   projectId?: string
 ): Promise<{
-  languageCode: string;
-  confidence: number;
-  flutterLocale: string;
+  languageCode: string;     // e.g. "en"
+  confidence: number;       // 0..1
+  flutterLocale: string;    // hyphenated: "en-gb"
 }> {
   if (!text?.trim()) {
     throw new Error("❌ detectLanguage: No text provided.");
@@ -77,21 +69,24 @@ export async function detectLanguage(
       mimeType: "text/plain",
     });
 
-    const language = response.languages?.[0];
-    const languageCode = (language?.languageCode || "unknown").toLowerCase();
-    const confidence = language?.confidence ?? 0;
-    const flutterLocale = mapToFlutterLocale(languageCode);
+    const lang = response.languages?.[0];
+    const languageCode = (lang?.languageCode || "unknown").toLowerCase();
+    const confidence = lang?.confidence ?? 0;
+    const flutterLocale = toHyphenLocale(languageCode); // <- now hyphenated
 
     if (confidence < 0.5) {
-      console.warn("⚠️ detectLanguage: Low confidence result", {
-        languageCode,
-        confidence,
-      });
+      console.warn("⚠️ detectLanguage: Low confidence", { languageCode, confidence });
     }
 
-    return { languageCode, confidence, flutterLocale };
+    // If your Flutter side prefers "en-GB" casing (titlecase region), do it here:
+    const normalized = flutterLocale.replace(
+      /^([a-z]{2})(?:-([a-z]{2}))?$/i,
+      (_, a, b) => (b ? `${a.toLowerCase()}-${b.toUpperCase()}` : a.toLowerCase())
+    ); // e.g. "en-gb" -> "en-GB"
+
+    return { languageCode, confidence, flutterLocale: normalized };
   } catch (err) {
     console.error("❌ detectLanguage failed:", err);
-    return { languageCode: "unknown", confidence: 0, flutterLocale: "en_GB" };
+    return { languageCode: "unknown", confidence: 0, flutterLocale: "en-GB" };
   }
 }

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 import 'package:recipe_vault/core/theme.dart';
+import 'package:recipe_vault/data/services/usage_service.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class UsageMetricsWidget extends StatefulWidget {
@@ -108,15 +109,16 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
 
   @override
   Widget build(BuildContext context) {
-    final sub = context.watch<SubscriptionService>();
+    final usage = context.watch<UsageService>(); // ✅ live counts
+    final sub = context.watch<SubscriptionService>(); // ✅ limits/tier
     final loc = AppLocalizations.of(context);
 
     if (!sub.showUsageWidget || !sub.trackUsage) {
       return const SizedBox.shrink();
     }
 
-    final recipesUsed = sub.recipeUsage;
-    final translatedRecipesUsed = sub.translatedRecipeUsage;
+    final recipesUsed = usage.recipesUsed;
+    final translatedRecipesUsed = usage.translatedRecipesUsed;
 
     final recipeLimit = sub.aiLimit;
     final translatedRecipeLimit = sub.translatedRecipeLimit;

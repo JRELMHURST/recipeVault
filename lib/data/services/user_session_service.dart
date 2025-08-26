@@ -355,7 +355,7 @@ class UserSessionService {
     }
   }
 
-  /// Single entry-point for signing out. Idempotent.
+  // Single entry-point for signing out. Idempotent.
   static Completer<void>? _signOutOnce;
   static Future<void> signOut() async {
     if (_signOutOnce != null) return _signOutOnce!.future;
@@ -363,14 +363,14 @@ class UserSessionService {
 
     beginSignOut();
     try {
-      // Capture UID BEFORE auth sign-out, so teardown can close per-user stores.
+      // Capture UID BEFORE teardown/sign-out
       final uid = FirebaseAuth.instance.currentUser?.uid;
 
-      // 1) Auth sign-out first to stop further listeners/refresh
-      await FirebaseAuth.instance.signOut();
-
-      // 2) Local + third-party teardown (RC/Hive/streams/etc)
+      // 1) Local + third-party teardown FIRST (RC/Hive/streams/etc)
       await logoutReset(uidHint: uid);
+
+      // 2) Auth sign-out LAST so no listeners fire post-logout
+      await FirebaseAuth.instance.signOut();
 
       _signOutOnce!.complete();
     } catch (e, st) {

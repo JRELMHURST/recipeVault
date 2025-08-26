@@ -1,12 +1,15 @@
 // lib/screens/recipe_vault/recipe_vault_screen.dart
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
+import 'package:recipe_vault/data/services/usage_service.dart';
 import 'package:recipe_vault/features/recipe_vault/categories.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/billing/subscription/subscription_service.dart';
@@ -58,6 +61,18 @@ class _VaultBody extends StatefulWidget {
 
 class _VaultBodyState extends State<_VaultBody> {
   final GlobalObjectKey _fabKey = GlobalObjectKey('vault-fab-anchor');
+
+  @override
+  void initState() {
+    super.initState();
+
+    // One-time refresh of usage counts right after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null || !mounted) return;
+      unawaited(context.read<UsageService>().refreshOnce());
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

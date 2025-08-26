@@ -2,8 +2,6 @@
 import { firestore, FieldValue } from "./firebase.js";
 import { HttpsError } from "firebase-functions/v2/https";
 
-
-
 /** Types of usage we track (collection names match these keys) */
 export type UsageKind = "recipeUsage" | "translatedRecipeUsage" | "imageUsage";
 
@@ -14,7 +12,7 @@ export type Tier = "home_chef" | "master_chef" | "none";
 export const tierLimits: Record<
   Exclude<Tier, "none">,
   {
-    translatedRecipeCards: number; // ✅ clearer for users
+    translatedRecipeCards: number; // clearer label for UI
     recipes: number;
     images: number;
   }
@@ -80,7 +78,7 @@ export async function getMonthlyRemaining(uid: string, kind: UsageKind, tier: Ti
 }
 
 /** 📈 Increment usage for this month (and total lifetime).
- *  Supports negative increments for refunds.
+ *  Supports negative increments for refunds (no clamping).
  */
 export async function incrementMonthlyUsage(uid: string, kind: UsageKind, by = 1): Promise<void> {
   if (!Number.isFinite(by) || by === 0) return;
@@ -110,7 +108,7 @@ export async function getResolvedTier(uid: string): Promise<Tier> {
   return "none";
 }
 
-/** Generic policy check (no increment) — keep for read-only checks if needed */
+/** Generic policy check (no increment) — useful for read-only checks */
 export async function enforcePolicy(uid: string, kind: UsageKind): Promise<void> {
   const tier = await getResolvedTier(uid);
   if (tier === "none") {
@@ -123,9 +121,8 @@ export async function enforcePolicy(uid: string, kind: UsageKind): Promise<void>
   }
 }
 
-/**
- * ✅ Transactional consume: atomically checks + increments.
- * Prevents two concurrent requests from overshooting the cap.
+/** ✅ Transactional consume: atomically checks + increments.
+ *  Prevents two concurrent requests from overshooting the cap.
  */
 export async function enforceAndConsume(uid: string, kind: UsageKind, by = 1): Promise<void> {
   if (!Number.isFinite(by) || by <= 0) return;
@@ -157,6 +154,56 @@ export async function enforceAndConsume(uid: string, kind: UsageKind, by = 1): P
       { merge: true }
     );
   });
+}
+
+/** 🍬 Convenience: transactional consume and return fresh numbers
+ *  Great for callables so the client can update instantly without waiting for the listener.
+ */
+export async function enforceConsumeAndGet(
+  uid: string,
+  kind: UsageKind,
+  by = 1
+): Promise<{ used: number; limit: number; remaining: number; month: string }> {
+  await enforceAndConsume(uid, kind, by);
+  const month = monthKey();
+  const [tier, used] = await Promise.all([
+    getResolvedTier(uid),
+    getMonthlyUsage(uid, kind),
+  ]);
+  const limit = getMonthlyLimit(tier, kind);
+  return { used, limit, remaining: Math.max(0, limit - used), month };
+}
+
+/** ↩️ Safe decrements (e.g., refunds): clamp to 0 so month values never go negative */
+export async function decrementMonthlyUsageClamp(uid: string, kind: UsageKind, by = 1) {
+  if (!Number.isFinite(by) || by <= 0) return;
+  const docRef = firestore.doc(usagePath(uid, kind));
+  const key = monthKey();
+  await firestore.runTransaction(async (tx) => {
+    const snap = await tx.get(docRef);
+    const cur = Number((snap.data() ?? {})[key] ?? 0);
+    const next = Math.max(0, cur - by);
+    const delta = next - cur; // <= 0
+    tx.set(docRef, { total: FieldValue.increment(delta), [key]: next }, { merge: true });
+  });
+}
+
+/** 📦 Fetch all usage (current month) in one go — handy for boot or admin panels */
+export async function getAllUsageForUser(uid: string) {
+  const kinds: UsageKind[] = ["recipeUsage", "translatedRecipeUsage", "imageUsage"];
+  const out: Record<UsageKind, number> = {
+    recipeUsage: 0,
+    translatedRecipeUsage: 0,
+    imageUsage: 0,
+  };
+  const key = monthKey();
+  await Promise.all(
+    kinds.map(async (k) => {
+      const snap = await firestore.doc(usagePath(uid, k)).get();
+      out[k] = snap.exists ? Number(snap.data()?.[key] ?? 0) : 0;
+    })
+  );
+  return out;
 }
 
 /** Convenience wrappers (discouraged for new code) */

@@ -1,11 +1,13 @@
 // lib/screens/recipe_vault/vault_controller.dart
-// ignore_for_file: duplicate_ignore
+// ignore_for_file: duplicate_ignore, use_build_context_synchronously
 
 import 'dart:async';
 import 'dart:collection';
 import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
+import 'package:recipe_vault/data/services/usage_service.dart';
 import 'package:recipe_vault/features/recipe_vault/categories.dart';
 
 // UI enum lives here
@@ -206,6 +208,9 @@ class RecipeVaultController extends ChangeNotifier {
     _allRecipes[updated.id] = updated;
     notifyListeners();
     await VaultRecipeService.save(updated);
+
+    // ✅ Refresh usage after success
+    unawaited(context.read<UsageService>().refreshOnce());
   }
 
   Future<void> hideDefaultCategory(String key) async {

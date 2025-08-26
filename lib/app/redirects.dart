@@ -18,7 +18,8 @@ String? appRedirect(
 
   // 🚦 0) Hard guard during sign-out teardown to avoid paywall/vault bounce
   if (UserSessionService.isSigningOut) {
-    return AppRoutes.login;
+    final onAuth = loc == AppRoutes.login || loc == AppRoutes.register;
+    return onAuth ? null : AppRoutes.login;
   }
 
   // 🔒 1) UserSessionService can force a redirect (e.g., deleted account)

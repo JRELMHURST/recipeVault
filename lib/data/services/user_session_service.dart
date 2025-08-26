@@ -1,4 +1,3 @@
-// lib/data/services/user_session_service.dart
 // ignore_for_file: use_build_context_synchronously, unnecessary_null_checks
 
 import 'dart:async';
@@ -288,9 +287,8 @@ class UserSessionService {
 
   /// Full teardown of the local session state.
   /// - Idempotent and re-entrancy safe.
-  /// - Sets a global "signing out" flag to help router/redirects.
-  static Future<void> logoutReset() async {
-    // prevent double execution if button pressed twice
+  /// - DOES NOT call FirebaseAuth.signOut(). This only clears local/3rd-party state.
+  static Future<void> logoutReset({String? uidHint}) async {
     if (_signingOut.value) {
       _logDebug('↪️ logoutReset already in progress — skipping.');
       return;
@@ -315,7 +313,7 @@ class UserSessionService {
       }
 
       // 4) Close / purge per-user local stores.
-      final uid = FirebaseAuth.instance.currentUser?.uid;
+      final uid = uidHint ?? FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
         await _safeCloseBox('recipes_$uid');
         await _safeCloseBox('userPrefs_$uid');
@@ -338,13 +336,34 @@ class UserSessionService {
 
       _logDebug('🧹 Session fully cleared');
     } finally {
-      // Keep the guard set until the caller finishes FirebaseAuth.signOut()
-      // and navigates to Login. If they don’t, release it to avoid a stuck state.
-      // Callers can explicitly end via UserSessionService.endSignOut() after nav.
-      // To be safe, auto-release after a short delay.
-      Future<void>.delayed(const Duration(seconds: 3), () {
-        if (_signingOut.value) endSignOut();
-      });
+      // ⛔️ No delayed endSignOut here — single source of truth is signOut().finally
+    }
+  }
+
+  /// Single entry-point for signing out. Idempotent.
+  static Completer<void>? _signOutOnce;
+  static Future<void> signOut() async {
+    if (_signOutOnce != null) return _signOutOnce!.future;
+    _signOutOnce = Completer<void>();
+
+    beginSignOut();
+    try {
+      // Capture UID BEFORE auth sign-out, so teardown can close per-user stores.
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+
+      // 1) Auth sign-out first to stop further listeners/refresh
+      await FirebaseAuth.instance.signOut();
+
+      // 2) Local + third-party teardown (RC/Hive/streams/etc)
+      await logoutReset(uidHint: uid);
+
+      _signOutOnce!.complete();
+    } catch (e, st) {
+      _signOutOnce!.completeError(e, st);
+      rethrow;
+    } finally {
+      endSignOut();
+      _signOutOnce = null;
     }
   }
 

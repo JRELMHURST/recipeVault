@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:recipe_vault/billing/tier_limits.dart';
+import 'package:recipe_vault/data/services/user_session_service.dart';
 
 /// Mapping helper — ideally generated from backend (TS ⇆ Dart)
 String productToTier(String productId) {
@@ -42,7 +43,6 @@ class SubscriptionService extends ChangeNotifier {
   String _tier = 'none';
   String _entitlementId = 'none';
   bool _hasSpecialAccess = false;
-  bool _didStartupReconcile = false;
 
   bool _isLoadingTier = false;
   bool _isInitialising = false;
@@ -54,6 +54,10 @@ class SubscriptionService extends ChangeNotifier {
   // Firestore listener subscription
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
   _fsSubSubscription;
+
+  // Reconcile de-bounce
+  Timer? _reconcileDebounce;
+  bool _didStartupReconcile = false;
 
   /// Expose entitlement safely for trial/expiry info etc.
   EntitlementInfo? get activeEntitlement => _activeEntitlement;
@@ -190,21 +194,6 @@ class SubscriptionService extends ChangeNotifier {
     return (box.get(_kEverHadAccess) as bool?) ?? false;
   }
 
-  // Capability gates
-  bool get allowTranslation =>
-      (hasActiveSubscription || _hasSpecialAccess) &&
-      translatedRecipeUsage < translatedRecipeLimit;
-
-  bool get allowImageUpload =>
-      (hasActiveSubscription || _hasSpecialAccess) && imageUsage < imageLimit;
-
-  bool get allowSaveToVault =>
-      (hasActiveSubscription || _hasSpecialAccess) && recipeUsage < aiLimit;
-
-  bool get allowCategoryCreation => hasActiveSubscription || _hasSpecialAccess;
-
-  bool get hasSpecialAccess => _hasSpecialAccess;
-
   // ── Usage getters ─────────────────────────────────────────────────────────
   int _getUsage(String kind) {
     final now = DateTime.now();
@@ -220,8 +209,26 @@ class SubscriptionService extends ChangeNotifier {
   int get translatedRecipeLimit => _tierLimits['translatedRecipeUsage'] ?? 0;
   int get imageLimit => _tierLimits['imageUsage'] ?? 0;
 
+  /// Whether to show the usage widget in the UI
   bool get showUsageWidget => hasActiveSubscription || _hasSpecialAccess;
+
+  /// Whether to actively track usage (read from Firestore etc.)
   bool get trackUsage => hasActiveSubscription || _hasSpecialAccess;
+
+  // Capability gates
+  bool get allowTranslation =>
+      (hasActiveSubscription || _hasSpecialAccess) &&
+      translatedRecipeUsage < translatedRecipeLimit;
+
+  bool get allowImageUpload =>
+      (hasActiveSubscription || _hasSpecialAccess) && imageUsage < imageLimit;
+
+  bool get allowSaveToVault =>
+      (hasActiveSubscription || _hasSpecialAccess) && recipeUsage < aiLimit;
+
+  bool get allowCategoryCreation => hasActiveSubscription || _hasSpecialAccess;
+
+  bool get hasSpecialAccess => _hasSpecialAccess;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   Future<void> init() async {
@@ -240,7 +247,7 @@ class SubscriptionService extends ChangeNotifier {
           if (e.code == 'user-not-found' || e.code == 'user-disabled') {
             debugPrint('⚠️ Current user no longer exists. Forcing logout.');
 
-            await FirebaseAuth.instance.signOut();
+            await UserSessionService.signOut();
 
             // ✅ Block until authStateChanges() has actually emitted null
             await FirebaseAuth.instance.authStateChanges().firstWhere(
@@ -370,18 +377,24 @@ class SubscriptionService extends ChangeNotifier {
         if (startUid != FirebaseAuth.instance.currentUser?.uid) return;
 
         final ents = _customerInfo?.entitlements.active ?? const {};
-        final rcTier = _resolveTierFromEntitlements(ents);
-        final activeEntitlement = _getActiveEntitlement(ents, rcTier);
-        final rcEntitlementId = (activeEntitlement?.productIdentifier ?? 'none')
-            .toLowerCase();
 
-        _tier = rcTier;
-        _entitlementId = rcEntitlementId;
-        _activeEntitlement = activeEntitlement;
+        // 🚫 Do not downgrade to 'none' if the first RC read is empty.
+        if (ents.isEmpty && _tier != 'none') {
+          debugPrint('RC empty on first load — keeping cached/FS tier.');
+        } else {
+          final rcTier = _resolveTierFromEntitlements(ents);
+          final activeEntitlement = _getActiveEntitlement(ents, rcTier);
+          final rcEntitlementId =
+              (activeEntitlement?.productIdentifier ?? 'none').toLowerCase();
 
-        _applyFallbackLimitsIfAny(); // 👈 fallback immediately
-        tierNotifier.value = _tier;
-        _logTierOnce(source: 'loadSubscriptionStatus');
+          _tier = rcTier;
+          _entitlementId = rcEntitlementId;
+          _activeEntitlement = activeEntitlement;
+
+          _applyFallbackLimitsIfAny(); // 👈 fallback immediately
+          tierNotifier.value = _tier;
+          _logTierOnce(source: 'loadSubscriptionStatus');
+        }
       }
 
       // Firestore overrides
@@ -416,11 +429,8 @@ class SubscriptionService extends ChangeNotifier {
 
       await _saveCache(startUid, _tier, active: hasActiveSubscription);
 
-      if (!_didStartupReconcile &&
-          (hasActiveSubscription || _hasSpecialAccess)) {
-        _didStartupReconcile = true;
-        unawaited(_reconcileWithBackend());
-      }
+      // Debounced reconcile (single call per startup/sign-in)
+      _queueReconcile();
 
       notifyListeners();
     } catch (e) {
@@ -505,10 +515,29 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
+  void _queueReconcile() {
+    // Only reconcile if we actually have or simulate access
+    if (!hasActiveSubscription && !_hasSpecialAccess) return;
+    if (_didStartupReconcile) return; // run once per sign-in
+
+    _reconcileDebounce?.cancel();
+    _reconcileDebounce = Timer(const Duration(milliseconds: 500), () async {
+      if (_didStartupReconcile) return;
+      await _reconcileWithBackend();
+      _didStartupReconcile = true;
+    });
+  }
+
   void _onCustomerInfo(CustomerInfo info) async {
     if (!_rcSupported) return;
 
-    // 🚫 Ignore RC updates if the app has no signed-in Firebase user.
+    // 🚫 Ignore RC updates if the app is tearing down sign-out.
+    if (UserSessionService.isSigningOut) {
+      debugPrint('RC update ignored: app is signing out');
+      return;
+    }
+
+    // 🚫 Also ignore if no Firebase user (post-logout)
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
     if (currentUid == null) {
       debugPrint('RC update ignored: no signed-in user (post-logout)');
@@ -521,6 +550,19 @@ class SubscriptionService extends ChangeNotifier {
     debugPrint(
       'RC Entitlements: ${ents.entries.map((e) => '${e.key} => ${e.value.productIdentifier}').join(', ')}',
     );
+
+    // ⛑️ Guard: ignore *empty* entitlements ping to avoid flashing to `none`.
+    if (ents.isEmpty) {
+      debugPrint(
+        'RC entitlements empty — ignoring downgrade and retrying soon…',
+      );
+      Future<void>.delayed(const Duration(milliseconds: 600), () async {
+        if (FirebaseAuth.instance.currentUser?.uid == currentUid) {
+          await refresh();
+        }
+      });
+      return;
+    }
 
     final rcTier = _resolveTierFromEntitlements(ents);
     final activeEntitlement = _getActiveEntitlement(ents, rcTier);
@@ -542,7 +584,7 @@ class SubscriptionService extends ChangeNotifier {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
         await _saveCache(uid, _tier, active: hasActiveSubscription);
-        await _reconcileWithBackend();
+        _queueReconcile(); // debounced; avoids duplicate reconcile
       }
     }
     if (changedTier || changedEnt) notifyListeners();
@@ -663,6 +705,7 @@ class SubscriptionService extends ChangeNotifier {
   void dispose() {
     _fsSubSubscription?.cancel();
     _fsSubSubscription = null;
+    _reconcileDebounce?.cancel();
     tierNotifier.dispose();
     subscriptionErrorNotifier.dispose();
     super.dispose();

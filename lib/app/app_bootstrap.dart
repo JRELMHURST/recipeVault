@@ -13,7 +13,6 @@ import 'package:recipe_vault/data/models/category_model.dart';
 import 'package:recipe_vault/data/services/category_service.dart';
 import 'package:recipe_vault/data/services/notification_service.dart';
 import 'package:recipe_vault/data/services/user_preference_service.dart';
-
 import 'package:recipe_vault/billing/subscription_service.dart';
 
 class AppBootstrap {
@@ -51,9 +50,7 @@ class AppBootstrap {
       if (!_timeoutReached.value) _timeoutReached.value = true;
     });
 
-    // 1) Firebase Core is initialized in main.dart to avoid double init.
-
-    // 2) RevenueCat — only configure once, on supported platforms (Android/iOS only)
+    // 1) RevenueCat — only configure once, on supported platforms (Android/iOS only)
     try {
       if (Platform.isIOS || Platform.isAndroid) {
         if (!_rcConfigured) {
@@ -79,14 +76,14 @@ class AppBootstrap {
           debugPrint('ℹ️ BOOT: RevenueCat already configured, skipping');
         }
       } else {
-        debugPrint('ℹ️ BOOT: RevenueCat not configured (non‑mobile platform)');
+        debugPrint('ℹ️ BOOT: RevenueCat not configured (non-mobile platform)');
       }
     } catch (e, st) {
       debugPrint('❌ BOOT: RevenueCat configure failed: $e');
       debugPrintStack(stackTrace: st);
     }
 
-    // 3) Notifications
+    // 2) Notifications
     try {
       await NotificationService.init();
     } catch (e, st) {
@@ -94,7 +91,7 @@ class AppBootstrap {
       debugPrintStack(stackTrace: st);
     }
 
-    // 4) Hive + adapters (+ optional legacy migration)
+    // 3) Hive + adapters (+ optional legacy migration)
     try {
       await Hive.initFlutter();
 
@@ -133,46 +130,43 @@ class AppBootstrap {
       debugPrintStack(stackTrace: st);
     }
 
-    // 5) Keep per-user services + RC AppUserID in lockstep with Auth
-    FirebaseAuth.instance.authStateChanges().listen((user) async {
-      debugPrint(
-        user == null
-            ? '🧍 BOOT: FirebaseAuth → No user signed in'
-            : '✅ BOOT: FirebaseAuth → Signed in uid=${user.uid}',
-      );
+    // 4) Keep per-user services + RC AppUserID in lockstep with Auth
+    //    Use a single, de-duplicated listener (no immediate “initial sync”).
+    FirebaseAuth.instance
+        .authStateChanges()
+        .distinct((prev, next) => prev?.uid == next?.uid) // de-dupe by UID
+        .listen((user) async {
+          debugPrint(
+            user == null
+                ? '🧍 BOOT: FirebaseAuth → No user signed in'
+                : '✅ BOOT: FirebaseAuth → Signed in uid=${user.uid}',
+          );
 
-      try {
-        await CategoryService.onAuthChanged(user?.uid);
-      } catch (e, st) {
-        debugPrint('⚠️ BOOT: CategoryService.onAuthChanged failed: $e');
-        debugPrintStack(stackTrace: st);
-      }
-      try {
-        await UserPreferencesService.onAuthChanged(user?.uid);
-      } catch (e, st) {
-        debugPrint('⚠️ BOOT: UserPreferencesService.onAuthChanged failed: $e');
-        debugPrintStack(stackTrace: st);
-      }
-      try {
-        await SubscriptionService().setAppUserId(user?.uid);
-      } catch (e, st) {
-        debugPrint('⚠️ BOOT: SubscriptionService.setAppUserId failed: $e');
-        debugPrintStack(stackTrace: st);
-      }
-    });
+          final uid = user?.uid;
 
-    // Immediately sync current auth state (avoid waiting for first tick)
-    final initialUser = FirebaseAuth.instance.currentUser;
-    try {
-      await CategoryService.onAuthChanged(initialUser?.uid);
-      await UserPreferencesService.onAuthChanged(initialUser?.uid);
-      await SubscriptionService().setAppUserId(initialUser?.uid);
-    } catch (e, st) {
-      debugPrint('⚠️ BOOT: Initial auth sync failed: $e');
-      debugPrintStack(stackTrace: st);
-    }
+          try {
+            await CategoryService.onAuthChanged(uid);
+          } catch (e, st) {
+            debugPrint('⚠️ BOOT: CategoryService.onAuthChanged failed: $e');
+            debugPrintStack(stackTrace: st);
+          }
+          try {
+            await UserPreferencesService.onAuthChanged(uid);
+          } catch (e, st) {
+            debugPrint(
+              '⚠️ BOOT: UserPreferencesService.onAuthChanged failed: $e',
+            );
+            debugPrintStack(stackTrace: st);
+          }
+          try {
+            await SubscriptionService().setAppUserId(uid);
+          } catch (e, st) {
+            debugPrint('⚠️ BOOT: SubscriptionService.setAppUserId failed: $e');
+            debugPrintStack(stackTrace: st);
+          }
+        });
 
-    // Core bootstrap finished → allow router to proceed
+    // 5) Core bootstrap finished → allow router to proceed
     _ready.value = true;
   }
 }

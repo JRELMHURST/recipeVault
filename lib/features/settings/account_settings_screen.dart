@@ -258,19 +258,7 @@ class AccountSettingsScreen extends StatelessWidget {
 
     await LoadingOverlay.show(context);
     try {
-      // Clear local/session state first
-      await UserSessionService.logoutReset();
-
-      // Reset subscription state (detaches RevenueCat bindings, clears tier)
-      await context.read<SubscriptionService>().reset();
-
-      // Firebase sign-out
-      await FirebaseAuth.instance.signOut();
-
-      // ✅ Wait until the auth stream actually emits null to avoid route bounce
-      await FirebaseAuth.instance.authStateChanges().firstWhere(
-        (u) => u == null,
-      );
+      await UserSessionService.signOut(); // 👈 single orchestrator
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(
@@ -285,12 +273,11 @@ class AccountSettingsScreen extends StatelessWidget {
 
     if (!context.mounted) return;
 
-    // Optional toast
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(t.signedOut)));
 
-    // Rely on router redirects, or send explicitly to /login:
+    // Router guard will keep us on /login during teardown; pushing is fine too.
     safeGo(context, AppRoutes.login);
   }
 
@@ -330,11 +317,11 @@ class AccountSettingsScreen extends StatelessWidget {
       ).httpsCallable('deleteAccount').call();
 
       // Local purge and subscription reset
-      await UserSessionService.logoutReset();
+      await UserSessionService.signOut();
       await context.read<SubscriptionService>().reset();
 
       // Firebase sign-out
-      await FirebaseAuth.instance.signOut();
+      await UserSessionService.signOut();
 
       // ✅ Wait for auth to be null so router guards don't bounce
       await FirebaseAuth.instance.authStateChanges().firstWhere(

@@ -3,7 +3,7 @@
 
 import 'dart:async';
 import 'dart:collection';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 import 'package:recipe_vault/features/recipe_vault/categories.dart';
@@ -20,12 +20,6 @@ import 'package:recipe_vault/data/services/category_service.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
 
-/// Controller for Recipe Vault — app-logic only (no BuildContext/UI side-effects).
-// lib/screens/recipe_vault/vault_controller.dart
-// ignore_for_file: duplicate_ignore
-
-// ... imports stay the same ...
-
 class RecipeVaultController extends ChangeNotifier {
   RecipeVaultController();
 
@@ -40,7 +34,9 @@ class RecipeVaultController extends ChangeNotifier {
   Map<String, RecipeCardModel> _allRecipes = <String, RecipeCardModel>{};
 
   String? _currentUserId;
+
   StreamSubscription<void>? _remoteSub;
+  Timer? _debounce; // debounce for live refresh bursts
   bool _initialised = false;
 
   // ── Getters ──────────────────────────────────────────────────────────────
@@ -76,6 +72,7 @@ class RecipeVaultController extends ChangeNotifier {
 
     _viewMode = initialViewMode ?? await ViewModePrefs.load();
 
+    // Load everything in parallel
     await Future.wait([
       _initializeDefaultCategories(),
       _loadCustomCategories(),
@@ -94,23 +91,34 @@ class RecipeVaultController extends ChangeNotifier {
     if (_currentUserId == userId && _remoteSub != null) return;
 
     _currentUserId = userId;
+
+    // Cancel any previous stream and vault listener
     await _remoteSub?.cancel();
+    _remoteSub = null;
     VaultRecipeService.cancelVaultListener();
 
-    VaultRecipeService.listenToVaultChanges(() async {
-      try {
-        await _reloadFromSource();
-        notifyListeners();
-      } catch (e) {
-        debugPrint('⚠️ Live recipe refresh failed: $e');
-      }
+    // Attach vault listener — debounce actual reloads
+    VaultRecipeService.listenToVaultChanges(() {
+      _debounce?.cancel();
+      _debounce = Timer(const Duration(milliseconds: 200), () async {
+        try {
+          // guard: if user changed during debounce, skip
+          if (_currentUserId != userId) return;
+          await _reloadFromSource();
+          notifyListeners();
+        } catch (e) {
+          debugPrint('⚠️ Live recipe refresh failed: $e');
+        }
+      });
     });
 
+    // Hold a no-op subscription just so dispose() can always cancel safely.
     _remoteSub = Stream<void>.empty().listen((_) {});
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _remoteSub?.cancel();
     VaultRecipeService.cancelVaultListener();
     super.dispose();
@@ -118,21 +126,41 @@ class RecipeVaultController extends ChangeNotifier {
 
   // ── Private helpers ──────────────────────────────────────────────────────
   Future<void> _initializeDefaultCategories() async {
+    // CategoryService ensures defaults & migration in its onAuthChanged path.
     return;
   }
 
   Future<void> _loadCustomCategories() async {
-    final saved = await CategoryService.getAllCategories();
-    final savedNames = saved.map((c) => c.name).toList(growable: false);
+    try {
+      final saved = await CategoryService.getAllCategories();
+      final savedNames = saved.map((c) => c.name).toList(growable: false);
 
-    final hidden = await CategoryService.getHiddenDefaultCategories();
-    final hiddenSet = hidden.toSet();
+      final hidden = await CategoryService.getHiddenDefaultCategories();
+      final hiddenSet = hidden.toSet();
 
-    _allCategories = [
-      CategoryKeys.all,
-      ...CategoryKeys.systemOnly.where((c) => !hiddenSet.contains(c)),
-      ...savedNames.where((c) => !CategoryKeys.allSystem.contains(c)),
-    ];
+      // Compose, de-dupe, and sort user-visible categories
+      final userVisibleSystem = CategoryKeys.systemOnly
+          .where((c) => !hiddenSet.contains(c))
+          .toSet();
+
+      final userCustom = savedNames
+          .where((c) => !CategoryKeys.allSystem.contains(c))
+          .toSet();
+
+      final combined = <String>{
+        CategoryKeys.all,
+        ...userVisibleSystem,
+        ...userCustom,
+      }.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+      // Ensure "All" is first
+      combined.remove(CategoryKeys.all);
+      _allCategories = [CategoryKeys.all, ...combined];
+    } catch (e) {
+      debugPrint('⚠️ Failed loading categories: $e');
+      // fall back to safe minimal set
+      _allCategories = const [CategoryKeys.all];
+    }
   }
 
   Future<void> _reloadFromSource() async {
@@ -166,10 +194,10 @@ class RecipeVaultController extends ChangeNotifier {
 
   Future<void> addOrUpdateImage(
     RecipeCardModel recipe, {
-    required Object /* BuildContext */ context,
+    required BuildContext context,
   }) async {
     final newUrl = await ImageStorageBridge.pickAndUploadSingleImage(
-      context: context as dynamic,
+      context: context,
       recipeId: recipe.id,
     );
     if (newUrl == null) return;
@@ -186,18 +214,18 @@ class RecipeVaultController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 🚀 New: Delete a custom category entirely
+  /// Delete a custom category entirely and scrub it from recipes.
   Future<void> deleteCustomCategory(String key) async {
     try {
-      await CategoryService.deleteCategory(key); // remove from Hive + Firestore
+      await CategoryService.deleteCategory(key); // Hive + Firestore
       await _loadCustomCategories();
 
-      // reset selection if the deleted one was active
+      // Reset selection if the deleted one was active
       if (_selectedCategory == key) {
         _selectedCategory = CategoryKeys.all;
       }
 
-      // also clean up recipes still pointing to this category
+      // Clean up recipes still pointing to this category
       final updated = <String, RecipeCardModel>{};
       for (final r in _allRecipes.values) {
         if (r.categories.contains(key)) {
@@ -252,17 +280,17 @@ class RecipeVaultController extends ChangeNotifier {
 /* ───────────────────────────── UI bridge for image picking ───────────────────────────── */
 class ImageStorageBridge {
   static Future<String?> pickAndUploadSingleImage({
-    required dynamic context, // BuildContext
+    required BuildContext context,
     required String recipeId,
-  }) async {
-    return await _realPickAndUpload(context as dynamic, recipeId);
+  }) {
+    return _realPickAndUpload(context, recipeId);
   }
 
   static Future<String?> _realPickAndUpload(
-    dynamic context,
+    BuildContext context,
     String recipeId,
-  ) async {
-    return await ImageProcessingService.pickAndUploadSingleImage(
+  ) {
+    return ImageProcessingService.pickAndUploadSingleImage(
       context: context,
       recipeId: recipeId,
     );

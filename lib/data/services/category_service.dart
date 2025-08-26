@@ -13,7 +13,7 @@ import 'package:recipe_vault/features/recipe_vault/categories.dart';
 /// - Never opens boxes without a signed-in user
 /// - Switches boxes on auth changes driven by AppBootstrap.onAuthChanged(uid)
 /// - Firestore mirror at /users/{uid}/categories/{name}
-/// - Hidden defaults are mirrored at /users/{uid}/prefs/app.hiddenDefaultCategories
+/// - Hidden defaults mirrored at /users/{uid}/prefs/app.hiddenDefaultCategories
 class CategoryService {
   // ─────────────────────────────── constants ───────────────────────────────
   static const List<String> _systemCategories = CategoryKeys.systemOnly;
@@ -49,6 +49,23 @@ class CategoryService {
   static Future<void> dispose() async {
     await _closeOpenBoxes();
     _openForUid = null;
+  }
+
+  /// Close a specific user's boxes during sign-out teardown.
+  /// Call this with the *previous* UID you've captured before FirebaseAuth.signOut().
+  static Future<void> closeForSignOut(String uid) async {
+    final custom = _customBoxName(uid);
+    final hidden = _hiddenDefaultBox(uid);
+    try {
+      if (Hive.isBoxOpen(custom)) await Hive.box(custom).close();
+    } catch (e) {
+      debugPrint('⚠️ Failed closing $custom: $e');
+    }
+    try {
+      if (Hive.isBoxOpen(hidden)) await Hive.box<String>(hidden).close();
+    } catch (e) {
+      debugPrint('⚠️ Failed closing $hidden: $e');
+    }
   }
 
   // ─────────────────────────────── public API ───────────────────────────────
@@ -339,7 +356,9 @@ class CategoryService {
 
     try {
       if (Hive.isBoxOpen(prevCustom)) await Hive.box(prevCustom).close();
-      if (Hive.isBoxOpen(prevHidden)) await Hive.box(prevHidden).close();
+      if (Hive.isBoxOpen(prevHidden)) {
+        await Hive.box<String>(prevHidden).close();
+      }
     } catch (e) {
       debugPrint('⚠️ Failed closing previous user category boxes: $e');
     }

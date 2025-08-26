@@ -185,85 +185,96 @@ class UserSessionService {
             onError: (error) => _logDebug('⚠️ User doc listener error: $error'),
           );
 
+      // ...inside init(), after obtaining uid/monthKey and before attaching usage streams:
+
+      final shouldTrack = SubscriptionService().trackUsage;
+
       // recipeUsage
-      _recipeUsageSub = FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('recipeUsage')
-          .doc('usage')
-          .snapshots()
-          .listen(
-            (doc) async {
-              if (FirebaseAuth.instance.currentUser?.uid != uid) return;
-              final data = doc.data();
-              if (data == null) {
-                _logDebug('⚠️ Recipe usage doc has no data');
-                return;
-              }
-              final used = (data[monthKey] ?? 0) as int;
-              _logDebug('📊 Recipe usage [$monthKey]: $used');
-              if (!UserPreferencesService.isBoxOpen) {
-                await UserPreferencesService.init();
-              }
-              await UserPreferencesService.setCachedUsage(recipes: used);
-            },
-            onError: (error) =>
-                _logDebug('⚠️ Recipe usage stream error: $error'),
-          );
+      _recipeUsageSub = shouldTrack
+          ? FirebaseFirestore.instance
+                .collection('users')
+                .doc(uid)
+                .collection('recipeUsage')
+                .doc('usage')
+                .snapshots()
+                .listen(
+                  (doc) async {
+                    if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+                    final data = doc.data();
+                    if (data == null) {
+                      _logDebug('⚠️ Recipe usage doc has no data');
+                      return;
+                    }
+                    final used = (data[monthKey] ?? 0) as int;
+                    _logDebug('📊 Recipe usage [$monthKey]: $used');
+                    if (!UserPreferencesService.isBoxOpen) {
+                      await UserPreferencesService.init();
+                    }
+                    await UserPreferencesService.setCachedUsage(recipes: used);
+                  },
+                  onError: (error) =>
+                      _logDebug('⚠️ Recipe usage stream error: $error'),
+                )
+          : null;
 
       // translatedRecipeUsage
-      _translatedRecipeUsageSub = FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('translatedRecipeUsage')
-          .doc('usage')
-          .snapshots()
-          .listen(
-            (doc) async {
-              if (FirebaseAuth.instance.currentUser?.uid != uid) return;
-              final data = doc.data();
-              if (data == null) {
-                _logDebug('⚠️ Translated recipe usage doc has no data');
-                return;
-              }
-              final used = (data[monthKey] ?? 0) as int;
-              _logDebug('🌐 Translated recipe usage [$monthKey]: $used');
-              if (!UserPreferencesService.isBoxOpen) {
-                await UserPreferencesService.init();
-              }
-              await UserPreferencesService.setCachedUsage(
-                translatedRecipes: used,
-              );
-            },
-            onError: (error) =>
-                _logDebug('⚠️ Translated recipe usage stream error: $error'),
-          );
+      _translatedRecipeUsageSub = shouldTrack
+          ? FirebaseFirestore.instance
+                .collection('users')
+                .doc(uid)
+                .collection('translatedRecipeUsage')
+                .doc('usage')
+                .snapshots()
+                .listen(
+                  (doc) async {
+                    if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+                    final data = doc.data();
+                    if (data == null) {
+                      _logDebug('⚠️ Translated recipe usage doc has no data');
+                      return;
+                    }
+                    final used = (data[monthKey] ?? 0) as int;
+                    _logDebug('🌐 Translated recipe usage [$monthKey]: $used');
+                    if (!UserPreferencesService.isBoxOpen) {
+                      await UserPreferencesService.init();
+                    }
+                    await UserPreferencesService.setCachedUsage(
+                      translatedRecipes: used,
+                    );
+                  },
+                  onError: (error) => _logDebug(
+                    '⚠️ Translated recipe usage stream error: $error',
+                  ),
+                )
+          : null;
 
       // imageUsage
-      _imageUsageSub = FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('imageUsage')
-          .doc('usage')
-          .snapshots()
-          .listen(
-            (doc) async {
-              if (FirebaseAuth.instance.currentUser?.uid != uid) return;
-              final data = doc.data();
-              if (data == null) {
-                _logDebug('⚠️ Image usage doc has no data');
-                return;
-              }
-              final used = (data[monthKey] ?? 0) as int;
-              _logDebug('🖼️ Image usage [$monthKey]: $used');
-              if (!UserPreferencesService.isBoxOpen) {
-                await UserPreferencesService.init();
-              }
-              await UserPreferencesService.setCachedUsage(images: used);
-            },
-            onError: (error) =>
-                _logDebug('⚠️ Image usage stream error: $error'),
-          );
+      _imageUsageSub = shouldTrack
+          ? FirebaseFirestore.instance
+                .collection('users')
+                .doc(uid)
+                .collection('imageUsage')
+                .doc('usage')
+                .snapshots()
+                .listen(
+                  (doc) async {
+                    if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+                    final data = doc.data();
+                    if (data == null) {
+                      _logDebug('⚠️ Image usage doc has no data');
+                      return;
+                    }
+                    final used = (data[monthKey] ?? 0) as int;
+                    _logDebug('🖼️ Image usage [$monthKey]: $used');
+                    if (!UserPreferencesService.isBoxOpen) {
+                      await UserPreferencesService.init();
+                    }
+                    await UserPreferencesService.setCachedUsage(images: used);
+                  },
+                  onError: (error) =>
+                      _logDebug('⚠️ Image usage stream error: $error'),
+                )
+          : null;
 
       _bubbleFlagsReady?.complete();
 
@@ -298,23 +309,27 @@ class UserSessionService {
     _logDebug('👋 Logging out + resetting session...');
 
     try {
-      // 1) Cancel listeners ASAP to avoid late Firestore tier/usage events.
+      // 1) Cancel listeners early
       await _cancelAllStreams();
 
-      // 2) Reset subscription state (cancels its Firestore listener first).
+      // 2) Reset subscription state
       await SubscriptionService().reset();
 
-      // 3) Log out from RevenueCat (best effort).
+      // 3) RevenueCat logout (safe)
       try {
+        // If you wired in RcAdapter somewhere globally, replace with that. Otherwise:
         await Purchases.logOut();
         _logDebug('🛒 RevenueCat logged out');
       } catch (e) {
         _logDebug('❌ RevenueCat logout failed: $e');
       }
 
-      // 4) Close / purge per-user local stores.
+      // 4) Close / purge per-user local stores with the PRE-SIGNOUT uid
       final uid = uidHint ?? FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
+        // make sure category boxes for that uid are closed (avoids “already open” logs)
+        await CategoryService.closeForSignOut(uid);
+
         await _safeCloseBox('recipes_$uid');
         await _safeCloseBox('userPrefs_$uid');
         await _safeCloseBox('customCategories_$uid');
@@ -336,7 +351,7 @@ class UserSessionService {
 
       _logDebug('🧹 Session fully cleared');
     } finally {
-      // ⛔️ No delayed endSignOut here — single source of truth is signOut().finally
+      // single source of truth for releasing the guard is in signOut().finally
     }
   }
 

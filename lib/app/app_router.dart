@@ -8,6 +8,7 @@ import 'package:recipe_vault/app/app_bootstrap.dart';
 import 'package:recipe_vault/app/redirects.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';
+import 'package:recipe_vault/data/services/user_session_service.dart';
 
 import 'package:recipe_vault/navigation/nav_keys.dart';
 import 'package:recipe_vault/app/routes.dart';
@@ -52,6 +53,7 @@ GoRouter buildAppRouter(SubscriptionService subs) {
       AppBootstrap.timeoutListenable,
       subs,
       authTick,
+      UserSessionService.signingOutListenable, // 👈 add this line
     ]),
 
     // ✅ Delegate redirect logic to redirects.dart

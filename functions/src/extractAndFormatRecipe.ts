@@ -70,14 +70,7 @@ async function withRetries<T>(
 
 /* ─────────── Main Cloud Function ─────────── */
 export const extractAndFormatRecipe = onCall(
-  {
-    region: "europe-west2",
-    secrets: [OPENAI_API_KEY],
-    timeoutSeconds: 300, // ⏱️ extend timeout (default = 60)
-    memory: "1GiB",      // 💾 increase memory for OCR + GPT
-      cpu: 2,              // ⚡ more CPU = faster OCR/JSON parsing
-  minInstances: 1,     // 🔥 no cold starts on first hit
-  },
+  { secrets: [OPENAI_API_KEY] },
   async (request: CallableRequest<{
     imageUrls: string[];
     targetLanguage?: string;
@@ -119,13 +112,13 @@ export const extractAndFormatRecipe = onCall(
     try {
       console.info({ msg: "📸 Starting processing", uid, images: imageUrls.length });
 
-      // —— OCR (consumes imageUsage internally)
+      // —— OCR (with retries) — imageUsage is consumed inside extractTextFromImages
       const ocrText = await withRetries(() => extractTextFromImages(uid, imageUrls));
       if (!ocrText.trim()) {
         throw new HttpsError("invalid-argument", "No text detected in provided images.");
       }
       const cleanInput = ocrText.replace(/[ \t]+\n/g, "\n").trim();
-      console.info({ msg: "🔎 OCR complete", uid, chars: cleanInput.length });
+      console.info({ msg: "🔎 OCR complete", uid });
 
       // —— Language detection
       let detectedLanguage = "unknown";
@@ -141,7 +134,7 @@ export const extractAndFormatRecipe = onCall(
         console.warn("⚠️ Language detection failed", err);
       }
 
-      // —— Decide if translation is needed
+      // —— Decide if translation is needed (no consumption here)
       const srcBase = normalizeLangBase(detectedLanguage);
       const tgtBase = normalizeLangBase(targetLanguage);
       const alreadyTarget = srcBase && tgtBase && srcBase === tgtBase;
@@ -151,6 +144,7 @@ export const extractAndFormatRecipe = onCall(
       let usageKind: "recipeUsage" | "translatedRecipeUsage" = "recipeUsage";
 
       if (srcBase && !alreadyTarget) {
+        // Try translation; if it fails or returns empty, fall back to original text.
         try {
           const translated = await withRetries(() =>
             translateText(cleanInput, detectedLanguage, targetLanguageTag, projectId)
@@ -160,7 +154,11 @@ export const extractAndFormatRecipe = onCall(
             usedText = cleanedTranslated;
             translationUsed = true;
             usageKind = "translatedRecipeUsage";
-            console.info({ msg: "✅ Translation successful", from: detectedLanguage, to: targetLanguageTag });
+            console.info({
+              msg: "✅ Translation successful",
+              from: detectedLanguage,
+              to: targetLanguageTag,
+            });
           } else {
             console.warn("⚠️ Empty translation. Falling back to original text.");
           }
@@ -169,7 +167,7 @@ export const extractAndFormatRecipe = onCall(
         }
       }
 
-      // —— GPT formatting (consumes recipeUsage/translatedRecipeUsage)
+      // —— GPT formatting (this is where recipe/translation usage is consumed)
       const finalText = decode(usedText.trim());
       const formattedRecipe = await withRetries(() =>
         generateFormattedRecipe(

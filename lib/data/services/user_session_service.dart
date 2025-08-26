@@ -26,6 +26,23 @@ class UserSessionService {
   static StreamSubscription<DocumentSnapshot>? _translatedRecipeUsageSub;
   static StreamSubscription<DocumentSnapshot>? _imageUsageSub;
 
+  // ── Sign-out guard (prevents router / services from bouncing during teardown)
+  static final ValueNotifier<bool> _signingOut = ValueNotifier<bool>(false);
+  static bool get isSigningOut => _signingOut.value;
+  static ValueListenable<bool> get signingOutListenable => _signingOut;
+
+  /// Call when you start a sign-out flow (optional; logoutReset also sets this)
+  static void beginSignOut() {
+    if (!_signingOut.value) _signingOut.value = true;
+  }
+
+  /// Call after you’ve landed on the login screen (optional; logoutReset clears too)
+  static void endSignOut() {
+    if (_signingOut.value) _signingOut.value = false;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+
   static bool get isInitialised => _isInitialised;
 
   static bool get isSignedIn =>
@@ -34,6 +51,9 @@ class UserSessionService {
 
   /// Decide which route to send the user to after boot
   static String? getRedirectRoute(String loc) {
+    // If we are tearing down a session, force login to avoid Vault/Paywall bounce
+    if (isSigningOut) return AppRoutes.login;
+
     final isLoggedIn =
         FirebaseAuth.instance.currentUser != null &&
         !FirebaseAuth.instance.currentUser!.isAnonymous;
@@ -141,7 +161,9 @@ class UserSessionService {
 
       final isNewUser = await AuthService.ensureUserDocument(user);
       if (isNewUser) {
-        try {} catch (e, stack) {
+        try {
+          // place for any first-run per-user seeding if needed
+        } catch (e, stack) {
           _logDebug('⚠️ Failed to mark user as new: $e');
           if (kDebugMode) print(stack);
         }
@@ -153,6 +175,7 @@ class UserSessionService {
           .snapshots()
           .listen(
             (snapshot) {
+              // 🛡️ Ignore late events if auth moved on
               if (FirebaseAuth.instance.currentUser?.uid != uid) return;
               if (!snapshot.exists || snapshot.data() == null) {
                 _logDebug('⚠️ User doc snapshot missing or null');
@@ -263,40 +286,66 @@ class UserSessionService {
     }
   }
 
+  /// Full teardown of the local session state.
+  /// - Idempotent and re-entrancy safe.
+  /// - Sets a global "signing out" flag to help router/redirects.
   static Future<void> logoutReset() async {
+    // prevent double execution if button pressed twice
+    if (_signingOut.value) {
+      _logDebug('↪️ logoutReset already in progress — skipping.');
+      return;
+    }
+    beginSignOut();
+
     _logDebug('👋 Logging out + resetting session...');
 
-    await _cancelAllStreams();
-    await SubscriptionService().reset();
-
     try {
-      await Purchases.logOut();
-      _logDebug('🛒 RevenueCat logged out');
-    } catch (e) {
-      _logDebug('❌ RevenueCat logout failed: $e');
-    }
+      // 1) Cancel listeners ASAP to avoid late Firestore tier/usage events.
+      await _cancelAllStreams();
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      await _safeCloseBox('recipes_$uid');
-      await _safeCloseBox('userPrefs_$uid');
-      await _safeCloseBox('customCategories_$uid');
-      await _safeCloseBox('hiddenDefaultCategories_$uid');
+      // 2) Reset subscription state (cancels its Firestore listener first).
+      await SubscriptionService().reset();
 
+      // 3) Log out from RevenueCat (best effort).
       try {
-        await UserPreferencesService.clearAllUserData(uid);
+        await Purchases.logOut();
+        _logDebug('🛒 RevenueCat logged out');
       } catch (e) {
-        _logDebug('⚠️ Failed to clear userPrefs service: $e');
+        _logDebug('❌ RevenueCat logout failed: $e');
       }
+
+      // 4) Close / purge per-user local stores.
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await _safeCloseBox('recipes_$uid');
+        await _safeCloseBox('userPrefs_$uid');
+        await _safeCloseBox('customCategories_$uid');
+        await _safeCloseBox('hiddenDefaultCategories_$uid');
+
+        try {
+          await UserPreferencesService.clearAllUserData(uid);
+        } catch (e) {
+          _logDebug('⚠️ Failed to clear userPrefs service: $e');
+        }
+      }
+
+      // 5) Clear caches and detach vault.
+      await CategoryService.clearCache();
+      VaultRecipeService.cancelVaultListener();
+
+      _isInitialised = false;
+      _bubbleFlagsReady = null;
+
+      _logDebug('🧹 Session fully cleared');
+    } finally {
+      // Keep the guard set until the caller finishes FirebaseAuth.signOut()
+      // and navigates to Login. If they don’t, release it to avoid a stuck state.
+      // Callers can explicitly end via UserSessionService.endSignOut() after nav.
+      // To be safe, auto-release after a short delay.
+      Future<void>.delayed(const Duration(seconds: 3), () {
+        if (_signingOut.value) endSignOut();
+      });
     }
-
-    await CategoryService.clearCache();
-    await SubscriptionService().reset();
-    VaultRecipeService.cancelVaultListener();
-
-    _isInitialised = false;
-    _bubbleFlagsReady = null;
-    _logDebug('🧹 Session fully cleared');
   }
 
   static Future<void> _safeCloseBox(String name) async {

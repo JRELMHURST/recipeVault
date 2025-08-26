@@ -4,7 +4,6 @@ import crypto from "crypto";
 import "./firebase.js";
 import { getStorage } from "firebase-admin/storage";
 import { firestore } from "./firebase.js";
-import { enforceAndConsume } from "./usage_service.js";
 
 // Reuse a single Vision client
 const visionClient = new vision.ImageAnnotatorClient();
@@ -84,9 +83,6 @@ export async function extractTextFromImages(
   if (!Array.isArray(imageUrls) || imageUrls.length === 0) {
     throw new Error("❌ No image URLs provided for OCR.");
   }
-
-  // 🚦 Enforce quota (1 credit per image)
-  await enforceAndConsume(uid, "imageUsage", imageUrls.length);
 
   // Prefer gs:// for your own bucket (faster + stable key for cache)
   const uris = imageUrls.map((u) =>

@@ -508,6 +508,13 @@ class SubscriptionService extends ChangeNotifier {
   void _onCustomerInfo(CustomerInfo info) async {
     if (!_rcSupported) return;
 
+    // 🚫 Ignore RC updates if the app has no signed-in Firebase user.
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUid == null) {
+      debugPrint('RC update ignored: no signed-in user (post-logout)');
+      return;
+    }
+
     _customerInfo = info;
     final ents = info.entitlements.active;
 
@@ -527,7 +534,7 @@ class SubscriptionService extends ChangeNotifier {
     _entitlementId = rcEntitlementId;
     _activeEntitlement = activeEntitlement;
 
-    _applyFallbackLimitsIfAny(); // 👈 fallback here too
+    _applyFallbackLimitsIfAny();
 
     if (changedTier) {
       tierNotifier.value = _tier;
@@ -535,8 +542,7 @@ class SubscriptionService extends ChangeNotifier {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
         await _saveCache(uid, _tier, active: hasActiveSubscription);
-
-        await _reconcileWithBackend(); // keep Firestore in sync
+        await _reconcileWithBackend();
       }
     }
     if (changedTier || changedEnt) notifyListeners();

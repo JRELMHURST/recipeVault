@@ -254,31 +254,44 @@ class AccountSettingsScreen extends StatelessWidget {
       ),
     );
 
-    if (confirm == true) {
-      await LoadingOverlay.show(context);
-      try {
-        await UserSessionService.logoutReset();
-        // 🔐 also reset RC to avoid stale tier after hot restart
-        await context.read<SubscriptionService>().reset();
-        await FirebaseAuth.instance.signOut();
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(t.signOutFailed('$e'))));
-        }
-        return;
-      } finally {
-        LoadingOverlay.hide();
-      }
+    if (confirm != true) return;
 
+    await LoadingOverlay.show(context);
+    try {
+      // Clear local/session state first
+      await UserSessionService.logoutReset();
+
+      // Reset subscription state (detaches RevenueCat bindings, clears tier)
+      await context.read<SubscriptionService>().reset();
+
+      // Firebase sign-out
+      await FirebaseAuth.instance.signOut();
+
+      // ✅ Wait until the auth stream actually emits null to avoid route bounce
+      await FirebaseAuth.instance.authStateChanges().firstWhere(
+        (u) => u == null,
+      );
+    } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(t.signedOut)));
-        safeGo(context, AppRoutes.login);
+        ).showSnackBar(SnackBar(content: Text(t.signOutFailed('$e'))));
       }
+      LoadingOverlay.hide();
+      return;
+    } finally {
+      LoadingOverlay.hide();
     }
+
+    if (!context.mounted) return;
+
+    // Optional toast
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(t.signedOut)));
+
+    // Rely on router redirects, or send explicitly to /login:
+    safeGo(context, AppRoutes.login);
   }
 
   Future<void> _confirmDeleteAccount(BuildContext context) async {
@@ -311,14 +324,24 @@ class AccountSettingsScreen extends StatelessWidget {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('No user');
 
+      // Call backend to delete account & server-side resources
       await FirebaseFunctions.instanceFor(
         region: 'europe-west2',
       ).httpsCallable('deleteAccount').call();
 
+      // Local purge and subscription reset
       await UserSessionService.logoutReset();
       await context.read<SubscriptionService>().reset();
+
+      // Firebase sign-out
       await FirebaseAuth.instance.signOut();
 
+      // ✅ Wait for auth to be null so router guards don't bounce
+      await FirebaseAuth.instance.authStateChanges().firstWhere(
+        (u) => u == null,
+      );
+
+      // Optional extra local cleanup (example: recipe box)
       final uid = user.uid;
       final boxName = 'recipes_$uid';
       if (Hive.isBoxOpen(boxName)) {
@@ -329,7 +352,6 @@ class AccountSettingsScreen extends StatelessWidget {
         await Hive.deleteBoxFromDisk(boxName);
       }
     } on FirebaseFunctionsException catch (e) {
-      // Mirror backend errors nicely
       final msg = e.code == 'permission-denied'
           ? t.deleteAccountFailed('Permission denied')
           : t.deleteAccountFailed(e.message ?? e.code);
@@ -338,15 +360,14 @@ class AccountSettingsScreen extends StatelessWidget {
           context,
         ).showSnackBar(SnackBar(content: Text(msg)));
       }
+      LoadingOverlay.hide();
       return;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-        // 🔁 Ask user to re-auth before retrying
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            const SnackBar(
               content: Text(
-                // Add to your l10n when you can; temporary inline message here:
                 'For security, please sign in again, then retry account deletion.',
               ),
             ),
@@ -359,6 +380,7 @@ class AccountSettingsScreen extends StatelessWidget {
           );
         }
       }
+      LoadingOverlay.hide();
       return;
     } catch (e) {
       if (context.mounted) {
@@ -366,17 +388,20 @@ class AccountSettingsScreen extends StatelessWidget {
           context,
         ).showSnackBar(SnackBar(content: Text(t.deleteAccountFailed('$e'))));
       }
+      LoadingOverlay.hide();
       return;
     } finally {
       LoadingOverlay.hide();
     }
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(t.deleteAccountSuccess)));
-      safeGo(context, AppRoutes.login);
-    }
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(t.deleteAccountSuccess)));
+
+    // Let router redirects handle it or go directly:
+    safeGo(context, AppRoutes.login);
   }
 
   // ===== Language picker bottom sheet =====

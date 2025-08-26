@@ -14,21 +14,32 @@ type GptRecipeResponse = {
 };
 
 // Prefer env override but keep your default
-const MODEL = process.env.GPT_MODEL?.trim() || "gpt-4o-mini";
+const MODEL = (process.env.GPT_MODEL ?? "").trim() || "gpt-4o-mini";
 
-// Reuse one client (avoids TLS handshakes per request)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+/** Lazy singleton (don’t construct at module import) */
+let _openai: OpenAI | null = null;
+function getOpenAI(): OpenAI {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) throw new Error("❌ gpt: Missing OPENAI_API_KEY");
+  if (_openai) return _openai;
+  _openai = new OpenAI({ apiKey: key });
+  return _openai;
+}
 
 // ──────────────────────────────────────────────────────────
-// Locale metadata (unchanged API surface)
+// Locale metadata (labels must match your Flutter parser)
 // ──────────────────────────────────────────────────────────
 const LOCALE_META: Record<
   string,
   {
     languageName: string;
-    labels: { title: string; ingredients: string; instructions: string; hints: string; noTips: string };
+    labels: {
+      title: string;
+      ingredients: string;
+      instructions: string;
+      hints: string;
+      noTips: string;
+    };
   }
 > = {
   en: { languageName: "English", labels: { title: "Title", ingredients: "Ingredients", instructions: "Instructions", hints: "Hints & Tips", noTips: "No additional tips provided." } },
@@ -55,14 +66,13 @@ function resolveLocaleMeta(locale?: string) {
   return LOCALE_META[primary] ?? LOCALE_META.en_GB;
 }
 
-// Avoid adding a duplicate “Hints” section
+// Avoid adding a duplicate “Hints & Tips” section
 function hasHintsSection(text: string, hintsLabel: string): boolean {
   const pattern = new RegExp(`^\\s*${hintsLabel}\\s*:`, "im");
   return pattern.test(text);
 }
 
-// ──────────────────────────────────────────────────────────
-/** Minimal pre‑clean + hard cap to reduce tokens */
+/** Minimal pre-clean + hard cap to reduce tokens */
 function precompress(input: string, maxChars = 6500): string {
   const cleaned = input
     .normalize("NFKC")
@@ -106,45 +116,48 @@ export async function generateFormattedRecipe(
   usageKind: "recipeUsage" | "translatedRecipeUsage" = "recipeUsage"
 ): Promise<string> {
   if (!uid) throw new Error("❌ gpt: Missing UID for usage enforcement");
-  if (!process.env.OPENAI_API_KEY) throw new Error("❌ gpt: Missing OPENAI_API_KEY");
-
-  const { languageName, labels } = resolveLocaleMeta(targetLocale);
 
   // 🚦 Consume quota BEFORE GPT call
   await enforceAndConsume(uid, usageKind, 1);
 
+  const { languageName, labels } = resolveLocaleMeta(targetLocale);
   const input = precompress(text);
 
   try {
     const systemPrompt = [
-      `You are a recipe formatter. The source text was originally ${sourceLang.toUpperCase()}, but the input you receive is already in the target language if a translation happened earlier.`,
-      `Write the final recipe in **${languageName}**, using local culinary conventions (units/terms).`,
-      `Output sections using these exact labels:`,
-      `- ${labels.title}`,
-      `- ${labels.ingredients}`,
-      `- ${labels.instructions}`,
-      `- ${labels.hints}`,
-      `Rules:`,
-      `• Ingredients use "- " bullet lines (dash + space). No duplicates.`,
-      `• Instructions are a numbered list.`,
-      `• If there are no tips, use: "${labels.noTips}".`,
-      `Respond ONLY with JSON (no prose), using keys: "formattedRecipe" (string) and optional "notes" (string).`,
+      `You are a recipe formatter. The original was ${sourceLang.toUpperCase()}, but the input you receive may already be translated.`,
+      `Write the final recipe in **${languageName}** using local culinary terms and units.`,
+      ``,
+      `Use EXACTLY these section headers (do not vary or translate these labels further):`,
+      `- "${labels.title}:"`,
+      `- "${labels.ingredients}:"`,
+      `- "${labels.instructions}:"`,
+      `- "${labels.hints}:"`,
+      ``,
+      `Formatting rules:`,
+      `• ${labels.ingredients}: each ingredient must be on its own line starting with "- " (dash+space).`,
+      `• ${labels.instructions}: a numbered list starting "1. ", "2. ", etc.`,
+      `• ${labels.hints}: a bulleted list using "- ". If there are no tips, include a single line with: "${labels.noTips}".`,
+      ``,
+      `Respond ONLY with JSON (no prose, no code fences). Use keys:`,
+      `  - "formattedRecipe": string containing the final formatted text with the exact headers above,`,
+      `  - "notes": optional string with extra hints/tips or "${labels.noTips}".`,
     ].join("\n");
 
-    const userPrompt = `Recipe text:\n"""\n${input}\n"""`;
+    const userPrompt = `Recipe text to format:\n"""\n${input}\n"""`;
 
     console.info({ msg: "🤖 gpt: calling model", uid, usageKind, model: MODEL });
 
     const completion = await withRetries(() =>
-      openai.chat.completions.create({
+      getOpenAI().chat.completions.create({
         model: MODEL,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.2,          // a bit lower for determinism/consistency
-        max_tokens: 1100,          // plenty for your sections, keeps latency down
-        response_format: { type: "json_object" }, // ✅ guaranteed JSON
+        temperature: 0.2,                 // more consistent output
+        max_tokens: 1100,                 // enough for the whole card
+        response_format: { type: "json_object" }, // ✅ guaranteed JSON (no ``` fences)
       })
     );
 
@@ -154,7 +167,7 @@ export async function generateFormattedRecipe(
     let parsed: GptRecipeResponse;
     try {
       parsed = JSON.parse(jsonText) as GptRecipeResponse;
-    } catch (e) {
+    } catch (_e) {
       console.error("❌ gpt: JSON parse failed", { jsonText });
       throw new Error("Invalid JSON from model");
     }
@@ -168,10 +181,11 @@ export async function generateFormattedRecipe(
 
     console.info({ msg: "✅ gpt: recipe formatted", uid, usageKind, chars: formatted.length });
 
-    // Don’t duplicate Hints if the model included it
+    // If GPT already included the Hints section in formattedRecipe, don't add another.
     if (hasHintsSection(formatted, labels.hints)) return formatted;
 
-    return `${formatted}\n\n${labels.hints}:\n${notes}`;
+    // Otherwise, append a single Hints block once (keeps Flutter parser happy)
+    return `${formatted}\n\n${labels.hints}:\n- ${notes}`;
   } catch (err) {
     // ❗ Refund credit if GPT fails
     console.error("❌ gpt: error during formatting", { uid, usageKind, err });

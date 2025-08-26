@@ -6,15 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:recipe_vault/l10n/app_localizations.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
 import 'package:recipe_vault/data/services/hive_recipe_service.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
-import 'package:recipe_vault/app/routes.dart';
-import 'package:recipe_vault/navigation/nav_utils.dart'; // ← add this
+import 'package:recipe_vault/navigation/nav_utils.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/widgets/recipe_card.dart';
 import 'package:recipe_vault/widgets/recipe_image_header.dart';
@@ -40,24 +36,36 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   String _mapLanguageCodeToLabel(String code) {
     switch (code.toLowerCase()) {
-      case 'pl':
-        return 'Polish';
-      case 'fr':
-        return 'French';
-      case 'es':
-        return 'Spanish';
-      case 'de':
-        return 'German';
-      case 'it':
-        return 'Italian';
-      case 'pt':
-        return 'Portuguese';
-      case 'nl':
-        return 'Dutch';
       case 'en':
       case 'en-gb':
       case 'en-us':
         return 'English';
+      case 'bg':
+        return 'Bulgarian';
+      case 'cs':
+        return 'Czech';
+      case 'da':
+        return 'Danish';
+      case 'de':
+        return 'German';
+      case 'el':
+        return 'Greek';
+      case 'es':
+        return 'Spanish';
+      case 'fr':
+        return 'French';
+      case 'ga':
+        return 'Irish';
+      case 'it':
+        return 'Italian';
+      case 'nl':
+        return 'Dutch';
+      case 'pl':
+        return 'Polish';
+      case 'cy':
+        return 'Welsh';
+      case 'pt':
+        return 'Portuguese'; // kept for safety
       default:
         return code.toUpperCase();
     }
@@ -87,7 +95,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
       bool isInInstructions = false;
       bool isInHints = false;
 
-      for (final line in lines) {
+      for (final lineRaw in lines) {
+        final line = lineRaw.trimRight();
         final lower = line.toLowerCase();
 
         if (lower.startsWith('title:')) {
@@ -107,12 +116,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
         } else {
           if (isInIngredients && line.startsWith('-')) {
             ingredients.add(line.substring(1).trim());
-          } else if (isInInstructions &&
-              RegExp(r'^\d+[).]').hasMatch(line.trim())) {
-            instructions.add(line.trim());
-          } else if (isInHints &&
-              line.trim().isNotEmpty &&
-              line.trim() != '---') {
+          } else if (isInInstructions && RegExp(r'^\d+[).]').hasMatch(line)) {
+            instructions.add(line);
+          } else if (isInHints && line.isNotEmpty && line != '---') {
             hints.add(line.replaceFirst(RegExp(r'^-\s*'), '').trim());
           }
         }
@@ -144,16 +150,15 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
       if (!mounted) return;
 
-      // Optional toast; will show briefly before we navigate
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(t.recipeSaved)));
 
       // Navigate using safeGo (next frame) and then hide overlay in that frame.
-      safeGo(context, AppRoutes.vault);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        LoadingOverlay.hide();
-      });
+      safeGo(context, '/vault');
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => LoadingOverlay.hide(),
+      );
     } catch (_) {
       if (!mounted) return;
       LoadingOverlay.hide();
@@ -168,6 +173,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
 
     // Prefer constructor value (GoRouter), fallback to ModalRoute (Navigator 1.0)
     final result =
@@ -265,36 +271,28 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           ],
                         ),
                       ),
+
                       if (_showOriginalText && result.originalText.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.all(12),
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: Colors.grey[100],
+                            color: cs.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey[400]!),
+                            border: Border.all(color: cs.outlineVariant),
                           ),
                           child: Text(
                             result.originalText,
                             style: const TextStyle(fontSize: 13),
                           ),
                         ),
+
+                      // Image header – now ungated (no subscription checks)
                       RecipeImageHeader(
                         initialImages: _recipeImageUrl != null
                             ? [_recipeImageUrl!]
                             : [],
                         onImagePicked: (localPath) async {
-                          final subscriptionService =
-                              Provider.of<SubscriptionService>(
-                                context,
-                                listen: false,
-                              );
-
-                          if (!subscriptionService.allowImageUpload) {
-                            context.push(AppRoutes.paywall);
-                            return '';
-                          }
-
                           final user = FirebaseAuth.instance.currentUser;
                           if (user == null) {
                             ImageProcessingService.showError(
@@ -323,12 +321,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           try {
                             final url =
                                 await ImageProcessingService.uploadRecipeImage(
-                                  context: context, // ✅ add context
+                                  context: context,
                                   imageFile: croppedFile,
                                   userId: user.uid,
                                   recipeId: recipeId,
                                 );
-
                             debugPrint('✅ Uploaded to: $url');
                             if (mounted) setState(() => _recipeImageUrl = url);
                             return url;
@@ -341,6 +338,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           }
                         },
                       ),
+
                       const SizedBox(height: 16),
                       RecipeCard(recipeText: formattedRecipe),
                     ],

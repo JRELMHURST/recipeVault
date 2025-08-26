@@ -1,4 +1,3 @@
-// functions/src/gpt_logic.ts
 import OpenAI from "openai";
 import {
   enforceAndConsume,
@@ -68,8 +67,12 @@ function resolveLocaleMeta(locale?: string) {
 
 // Avoid adding a duplicate “Hints & Tips” section
 function hasHintsSection(text: string, hintsLabel: string): boolean {
-  const pattern = new RegExp(`^\\s*${hintsLabel}\\s*:`, "im");
+  const pattern = new RegExp(`^\\s*${escapeRegex(hintsLabel)}\\s*:`, "im");
   return pattern.test(text);
+}
+
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /** Minimal pre-clean + hard cap to reduce tokens */
@@ -101,6 +104,69 @@ async function withRetries<T>(fn: () => Promise<T>, tries = 2): Promise<T> {
     }
   }
   throw last;
+}
+
+/** Extract "{labels.title}: ..." value if present (single line). */
+function extractLabeledTitle(text: string, titleLabel: string): string | null {
+  const re = new RegExp(`^\\s*${escapeRegex(titleLabel)}\\s*:\\s*(.+)$`, "im");
+  const m = text.match(re);
+  return m?.[1]?.trim() || null;
+}
+
+/** Has a Markdown H1 anywhere ("# Something"). */
+function hasH1(text: string): boolean {
+  return /^#\s+.+/m.test(text);
+}
+
+/** Ensure we have both a top "# Title" and a labeled "Title: ...". */
+function ensureTitlePresence(
+  formatted: string,
+  labels: { title: string; ingredients: string }
+): string {
+  let out = formatted.trim();
+
+  // First, try to grab title from labeled line
+  let title = extractLabeledTitle(out, labels.title);
+
+  // If no labeled title, try to infer from a first H1 line
+  if (!title) {
+    const h1Match = out.match(/^#\s+(.+)$/m);
+    if (h1Match?.[1]) title = h1Match[1].trim();
+  }
+
+  // If still no title, infer from the first non-empty line before Ingredients
+  if (!title) {
+    const ingRe = new RegExp(`^\\s*${escapeRegex(labels.ingredients)}\\s*:`, "im");
+    const ingIndex = out.search(ingRe);
+    if (ingIndex > 0) {
+      const pre = out.slice(0, ingIndex).split(/\n/).map(s => s.trim()).filter(Boolean);
+      if (pre.length) title = pre[pre.length - 1];
+    }
+  }
+
+  // Final fallback
+  if (!title || !title.trim()) title = "Untitled";
+
+  // Ensure a top H1 exists
+  if (!hasH1(out)) {
+    out = `# ${title}\n\n${out}`;
+  }
+
+  // Ensure we have a labeled title line somewhere (put it under the H1 if missing)
+  if (!extractLabeledTitle(out, labels.title)) {
+    // Insert after top H1 block
+    const parts = out.split(/\n/);
+    const h1Idx = parts.findIndex(l => /^#\s+/.test(l));
+    if (h1Idx >= 0) {
+      parts.splice(h1Idx + 1, 0, `${labels.title}: ${title}`, "");
+      out = parts.join("\n");
+    } else {
+      // should never happen because we added H1 above
+      out = `${labels.title}: ${title}\n\n${out}`;
+    }
+  }
+
+  return out;
 }
 
 // ──────────────────────────────────────────────────────────
@@ -135,12 +201,14 @@ export async function generateFormattedRecipe(
       `- "${labels.hints}:"`,
       ``,
       `Formatting rules:`,
+      `• Start the output with a single top-level Markdown heading: "# {TITLE_TEXT}".`,
+      `• Immediately below it, include a line "${labels.title}: {TITLE_TEXT}".`,
       `• ${labels.ingredients}: each ingredient must be on its own line starting with "- " (dash+space).`,
       `• ${labels.instructions}: a numbered list starting "1. ", "2. ", etc.`,
       `• ${labels.hints}: a bulleted list using "- ". If there are no tips, include a single line with: "${labels.noTips}".`,
       ``,
       `Respond ONLY with JSON (no prose, no code fences). Use keys:`,
-      `  - "formattedRecipe": string containing the final formatted text with the exact headers above,`,
+      `  - "formattedRecipe": string containing the final formatted text with the exact headers above (including the H1 and the "${labels.title}:" line),`,
       `  - "notes": optional string with extra hints/tips or "${labels.noTips}".`,
     ].join("\n");
 
@@ -176,7 +244,12 @@ export async function generateFormattedRecipe(
       throw new Error("❌ gpt: Missing 'formattedRecipe' in model output");
     }
 
-    const formatted = parsed.formattedRecipe.trim();
+    // Normalize title presence defensively (in case the model slips)
+    let formatted = ensureTitlePresence(parsed.formattedRecipe.trim(), {
+      title: labels.title,
+      ingredients: labels.ingredients,
+    });
+
     const notes = (parsed.notes || "").trim() || labels.noTips;
 
     console.info({ msg: "✅ gpt: recipe formatted", uid, usageKind, chars: formatted.length });

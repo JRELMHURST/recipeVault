@@ -13,10 +13,6 @@ class EmptyVaultPlaceholder extends StatelessWidget {
   // Mix emojis + asset paths
   static final _icons = [
     "👨‍🍳",
-    "👩‍🍳",
-    "🍲",
-    "🥗",
-    "🍴",
     "assets/icon/pizza.PNG",
     "assets/icon/pie.PNG",
     "assets/icon/icecream.PNG",

@@ -21,7 +21,10 @@ class DailyTipBannerController {
     Duration inDuration = const Duration(milliseconds: 260),
     Duration outDuration = const Duration(milliseconds: 180),
     Duration? autoCloseAfter,
-    Color scrimColor = const Color(0x14000000),
+    // ── Scrim controls (off by default) ────────────────────────────────────
+    bool enableScrim = false, // 👈 no overlay by default
+    Color scrimColor = const Color(0x14000000), // used only if enableScrim=true
+    // ── Layout ─────────────────────────────────────────────────────────────
     double maxWidth = 480,
     double radius = 20,
     double topMargin = kToolbarHeight + 12,
@@ -36,15 +39,13 @@ class DailyTipBannerController {
     _inFlight = true;
 
     try {
-      // Resolve auto-close based on feature flag unless explicitly provided
       final resolvedAutoClose =
           autoCloseAfter ??
           (kDailyTipAutoCloseEnabled ? const Duration(seconds: 6) : null);
 
-      // Ensure a clean slate so we don't reuse a ticker
+      // ensure clean slate
       await close(immediate: true);
 
-      // ✅ Use Flutter's root overlay; works with go_router and nested navigators
       final overlay = Overlay.maybeOf(context, rootOverlay: true);
       if (overlay == null) {
         if (kDailyTipDebugLogging) {
@@ -75,7 +76,7 @@ class DailyTipBannerController {
         _autoClose?.cancel();
         _autoClose = null;
 
-        final anim = _anim; // capture
+        final anim = _anim;
         final entry = _entry;
         _anim = null;
         _entry = null;
@@ -110,16 +111,21 @@ class DailyTipBannerController {
         builder: (ctx) {
           final sysTop = MediaQuery.of(ctx).padding.top;
           final double padTop = math.max(sysTop + topMargin, 0.0);
+
           return Positioned.fill(
             child: Stack(
               children: [
-                // scrim (tap to dismiss)
-                Positioned.fill(
-                  child: GestureDetector(
-                    onTap: () => closeInternal(),
-                    child: ColoredBox(color: scrimColor),
+                // ── Optional background scrim; not inserted unless enabled ──
+                if (enableScrim)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => closeInternal(),
+                      child: ColoredBox(color: scrimColor),
+                    ),
                   ),
-                ),
+
+                // ── Banner card ──
                 SafeArea(
                   child: Align(
                     alignment: Alignment.topCenter,
@@ -137,12 +143,9 @@ class DailyTipBannerController {
                             ),
                             child: ConstrainedBox(
                               constraints: BoxConstraints(maxWidth: maxWidth),
-                              child: Material(
-                                color: Theme.of(ctx).colorScheme.surface,
-                                elevation: 22,
-                                shadowColor: Colors.black.withOpacity(0.22),
+                              // no Material wrapper to let your custom glass card shine
+                              child: ClipRRect(
                                 borderRadius: BorderRadius.circular(radius),
-                                clipBehavior: Clip.antiAlias,
                                 child: content,
                               ),
                             ),
@@ -178,7 +181,7 @@ class DailyTipBannerController {
     _autoClose?.cancel();
     _autoClose = null;
 
-    final anim = _anim; // capture
+    final anim = _anim;
     final entry = _entry;
     _anim = null;
     _entry = null;

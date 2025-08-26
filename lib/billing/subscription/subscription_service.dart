@@ -532,22 +532,22 @@ class SubscriptionService extends ChangeNotifier {
       final current = offerings.current;
       if (current == null) return;
 
-      Package? _find(bool Function(Package p) test) {
+      Package? find(bool Function(Package p) test) {
         for (final p in current.availablePackages) {
           if (test(p)) return p;
         }
         return null;
       }
 
-      final id = (Package p) => p.identifier.toLowerCase();
+      id(Package p) => p.identifier.toLowerCase();
 
-      homeChefPackage = _find((p) => id(p).contains('home_chef'));
+      homeChefPackage = find((p) => id(p).contains('home_chef'));
 
-      masterChefMonthlyPackage = _find(
+      masterChefMonthlyPackage = find(
         (p) => id(p).contains('master_chef') && id(p).contains('monthly'),
       );
 
-      masterChefYearlyPackage = _find(
+      masterChefYearlyPackage = find(
         (p) => id(p).contains('master_chef') && id(p).contains('yearly'),
       );
     } catch (e) {

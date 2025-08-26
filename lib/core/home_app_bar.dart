@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'package:recipe_vault/core/daily_message_bubble.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {

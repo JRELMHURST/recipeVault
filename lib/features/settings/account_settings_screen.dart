@@ -16,7 +16,7 @@ import 'package:recipe_vault/widgets/loading_overlay.dart';
 // Providers
 import 'package:provider/provider.dart';
 import 'package:recipe_vault/core/language_provider.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 
 // 🚦 routes + safe nav helpers
 import 'package:recipe_vault/app/routes.dart';

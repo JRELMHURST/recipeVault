@@ -12,7 +12,7 @@ import 'package:recipe_vault/app/routes.dart';
 import 'package:recipe_vault/auth/auth_service.dart';
 import 'package:recipe_vault/features/recipe_vault/vault_recipe_service.dart';
 import 'package:recipe_vault/data/services/user_preference_service.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 import 'package:recipe_vault/data/services/category_service.dart';
 import 'package:hive/hive.dart';
 

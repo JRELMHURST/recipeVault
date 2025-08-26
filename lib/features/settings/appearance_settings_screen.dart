@@ -6,7 +6,7 @@ import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 
 class AppearanceSettingsScreen extends StatefulWidget {
   final ThemeNotifier themeNotifier;

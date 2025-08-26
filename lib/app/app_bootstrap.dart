@@ -13,7 +13,7 @@ import 'package:recipe_vault/data/models/category_model.dart';
 import 'package:recipe_vault/data/services/category_service.dart';
 import 'package:recipe_vault/data/services/notification_service.dart';
 import 'package:recipe_vault/data/services/user_preference_service.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 
 class AppBootstrap {
   AppBootstrap._();

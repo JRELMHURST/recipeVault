@@ -11,7 +11,7 @@ import 'package:recipe_vault/core/language_provider.dart';
 import 'package:recipe_vault/core/theme.dart';
 
 import 'package:recipe_vault/app/app_router.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 
 class RecipeVaultApp extends StatefulWidget {
   const RecipeVaultApp({super.key});

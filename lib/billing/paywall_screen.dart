@@ -10,11 +10,12 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:recipe_vault/billing/subscription/subscription_types.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/billing/pricing_card.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 import 'package:recipe_vault/widgets/loading_overlay.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/app/routes.dart';

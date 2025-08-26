@@ -16,7 +16,7 @@ import 'package:provider/provider.dart';
 
 import 'package:recipe_vault/firebase_storage.dart'; // FirebaseStorageService
 import 'package:recipe_vault/features/processing/processed_recipe_result.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 
 class ImageProcessingService {
   // ───────────────────────────── Tunables ─────────────────────────────

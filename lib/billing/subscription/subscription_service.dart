@@ -1,27 +1,18 @@
-// lib/billing/subscription_service.dart
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:collection/collection.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/services.dart';
-import 'package:hive/hive.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+
 import 'package:recipe_vault/billing/tier_limits.dart';
+import 'package:recipe_vault/billing/subscription/subscription_types.dart';
+import 'package:recipe_vault/billing/subscription/subscription_cache.dart';
+import 'package:recipe_vault/billing/subscription/subscription_rc_adapter.dart';
+import 'package:recipe_vault/billing/subscription/subscription_usage_repo.dart';
 import 'package:recipe_vault/data/services/user_session_service.dart';
-
-/// Mapping helper — ideally generated from backend (TS ⇆ Dart)
-String productToTier(String productId) {
-  final id = productId.toLowerCase();
-  if (id.contains('home_chef')) return 'home_chef';
-  if (id.contains('master_chef')) return 'master_chef';
-  return 'none';
-}
-
-enum EntitlementStatus { checking, active, inactive }
 
 class SubscriptionService extends ChangeNotifier {
   // ── Singleton ─────────────────────────────────────────────────────────────
@@ -29,11 +20,10 @@ class SubscriptionService extends ChangeNotifier {
   factory SubscriptionService() => _instance;
   SubscriptionService._internal();
 
-  // RevenueCat platform support (avoid calls on web/desktop)
-  bool get _rcSupported =>
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.iOS ||
-          defaultTargetPlatform == TargetPlatform.android);
+  // ── Collaborators ─────────────────────────────────────────────────────────
+  final _rc = RcAdapter();
+  final _cache = SubscriptionCache();
+  final _usageRepo = UsageRepo(FirebaseFirestore.instance);
 
   // ── Public state/notifiers ────────────────────────────────────────────────
   final ValueNotifier<String> tierNotifier = ValueNotifier('none');
@@ -59,23 +49,6 @@ class SubscriptionService extends ChangeNotifier {
   Timer? _reconcileDebounce;
   bool _didStartupReconcile = false;
 
-  /// Expose entitlement safely for trial/expiry info etc.
-  EntitlementInfo? get activeEntitlement => _activeEntitlement;
-
-  bool get isInTrial => _activeEntitlement?.periodType == PeriodType.trial;
-
-  DateTime? get expirationDate {
-    final exp = _activeEntitlement?.expirationDate;
-    return exp != null ? DateTime.tryParse(exp) : null;
-  }
-
-  bool get isExpiringSoon {
-    final exp = expirationDate;
-    if (exp == null) return false;
-    return exp.isAfter(DateTime.now()) &&
-        exp.isBefore(DateTime.now().add(const Duration(days: 7)));
-  }
-
   // Cached packages (paywall helper)
   Package? homeChefPackage;
   Package? masterChefMonthlyPackage;
@@ -96,67 +69,9 @@ class SubscriptionService extends ChangeNotifier {
 
   bool _rcListenerAttached = false;
 
-  // ── Local cache (Hive) ────────────────────────────────────────────────────
-  static String _prefsBoxName(String uid) => 'userPrefs_$uid';
-  static const _kCachedTier = 'cachedTier';
-  static const _kCachedStatus = 'cachedStatus';
-  static const _kCachedSpecial = 'cachedSpecialAccess';
-  static const _kEverHadAccess = 'everHadAccess';
-
-  Future<void> _saveCache(
-    String uid,
-    String tier, {
-    required bool active,
-  }) async {
-    try {
-      final boxName = _prefsBoxName(uid);
-      final box = Hive.isBoxOpen(boxName)
-          ? Hive.box<dynamic>(boxName)
-          : await Hive.openBox<dynamic>(boxName);
-      await box.put(_kCachedTier, tier);
-      await box.put(_kCachedStatus, active ? 'active' : 'inactive');
-      await box.put(_kCachedSpecial, _hasSpecialAccess);
-      if (active) {
-        await box.put(_kEverHadAccess, true);
-      }
-    } catch (e) {
-      debugPrint('⚠️ Failed to cache tier: $e');
-    }
-  }
-
-  Future<void> _seedFromCacheIfAny(String uid) async {
-    try {
-      final boxName = _prefsBoxName(uid);
-      final box = Hive.isBoxOpen(boxName)
-          ? Hive.box<dynamic>(boxName)
-          : await Hive.openBox<dynamic>(boxName);
-
-      final cachedTier = (box.get(_kCachedTier) as String?)?.trim();
-      final cachedSpecial = box.get(_kCachedSpecial) as bool?;
-      bool changed = false;
-
-      if (cachedTier != null && cachedTier.isNotEmpty && cachedTier != _tier) {
-        _tier = cachedTier;
-        changed = true;
-      }
-      if (cachedSpecial != null) {
-        _hasSpecialAccess = cachedSpecial;
-      }
-
-      if (changed) {
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          tierNotifier.value = _tier;
-        });
-      }
-    } catch (e) {
-      debugPrint('⚠️ Failed to seed tier from cache: $e');
-    }
-  }
-
-  // ── Getters ───────────────────────────────────────────────────────────────
+  // ── Getters (public API preserved) ────────────────────────────────────────
   String get tier => _tier;
 
-  /// Canonical getter — safe resolved tier (inc. specialAccess fallback)
   String get resolvedTier {
     if (_tier.isEmpty || _tier == 'none') {
       if (_hasSpecialAccess) return 'home_chef';
@@ -187,14 +102,10 @@ class SubscriptionService extends ChangeNotifier {
   Future<bool> get everHadAccess async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return false;
-    final boxName = _prefsBoxName(uid);
-    final box = Hive.isBoxOpen(boxName)
-        ? Hive.box<dynamic>(boxName)
-        : await Hive.openBox<dynamic>(boxName);
-    return (box.get(_kEverHadAccess) as bool?) ?? false;
+    return _cache.everHadAccess(uid);
   }
 
-  // ── Usage getters ─────────────────────────────────────────────────────────
+  // Usage getters
   int _getUsage(String kind) {
     final now = DateTime.now();
     final key = '${now.year}-${now.month.toString().padLeft(2, '0')}';
@@ -227,8 +138,22 @@ class SubscriptionService extends ChangeNotifier {
       (hasActiveSubscription || _hasSpecialAccess) && recipeUsage < aiLimit;
 
   bool get allowCategoryCreation => hasActiveSubscription || _hasSpecialAccess;
-
   bool get hasSpecialAccess => _hasSpecialAccess;
+
+  EntitlementInfo? get activeEntitlement => _activeEntitlement;
+  bool get isInTrial => _activeEntitlement?.periodType == PeriodType.trial;
+
+  DateTime? get expirationDate {
+    final exp = _activeEntitlement?.expirationDate;
+    return exp != null ? DateTime.tryParse(exp) : null;
+  }
+
+  bool get isExpiringSoon {
+    final exp = expirationDate;
+    if (exp == null) return false;
+    return exp.isAfter(DateTime.now()) &&
+        exp.isBefore(DateTime.now().add(const Duration(days: 7)));
+  }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   Future<void> init() async {
@@ -237,7 +162,6 @@ class SubscriptionService extends ChangeNotifier {
     try {
       final user = FirebaseAuth.instance.currentUser;
 
-      // 🛡️ Defensive: if user is deleted, log them out and reset
       if (user != null) {
         try {
           await user.getIdToken(true); // throws if disabled/deleted
@@ -246,14 +170,10 @@ class SubscriptionService extends ChangeNotifier {
         } on FirebaseAuthException catch (e) {
           if (e.code == 'user-not-found' || e.code == 'user-disabled') {
             debugPrint('⚠️ Current user no longer exists. Forcing logout.');
-
             await UserSessionService.signOut();
-
-            // ✅ Block until authStateChanges() has actually emitted null
             await FirebaseAuth.instance.authStateChanges().firstWhere(
               (u) => u == null,
             );
-
             await reset();
             return;
           } else {
@@ -262,15 +182,15 @@ class SubscriptionService extends ChangeNotifier {
         }
       }
 
-      if (_rcSupported && !_rcListenerAttached) {
-        Purchases.addCustomerInfoUpdateListener(_onCustomerInfo);
+      if (_rc.isSupported && !_rcListenerAttached) {
+        _rc.addCustomerInfoListener(_onCustomerInfo);
         _rcListenerAttached = true;
       }
 
-      if (_rcSupported) {
-        await Purchases.invalidateCustomerInfoCache();
+      if (_rc.isSupported) {
+        await _rc.invalidateCache();
         await loadSubscriptionStatus();
-        await _loadAvailablePackages();
+        await _loadAvailablePackages(); // <-- now implemented
       } else {
         if (user != null) {
           await _loadUsageData(user.uid);
@@ -284,27 +204,19 @@ class SubscriptionService extends ChangeNotifier {
 
   Future<void> setAppUserId(String? firebaseUid) async {
     try {
-      if (!_rcSupported) {
+      if (!_rc.isSupported) {
         if (firebaseUid == null) await reset();
         return;
       }
 
       if (firebaseUid == null) {
-        try {
-          await Purchases.logOut();
-        } on PlatformException catch (e) {
-          final code = PurchasesErrorHelper.getErrorCode(e);
-          if (code != PurchasesErrorCode.logOutWithAnonymousUserError) {
-            rethrow;
-          }
-          debugPrint('RC: already anonymous; ignoring logOut.');
-        }
+        await _rc.logOutSafe();
         await reset();
         return;
       }
 
       await _seedFromCacheIfAny(firebaseUid);
-      await Purchases.logIn(firebaseUid);
+      await _rc.logIn(firebaseUid);
       await refresh();
     } catch (e) {
       subscriptionErrorNotifier.value = 'Failed to set AppUserId: $e';
@@ -314,8 +226,8 @@ class SubscriptionService extends ChangeNotifier {
 
   Future<void> refresh() async {
     if (_isLoadingTier) return;
-    if (!_rcSupported) return;
-    await Purchases.invalidateCustomerInfoCache();
+    if (!_rc.isSupported) return;
+    await _rc.invalidateCache();
     await loadSubscriptionStatus();
   }
 
@@ -343,8 +255,8 @@ class SubscriptionService extends ChangeNotifier {
     await _fsSubSubscription?.cancel();
     _fsSubSubscription = null;
 
-    if (_rcSupported) {
-      await Purchases.invalidateCustomerInfoCache();
+    if (_rc.isSupported) {
+      await _rc.invalidateCache();
     }
     notifyListeners();
   }
@@ -369,7 +281,7 @@ class SubscriptionService extends ChangeNotifier {
     }
 
     try {
-      if (_rcSupported) {
+      if (_rc.isSupported) {
         _customerInfo = await _getCustomerInfoWithRetry(
           preferRetry: _isBrandNewUser(FirebaseAuth.instance.currentUser!),
         );
@@ -378,12 +290,15 @@ class SubscriptionService extends ChangeNotifier {
 
         final ents = _customerInfo?.entitlements.active ?? const {};
 
-        // 🚫 Do not downgrade to 'none' if the first RC read is empty.
+        // Do not downgrade to 'none' on an initial empty ping
         if (ents.isEmpty && _tier != 'none') {
           debugPrint('RC empty on first load — keeping cached/FS tier.');
         } else {
-          final rcTier = _resolveTierFromEntitlements(ents);
-          final activeEntitlement = _getActiveEntitlement(ents, rcTier);
+          final rcTier = EntitlementUtils.resolveTier(ents);
+          final activeEntitlement = EntitlementUtils.activeForTier(
+            ents,
+            rcTier,
+          );
           final rcEntitlementId =
               (activeEntitlement?.productIdentifier ?? 'none').toLowerCase();
 
@@ -391,7 +306,7 @@ class SubscriptionService extends ChangeNotifier {
           _entitlementId = rcEntitlementId;
           _activeEntitlement = activeEntitlement;
 
-          _applyFallbackLimitsIfAny(); // 👈 fallback immediately
+          _applyFallbackLimitsIfAny();
           tierNotifier.value = _tier;
           _logTierOnce(source: 'loadSubscriptionStatus');
         }
@@ -427,9 +342,13 @@ class SubscriptionService extends ChangeNotifier {
 
       await _loadUsageData(startUid);
 
-      await _saveCache(startUid, _tier, active: hasActiveSubscription);
+      await _cache.save(
+        uid: startUid,
+        tier: _tier,
+        active: hasActiveSubscription,
+        hasSpecialAccess: _hasSpecialAccess,
+      );
 
-      // Debounced reconcile (single call per startup/sign-in)
       _queueReconcile();
 
       notifyListeners();
@@ -443,42 +362,25 @@ class SubscriptionService extends ChangeNotifier {
 
   // ── Usage fetch ───────────────────────────────────────────────────────────
   Future<void> _loadUsageData(String uid) async {
-    for (final kind in _usageData.keys) {
-      try {
-        final snap = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .collection(kind)
-            .doc('usage')
-            .get();
-        _usageData[kind] = Map<String, int>.from(snap.data() ?? {});
-      } catch (e) {
-        debugPrint('⚠️ Failed to load $kind: $e');
-        _usageData[kind] = {};
-      }
-    }
+    final loaded = await _usageRepo.loadAll(uid);
+    _usageData
+      ..['recipeUsage'] = loaded['recipeUsage'] ?? {}
+      ..['translatedRecipeUsage'] = loaded['translatedRecipeUsage'] ?? {}
+      ..['imageUsage'] = loaded['imageUsage'] ?? {};
 
     if (_tier == 'none' || _tier.isEmpty) {
-      _tierLimits['recipeUsage'] = 0;
-      _tierLimits['translatedRecipeUsage'] = 0;
-      _tierLimits['imageUsage'] = 0;
+      _tierLimits
+        ..['recipeUsage'] = 0
+        ..['translatedRecipeUsage'] = 0
+        ..['imageUsage'] = 0;
       return;
     }
 
-    try {
-      final snap = await FirebaseFirestore.instance
-          .collection('tierLimits')
-          .doc(_tier)
-          .get();
-
-      if (snap.exists) {
-        _tierLimits.addAll(Map<String, int>.from(snap.data() ?? {}));
-      } else {
-        _applyFallbackLimitsIfAny(); // 👈 fallback if Firestore doc missing
-      }
-    } catch (e) {
-      _applyFallbackLimitsIfAny(); // 👈 fallback on error
-      debugPrint('⚠️ Failed to load tier limits: $e');
+    final limits = await _usageRepo.loadTierLimits(_tier);
+    if (limits.isEmpty) {
+      _applyFallbackLimitsIfAny();
+    } else {
+      _tierLimits.addAll(limits);
     }
   }
 
@@ -492,7 +394,19 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
-  // ── RevenueCat push updates ───────────────────────────────────────────────
+  // ── Reconcile ─────────────────────────────────────────────────────────────
+  void _queueReconcile() {
+    if (!hasActiveSubscription && !_hasSpecialAccess) return;
+    if (_didStartupReconcile) return;
+
+    _reconcileDebounce?.cancel();
+    _reconcileDebounce = Timer(const Duration(milliseconds: 500), () async {
+      if (_didStartupReconcile) return;
+      await _reconcileWithBackend();
+      _didStartupReconcile = true;
+    });
+  }
+
   Future<void> _reconcileWithBackend() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -501,9 +415,7 @@ class SubscriptionService extends ChangeNotifier {
     }
 
     try {
-      // 🔑 Force refresh ID token
       await user.getIdToken(true);
-
       final functions = FirebaseFunctions.instanceFor(region: "europe-west2");
       final fn = functions.httpsCallable('reconcileUserFromRC');
       final resp = await fn.call();
@@ -515,29 +427,17 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
-  void _queueReconcile() {
-    // Only reconcile if we actually have or simulate access
-    if (!hasActiveSubscription && !_hasSpecialAccess) return;
-    if (_didStartupReconcile) return; // run once per sign-in
-
-    _reconcileDebounce?.cancel();
-    _reconcileDebounce = Timer(const Duration(milliseconds: 500), () async {
-      if (_didStartupReconcile) return;
-      await _reconcileWithBackend();
-      _didStartupReconcile = true;
-    });
-  }
-
+  // ── RC live updates ───────────────────────────────────────────────────────
   void _onCustomerInfo(CustomerInfo info) async {
-    if (!_rcSupported) return;
+    if (!_rc.isSupported) return;
 
-    // 🚫 Ignore RC updates if the app is tearing down sign-out.
+    // Ignore during sign-out
     if (UserSessionService.isSigningOut) {
       debugPrint('RC update ignored: app is signing out');
       return;
     }
 
-    // 🚫 Also ignore if no Firebase user (post-logout)
+    // Ignore if no Firebase user (post-logout)
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
     if (currentUid == null) {
       debugPrint('RC update ignored: no signed-in user (post-logout)');
@@ -551,11 +451,9 @@ class SubscriptionService extends ChangeNotifier {
       'RC Entitlements: ${ents.entries.map((e) => '${e.key} => ${e.value.productIdentifier}').join(', ')}',
     );
 
-    // ⛑️ Guard: ignore *empty* entitlements ping to avoid flashing to `none`.
+    // Guard: ignore empty ping to avoid flashing to none.
     if (ents.isEmpty) {
-      debugPrint(
-        'RC entitlements empty — ignoring downgrade and retrying soon…',
-      );
+      debugPrint('RC entitlements empty — ignoring downgrade, retrying…');
       Future<void>.delayed(const Duration(milliseconds: 600), () async {
         if (FirebaseAuth.instance.currentUser?.uid == currentUid) {
           await refresh();
@@ -564,8 +462,8 @@ class SubscriptionService extends ChangeNotifier {
       return;
     }
 
-    final rcTier = _resolveTierFromEntitlements(ents);
-    final activeEntitlement = _getActiveEntitlement(ents, rcTier);
+    final rcTier = EntitlementUtils.resolveTier(ents);
+    final activeEntitlement = EntitlementUtils.activeForTier(ents, rcTier);
     final rcEntitlementId = (activeEntitlement?.productIdentifier ?? 'none')
         .toLowerCase();
 
@@ -583,8 +481,13 @@ class SubscriptionService extends ChangeNotifier {
       _logTierOnce(source: 'rc-listener');
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
-        await _saveCache(uid, _tier, active: hasActiveSubscription);
-        _queueReconcile(); // debounced; avoids duplicate reconcile
+        await _cache.save(
+          uid: uid,
+          tier: _tier,
+          active: hasActiveSubscription,
+          hasSpecialAccess: _hasSpecialAccess,
+        );
+        _queueReconcile();
       }
     }
     if (changedTier || changedEnt) notifyListeners();
@@ -621,57 +524,57 @@ class SubscriptionService extends ChangeNotifier {
         });
   }
 
-  // ── RevenueCat package cache ──────────────────────────────────────────────
+  // ── RC package loading (paywall helper) ───────────────────────────────────
   Future<void> _loadAvailablePackages() async {
-    if (!_rcSupported) return;
+    if (!_rc.isSupported) return;
     try {
-      final offerings = await Purchases.getOfferings();
+      final offerings = await _rc.getOfferings();
       final current = offerings.current;
+      if (current == null) return;
 
-      if (current != null) {
-        homeChefPackage = current.availablePackages.firstWhereOrNull(
-          (pkg) => productToTier(pkg.identifier) == 'home_chef',
-        );
-
-        masterChefMonthlyPackage = current.availablePackages.firstWhereOrNull(
-          (pkg) =>
-              productToTier(pkg.identifier) == 'master_chef' &&
-              pkg.identifier.toLowerCase().contains('monthly'),
-        );
-
-        masterChefYearlyPackage = current.availablePackages.firstWhereOrNull(
-          (pkg) =>
-              productToTier(pkg.identifier) == 'master_chef' &&
-              pkg.identifier.toLowerCase().contains('yearly'),
-        );
+      Package? _find(bool Function(Package p) test) {
+        for (final p in current.availablePackages) {
+          if (test(p)) return p;
+        }
+        return null;
       }
+
+      final id = (Package p) => p.identifier.toLowerCase();
+
+      homeChefPackage = _find((p) => id(p).contains('home_chef'));
+
+      masterChefMonthlyPackage = _find(
+        (p) => id(p).contains('master_chef') && id(p).contains('monthly'),
+      );
+
+      masterChefYearlyPackage = _find(
+        (p) => id(p).contains('master_chef') && id(p).contains('yearly'),
+      );
     } catch (e) {
-      debugPrint('🔴 Error loading packages: $e');
+      debugPrint('🔴 Error loading RC packages: $e');
     }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  String _resolveTierFromEntitlements(Map<String, EntitlementInfo> ents) {
-    for (final e in ents.values) {
-      final tier = productToTier(e.productIdentifier);
-      if (tier != 'none') return tier;
+  Future<void> _seedFromCacheIfAny(String uid) async {
+    try {
+      final seed = await _cache.seed(uid);
+      bool changed = false;
+      if (seed.tier != null && seed.tier!.isNotEmpty && seed.tier != _tier) {
+        _tier = seed.tier!;
+        changed = true;
+      }
+      if (seed.special != null) {
+        _hasSpecialAccess = seed.special!;
+      }
+      if (changed) {
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          tierNotifier.value = _tier;
+        });
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to seed tier from cache: $e');
     }
-    return 'none';
-  }
-
-  EntitlementInfo? _getActiveEntitlement(
-    Map<String, EntitlementInfo> ents,
-    String tier,
-  ) {
-    return ents.values.firstWhereOrNull(
-      (e) => productToTier(e.productIdentifier) == tier,
-    );
-  }
-
-  void _logTierOnce({String source = 'unknown'}) {
-    if (_lastLoggedTier == _tier) return;
-    debugPrint('📦 Tier updated → $_tier (from: $source)');
-    _lastLoggedTier = _tier;
   }
 
   bool _isBrandNewUser(User user) {
@@ -683,14 +586,14 @@ class SubscriptionService extends ChangeNotifier {
   Future<CustomerInfo> _getCustomerInfoWithRetry({
     required bool preferRetry,
   }) async {
-    if (!_rcSupported) return CustomerInfo.fromJson(const {}); // no-op
+    if (!_rc.isSupported) return CustomerInfo.fromJson(const {});
     int attempts = preferRetry ? 3 : 1;
     Duration delay = const Duration(milliseconds: 400);
 
-    CustomerInfo info = await Purchases.getCustomerInfo();
+    CustomerInfo info = await _rc.getCustomerInfo();
     while (attempts > 1 && info.entitlements.active.isEmpty) {
       await Future.delayed(delay);
-      info = await Purchases.getCustomerInfo();
+      info = await _rc.getCustomerInfo();
       attempts--;
       delay = Duration(
         milliseconds: (delay.inMilliseconds * 2).clamp(400, 1600),
@@ -698,6 +601,12 @@ class SubscriptionService extends ChangeNotifier {
       debugPrint('⏳ Retrying RevenueCat fetch… remaining=$attempts');
     }
     return info;
+  }
+
+  void _logTierOnce({String source = 'unknown'}) {
+    if (_lastLoggedTier == _tier) return;
+    debugPrint('📦 Tier updated → $_tier (from: $source)');
+    _lastLoggedTier = _tier;
   }
 
   // ── Cleanup ───────────────────────────────────────────────────────────────

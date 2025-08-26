@@ -9,7 +9,7 @@ import 'package:recipe_vault/data/services/category_service.dart';
 import 'package:recipe_vault/data/services/image_processing_service.dart';
 import 'package:recipe_vault/features/processing/processing_overlay.dart';
 import 'package:recipe_vault/core/usage_metrics_widget.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 
 // ✅ Central routes + safe nav helpers
 import 'package:recipe_vault/app/routes.dart';

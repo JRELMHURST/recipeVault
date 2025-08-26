@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 
 class AboutSettingsScreen extends StatefulWidget {
   const AboutSettingsScreen({super.key});

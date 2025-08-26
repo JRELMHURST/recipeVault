@@ -11,7 +11,7 @@ import 'package:recipe_vault/app/app_bootstrap.dart';
 import 'package:recipe_vault/app/recipe_vault_app.dart';
 
 import 'package:recipe_vault/auth/auth_service.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 import 'package:recipe_vault/core/language_provider.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/core/theme_notifier.dart';

@@ -36,7 +36,7 @@ import 'package:recipe_vault/features/settings/faq_screen.dart';
 import 'package:recipe_vault/features/settings/about_screen.dart';
 
 // Subscriptions
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 
 GoRouter buildAppRouter(SubscriptionService subs) {
   // Trigger refresh on auth changes

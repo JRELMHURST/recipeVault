@@ -6,7 +6,7 @@ import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/data/services/notification_service.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 
 class NotificationsSettingsScreen extends StatefulWidget {
   const NotificationsSettingsScreen({super.key});

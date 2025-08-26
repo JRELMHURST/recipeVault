@@ -9,7 +9,7 @@ import 'package:recipe_vault/core/responsive_wrapper.dart';
 import 'package:recipe_vault/core/text_scale_notifier.dart';
 import 'package:recipe_vault/features/recipe_vault/categories.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
-import 'package:recipe_vault/billing/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 
 import 'package:recipe_vault/features/recipe_vault/recipe_dialog.dart';
 import 'package:recipe_vault/core/recipe_search_bar.dart';

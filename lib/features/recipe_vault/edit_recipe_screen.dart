@@ -1,3 +1,4 @@
+// lib/features/recipe_vault/edit_recipe_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
@@ -6,7 +7,6 @@ import 'package:recipe_vault/features/recipe_vault/vault_recipe_service.dart';
 
 class EditRecipeScreen extends StatefulWidget {
   final RecipeCardModel recipe;
-
   const EditRecipeScreen({super.key, required this.recipe});
 
   @override
@@ -20,10 +20,12 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   late final TextEditingController _titleCtl;
   late final TextEditingController _ingCtl;
   late final TextEditingController _stepsCtl;
+  late final TextEditingController _hintsCtl;
 
   final _titleFocus = FocusNode();
   final _ingFocus = FocusNode();
   final _stepsFocus = FocusNode();
+  final _hintsFocus = FocusNode();
 
   bool _saving = false;
   bool _dirty = false;
@@ -32,6 +34,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   late final String _initialTitle;
   late final String _initialIngredients;
   late final String _initialSteps;
+  late final String _initialHints;
 
   @override
   void initState() {
@@ -39,15 +42,17 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     _initialTitle = widget.recipe.title;
     _initialIngredients = widget.recipe.ingredients.join('\n');
     _initialSteps = widget.recipe.instructions.join('\n');
+    _initialHints = widget.recipe.hints.join('\n'); // non-nullable
 
     _titleCtl = TextEditingController(text: _initialTitle);
     _ingCtl = TextEditingController(text: _initialIngredients);
     _stepsCtl = TextEditingController(text: _initialSteps);
+    _hintsCtl = TextEditingController(text: _initialHints);
 
-    // Track edits to toggle Save enabled state
     _titleCtl.addListener(_recomputeDirty);
     _ingCtl.addListener(_recomputeDirty);
     _stepsCtl.addListener(_recomputeDirty);
+    _hintsCtl.addListener(_recomputeDirty);
   }
 
   @override
@@ -55,13 +60,18 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     _titleCtl.removeListener(_recomputeDirty);
     _ingCtl.removeListener(_recomputeDirty);
     _stepsCtl.removeListener(_recomputeDirty);
+    _hintsCtl.removeListener(_recomputeDirty);
 
     _titleCtl.dispose();
     _ingCtl.dispose();
     _stepsCtl.dispose();
+    _hintsCtl.dispose();
+
     _titleFocus.dispose();
     _ingFocus.dispose();
     _stepsFocus.dispose();
+    _hintsFocus.dispose();
+
     _scroll.dispose();
     super.dispose();
   }
@@ -70,10 +80,9 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     final nextDirty =
         _titleCtl.text != _initialTitle ||
         _ingCtl.text != _initialIngredients ||
-        _stepsCtl.text != _initialSteps;
-    if (nextDirty != _dirty) {
-      setState(() => _dirty = nextDirty);
-    }
+        _stepsCtl.text != _initialSteps ||
+        _hintsCtl.text != _initialHints;
+    if (nextDirty != _dirty) setState(() => _dirty = nextDirty);
   }
 
   List<String> _toLines(String raw) =>
@@ -81,8 +90,6 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
 
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context);
-
-    // Validate and scroll to first error if any
     final valid = _formKey.currentState?.validate() ?? false;
     if (!valid) {
       await Future.delayed(const Duration(milliseconds: 50));
@@ -101,6 +108,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
       title: _titleCtl.text.trim(),
       ingredients: _toLines(_ingCtl.text),
       instructions: _toLines(_stepsCtl.text),
+      hints: _toLines(_hintsCtl.text),
     );
 
     await VaultRecipeService.save(updated);
@@ -111,7 +119,6 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
       _dirty = false;
     });
 
-    // Return result to caller and show confirmation
     context.pop<RecipeCardModel>(updated);
     ScaffoldMessenger.of(
       context,
@@ -176,8 +183,6 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.editRecipeTitle), centerTitle: true),
-
-      // Static FAB bottom-right (disabled while saving or when no changes)
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Semantics(
         button: true,
@@ -197,7 +202,6 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
           ),
         ),
       ),
-
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -241,6 +245,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                     label: l10n.editRecipeFieldIngredients,
                     prefixIcon: const Icon(Icons.list_alt_rounded),
                   ),
+                  onEditingComplete: () => _stepsFocus.requestFocus(),
                 ),
 
                 // Steps
@@ -258,6 +263,27 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   decoration: _decoration(
                     label: l10n.editRecipeFieldSteps,
                     prefixIcon: const Icon(Icons.notes_rounded),
+                  ),
+                  onEditingComplete: () => _hintsFocus.requestFocus(),
+                ),
+
+                // Hints & Tips (uses existing ARB key)
+                _sectionTitle(
+                  Icons.tips_and_updates_rounded,
+                  l10n.hintsAndTips,
+                ),
+                TextFormField(
+                  controller: _hintsCtl,
+                  focusNode: _hintsFocus,
+                  textInputAction: TextInputAction.newline,
+                  keyboardType: TextInputType.multiline,
+                  minLines: 4,
+                  maxLines: 10,
+                  decoration: _decoration(
+                    label: l10n.hintsAndTips,
+                    hint: 'One tip per line (optional)',
+                    prefixIcon: const Icon(Icons.lightbulb_outline_rounded),
+                    helper: 'E.g. “Warm the pan fully”, “Sub oat milk”…',
                   ),
                 ),
               ],

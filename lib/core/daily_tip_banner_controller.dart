@@ -4,7 +4,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:recipe_vault/core/feature_flags.dart';
 
 class DailyTipBannerController {
   OverlayEntry? _entry;
@@ -20,40 +19,24 @@ class DailyTipBannerController {
     required Widget content,
     Duration inDuration = const Duration(milliseconds: 260),
     Duration outDuration = const Duration(milliseconds: 180),
-    Duration? autoCloseAfter,
+    Duration? autoCloseAfter = const Duration(seconds: 6),
     // ── Scrim controls (off by default) ────────────────────────────────────
-    bool enableScrim = false, // 👈 no overlay by default
-    Color scrimColor = const Color(0x14000000), // used only if enableScrim=true
+    bool enableScrim = false,
+    Color scrimColor = const Color(0x14000000),
     // ── Layout ─────────────────────────────────────────────────────────────
     double maxWidth = 480,
     double radius = 20,
     double topMargin = kToolbarHeight + 12,
   }) async {
-    if (_inFlight) {
-      if (kDailyTipDebugLogging) {
-        // ignore: avoid_print
-        print('💬 DailyTip: show() ignored (already in flight)');
-      }
-      return;
-    }
+    if (_inFlight) return;
     _inFlight = true;
 
     try {
-      final resolvedAutoClose =
-          autoCloseAfter ??
-          (kDailyTipAutoCloseEnabled ? const Duration(seconds: 6) : null);
-
-      // ensure clean slate
+      // Clean up anything already showing
       await close(immediate: true);
 
       final overlay = Overlay.maybeOf(context, rootOverlay: true);
-      if (overlay == null) {
-        if (kDailyTipDebugLogging) {
-          // ignore: avoid_print
-          print('💬 DailyTip: No overlay available');
-        }
-        return;
-      }
+      if (overlay == null) return;
 
       _anim = AnimationController(
         vsync: vsync,
@@ -115,7 +98,6 @@ class DailyTipBannerController {
           return Positioned.fill(
             child: Stack(
               children: [
-                // ── Optional background scrim; not inserted unless enabled ──
                 if (enableScrim)
                   Positioned.fill(
                     child: GestureDetector(
@@ -124,8 +106,6 @@ class DailyTipBannerController {
                       child: ColoredBox(color: scrimColor),
                     ),
                   ),
-
-                // ── Banner card ──
                 SafeArea(
                   child: Align(
                     alignment: Alignment.topCenter,
@@ -143,7 +123,6 @@ class DailyTipBannerController {
                             ),
                             child: ConstrainedBox(
                               constraints: BoxConstraints(maxWidth: maxWidth),
-                              // no Material wrapper to let your custom glass card shine
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(radius),
                                 child: content,
@@ -164,8 +143,8 @@ class DailyTipBannerController {
       overlay.insert(_entry!);
       await _anim!.forward();
 
-      if (resolvedAutoClose != null) {
-        _autoClose = Timer(resolvedAutoClose, () {
+      if (autoCloseAfter != null) {
+        _autoClose = Timer(autoCloseAfter, () {
           // ignore: discarded_futures
           closeInternal();
         });

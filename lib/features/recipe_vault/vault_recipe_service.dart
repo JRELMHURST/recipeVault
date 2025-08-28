@@ -83,9 +83,10 @@ class VaultRecipeService {
         final enriched = recipe.copyWith(
           isFavourite: local?.isFavourite ?? recipe.isFavourite,
           categories: local?.categories ?? recipe.categories,
-          formattedByLocale: (local?.formattedByLocale.isNotEmpty ?? false)
-              ? local!.formattedByLocale
-              : recipe.formattedByLocale,
+          formattedByLocale: {
+            ...recipe.formattedByLocale,
+            if (local?.formattedByLocale != null) ...local!.formattedByLocale,
+          },
         );
 
         await box.put(recipe.id, enriched);

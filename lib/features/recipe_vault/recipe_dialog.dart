@@ -83,14 +83,20 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
     final theme = Theme.of(context);
     final imageUrl = widget.recipe.imageUrl;
 
-    // 🔑 Smart title fallback
+    // 🔑 Get locale tag & best-match formatted text
     final localeTag = Localizations.localeOf(context).toLanguageTag();
-    final translatedText =
-        widget.recipe.formattedForLocaleTag(localeTag) ??
-        widget.recipe.title.trim();
-    final safeTitle = translatedText.isNotEmpty
-        ? translatedText
+    final formattedText = widget.recipe.formattedForLocaleTag(localeTag);
+    final safeTitle = widget.recipe.title.trim().isNotEmpty
+        ? widget.recipe.title.trim()
         : l10n.untitled;
+
+    debugPrint('🌍 Requested locale: $localeTag');
+    debugPrint(
+      '🗂️ Available formatted locales: ${widget.recipe.formattedByLocale.keys}',
+    );
+    debugPrint(
+      '📄 Using formatted text: ${formattedText?.substring(0, (formattedText.length > 40 ? 40 : formattedText.length)) ?? "null"}',
+    );
 
     // 🔑 Decide what to render inside card
     final hasStructured =
@@ -100,18 +106,15 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
 
     Widget recipeBody;
     if (hasStructured) {
-      // ✅ Nice styled card (English / parsed recipes)
       recipeBody = RecipeCard.fromModel(widget.recipe);
-    } else if (widget.recipe.formattedForLocaleTag(localeTag) != null &&
-        widget.recipe.formattedForLocaleTag(localeTag)!.isNotEmpty) {
-      // ✅ Fallback: raw formatted text block
+    } else if (formattedText != null && formattedText.trim().isNotEmpty) {
       recipeBody = Card(
         elevation: 0,
         margin: EdgeInsets.zero,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Text(
-            widget.recipe.formattedForLocaleTag(localeTag)!,
+            formattedText,
             style: theme.textTheme.bodyMedium?.copyWith(fontSize: 15),
           ),
         ),

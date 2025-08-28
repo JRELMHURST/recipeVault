@@ -219,10 +219,13 @@ class RecipeCardModel extends HiveObject {
   }
 
   // ---------------- i18n helpers ----------------
-
   static String normaliseLocaleTag(String raw) {
     final lower = raw.toLowerCase();
     if (lower.startsWith('en-gb')) return 'en-GB';
+    if (lower.startsWith('en')) return 'en';
+    if (lower.startsWith('de')) return 'de';
+    if (lower.startsWith('pl')) return 'pl';
+    // etc. for all your preferred-supported-locales
     return lower.split('-').first;
   }
 

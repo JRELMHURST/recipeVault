@@ -99,12 +99,13 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: _GradientTitle(text: titleText),
 
       // Daily tips bubble (ramen icon)
+      // Daily tips bubble (icon updated)
       actions: [
         if (selectedIndex == 1)
           const Padding(
             padding: EdgeInsets.only(right: 12),
             child: DailyMessageBubble(
-              iconData: Icons.ramen_dining_rounded,
+              iconData: Icons.tips_and_updates_rounded, // 💡 updated icon
               tooltip: 'Daily cooking tip',
             ),
           ),

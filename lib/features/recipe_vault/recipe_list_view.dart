@@ -34,7 +34,6 @@ class RecipeListView extends StatelessWidget {
     final theme = Theme.of(context);
     final l = AppLocalizations.of(context);
 
-    // Fallback text in case the ARB key hasn't landed yet
     final tapHint = l.tapToViewRecipe.isEmpty
         ? 'Tap to view'
         : l.tapToViewRecipe;
@@ -45,10 +44,17 @@ class RecipeListView extends StatelessWidget {
       itemBuilder: (context, index) {
         final recipe = recipes[index];
 
+        // Locale-aware title
+        final locale = Localizations.localeOf(context);
+        final tag =
+            "${locale.languageCode}${locale.countryCode != null ? '-${locale.countryCode}' : ''}";
+        final translated = recipe.formattedForLocaleTag(tag);
+        final displayTitle = (translated?.trim().isNotEmpty ?? false)
+            ? translated!.trim()
+            : (recipe.title.isNotEmpty ? recipe.title : l.untitled);
+
         return Dismissible(
           key: ValueKey(recipe.id),
-
-          // Confirm BEFORE dismissing so we don't animate an accidental delete
           confirmDismiss: (direction) async {
             final confirmed = await showDialog<bool>(
               context: context,
@@ -71,14 +77,12 @@ class RecipeListView extends StatelessWidget {
                 ],
               ),
             );
-
             if (confirmed == true) {
               onDelete(recipe);
               return true;
             }
             return false;
           },
-
           direction: DismissDirection.endToStart,
           background: Container(
             alignment: Alignment.centerRight,
@@ -86,7 +90,6 @@ class RecipeListView extends StatelessWidget {
             color: theme.colorScheme.error,
             child: Icon(Icons.delete, color: theme.colorScheme.onError),
           ),
-
           child: GestureDetector(
             onTap: () => onTap(recipe),
             onLongPress: () => RecipeLongPressMenu.show(
@@ -100,7 +103,7 @@ class RecipeListView extends StatelessWidget {
             ),
             child: Semantics(
               button: true,
-              label: '${recipe.title}. $tapHint',
+              label: '$displayTitle. $tapHint',
               child: Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(
@@ -127,7 +130,7 @@ class RecipeListView extends StatelessWidget {
                       const SizedBox(width: 16),
                       Expanded(
                         child: _TitleAndHint(
-                          title: recipe.title,
+                          title: displayTitle,
                           hint: tapHint,
                         ),
                       ),

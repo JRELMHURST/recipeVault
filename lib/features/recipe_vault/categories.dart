@@ -1,20 +1,20 @@
 /// Keys used internally to represent categories.
-/// UI layers will localise them into readable labels.
+/// UI layers must always localise them into readable labels.
 class CategoryKeys {
-  // System (non-deletable) — "All" is virtual
-  static const all = 'All';
-  static const fav = 'Favourites';
-  static const translated = 'Translated';
+  // System (non-deletable) — "all" is virtual
+  static const all = 'all';
+  static const fav = 'favourites';
+  static const translated = 'translated';
 
-  // Friendly names you may want to seed as *user* categories
-  static const breakfast = 'Breakfast';
-  static const main = 'Main';
-  static const dessert = 'Dessert';
+  // Friendly starter categories (deletable by user)
+  static const breakfast = 'breakfast';
+  static const main = 'main';
+  static const dessert = 'dessert';
 
-  /// Only true system categories (exclude "All")
+  /// Only true system categories (exclude "all")
   static const systemOnly = <String>[fav, translated];
 
-  /// Convenience: full set including "All"
+  /// Convenience: full set including "all"
   static const allSystem = <String>[all, ...systemOnly];
 
   /// Starter user categories you may auto-seed locally (deletable)
@@ -23,9 +23,12 @@ class CategoryKeys {
 
 /// Extension helpers for quick checks.
 extension CategoryHelpers on String {
-  bool get isAllCategory => this == CategoryKeys.all;
+  /// Normalises comparison to lowercase.
+  String get _norm => toLowerCase();
+
+  bool get isAllCategory => _norm == CategoryKeys.all;
   bool get isSystemCategory =>
-      this == CategoryKeys.fav ||
-      this == CategoryKeys.translated ||
+      _norm == CategoryKeys.fav ||
+      _norm == CategoryKeys.translated ||
       isAllCategory;
 }

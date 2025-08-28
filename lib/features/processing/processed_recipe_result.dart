@@ -1,3 +1,4 @@
+/// Result returned after processing a recipe (formatting, OCR, translation).
 class ProcessedRecipeResult {
   /// Fully formatted, cleaned recipe (Markdown / rich text).
   final String formattedRecipe;
@@ -17,7 +18,7 @@ class ProcessedRecipeResult {
   /// The user's subscription tier at the time of processing (from backend).
   final String? tier;
 
-  // NOTE: not const (uses List.unmodifiable).
+  // --- ctor -----------------------------------------------------------------
   ProcessedRecipeResult({
     required this.formattedRecipe,
     required this.language,
@@ -33,19 +34,24 @@ class ProcessedRecipeResult {
     language: 'unknown',
     translationUsed: false,
     originalText: '',
-    imageUrls: const [],
+    imageUrls: const <String>[],
     tier: null,
   );
+
+  // --- Serialization --------------------------------------------------------
 
   /// Map → model. Accepts both 'language' and 'detectedLanguage'.
   factory ProcessedRecipeResult.fromMap(Map<String, dynamic> data) {
     final lang = (data['detectedLanguage'] ?? data['language'] ?? 'unknown')
-        .toString();
+        .toString()
+        .trim();
 
     final urls =
-        (data['imageUrls'] as List?)?.whereType<String>().toList(
-          growable: false,
-        ) ??
+        (data['imageUrls'] as List?)
+            ?.whereType<String>()
+            .map((u) => u.trim())
+            .where((u) => u.isNotEmpty)
+            .toList(growable: false) ??
         const <String>[];
 
     return ProcessedRecipeResult(
@@ -68,7 +74,8 @@ class ProcessedRecipeResult {
     'tier': tier,
   };
 
-  /// Selective immutable update.
+  // --- Immutability ---------------------------------------------------------
+
   ProcessedRecipeResult copyWith({
     String? formattedRecipe,
     String? language,
@@ -103,10 +110,13 @@ class ProcessedRecipeResult {
     );
   }
 
-  // Convenience
+  // --- Convenience ----------------------------------------------------------
+
   bool get hasImages => imageUrls.isNotEmpty;
   String? get firstImageUrl => hasImages ? imageUrls.first : null;
   bool get isTranslated => translationUsed;
+
+  // --- Equality -------------------------------------------------------------
 
   @override
   String toString() =>
@@ -125,13 +135,14 @@ class ProcessedRecipeResult {
           tier == other.tier;
 
   @override
-  int get hashCode =>
-      formattedRecipe.hashCode ^
-      language.hashCode ^
-      translationUsed.hashCode ^
-      originalText.hashCode ^
-      imageUrls.hashCode ^
-      tier.hashCode;
+  int get hashCode => Object.hash(
+    formattedRecipe,
+    language,
+    translationUsed,
+    originalText,
+    Object.hashAll(imageUrls),
+    tier,
+  );
 
   static bool _listEquals(List<String> a, List<String> b) {
     if (identical(a, b)) return true;

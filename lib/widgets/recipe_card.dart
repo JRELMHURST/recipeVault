@@ -60,7 +60,7 @@ class RecipeCard extends StatelessWidget {
     );
   }
 
-  // ---------- Render from model (no parsing, no weird slashes) ----------
+  // ---------- Render from model ----------
   Widget _buildFromModel(
     BuildContext context,
     RecipeCardModel model,
@@ -73,7 +73,7 @@ class RecipeCard extends StatelessWidget {
       children: [
         // Title
         Text(
-          (model.title.isEmpty ? loc.untitled : model.title),
+          model.title.isEmpty ? loc.untitled : model.title,
           style: theme.textTheme.headlineSmall?.copyWith(
             color: theme.colorScheme.primary,
             fontWeight: FontWeight.bold,
@@ -114,7 +114,7 @@ class RecipeCard extends StatelessWidget {
     );
   }
 
-  // ---------- Legacy path (still supports ResultsScreen text) ----------
+  // ---------- Legacy path ----------
   Widget _buildFromText(BuildContext context, String text, ThemeData theme) {
     final parsed = _parseRecipe(context, text);
     final loc = AppLocalizations.of(context);
@@ -190,7 +190,7 @@ class RecipeCard extends StatelessWidget {
     );
   }
 
-  // ------- locale-aware parser for legacy text path -------
+  // ------- locale + English fallback parser for legacy path -------
   _ParsedRecipe _parseRecipe(BuildContext context, String text) {
     final loc = AppLocalizations.of(context);
 
@@ -202,26 +202,30 @@ class RecipeCard extends StatelessWidget {
 
     bool inIngredients = false, inInstructions = false, inHints = false;
 
+    bool matches(String line, String label, String english) {
+      return line.startsWith('$label:') || line.startsWith('$english:');
+    }
+
     for (final raw in lines) {
       final line = raw.trim();
 
-      if (line.startsWith('${loc.title}:')) {
+      if (matches(line, loc.title, 'Title')) {
         title = line.split(':').skip(1).join(':').trim();
         continue;
       }
-      if (line.startsWith('${loc.ingredients}:')) {
+      if (matches(line, loc.ingredients, 'Ingredients')) {
         inIngredients = true;
         inInstructions = false;
         inHints = false;
         continue;
       }
-      if (line.startsWith('${loc.instructions}:')) {
+      if (matches(line, loc.instructions, 'Instructions')) {
         inIngredients = false;
         inInstructions = true;
         inHints = false;
         continue;
       }
-      if (line.startsWith('${loc.hintsAndTips}:')) {
+      if (matches(line, loc.hintsAndTips, 'Hints & Tips')) {
         inIngredients = false;
         inInstructions = false;
         inHints = true;
@@ -236,7 +240,10 @@ class RecipeCard extends StatelessWidget {
       } else if (inHints) {
         final clean = line.replaceFirst(RegExp(r'^[-•]+\s*'), '').trim();
         if (clean.isEmpty) continue;
-        if (clean == loc.noAdditionalTips) continue;
+        if (clean == loc.noAdditionalTips ||
+            clean.toLowerCase().contains("no additional tips")) {
+          continue;
+        }
         hints.add(clean);
       }
     }

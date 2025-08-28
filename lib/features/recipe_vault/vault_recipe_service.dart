@@ -58,6 +58,9 @@ class VaultRecipeService {
       await _userRecipeCollection
           .doc(recipe.id)
           .set(recipe.toJson(), SetOptions(merge: true));
+      debugPrint(
+        '✅ Saved recipe ${recipe.id} with locales: ${recipe.formattedByLocale.keys}',
+      );
     } catch (e) {
       debugPrint('⚠️ Firestore save failed for ${recipe.id}: $e');
     }
@@ -75,10 +78,16 @@ class VaultRecipeService {
       final mergedList = <RecipeCardModel>[];
       for (final recipe in userRecipes) {
         final local = box.get(recipe.id);
+
+        // merge favourites, categories, and preserve local formattedByLocale
         final enriched = recipe.copyWith(
           isFavourite: local?.isFavourite ?? recipe.isFavourite,
           categories: local?.categories ?? recipe.categories,
+          formattedByLocale: (local?.formattedByLocale.isNotEmpty ?? false)
+              ? local!.formattedByLocale
+              : recipe.formattedByLocale,
         );
+
         await box.put(recipe.id, enriched);
         mergedList.add(enriched);
       }
@@ -134,6 +143,7 @@ class VaultRecipeService {
   }
 
   /// Update text content only (title/ingredients/instructions) for an existing recipe.
+  /// ⚠️ Preserves existing translations and formattedByLocale.
   static Future<void> updateTextContent({
     required String recipeId,
     required String title,
@@ -153,6 +163,8 @@ class VaultRecipeService {
         title: title,
         ingredients: ingredients,
         instructions: instructions,
+        formattedByLocale:
+            recipe.formattedByLocale, // ✅ don’t wipe translations
       );
 
       await HiveRecipeService.save(updated);
@@ -192,8 +204,6 @@ class VaultRecipeService {
       return [];
     }
   }
-
-  // No global/community merges by design.
 
   static Future<void> _closeAndDeleteBox<T>(String name) async {
     try {

@@ -83,6 +83,15 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
     final theme = Theme.of(context);
     final imageUrl = widget.recipe.imageUrl;
 
+    // 🔑 Smart title fallback
+    final localeTag = Localizations.localeOf(context).toLanguageTag();
+    final translatedTitle =
+        widget.recipe.formattedForLocaleTag(localeTag) ??
+        widget.recipe.title.trim();
+    final safeTitle = translatedTitle.isNotEmpty
+        ? translatedTitle
+        : l10n.untitled;
+
     final header = (imageUrl != null && imageUrl.isNotEmpty)
         ? ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -123,7 +132,7 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
                   color: theme.colorScheme.primary,
                 ),
               ),
-              semanticLabel: widget.recipe.title,
+              semanticLabel: safeTitle,
             ),
           )
         : const SizedBox.shrink();
@@ -137,8 +146,10 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
               header,
               Padding(
                 padding: const EdgeInsets.all(16),
-                // ✅ render directly from model (no markdown parser)
-                child: RecipeCard.fromModel(widget.recipe),
+                child: Semantics(
+                  label: safeTitle,
+                  child: RecipeCard.fromModel(widget.recipe),
+                ),
               ),
             ],
           ),

@@ -39,7 +39,7 @@ class RecipeCompactView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
     return GridView.builder(
@@ -55,8 +55,17 @@ class RecipeCompactView extends StatelessWidget {
         final recipe = recipes[index];
         final hasImage = recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty;
 
+        // ---- Locale-aware title ----
+        final locale = Localizations.localeOf(context);
+        final tag =
+            "${locale.languageCode}${locale.countryCode != null ? '-${locale.countryCode}' : ''}";
+        final translated = recipe.formattedForLocaleTag(tag);
+        final displayTitle = (translated?.trim().isNotEmpty ?? false)
+            ? translated!.trim()
+            : (recipe.title.isNotEmpty ? recipe.title : l.untitled);
+
         return Semantics(
-          label: '${l10n.appTitle}: ${recipe.title}',
+          label: '${l.appTitle}: $displayTitle',
           button: true,
           child: GestureDetector(
             onTap: () => onTap(recipe),
@@ -77,7 +86,7 @@ class RecipeCompactView extends StatelessWidget {
                           loadingBuilder: (context, child, progress) {
                             if (progress == null) return child;
                             return Semantics(
-                              label: l10n.loading,
+                              label: l.loading,
                               child: _loadingTile(theme),
                             );
                           },
@@ -91,8 +100,8 @@ class RecipeCompactView extends StatelessWidget {
                   right: 4,
                   child: Tooltip(
                     message: recipe.isFavourite
-                        ? l10n.removeFromFavourites
-                        : l10n.addToFavourites,
+                        ? l.removeFromFavourites
+                        : l.addToFavourites,
                     child: IconButton(
                       icon: Icon(
                         recipe.isFavourite
@@ -111,12 +120,12 @@ class RecipeCompactView extends StatelessWidget {
                   ),
                 ),
 
-                // Title overlay (helps when thumbnails are busy)
+                // Title overlay (locale-aware)
                 Positioned(
                   left: 6,
                   right: 6,
                   bottom: 6,
-                  child: _titlePill(theme, recipe.title),
+                  child: _titlePill(theme, displayTitle),
                 ),
               ],
             ),

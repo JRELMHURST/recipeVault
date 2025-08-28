@@ -47,7 +47,11 @@ class RecipeCardModel extends HiveObject {
   @HiveField(12)
   final bool isGlobal;
 
-  /// Firestore-only (NOT stored in Hive)
+  /// ✅ Full per-locale storage of formatted recipe text
+  @HiveField(13)
+  final Map<String, String> formattedByLocale;
+
+  /// Firestore-only (legacy / flexible metadata)
   final Map<String, dynamic>? translations;
   final List<String>? availableLocales;
   final String? locale;
@@ -66,20 +70,20 @@ class RecipeCardModel extends HiveObject {
     List<String>? hints,
     this.translationUsed = false,
     this.isGlobal = false,
+    Map<String, String>? formattedByLocale,
     this.translations,
     this.availableLocales,
     this.locale,
   }) : createdAt = createdAt ?? DateTime.now(),
-       // Freeze lists to avoid accidental mutation bugs in UI code.
        ingredients = List.unmodifiable(ingredients),
        instructions = List.unmodifiable(instructions),
        categories = List.unmodifiable(categories ?? const []),
        originalImageUrls = List.unmodifiable(originalImageUrls ?? const []),
-       hints = List.unmodifiable(hints ?? const []);
+       hints = List.unmodifiable(hints ?? const []),
+       formattedByLocale = Map.unmodifiable(formattedByLocale ?? {});
 
   // ---------------- Serialization ----------------
 
-  /// Model → JSON (for Firestore). Use Timestamp for server-side ordering.
   Map<String, dynamic> toJson() => {
     'id': id,
     'userId': userId,
@@ -94,12 +98,12 @@ class RecipeCardModel extends HiveObject {
     'hints': hints,
     'translationUsed': translationUsed,
     'isGlobal': isGlobal,
+    'formattedByLocale': formattedByLocale, // ✅ persist locale blocks
     if (translations != null) 'translations': translations,
     if (availableLocales != null) 'availableLocales': availableLocales,
     if (locale != null) 'locale': locale,
   };
 
-  /// JSON/Firestore → Model (tolerant to both Timestamp and ISO strings).
   factory RecipeCardModel.fromJson(Map<String, dynamic> json) {
     final rawCreatedAt = json['createdAt'];
     DateTime parsedCreatedAt;
@@ -108,7 +112,6 @@ class RecipeCardModel extends HiveObject {
     } else if (rawCreatedAt is String) {
       parsedCreatedAt = DateTime.tryParse(rawCreatedAt) ?? DateTime.now();
     } else if (rawCreatedAt is num) {
-      // Fall back for epoch ms if ever present
       parsedCreatedAt = DateTime.fromMillisecondsSinceEpoch(
         rawCreatedAt.toInt(),
       );
@@ -116,14 +119,8 @@ class RecipeCardModel extends HiveObject {
       parsedCreatedAt = DateTime.now();
     }
 
-    final Map<String, dynamic>? tr = (json['translations'] is Map)
-        ? (json['translations'] as Map).cast<String, dynamic>()
-        : null;
-
-    List<String> asStringList(dynamic v) => (v as List? ?? const <dynamic>[])
-        .whereType()
-        .map((e) => e.toString())
-        .toList(growable: false);
+    List<String> asStringList(dynamic v) =>
+        (v as List? ?? const <dynamic>[]).map((e) => e.toString()).toList();
 
     return RecipeCardModel(
       id: (json['id'] ?? '').toString(),
@@ -139,7 +136,10 @@ class RecipeCardModel extends HiveObject {
       hints: asStringList(json['hints']),
       translationUsed: (json['translationUsed'] ?? false) == true,
       isGlobal: (json['isGlobal'] ?? false) == true,
-      translations: tr,
+      formattedByLocale: Map<String, String>.from(
+        json['formattedByLocale'] ?? {},
+      ),
+      translations: (json['translations'] as Map?)?.cast<String, dynamic>(),
       availableLocales: (json['availableLocales'] as List?)
           ?.map((e) => e.toString())
           .toList(),
@@ -169,6 +169,7 @@ class RecipeCardModel extends HiveObject {
     String? title,
     List<String>? ingredients,
     List<String>? instructions,
+    Map<String, String>? formattedByLocale,
     Map<String, dynamic>? translations,
     List<String>? availableLocales,
     String? locale,
@@ -188,6 +189,7 @@ class RecipeCardModel extends HiveObject {
       translationUsed: translationUsed ?? this.translationUsed,
       categories: categories ?? this.categories,
       isGlobal: isGlobal ?? this.isGlobal,
+      formattedByLocale: formattedByLocale ?? this.formattedByLocale,
       translations: translations ?? this.translations,
       availableLocales: availableLocales ?? this.availableLocales,
       locale: locale ?? this.locale,
@@ -198,53 +200,38 @@ class RecipeCardModel extends HiveObject {
   bool get isTranslated => categories.contains('Translated');
 
   String get formattedText {
-    final ingredientsStr = ingredients.join('\n• ');
-    final instructionsStr = instructions
+    final ings = ingredients.join('\n• ');
+    final steps = instructions
         .asMap()
         .entries
         .map((e) => '${e.key + 1}. ${e.value}')
         .join('\n');
-    return '## Ingredients\n• $ingredientsStr\n\n## Instructions\n$instructionsStr';
+    return '## Ingredients\n• $ings\n\n## Instructions\n$steps';
   }
 
-  /// 🔍 Match query against title, ingredients, instructions, and hints
   bool matchesQuery(String query) {
     if (query.trim().isEmpty) return true;
     final q = query.toLowerCase();
     return title.toLowerCase().contains(q) ||
         ingredients.any((ing) => ing.toLowerCase().contains(q)) ||
-        instructions.any((step) => step.toLowerCase().contains(q)) ||
-        hints.any((hint) => hint.toLowerCase().contains(q));
+        instructions.any((s) => s.toLowerCase().contains(q)) ||
+        hints.any((h) => h.toLowerCase().contains(q));
   }
 
-  // ---------------- i18n helpers (UI usage) ----------------
+  // ---------------- i18n helpers ----------------
 
-  /// Normalise a BCP-47 tag from the device to keys we store.
-  /// e.g. 'pl-PL' → 'pl'. Keep 'en-GB' special.
   static String normaliseLocaleTag(String raw) {
     final lower = raw.toLowerCase();
     if (lower.startsWith('en-gb')) return 'en-GB';
     return lower.split('-').first;
   }
 
-  /// Return the localised formatted block for a device tag,
-  /// falling back to 'en-GB', 'en', or any first entry.
+  /// ✅ Return a locale-specific formatted recipe, with fallbacks.
   String? formattedForLocaleTag(String bcp47) {
-    final tr = translations;
-    if (tr == null || tr.isEmpty) return null;
-
+    final fb = formattedByLocale;
+    if (fb.isEmpty) return null;
     final norm = normaliseLocaleTag(bcp47);
-    final candidate =
-        tr[norm] ??
-        tr['en-GB'] ??
-        tr['en'] ??
-        (tr.values.isNotEmpty ? tr.values.first : null);
-
-    if (candidate is Map && candidate['formatted'] is String) {
-      return candidate['formatted'] as String;
-    }
-    if (candidate is String) return candidate;
-    return null;
+    return fb[norm] ?? fb['en-GB'] ?? fb['en'] ?? fb.values.firstOrNull;
   }
 
   @override

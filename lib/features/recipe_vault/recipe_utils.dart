@@ -46,7 +46,7 @@ String formatRecipeMarkdown(BuildContext context, RecipeCardModel recipe) {
   }
 
   // 3) Title
-  final title = recipe.title.trim().isEmpty ? "Untitled" : recipe.title.trim();
+  final title = recipe.title.trim().isEmpty ? t.untitled : recipe.title.trim();
 
   // 4) Ingredients
   final ingredientsList = normList(recipe.ingredients);

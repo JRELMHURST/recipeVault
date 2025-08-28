@@ -2,12 +2,11 @@
 
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart'; // ✅ use GoRouter for extra:
-import 'package:recipe_vault/data/services/image_processing_service.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:recipe_vault/data/services/image_processing_service.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/app/routes.dart';
 import 'package:recipe_vault/features/processing/processing_messages.dart';
@@ -72,17 +71,15 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
     if (_inited) return;
 
     final t = AppLocalizations.of(context);
-
-    // Default (no translation step)
     _currentSteps = [
       t.processingStepUploading,
       t.processingStepFormatting,
       t.processingStepFinishing,
     ];
     _currentFunMessages = [
-      ProcessingMessages.pickRandom(ProcessingMessages.uploading(context)),
-      ProcessingMessages.pickRandom(ProcessingMessages.formatting(context)),
-      ProcessingMessages.pickRandom(ProcessingMessages.completed(context)),
+      ProcessingMessages.forStage(context, ProcessingStage.uploading),
+      ProcessingMessages.forStage(context, ProcessingStage.formatting),
+      ProcessingMessages.forStage(context, ProcessingStage.completed),
     ];
 
     _inited = true;
@@ -108,7 +105,6 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       );
       if (_hasCancelled) return;
 
-      // Call CF
       final result = await ImageProcessingService.extractAndFormatRecipe(
         imageUrls,
         context,
@@ -118,13 +114,10 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       debugPrint(
         "🧭 RAW FUNCTION RESPONSE = ${JsonEncoder.withIndent('  ').convert(result.toMap())}",
       );
-
-      // ✅ Use backend-provided tier instead of Firestore read
       debugPrint("📄 User tier (from CF): ${result.tier}");
 
-      final needsTranslation = result.translationUsed;
-
-      if (mounted && needsTranslation) {
+      // If translation is needed → adjust steps
+      if (mounted && result.translationUsed) {
         final t = AppLocalizations.of(context);
         _currentSteps = [
           t.processingStepUploading,
@@ -133,49 +126,32 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
           t.processingStepFinishing,
         ];
         _currentFunMessages = [
-          ProcessingMessages.pickRandom(ProcessingMessages.uploading(context)),
-          ProcessingMessages.pickRandom(
-            ProcessingMessages.translating(context),
-          ),
-          ProcessingMessages.pickRandom(ProcessingMessages.formatting(context)),
-          ProcessingMessages.pickRandom(ProcessingMessages.completed(context)),
+          ProcessingMessages.forStage(context, ProcessingStage.uploading),
+          ProcessingMessages.forStage(context, ProcessingStage.translating),
+          ProcessingMessages.forStage(context, ProcessingStage.formatting),
+          ProcessingMessages.forStage(context, ProcessingStage.completed),
         ];
         setState(() {});
       }
 
-      if (needsTranslation) {
-        await _setStep(1);
+      // Simulate staged progress
+      for (int i = 1; i < _currentSteps.length; i++) {
+        if (_hasCancelled) return;
+        await _setStep(i);
         await Future.delayed(const Duration(milliseconds: 600));
-        await _setStep(2);
-      } else {
-        await _setStep(1);
       }
 
-      if (_hasCancelled) return;
-      await Future.delayed(const Duration(milliseconds: 600));
-
-      await _setStep(_currentSteps.length - 1);
-      await Future.delayed(const Duration(milliseconds: 500));
-
       if (!mounted) return;
-      // Hide the overlay, then navigate to the Results screen with payload.
       ProcessingOverlay.hide();
-      context.push(AppRoutes.results, extra: result); // ✅ pass extra here
+      context.push(AppRoutes.results, extra: result);
     } catch (e, st) {
       debugPrint('❌ Processing failed: $e\n$st');
-
-      final message = e.toString();
-      final isUpgradePrompt =
-          message.contains('Translation blocked') ||
-          message.contains('Usage limit reached');
-
-      if (mounted && !isUpgradePrompt) {
+      if (mounted) {
         final t = AppLocalizations.of(context);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('${t.error}: $e')));
       }
-
       ProcessingOverlay.hide();
     }
   }
@@ -183,7 +159,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
   Future<void> _setStep(int step) async {
     if (!mounted) return;
     setState(() => _currentStep = step);
-    await Future.delayed(const Duration(milliseconds: 320));
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 
   void _cancel() {
@@ -193,25 +169,23 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
 
   IconData _currentStepIcon(AppLocalizations t) {
     final label = _currentSteps[_safeIndex(_currentStep, _currentSteps.length)];
-    if (label == t.processingStepUploading) {
-      return Icons.cloud_upload_rounded;
-    } else if (label == t.processingStepTranslating) {
-      return Icons.translate;
-    } else if (label == t.processingStepFormatting) {
-      return Icons.auto_fix_high_rounded;
-    } else {
-      return Icons.hourglass_bottom_rounded;
-    }
+    if (label == t.processingStepUploading) return Icons.cloud_upload_rounded;
+    if (label == t.processingStepTranslating) return Icons.translate;
+    if (label == t.processingStepFormatting) return Icons.auto_fix_high_rounded;
+    return Icons.hourglass_bottom_rounded;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = theme.colorScheme.primary;
     final t = AppLocalizations.of(context);
 
     final stepIdx = _safeIndex(_currentStep, _currentSteps.length);
     final funIdx = _safeIndex(_currentStep, _currentFunMessages.length);
+
+    final funMessage = _currentFunMessages.isNotEmpty
+        ? _currentFunMessages[funIdx]
+        : '';
 
     return Material(
       color: Colors.black.withOpacity(0.1),
@@ -229,17 +203,21 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  RotationTransition(
-                    turns: _iconSpinController,
-                    child: ScaleTransition(
-                      scale: _pulseController,
-                      child: CircleAvatar(
-                        radius: 30,
-                        backgroundColor: accent.withOpacity(0.15),
-                        child: Icon(
-                          _currentStepIcon(t),
-                          color: accent,
-                          size: 30,
+                  TickerMode(
+                    enabled: true,
+                    child: RotationTransition(
+                      turns: _iconSpinController,
+                      child: ScaleTransition(
+                        scale: _pulseController,
+                        child: CircleAvatar(
+                          radius: 30,
+                          backgroundColor: theme.colorScheme.primary
+                              .withOpacity(0.15),
+                          child: Icon(
+                            _currentStepIcon(t),
+                            color: theme.colorScheme.primary,
+                            size: 30,
+                          ),
                         ),
                       ),
                     ),
@@ -254,32 +232,29 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    _currentFunMessages[funIdx],
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[700],
-                      fontSize: 15,
-                      fontStyle: FontStyle.italic,
+                  if (funMessage.isNotEmpty)
+                    Text(
+                      funMessage,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[700],
+                        fontSize: 15,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 26),
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     transitionBuilder: (child, animation) =>
                         ScaleTransition(scale: animation, child: child),
-                    child: Column(
+                    child: Text(
+                      _currentSteps[stepIdx],
                       key: ValueKey<int>(stepIdx),
-                      children: [
-                        Text(
-                          _currentSteps[stepIdx],
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                      ],
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 30),
@@ -292,7 +267,7 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
                       height: 6,
                       width: 62,
                       decoration: BoxDecoration(
-                        color: accent,
+                        color: theme.colorScheme.primary,
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -302,13 +277,17 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
                     alignment: Alignment.centerRight,
                     child: GestureDetector(
                       onTap: _cancel,
-                      child: Text(
-                        t.cancel,
-                        style: TextStyle(
-                          color: accent.withOpacity(0.82),
-                          fontWeight: FontWeight.w500,
-                          fontSize: 15,
-                          decoration: TextDecoration.underline,
+                      child: Semantics(
+                        button: true,
+                        label: t.cancel,
+                        child: Text(
+                          t.cancel,
+                          style: TextStyle(
+                            color: theme.colorScheme.primary.withOpacity(0.82),
+                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ),
                     ),

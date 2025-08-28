@@ -39,6 +39,7 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(l.addCategoryTitle),
         content: TextField(
           controller: controller,
@@ -47,11 +48,10 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
         ),
         actions: [
           TextButton(
-            // ✅ Safely closes only the dialog
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(l.cancel),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () async {
               final newCategory = controller.text.trim();
               if (newCategory.isNotEmpty) {
@@ -60,7 +60,6 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
                 widget.onCategoryChanged();
               }
               if (!mounted) return;
-              // ✅ Close the dialog
               Navigator.of(dialogContext).pop();
             },
             child: Text(l.add),
@@ -74,16 +73,16 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
     final l = AppLocalizations.of(context);
     final sub = context.read<SubscriptionService>();
 
-    // Caller-level switch (e.g. view-only screens)
+    // Caller-level block
     if (!widget.allowCreation) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(l.recipeCreationLimited)));
+      ).showSnackBar(SnackBar(content: Text(l.categoryCreationLimited)));
       safeGo(context, AppRoutes.paywall);
       return;
     }
 
-    // Service-level permission (current tier)
+    // Subscription-tier block
     if (!sub.allowImageUpload) {
       ScaffoldMessenger.of(
         context,
@@ -92,7 +91,6 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
       return;
     }
 
-    // ✅ Pass context here
     final files = await ImageProcessingService.pickAndCompressImages(context);
     if (!mounted) return;
     if (files.isNotEmpty) {
@@ -125,38 +123,46 @@ class _CategorySpeedDialState extends State<CategorySpeedDial> {
     final l = AppLocalizations.of(context);
     final subscription = context.watch<SubscriptionService>();
 
-    return SpeedDial(
-      icon: Icons.add,
-      activeIcon: Icons.close,
-      backgroundColor: theme.colorScheme.primary,
-      foregroundColor: Colors.white,
-      children: [
-        if (subscription.showUsageWidget)
+    return Semantics(
+      label: l.createRecipe,
+      button: true,
+      child: SpeedDial(
+        icon: Icons.add,
+        activeIcon: Icons.close,
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: Colors.white,
+        elevation: 6,
+        shape: const CircleBorder(),
+        children: [
+          if (subscription.showUsageWidget)
+            SpeedDialChild(
+              child: const Icon(Icons.bar_chart_rounded),
+              label: l.usage,
+              onTap: () => _showUsageDialog(context),
+            ),
           SpeedDialChild(
-            child: const Icon(Icons.bar_chart_rounded),
-            label: l.usage,
-            onTap: () => _showUsageDialog(context),
+            child: const Icon(Icons.category),
+            label: widget.allowCreation
+                ? l.addCategory
+                : l.upgradeToAddCategory,
+            onTap: widget.allowCreation
+                ? () => _showAddCategoryDialog(context)
+                : () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l.categoryCreationLimited)),
+                    );
+                    safeGo(context, AppRoutes.paywall);
+                  },
           ),
-        SpeedDialChild(
-          child: const Icon(Icons.category),
-          label: widget.allowCreation ? l.addCategory : l.upgradeToAddCategory,
-          onTap: widget.allowCreation
-              ? () => _showAddCategoryDialog(context)
-              : () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l.categoryCreationLimited)),
-                  );
-                  safeGo(context, AppRoutes.paywall);
-                },
-        ),
-        SpeedDialChild(
-          child: const Icon(Icons.receipt_long_rounded),
-          label: widget.allowCreation
-              ? l.createRecipe
-              : l.upgradeToCreateRecipe,
-          onTap: () => _startCreateFlow(context),
-        ),
-      ],
+          SpeedDialChild(
+            child: const Icon(Icons.receipt_long_rounded),
+            label: widget.allowCreation
+                ? l.createRecipe
+                : l.upgradeToCreateRecipe,
+            onTap: () => _startCreateFlow(context),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -34,6 +34,7 @@ import 'package:recipe_vault/features/recipe_vault/vault_view_mode_notifier.dart
 
 // Centralised filter row widget
 import 'package:recipe_vault/features/recipe_vault/vault_filter.dart';
+import 'package:recipe_vault/data/models/recipe_card_model.dart';
 
 class RecipeVaultScreen extends StatelessWidget {
   final ViewMode? viewMode; // optional route override
@@ -74,6 +75,20 @@ class _VaultBodyState extends State<_VaultBody> {
     });
   }
 
+  /// Normalise recipe before showing in dialog
+  RecipeCardModel _normaliseRecipe(
+    BuildContext context,
+    RecipeCardModel recipe,
+  ) {
+    final loc = AppLocalizations.of(context);
+    return recipe.copyWith(
+      title: (recipe.title.isEmpty) ? loc.untitled : recipe.title,
+      ingredients: recipe.ingredients,
+      instructions: recipe.instructions,
+      hints: recipe.hints,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
@@ -99,7 +114,7 @@ class _VaultBodyState extends State<_VaultBody> {
                     cs.surface, // subtle variation
                   ]
                 : const <Color>[
-                    Color(0xFFFDFDFE), // off‑white
+                    Color(0xFFFDFDFE), // off-white
                     Color(0xFFF3EFFA), // very light lilac
                   ],
             begin: Alignment.topLeft,
@@ -133,7 +148,6 @@ class _VaultBodyState extends State<_VaultBody> {
                 Expanded(
                   child: filtered.isEmpty
                       ? (c.allRecipes.isEmpty
-                            // Pull the card closer to the chips
                             ? const EmptyVaultPlaceholder(topSpacing: 8)
                             : Center(
                                 child: Text(
@@ -148,7 +162,10 @@ class _VaultBodyState extends State<_VaultBody> {
                               ViewMode.list => list_view.RecipeListView(
                                 recipes: filtered,
                                 onDelete: c.deleteRecipe,
-                                onTap: (r) => showRecipeDialog(context, r),
+                                onTap: (r) => showRecipeDialog(
+                                  context,
+                                  _normaliseRecipe(context, r),
+                                ),
                                 onToggleFavourite: c.toggleFavourite,
                                 categories: c.categories,
                                 onAssignCategories: (r, cats) =>
@@ -158,7 +175,10 @@ class _VaultBodyState extends State<_VaultBody> {
                               ),
                               ViewMode.grid => grid_view.RecipeGridView(
                                 recipes: filtered,
-                                onTap: (r) => showRecipeDialog(context, r),
+                                onTap: (r) => showRecipeDialog(
+                                  context,
+                                  _normaliseRecipe(context, r),
+                                ),
                                 onToggleFavourite: c.toggleFavourite,
                                 onAssignCategories: (r, cats) =>
                                     c.assignCategories(r, cats),
@@ -170,7 +190,10 @@ class _VaultBodyState extends State<_VaultBody> {
                               ViewMode.compact =>
                                 compact_view.RecipeCompactView(
                                   recipes: filtered,
-                                  onTap: (r) => showRecipeDialog(context, r),
+                                  onTap: (r) => showRecipeDialog(
+                                    context,
+                                    _normaliseRecipe(context, r),
+                                  ),
                                   onToggleFavourite: c.toggleFavourite,
                                   onDelete: c.deleteRecipe,
                                   categories: c.categories,
@@ -224,9 +247,6 @@ class _VaultBodyState extends State<_VaultBody> {
                   await context.read<RecipeVaultController>().refresh();
                 },
                 allowCreation: allowCreation,
-                // If your speed dial exposes color props, you can pass:
-                // backgroundColor: cs.primary,
-                // foregroundColor: Colors.white,
               ),
             ),
           );

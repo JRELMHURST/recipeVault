@@ -45,8 +45,17 @@ class RecipeGridView extends StatelessWidget {
       itemBuilder: (context, index) {
         final recipe = recipes[index];
 
+        // ---- Locale-aware title ----
+        final locale = Localizations.localeOf(context);
+        final tag =
+            "${locale.languageCode}${locale.countryCode != null ? '-${locale.countryCode}' : ''}";
+        final translated = recipe.formattedForLocaleTag(tag);
+        final displayTitle = (translated?.trim().isNotEmpty ?? false)
+            ? translated!.trim()
+            : (recipe.title.isNotEmpty ? recipe.title : l.untitled);
+
         return Semantics(
-          label: '${l.appTitle}: ${recipe.title}',
+          label: '${l.appTitle}: $displayTitle',
           button: true,
           child: GestureDetector(
             onTap: () => onTap(recipe),
@@ -101,7 +110,7 @@ class RecipeGridView extends StatelessWidget {
                         },
                         errorBuilder: (context, error, stackTrace) =>
                             _fallbackIcon(theme),
-                        semanticLabel: recipe.title,
+                        semanticLabel: displayTitle,
                       )
                     else
                       _fallbackIcon(theme),
@@ -127,7 +136,7 @@ class RecipeGridView extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          recipe.title,
+                          displayTitle,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

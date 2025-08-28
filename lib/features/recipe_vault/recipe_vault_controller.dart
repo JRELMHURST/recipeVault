@@ -67,6 +67,16 @@ class RecipeVaultController extends ChangeNotifier {
     }).toList();
   }
 
+  // ── Normalisation ───────────────────────────────────────────────────────
+  RecipeCardModel _normaliseRecipe(RecipeCardModel r) {
+    return r.copyWith(
+      title: (r.title.isEmpty ? "Untitled" : r.title),
+      ingredients: r.ingredients,
+      instructions: r.instructions,
+      hints: r.hints,
+    );
+  }
+
   // ── Lifecycle ────────────────────────────────────────────────────────────
   Future<void> initialise({String? userId, ViewMode? initialViewMode}) async {
     if (_initialised) return;
@@ -104,8 +114,7 @@ class RecipeVaultController extends ChangeNotifier {
       _debounce?.cancel();
       _debounce = Timer(const Duration(milliseconds: 200), () async {
         try {
-          // guard: if user changed during debounce, skip
-          if (_currentUserId != userId) return;
+          if (_currentUserId != userId) return; // guard
           await _reloadFromSource();
           notifyListeners();
         } catch (e) {
@@ -114,8 +123,7 @@ class RecipeVaultController extends ChangeNotifier {
       });
     });
 
-    // Hold a no-op subscription just so dispose() can always cancel safely.
-    _remoteSub = Stream<void>.empty().listen((_) {});
+    _remoteSub = Stream<void>.empty().listen((_) {}); // safe cancel
   }
 
   @override
@@ -128,8 +136,7 @@ class RecipeVaultController extends ChangeNotifier {
 
   // ── Private helpers ──────────────────────────────────────────────────────
   Future<void> _initializeDefaultCategories() async {
-    // CategoryService ensures defaults & migration in its onAuthChanged path.
-    return;
+    return; // handled in CategoryService
   }
 
   Future<void> _loadCustomCategories() async {
@@ -140,7 +147,6 @@ class RecipeVaultController extends ChangeNotifier {
       final hidden = await CategoryService.getHiddenDefaultCategories();
       final hiddenSet = hidden.toSet();
 
-      // Compose, de-dupe, and sort user-visible categories
       final userVisibleSystem = CategoryKeys.systemOnly
           .where((c) => !hiddenSet.contains(c))
           .toSet();
@@ -155,19 +161,17 @@ class RecipeVaultController extends ChangeNotifier {
         ...userCustom,
       }.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
-      // Ensure "All" is first
       combined.remove(CategoryKeys.all);
       _allCategories = [CategoryKeys.all, ...combined];
     } catch (e) {
       debugPrint('⚠️ Failed loading categories: $e');
-      // fall back to safe minimal set
       _allCategories = const [CategoryKeys.all];
     }
   }
 
   Future<void> _reloadFromSource() async {
     final merged = await VaultRecipeService.loadAndMergeAllRecipes();
-    _allRecipes = {for (final r in merged) r.id: r};
+    _allRecipes = {for (final r in merged) r.id: _normaliseRecipe(r)};
   }
 
   // ── Mutations ────────────────────────────────────────────────────────────
@@ -178,7 +182,9 @@ class RecipeVaultController extends ChangeNotifier {
   }
 
   Future<void> toggleFavourite(RecipeCardModel recipe) async {
-    final updated = recipe.copyWith(isFavourite: !recipe.isFavourite);
+    final updated = _normaliseRecipe(
+      recipe.copyWith(isFavourite: !recipe.isFavourite),
+    );
     _allRecipes[updated.id] = updated;
     notifyListeners();
     await VaultRecipeService.save(updated);
@@ -188,7 +194,7 @@ class RecipeVaultController extends ChangeNotifier {
     RecipeCardModel recipe,
     List<String> categories,
   ) async {
-    final updated = recipe.copyWith(categories: categories);
+    final updated = _normaliseRecipe(recipe.copyWith(categories: categories));
     _allRecipes[updated.id] = updated;
     notifyListeners();
     await VaultRecipeService.save(updated);
@@ -204,12 +210,11 @@ class RecipeVaultController extends ChangeNotifier {
     );
     if (newUrl == null) return;
 
-    final updated = recipe.copyWith(imageUrl: newUrl);
+    final updated = _normaliseRecipe(recipe.copyWith(imageUrl: newUrl));
     _allRecipes[updated.id] = updated;
     notifyListeners();
     await VaultRecipeService.save(updated);
 
-    // ✅ Refresh usage after success
     unawaited(context.read<UsageService>().refreshOnce());
   }
 
@@ -219,23 +224,20 @@ class RecipeVaultController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Delete a custom category entirely and scrub it from recipes.
   Future<void> deleteCustomCategory(String key) async {
     try {
-      await CategoryService.deleteCategory(key); // Hive + Firestore
+      await CategoryService.deleteCategory(key);
       await _loadCustomCategories();
 
-      // Reset selection if the deleted one was active
       if (_selectedCategory == key) {
         _selectedCategory = CategoryKeys.all;
       }
 
-      // Clean up recipes still pointing to this category
       final updated = <String, RecipeCardModel>{};
       for (final r in _allRecipes.values) {
         if (r.categories.contains(key)) {
           final newCats = r.categories.where((c) => c != key).toList();
-          final newR = r.copyWith(categories: newCats);
+          final newR = _normaliseRecipe(r.copyWith(categories: newCats));
           updated[newR.id] = newR;
           await VaultRecipeService.save(newR);
         }

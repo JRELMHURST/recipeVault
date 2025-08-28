@@ -34,6 +34,15 @@ class RecipeLongPressMenu {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
+    // Locale-aware display title
+    final locale = Localizations.localeOf(context);
+    final localeTag =
+        "${locale.languageCode}${locale.countryCode != null ? '-${locale.countryCode}' : ''}";
+    final translatedTitle = recipe.formattedForLocaleTag(localeTag);
+    final displayTitle = (translatedTitle?.trim().isNotEmpty ?? false)
+        ? translatedTitle!.trim()
+        : (recipe.title.isNotEmpty ? recipe.title : l.untitled);
+
     // Keep a reference to the *outer* context for navigation after closing the sheet.
     final rootContext = context;
 
@@ -101,7 +110,7 @@ class RecipeLongPressMenu {
                                       width: 48,
                                       height: 48,
                                       fit: BoxFit.cover,
-                                      semanticLabel: recipe.title,
+                                      semanticLabel: displayTitle,
                                     )
                                   : Container(
                                       width: 48,
@@ -119,7 +128,7 @@ class RecipeLongPressMenu {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    recipe.title,
+                                    displayTitle,
                                     style: theme.textTheme.bodyLarge,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,

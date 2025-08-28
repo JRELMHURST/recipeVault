@@ -30,7 +30,6 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   bool _saving = false;
   bool _dirty = false;
 
-  // Snapshots of initial values for dirty checking
   late final String _initialTitle;
   late final String _initialIngredients;
   late final String _initialSteps;
@@ -39,10 +38,27 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   @override
   void initState() {
     super.initState();
-    _initialTitle = widget.recipe.title;
-    _initialIngredients = widget.recipe.ingredients.join('\n');
-    _initialSteps = widget.recipe.instructions.join('\n');
-    _initialHints = widget.recipe.hints.join('\n'); // non-nullable
+
+    // --- Title fallback if empty or "Untitled" ---
+    String effectiveTitle = widget.recipe.title;
+    if (effectiveTitle.trim().isEmpty || effectiveTitle == 'Untitled') {
+      if (widget.recipe.ingredients.isNotEmpty) {
+        effectiveTitle = widget.recipe.ingredients.first;
+      } else if (widget.recipe.instructions.isNotEmpty) {
+        effectiveTitle = widget.recipe.instructions.first;
+      }
+    }
+
+    _initialTitle = effectiveTitle;
+    _initialIngredients = (widget.recipe.ingredients.isNotEmpty)
+        ? widget.recipe.ingredients.join('\n')
+        : '';
+    _initialSteps = (widget.recipe.instructions.isNotEmpty)
+        ? widget.recipe.instructions.join('\n')
+        : '';
+    _initialHints = (widget.recipe.hints.isNotEmpty)
+        ? widget.recipe.hints.join('\n')
+        : '';
 
     _titleCtl = TextEditingController(text: _initialTitle);
     _ingCtl = TextEditingController(text: _initialIngredients);
@@ -57,21 +73,23 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
 
   @override
   void dispose() {
-    _titleCtl.removeListener(_recomputeDirty);
-    _ingCtl.removeListener(_recomputeDirty);
-    _stepsCtl.removeListener(_recomputeDirty);
-    _hintsCtl.removeListener(_recomputeDirty);
-
-    _titleCtl.dispose();
-    _ingCtl.dispose();
-    _stepsCtl.dispose();
-    _hintsCtl.dispose();
+    _titleCtl
+      ..removeListener(_recomputeDirty)
+      ..dispose();
+    _ingCtl
+      ..removeListener(_recomputeDirty)
+      ..dispose();
+    _stepsCtl
+      ..removeListener(_recomputeDirty)
+      ..dispose();
+    _hintsCtl
+      ..removeListener(_recomputeDirty)
+      ..dispose();
 
     _titleFocus.dispose();
     _ingFocus.dispose();
     _stepsFocus.dispose();
     _hintsFocus.dispose();
-
     _scroll.dispose();
     super.dispose();
   }
@@ -85,8 +103,14 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     if (nextDirty != _dirty) setState(() => _dirty = nextDirty);
   }
 
-  List<String> _toLines(String raw) =>
-      raw.split('\n').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  // --- Normalisation helpers ------------------------------------------------
+  List<String> _toLines(String raw, {bool numbered = false}) =>
+      raw.split('\n').map((s) => s.trim()).where((s) => s.isNotEmpty).map((s) {
+        if (numbered) {
+          return s.replaceFirst(RegExp(r'^\d+[).]\s*'), '').trim();
+        }
+        return s.replaceFirst(RegExp(r'^[-•]\s*'), '').trim();
+      }).toList();
 
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context);
@@ -105,9 +129,11 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     setState(() => _saving = true);
 
     final updated = widget.recipe.copyWith(
-      title: _titleCtl.text.trim(),
+      title: _titleCtl.text.trim().isEmpty
+          ? l10n.untitled
+          : _titleCtl.text.trim(),
       ingredients: _toLines(_ingCtl.text),
-      instructions: _toLines(_stepsCtl.text),
+      instructions: _toLines(_stepsCtl.text, numbered: true),
       hints: _toLines(_hintsCtl.text),
     );
 
@@ -137,17 +163,12 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
       hintText: hint,
       helperText: helper,
       filled: true,
-      isDense: false,
       prefixIcon: prefixIcon,
-      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
-        alpha: 0.25,
-      ),
+      fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(64),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(
-          color: theme.colorScheme.outline.withValues(alpha: 0.35),
-        ),
+        borderSide: BorderSide(color: theme.colorScheme.outline.withAlpha(90)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -184,22 +205,18 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.editRecipeTitle), centerTitle: true),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: Semantics(
-        button: true,
-        label: _saving ? l10n.editRecipeSaving : l10n.editRecipeSaveChanges,
-        child: FloatingActionButton.extended(
-          heroTag: 'edit-recipe-save-fab',
-          onPressed: (_saving || !_dirty) ? null : _save,
-          icon: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.save_rounded),
-          label: Text(
-            _saving ? l10n.editRecipeSaving : l10n.editRecipeSaveChanges,
-          ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'edit-recipe-save-fab',
+        onPressed: (_saving || !_dirty) ? null : _save,
+        icon: _saving
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.save_rounded),
+        label: Text(
+          _saving ? l10n.editRecipeSaving : l10n.editRecipeSaveChanges,
         ),
       ),
       body: SafeArea(
@@ -220,16 +237,18 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   maxLines: 1,
                   decoration: _decoration(
                     label: l10n.editRecipeFieldTitle,
-                    hint: 'Give your recipe a short title',
+                    hint: l10n.title,
                     prefixIcon: const Icon(Icons.title_rounded),
                   ),
-                  validator: (v) => (v?.trim().isEmpty ?? true)
-                      ? 'Please enter a title'
-                      : null,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return l10n.untitled;
+                    }
+                    return null;
+                  },
                   onFieldSubmitted: (_) => _ingFocus.requestFocus(),
                 ),
 
-                // Ingredients
                 _sectionTitle(
                   Icons.shopping_bag_outlined,
                   l10n.editRecipeFieldIngredients,
@@ -248,7 +267,6 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   onEditingComplete: () => _stepsFocus.requestFocus(),
                 ),
 
-                // Steps
                 _sectionTitle(
                   Icons.format_list_numbered_rounded,
                   l10n.editRecipeFieldSteps,
@@ -267,7 +285,6 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   onEditingComplete: () => _hintsFocus.requestFocus(),
                 ),
 
-                // Hints & Tips (uses existing ARB key)
                 _sectionTitle(
                   Icons.tips_and_updates_rounded,
                   l10n.hintsAndTips,
@@ -281,9 +298,8 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   maxLines: 10,
                   decoration: _decoration(
                     label: l10n.hintsAndTips,
-                    hint: 'One tip per line (optional)',
+                    hint: l10n.noAdditionalTips,
                     prefixIcon: const Icon(Icons.lightbulb_outline_rounded),
-                    helper: 'E.g. “Warm the pan fully”, “Sub oat milk”…',
                   ),
                 ),
               ],

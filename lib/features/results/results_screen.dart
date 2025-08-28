@@ -20,7 +20,6 @@ import 'package:recipe_vault/features/processing/processed_recipe_result.dart';
 import 'package:recipe_vault/core/responsive_wrapper.dart';
 
 class ResultsScreen extends StatefulWidget {
-  /// Pass this when using GoRouter: `ResultsScreen(initialResult: state.extra as ProcessedRecipeResult?)`
   final ProcessedRecipeResult? initialResult;
 
   const ResultsScreen({super.key, this.initialResult});
@@ -40,32 +39,21 @@ class _ResultsScreenState extends State<ResultsScreen> {
       case 'en-gb':
       case 'en-us':
         return 'English';
-      case 'bg':
-        return 'Bulgarian';
-      case 'cs':
-        return 'Czech';
-      case 'da':
-        return 'Danish';
+      case 'pl':
+        return 'Polish';
       case 'de':
         return 'German';
-      case 'el':
-        return 'Greek';
       case 'es':
         return 'Spanish';
       case 'fr':
         return 'French';
-      case 'ga':
-        return 'Irish';
       case 'it':
         return 'Italian';
       case 'nl':
         return 'Dutch';
-      case 'pl':
-        return 'Polish';
       case 'cy':
         return 'Welsh';
-      case 'pt':
-        return 'Portuguese'; // kept for safety
+      // add more as needed
       default:
         return code.toUpperCase();
     }
@@ -77,8 +65,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
   ) async {
     final t = AppLocalizations.of(context);
     setState(() => _isSaving = true);
-
-    // Show a blocking overlay while saving
     await LoadingOverlay.show(context, message: t.editRecipeSaving);
 
     try {
@@ -87,43 +73,69 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
       final lines = formattedRecipe.trim().split('\n');
       String title = 'Untitled';
-      List<String> ingredients = [];
-      List<String> instructions = [];
-      List<String> hints = [];
+      final ingredients = <String>[];
+      final instructions = <String>[];
+      final hints = <String>[];
 
       bool isInIngredients = false;
       bool isInInstructions = false;
       bool isInHints = false;
 
-      for (final lineRaw in lines) {
-        final line = lineRaw.trimRight();
+      for (final raw in lines) {
+        final line = raw.trimRight();
         final lower = line.toLowerCase();
 
+        // --- Title parsing ---
         if (lower.startsWith('title:')) {
           title = line
               .replaceFirst(RegExp(r'title:', caseSensitive: false), '')
               .trim();
-        } else if (lower.startsWith('ingredients:')) {
+        } else if (title == 'Untitled' &&
+            line.isNotEmpty &&
+            !line.contains(':')) {
+          // First non-empty, non-header line → fallback title
+          title = line;
+        }
+
+        // --- Section detection (multi-language) ---
+        if (RegExp(
+          r'^(##\s*)?(ingredients|cynhwysion|składniki)\b',
+          caseSensitive: false,
+        ).hasMatch(lower)) {
           isInIngredients = true;
           isInInstructions = isInHints = false;
-        } else if (lower.startsWith('instructions:')) {
+          continue;
+        }
+        if (RegExp(
+          r'^(##\s*)?(instructions|cyfarwyddiadau|instrukcje)\b',
+          caseSensitive: false,
+        ).hasMatch(lower)) {
           isInInstructions = true;
           isInIngredients = isInHints = false;
-        } else if (lower.startsWith('hints & tips:') ||
-            lower.startsWith('hints and tips:')) {
+          continue;
+        }
+        if (RegExp(
+          r'^(##\s*)?(hints|awgrymiadau|wskazówki|tips)\b',
+          caseSensitive: false,
+        ).hasMatch(lower)) {
           isInHints = true;
           isInIngredients = isInInstructions = false;
-        } else {
-          if (isInIngredients && line.startsWith('-')) {
-            ingredients.add(line.substring(1).trim());
-          } else if (isInInstructions && RegExp(r'^\d+[).]').hasMatch(line)) {
-            instructions.add(line);
-          } else if (isInHints && line.isNotEmpty && line != '---') {
-            hints.add(line.replaceFirst(RegExp(r'^-\s*'), '').trim());
-          }
+          continue;
+        }
+
+        // --- Collect content ---
+        if (isInIngredients && line.isNotEmpty) {
+          ingredients.add(line.replaceFirst(RegExp(r'^[-•]\s*'), '').trim());
+        } else if (isInInstructions && line.isNotEmpty) {
+          instructions.add(
+            line.replaceFirst(RegExp(r'^\d+[).]\s*'), '').trim(),
+          );
+        } else if (isInHints && line.isNotEmpty && line != '---') {
+          hints.add(line.replaceFirst(RegExp(r'^[-•]\s*'), '').trim());
         }
       }
 
+      // --- Firestore doc -----------------------------------------------------
       final docRef = FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -133,7 +145,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
       final recipe = RecipeCardModel(
         id: docRef.id,
         userId: user.uid,
-        title: title,
+        title: title.isEmpty ? 'Untitled' : title,
         ingredients: ingredients,
         instructions: instructions,
         imageUrl: _recipeImageUrl,
@@ -144,27 +156,29 @@ class _ResultsScreenState extends State<ResultsScreen> {
         translationUsed: result.translationUsed,
       );
 
-      final serverTimestamp = FieldValue.serverTimestamp();
-      await docRef.set({...recipe.toJson(), 'createdAt': serverTimestamp});
+      await docRef.set({
+        ...recipe.toJson(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
       await HiveRecipeService.save(recipe);
 
       if (!mounted) return;
-
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(t.recipeSaved)));
 
-      // Navigate using safeGo (next frame) and then hide overlay in that frame.
       safeGo(context, '/vault');
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => LoadingOverlay.hide(),
       );
-    } catch (_) {
-      if (!mounted) return;
-      LoadingOverlay.hide();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(t.unexpectedError)));
+    } catch (e, st) {
+      debugPrint('❌ Save failed: $e\n$st');
+      if (mounted) {
+        LoadingOverlay.hide();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${t.unexpectedError}: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -175,7 +189,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
     final t = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
 
-    // Prefer constructor value (GoRouter), fallback to ModalRoute (Navigator 1.0)
     final result =
         widget.initialResult ??
         (ModalRoute.of(context)?.settings.arguments as ProcessedRecipeResult?);
@@ -241,6 +254,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // language + debug toggle
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Row(
@@ -258,7 +272,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const Spacer(),
-                            if (kDebugMode)
+                            if (kDebugMode && result.originalText.isNotEmpty)
                               TextButton(
                                 onPressed: () => setState(
                                   () => _showOriginalText = !_showOriginalText,
@@ -287,7 +301,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           ),
                         ),
 
-                      // Image header – now ungated (no subscription checks)
                       RecipeImageHeader(
                         initialImages: _recipeImageUrl != null
                             ? [_recipeImageUrl!]
@@ -301,32 +314,26 @@ class _ResultsScreenState extends State<ResultsScreen> {
                             );
                             return '';
                           }
-
                           final originalFile = File(localPath);
-                          final croppedFile =
+                          final cropped =
                               await ImageProcessingService.cropImage(
                                 originalFile,
                               );
-                          if (croppedFile == null) {
+                          if (cropped == null) {
                             ImageProcessingService.showError(
                               context,
                               t.imageCropCancelled,
                             );
                             return '';
                           }
-
-                          final recipeId = result.formattedRecipe.hashCode
-                              .toString();
-
                           try {
                             final url =
                                 await ImageProcessingService.uploadRecipeImage(
                                   context: context,
-                                  imageFile: croppedFile,
+                                  imageFile: cropped,
                                   userId: user.uid,
-                                  recipeId: recipeId,
+                                  recipeId: result.hashCode.toString(),
                                 );
-                            debugPrint('✅ Uploaded to: $url');
                             if (mounted) setState(() => _recipeImageUrl = url);
                             return url;
                           } catch (e) {

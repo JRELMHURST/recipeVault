@@ -30,13 +30,14 @@ class RecipeCardModelAdapter extends TypeAdapter<RecipeCardModel> {
       hints: (fields[10] as List?)?.cast<String>(),
       translationUsed: fields[11] as bool,
       isGlobal: fields[12] as bool,
+      formattedByLocale: (fields[13] as Map?)?.cast<String, String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, RecipeCardModel obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(14)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -62,7 +63,9 @@ class RecipeCardModelAdapter extends TypeAdapter<RecipeCardModel> {
       ..writeByte(11)
       ..write(obj.translationUsed)
       ..writeByte(12)
-      ..write(obj.isGlobal);
+      ..write(obj.isGlobal)
+      ..writeByte(13)
+      ..write(obj.formattedByLocale);
   }
 
   @override

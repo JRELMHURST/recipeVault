@@ -1,4 +1,3 @@
-// lib/app/app_router.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -38,29 +37,40 @@ import 'package:recipe_vault/features/settings/about_screen.dart';
 // Subscriptions
 import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 
+/// 📲 Handles app lifecycle changes (e.g. app resumed)
+class _LifecycleRefreshHandler extends WidgetsBindingObserver {
+  final SubscriptionService subs;
+
+  _LifecycleRefreshHandler(this.subs);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      subs.refresh(); // Refresh entitlement check
+    }
+  }
+}
+
 GoRouter buildAppRouter(SubscriptionService subs) {
-  // Trigger refresh on auth changes
+  // ✅ Register lifecycle observer once
+  WidgetsBinding.instance.addObserver(_LifecycleRefreshHandler(subs));
+
+  // 🔁 Trigger refresh on auth changes
   final authTick = ValueNotifier(0);
   FirebaseAuth.instance.authStateChanges().listen((_) => authTick.value++);
 
   return GoRouter(
     navigatorKey: NavKeys.root,
     initialLocation: AppRoutes.boot,
-
-    // Re-run redirects when bootstrap ready, bootstrap timeout, subscription, or auth changes
     refreshListenable: Listenable.merge([
       AppBootstrap.readyListenable,
       AppBootstrap.timeoutListenable,
       subs,
       authTick,
-      UserSessionService.signingOutListenable, // 👈 add this line
+      UserSessionService.signingOutListenable,
     ]),
-
-    // ✅ Delegate redirect logic to redirects.dart
     redirect: (context, state) => appRedirect(context, state, subs),
-
     routes: [
-      // Root-level pages
       GoRoute(
         parentNavigatorKey: NavKeys.root,
         path: AppRoutes.boot,
@@ -90,8 +100,6 @@ GoRouter buildAppRouter(SubscriptionService subs) {
         pageBuilder: (context, state) =>
             fadePage(const RegisterScreen(), key: const ValueKey('register')),
       ),
-
-      // Shell
       ShellRoute(
         navigatorKey: NavKeys.shell,
         builder: (context, state, child) => NavShell(child: child),
@@ -112,8 +120,6 @@ GoRouter buildAppRouter(SubscriptionService subs) {
           ),
         ],
       ),
-
-      // Settings detail
       GoRoute(
         parentNavigatorKey: NavKeys.root,
         path: AppRoutes.settingsAccount,
@@ -172,8 +178,6 @@ GoRouter buildAppRouter(SubscriptionService subs) {
           key: const ValueKey('settings-about'),
         ),
       ),
-
-      // Full-screen
       GoRoute(
         parentNavigatorKey: NavKeys.root,
         path: AppRoutes.results,
@@ -183,7 +187,6 @@ GoRouter buildAppRouter(SubscriptionService subs) {
         ),
       ),
     ],
-
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(title: const Text('Oops')),
       body: Center(

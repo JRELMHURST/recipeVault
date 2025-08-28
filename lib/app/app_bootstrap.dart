@@ -160,8 +160,9 @@ class AppBootstrap {
           }
           try {
             await SubscriptionService().setAppUserId(uid);
+            await SubscriptionService().refresh(); // ✅ Add this
           } catch (e, st) {
-            debugPrint('⚠️ BOOT: SubscriptionService.setAppUserId failed: $e');
+            debugPrint('⚠️ BOOT: SubscriptionService failed: $e');
             debugPrintStack(stackTrace: st);
           }
         });

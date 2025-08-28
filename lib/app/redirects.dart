@@ -1,3 +1,4 @@
+// lib/app/redirects.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
@@ -15,47 +16,47 @@ String? appRedirect(
   final loc = state.matchedLocation;
   final isManaging = state.uri.queryParameters['manage'] == '1';
 
-  // 🚦 0) During sign-out teardown — force to login to prevent race conditions
+  // 🚦 0) Hard guard during sign-out teardown to avoid paywall/vault bounce
   if (UserSessionService.isSigningOut) {
-    final onAuthScreen = loc == AppRoutes.login || loc == AppRoutes.register;
-    return onAuthScreen ? null : AppRoutes.login;
+    final onAuth = loc == AppRoutes.login || loc == AppRoutes.register;
+    return onAuth ? null : AppRoutes.login;
   }
 
-  // 🔒 1) Forced redirect (e.g., account deletion, forced logout)
-  final forcedRedirect = UserSessionService.getRedirectRoute(loc);
-  if (forcedRedirect != null) return forcedRedirect;
+  // 🔒 1) UserSessionService can force a redirect (e.g., deleted account)
+  final forced = UserSessionService.getRedirectRoute(loc);
+  if (forced != null) return forced;
 
   final user = FirebaseAuth.instance.currentUser;
   final isLoggedIn = user != null && !user.isAnonymous;
 
-  // 👤 2) Not logged in → only allow auth screens
+  // 👤 2) Not logged in → only allow /login or /register
   if (!isLoggedIn) {
-    final onAuthScreen = loc == AppRoutes.login || loc == AppRoutes.register;
-    return onAuthScreen ? null : AppRoutes.login;
+    final onAuth = loc == AppRoutes.login || loc == AppRoutes.register;
+    return onAuth ? null : AppRoutes.login;
   }
 
-  // 🥾 3) App not bootstrapped yet
+  // 🥾 3) Bootstrap gating (while subs/status resolving)
   if (!AppBootstrap.isReady && !AppBootstrap.timeoutReached) {
-    // Allow paywall if user explicitly deep-linked for management
+    // Allow paywall if user explicitly opened manage
     if (loc == AppRoutes.paywall && isManaging) return null;
     return AppRoutes.boot;
   }
 
-  final isEntitled = subs.hasActiveSubscription || subs.hasSpecialAccess;
-
-  // ✅ 4) Entitled user
-  if (isEntitled) {
+  // ✅ 4) Entitled (active sub or special access)
+  if (subs.hasActiveSubscription || subs.hasSpecialAccess) {
+    // Allow paywall manage deep-link
     if (loc == AppRoutes.paywall && isManaging) return null;
 
-    const blockedRoutes = {
+    // Block auth/paywall/boot when entitled
+    const blocked = {
       AppRoutes.boot,
       AppRoutes.login,
       AppRoutes.register,
       AppRoutes.paywall,
     };
-    return blockedRoutes.contains(loc) ? AppRoutes.vault : null;
+    return blocked.contains(loc) ? AppRoutes.vault : null;
   }
 
-  // 🚧 5) Not entitled → hard gate to paywall
+  // 🚧 5) Logged in but not entitled → force paywall (manage allowed)
   return loc == AppRoutes.paywall ? null : AppRoutes.paywall;
 }

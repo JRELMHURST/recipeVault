@@ -288,31 +288,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              OutlinedButton.icon(
-                                icon: const Icon(Icons.login),
-                                label: Text(loc.continueWithGoogle),
-                                onPressed: _signUpWithGoogle,
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(Icons.login),
+                                  label: Text(loc.continueWithGoogle),
+                                  onPressed: _signUpWithGoogle,
+                                ),
                               ),
                               const SizedBox(height: 12),
                               if (defaultTargetPlatform == TargetPlatform.iOS)
-                                OutlinedButton.icon(
-                                  icon: const Icon(
-                                    Icons.apple,
-                                    color: Colors.black,
-                                  ),
-                                  label: Text(loc.continueWithApple),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.black,
-                                    backgroundColor: Colors.white,
-                                    side: const BorderSide(
-                                      color: Colors.black12,
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    icon: const Icon(
+                                      Icons.apple,
+                                      color: Colors.black,
                                     ),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                      horizontal: 16,
+                                    label: Text(loc.continueWithApple),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.black,
+                                      backgroundColor: Colors.white,
+                                      side: const BorderSide(
+                                        color: Colors.black12,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                        horizontal: 16,
+                                      ),
                                     ),
+                                    onPressed: _signUpWithApple,
                                   ),
-                                  onPressed: _signUpWithApple,
                                 ),
                             ],
                           ),

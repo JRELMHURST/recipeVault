@@ -266,29 +266,41 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            OutlinedButton.icon(
-                              icon: const Icon(Icons.login),
-                              label: Text(loc.signInWithGoogle),
-                              onPressed: _busy ? null : _signInWithGoogle,
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                icon: const Icon(Icons.login),
+                                label: Text(loc.signInWithGoogle),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ), // match Email button
+                                ),
+                                onPressed: _busy ? null : _signInWithGoogle,
+                              ),
                             ),
                             const SizedBox(height: 12),
                             if (defaultTargetPlatform == TargetPlatform.iOS)
-                              OutlinedButton.icon(
-                                icon: const Icon(
-                                  Icons.apple,
-                                  color: Colors.black,
-                                ),
-                                label: Text(loc.signInWithApple),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.black,
-                                  backgroundColor: Colors.white,
-                                  side: const BorderSide(color: Colors.black12),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                    horizontal: 16,
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(
+                                    Icons.apple,
+                                    color: Colors.black,
                                   ),
+                                  label: Text(loc.signInWithApple),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.black,
+                                    backgroundColor: Colors.white,
+                                    side: const BorderSide(
+                                      color: Colors.black12,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ), // match Email button
+                                  ),
+                                  onPressed: _busy ? null : _signInWithApple,
                                 ),
-                                onPressed: _busy ? null : _signInWithApple,
                               ),
                           ],
                         ),

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
+import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class RecipeCard extends StatelessWidget {
   // Legacy path (still used by ResultsScreen)
@@ -65,12 +66,14 @@ class RecipeCard extends StatelessWidget {
     RecipeCardModel model,
     ThemeData theme,
   ) {
+    final loc = AppLocalizations.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Title
         Text(
-          (model.title.isEmpty ? 'Untitled' : model.title),
+          (model.title.isEmpty ? loc.untitled : model.title),
           style: theme.textTheme.headlineSmall?.copyWith(
             color: theme.colorScheme.primary,
             fontWeight: FontWeight.bold,
@@ -81,7 +84,7 @@ class RecipeCard extends StatelessWidget {
 
         // Ingredients
         if (model.ingredients.isNotEmpty) ...[
-          _sectionHeader('🛒 Ingredients', theme),
+          _sectionHeader('🛒 ${loc.ingredients}', theme),
           const SizedBox(height: 6),
           ...model.ingredients.map(_bullet),
           const SizedBox(height: 16),
@@ -89,11 +92,10 @@ class RecipeCard extends StatelessWidget {
 
         // Instructions
         if (model.instructions.isNotEmpty) ...[
-          _sectionHeader('👨‍🍳 Instructions', theme),
+          _sectionHeader('👨‍🍳 ${loc.instructions}', theme),
           const SizedBox(height: 6),
           ...model.instructions.asMap().entries.map(
             (e) => _numbered(
-              // add numbering if missing
               RegExp(r'^\d+[\).]\s').hasMatch(e.value)
                   ? e.value
                   : '${e.key + 1}. ${e.value}',
@@ -104,7 +106,7 @@ class RecipeCard extends StatelessWidget {
 
         // Hints
         if (model.hints.isNotEmpty) ...[
-          _sectionHeader('💡 Hints & Tips', theme),
+          _sectionHeader('💡 ${loc.hintsAndTips}', theme),
           const SizedBox(height: 6),
           ...model.hints.map(_bullet),
         ],
@@ -114,12 +116,14 @@ class RecipeCard extends StatelessWidget {
 
   // ---------- Legacy path (still supports ResultsScreen text) ----------
   Widget _buildFromText(BuildContext context, String text, ThemeData theme) {
-    final parsed = _parseRecipe(text);
+    final parsed = _parseRecipe(context, text);
+    final loc = AppLocalizations.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          parsed.title,
+          parsed.title.isEmpty ? loc.untitled : parsed.title,
           style: theme.textTheme.headlineSmall?.copyWith(
             color: theme.colorScheme.primary,
             fontWeight: FontWeight.bold,
@@ -129,21 +133,21 @@ class RecipeCard extends StatelessWidget {
         const SizedBox(height: 12),
 
         if (parsed.ingredients.isNotEmpty) ...[
-          _sectionHeader('🛒 Ingredients', theme),
+          _sectionHeader('🛒 ${loc.ingredients}', theme),
           const SizedBox(height: 6),
           ...parsed.ingredients.map(_bullet),
           const SizedBox(height: 16),
         ],
 
         if (parsed.instructions.isNotEmpty) ...[
-          _sectionHeader('👨‍🍳 Instructions', theme),
+          _sectionHeader('👨‍🍳 ${loc.instructions}', theme),
           const SizedBox(height: 6),
           ...parsed.instructions.map(_numbered),
           const SizedBox(height: 16),
         ],
 
         if (parsed.hints.isNotEmpty) ...[
-          _sectionHeader('💡 Hints & Tips', theme),
+          _sectionHeader('💡 ${loc.hintsAndTips}', theme),
           const SizedBox(height: 6),
           ...parsed.hints.map(_bullet),
         ],
@@ -186,38 +190,38 @@ class RecipeCard extends StatelessWidget {
     );
   }
 
-  // ------- simple parser for legacy text path -------
-  _ParsedRecipe _parseRecipe(String text) {
+  // ------- locale-aware parser for legacy text path -------
+  _ParsedRecipe _parseRecipe(BuildContext context, String text) {
+    final loc = AppLocalizations.of(context);
+
     final lines = text.trim().split('\n');
-    String title = 'Untitled';
-    final Set<String> ingredients = {};
-    final List<String> instructions = [];
-    final List<String> hints = [];
+    String title = '';
+    final ingredients = <String>[];
+    final instructions = <String>[];
+    final hints = <String>[];
 
     bool inIngredients = false, inInstructions = false, inHints = false;
 
     for (final raw in lines) {
       final line = raw.trim();
-      final lower = line.toLowerCase();
 
-      if (lower.startsWith('title:')) {
+      if (line.startsWith('${loc.title}:')) {
         title = line.split(':').skip(1).join(':').trim();
         continue;
       }
-      if (lower.startsWith('ingredients:')) {
+      if (line.startsWith('${loc.ingredients}:')) {
         inIngredients = true;
         inInstructions = false;
         inHints = false;
         continue;
       }
-      if (lower.startsWith('instructions:')) {
+      if (line.startsWith('${loc.instructions}:')) {
         inIngredients = false;
         inInstructions = true;
         inHints = false;
         continue;
       }
-      if (lower.startsWith('hints & tips:') ||
-          lower.startsWith('hints and tips:')) {
+      if (line.startsWith('${loc.hintsAndTips}:')) {
         inIngredients = false;
         inInstructions = false;
         inHints = true;
@@ -232,12 +236,12 @@ class RecipeCard extends StatelessWidget {
       } else if (inHints) {
         final clean = line.replaceFirst(RegExp(r'^[-•]+\s*'), '').trim();
         if (clean.isEmpty) continue;
-        if (clean.toLowerCase().contains('no additional tips')) continue;
+        if (clean == loc.noAdditionalTips) continue;
         hints.add(clean);
       }
     }
 
-    return _ParsedRecipe(title, ingredients.toList(), instructions, hints);
+    return _ParsedRecipe(title, ingredients, instructions, hints);
   }
 }
 

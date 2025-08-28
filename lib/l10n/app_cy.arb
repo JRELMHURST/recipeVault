@@ -1,1486 +1,1490 @@
 {
-    "@@locale": "cy",
-    "loading": "Llwytho...",
-    "@loading": {
-        "description": "Shown while an operation is in progress."
-    },
-    "appTitle": "RecipeVault",
-    "@appTitle": {
-        "description": "Main application title."
-    },
-    "welcomeMessage": "Croeso i RecipeVault",
-    "@welcomeMessage": {
-        "description": "Greeting shown on app launch/sign-in."
-    },
-    "scanRecipe": "Sganio Rysáit",
-    "@scanRecipe": {
-        "description": "CTA/button to start scanning a recipe."
-    },
-    "saveToVault": "Cadw i'r Cwpwrdd",
-    "@saveToVault": {
-        "description": "CTA/button to save a recipe to the user’s vault."
-    },
-    "settings": "Gosodiadau",
-    "@settings": {
-        "description": "Menu item to open settings."
-    },
-    "logout": "Allgofnodi",
-    "@logout": {
-        "description": "Action to sign out the current user."
-    },
-    "yes": "Ie",
-    "@yes": {
-        "description": "Affirmative action label."
-    },
-    "no": "Na",
-    "@no": {
-        "description": "Negative action label."
-    },
-    "cancel": "Canslo",
-    "@cancel": {
-        "description": "Cancels the current action/dialog."
-    },
-    "close": "Cau",
-    "@close": {
-        "description": "Closes a dialog/sheet."
-    },
-    "save": "Cadw",
-    "@save": {
-        "description": "Saves current changes."
-    },
-    "delete": "Dileu",
-    "@delete": {
-        "description": "Deletes the current item."
-    },
-    "edit": "Golygu",
-    "@edit": {
-        "description": "Begins editing the current item."
-    },
-    "confirm": "Cadarnhau",
-    "@confirm": {
-        "description": "Confirms the current action."
-    },
-    "myVault": "Fy Nghwpwrdd",
-    "@myVault": {
-        "description": "Tab/section for user’s saved recipes."
-    },
-    "favourites": "Ffefrynnau",
-    "@favourites": {
-        "description": "Tab/section for favourite recipes."
-    },
-    "categories": "Categorïau",
-    "@categories": {
-        "description": "Tab/section for recipe categories."
-    },
-    "searchRecipes": "Chwilio ryseitiau...",
-    "@searchRecipes": {
-        "description": "Placeholder text in recipe search input."
-    },
-    "noRecipesFound": "Dim ryseitiau wedi’u canfod",
-    "@noRecipesFound": {
-        "description": "Shown when a recipe search returns no results."
-    },
-    "emptyVaultTitle": "Mae eich Vault Ryseitiau yn Wag",
-    "@emptyVaultTitle": {
-        "description": "Title shown when the vault has no recipes"
-    },
-    "emptyVaultBody": "Trowch eich sgrinluniau blêr yn gardiau rysáit trefnus.",
-    "@emptyVaultBody": {
-        "description": "Testun yn annog y defnyddiwr i fewnforio sgrinluniau a chreu ei rysáit cyntaf"
-    },
-    "addCategory": "Ychwanegu Categori",
-    "@addCategory": {
-        "description": "Action to create a new category."
-    },
-    "removeCategory": "Tynnu Categori",
-    "@removeCategory": {
-        "description": "Action to remove an existing category."
-    },
-    "assignCategory": "Neulltuo Categori",
-    "@assignCategory": {
-        "description": "Action to apply a category to a recipe."
-    },
-    "recipeDetails": "Manylion y Rysáit",
-    "@recipeDetails": {
-        "description": "Header/title for the recipe details screen."
-    },
-    "ingredients": "Cynhwysion",
-    "@ingredients": {
-        "description": "Section header for ingredients list."
-    },
-    "instructions": "Cyfarwyddiadau",
-    "@instructions": {
-        "description": "Section header for cooking steps."
-    },
-    "notes": "Nodiadau",
-    "@notes": {
-        "description": "Section header for extra notes."
-    },
-    "dailyTipTitle": "Awgrym Dyddiol",
-    "@dailyTipTitle": {
-        "description": "Title above the daily tip/message card."
-    },
-    "dismiss": "Cau",
-    "@dismiss": {
-        "description": "Button to hide a tip/notification."
-    },
-    "dailyMessagePlaceholder": "Bydd eich ysbrydoliaeth ddyddiol yn ymddangos yma.",
-    "@dailyMessagePlaceholder": {
-        "description": "Placeholder text when the daily message hasn’t loaded."
-    },
-    "upgradeNow": "Uwchraddio Nawr",
-    "@upgradeNow": {
-        "description": "Primary CTA to upgrade subscription."
-    },
-    "trialAvailable": "Treial Am Ddim ar Gael",
-    "@trialAvailable": {
-        "description": "Indicator that a free trial can be started."
-    },
-    "upgradeBannerMessage": "Datgloi mwy o ryseitiau, cyfieithiadau a nodweddion – uwchraddiwch nawr!",
-    "@upgradeBannerMessage": {
-        "description": "Promotional banner text encouraging upgrade."
-    },
-    "trialDaysRemaining": "{days} diwrnod ar ôl",
-    "@trialDaysRemaining": {
-        "description": "Shows the number of trial days remaining.",
-        "placeholders": {
-            "days": {
-                "type": "int"
-            }
-        }
-    },
-    "planTaster": "Blaswr",
-    "@planTaster": {
-        "description": "Subscription tier: entry-level plan."
-    },
-    "planHomeChef": "Cogydd Cartref",
-    "@planHomeChef": {
-        "description": "Subscription tier: mid-level plan."
-    },
-    "planMasterChef": "Prif Gogydd",
-    "@planMasterChef": {
-        "description": "Subscription tier: top-level plan."
-    },
-    "planFree": "Cynllun Am Ddim",
-    "@planFree": {
-        "description": "Subscription tier: free access plan."
-    },
-    "unknownTier": "Haen Anhysbys",
-    "@unknownTier": {
-        "description": "Shown when the user’s subscription tier cannot be determined."
-    },
-    "specialAccessBadge": "⭐ {tierLabel}",
-    "@specialAccessBadge": {
-        "description": "Badge label for special access within a tier.",
-        "placeholders": {
-            "tierLabel": {
-                "type": "String"
-            }
-        }
-    },
-    "planHomeChefSubtitleAnnual": "Cynllun Blynyddol",
-    "@planHomeChefSubtitleAnnual": {
-        "description": "Subtitle for Home Chef annual plan."
-    },
-    "planHomeChefSubtitleMonthly": "Cynllun Misol",
-    "@planHomeChefSubtitleMonthly": {
-        "description": "Subtitle for Home Chef monthly plan."
-    },
-    "planMasterChefSubtitleAnnual": "Cynllun Blynyddol",
-    "@planMasterChefSubtitleAnnual": {
-        "description": "Subtitle for Master Chef annual plan."
-    },
-    "planMasterChefSubtitleMonthly": "Cynllun Misol",
-    "@planMasterChefSubtitleMonthly": {
-        "description": "Subtitle for Master Chef monthly plan."
-    },
-    "planHomeChefDescription": "Cam clyfar ymlaen – perffaith i gogyddion cartref rheolaidd sydd eisiau mwy o bŵer.",
-    "@planHomeChefDescription": {
-        "description": "Marketing description for the Home Chef tier."
-    },
-    "planMasterChefDescriptionAnnual": "Y cynllun eithaf i gariadon bwyd difrifol – gwerth gorau os ydych chi’n ymrwymo’n llawn.",
-    "@planMasterChefDescriptionAnnual": {
-        "description": "Marketing description for Master Chef annual plan."
-    },
-    "planMasterChefDescriptionMonthly": "I’r rhai sydd eisiau popeth – mynediad llawn bob mis.",
-    "@planMasterChefDescriptionMonthly": {
-        "description": "Marketing description for Master Chef monthly plan."
-    },
-    "featureUnlimitedRecipes": "Sganiau rysáit diderfyn",
-    "@featureUnlimitedRecipes": {
-        "description": "Plan feature label: unlimited AI recipe scanning."
-    },
-    "featureUnlimitedTranslations": "Cyfieithiadau diderfyn",
-    "@featureUnlimitedTranslations": {
-        "description": "Plan feature label: unlimited translations."
-    },
-    "featureCloudBackup": "Copi wrth gefn cwmwl",
-    "@featureCloudBackup": {
-        "description": "Plan feature label: cloud backup of user data."
-    },
-    "featureCategories": "Categorïau personol",
-    "@featureCategories": {
-        "description": "Plan feature label: create custom categories."
-    },
-    "featureFavourites": "Nodi fel ffefryn",
-    "@featureFavourites": {
-        "description": "Plan feature label: mark recipes as favourites."
-    },
-    "featureVaultSync": "Cydamseru ar draws dyfeisiau",
-    "@featureVaultSync": {
-        "description": "Plan feature label: sync vault across devices."
-    },
-    "featureHomeChef1": "👨‍🍳 20 cerdyn rysáit AI/mis – coginio syniadau newydd yn hawdd",
-    "@featureHomeChef1": {
-        "description": "Home Chef feature list item 1."
-    },
-    "featureHomeChef2": "🌍 5 cyfieithiad/mis – sganio ryseitiau llawysgrif neu o dramor",
-    "@featureHomeChef2": {
-        "description": "Home Chef feature list item 2."
-    },
-    "featureHomeChef3": "📦 Cadwch eich hoff ryseitiau yn eich cwpwrdd personol",
-    "@featureHomeChef3": {
-        "description": "Home Chef feature list item 3."
-    },
-    "featureHomeChef4": "🏷️ Creu a rheoli hyd at 3 chategori personol",
-    "@featureHomeChef4": {
-        "description": "Home Chef feature list item 4."
-    },
-    "featureHomeChef5": "🔗 Rhannwch eich ryseitiau gyda ffrindiau a theulu",
-    "@featureHomeChef5": {
-        "description": "Home Chef feature list item 5."
-    },
-    "featureMasterChef1": "🍽️ 100 cerdyn rysáit AI/mis – dim terfyn ar greadigrwydd",
-    "@featureMasterChef1": {
-        "description": "Master Chef feature list item 1."
-    },
-    "featureMasterChef2": "🈂️ 20 cyfieithiad/mis – perffaith ar gyfer prydau rhyngwladol",
-    "@featureMasterChef2": {
-        "description": "Master Chef feature list item 2."
-    },
-    "featureMasterChef3": "📦 Cadw diderfyn o ryseitiau yn eich cwpwrdd personol",
-    "@featureMasterChef3": {
-        "description": "Master Chef feature list item 3."
-    },
-    "featureMasterChef4": "🏷️ Creu categorïau diderfyn a defnyddio offer didoli uwch",
-    "@featureMasterChef4": {
-        "description": "Master Chef feature list item 4."
-    },
-    "featureMasterChef5": "🔗 Rhannwch eich ryseitiau unrhyw le gyda dolenni cyhoeddus",
-    "@featureMasterChef5": {
-        "description": "Master Chef feature list item 5."
-    },
-    "featureMasterChef6": "⚡ Prosesu AI â blaenoriaeth – yn gyflymach ac yn gallach bob tro",
-    "@featureMasterChef6": {
-        "description": "Master Chef feature list item 6."
-    },
-    "onboardingScan": "Tap + i sganio rysáit a’i gadw ar unwaith.",
-    "@onboardingScan": {
-        "description": "Onboarding tip: how to scan a recipe."
-    },
-    "onboardingSwitchView": "Newidiwch rhwng golygfeydd grid a rhestr yma.",
-    "@onboardingSwitchView": {
-        "description": "Onboarding tip: toggle layout views."
-    },
-    "onboardingLongPress": "Pwyswch yn hir ar rysáit i weld mwy o opsiynau.",
-    "@onboardingLongPress": {
-        "description": "Onboarding tip: long-press interaction."
-    },
-    "deleteConfirmation": "Ydych chi’n siŵr eich bod am ddileu hwn?",
-    "@deleteConfirmation": {
-        "description": "Confirmation text before deleting an item."
-    },
-    "recipeSaved": "Rysáit wedi’i gadw i’r cwpwrdd!",
-    "@recipeSaved": {
-        "description": "Toast/snackbar after saving a recipe."
-    },
-    "recipeDeleted": "Rysáit wedi’i ddileu.",
-    "@recipeDeleted": {
-        "description": "Toast/snackbar after deleting a recipe."
-    },
-    "translationUsed": "Wedi’i gyfieithu o {language}",
-    "@translationUsed": {
-        "description": "Indicates which language the recipe was translated from.",
-        "placeholders": {
-            "language": {
-                "type": "String"
-            }
-        }
-    },
-    "usageThisMonthTitle": "📊 Defnydd y mis hwn",
-    "@usageThisMonthTitle": {
-        "description": "Title above usage meters."
-    },
-    "labelAiRecipes": "Ryseitiau AI",
-    "@labelAiRecipes": {
-        "description": "Label for AI recipe usage count."
-    },
-    "labelTranslations": "Cyfieithiadau",
-    "@labelTranslations": {
-        "description": "Label for translation usage count."
-    },
-    "usageCount": "{used} / {max}",
-    "@usageCount": {
-        "description": "Usage count in the form 'used / max'.",
-        "placeholders": {
-            "used": {
-                "type": "int"
-            },
-            "max": {
-                "type": "int"
-            }
-        }
-    },
-    "usageOutOfThisMonth": "allan o {max} y mis hwn",
-    "@usageOutOfThisMonth": {
-        "description": "Subtitle under AI usage meter.",
-        "placeholders": {
-            "max": {
-                "type": "int"
-            }
-        }
-    },
-    "usageMonthlyLimit": "terfyn misol o {max}",
-    "@usageMonthlyLimit": {
-        "description": "Subtitle under translations usage meter.",
-        "placeholders": {
-            "max": {
-                "type": "int"
-            }
-        }
-    },
-    "error": "Gwall",
-    "@error": {
-        "description": "Generic error dialog title."
-    },
-    "networkError": "Gwall rhwydwaith, ceisiwch eto.",
-    "@networkError": {
-        "description": "Shown for connectivity-related failures."
-    },
-    "unknownError": "Aeth rhywbeth o'i le. Ceisiwch eto'n hwyrach.",
-    "@unknownError": {
-        "description": "Fallback error message for unknown issues."
-    },
-    "tipScanPlus": "Tap + i sganio rysáit. Mae hyd yn oed gweddillion yn haeddu lle yn eich vault!",
-    "@tipScanPlus": {
-        "description": "Daily tip: encourages scanning recipes."
-    },
-    "tipFamilyClassic": "Oes gennych chi glasur teuluol? Ychwanegwch ef heddiw a'i gadw am byth.",
-    "@tipFamilyClassic": {
-        "description": "Daily tip: encourages adding family recipes."
-    },
-    "tipLongPressSort": "Pwyswch am hir ar rysáit i'w drefnu fel proffesiynol. Vault taclus, cogydd hapus.",
-    "@tipLongPressSort": {
-        "description": "Daily tip: hints at long-press to organize."
-    },
-    "tipFavouriteIt": "Peidiwch â'i gadw yn unig—ffefrynwch ef! Tapiwch y galon ar eich prydau gorau.",
-    "@tipFavouriteIt": {
-        "description": "Daily tip: promotes using favourites."
-    },
-    "tipNewCategory": "Ceisiwch greu categori newydd heddiw. 'Prydau Clyd yr Hydref', efallai?",
-    "@tipNewCategory": {
-        "description": "Daily tip: suggests creating a new category."
-    },
-    "tipEachScanStep": "Mae pob sgan yn gam nes at eich llyfr coginio eich hun.",
-    "@tipEachScanStep": {
-        "description": "Daily tip: motivational scanning message."
-    },
-    "funButter": "Cofiwch: menyn yw'r cynhwysyn cyfrinachol fel arfer... neu dryswch.",
-    "@funButter": {
-        "description": "Light-hearted/funny daily message."
-    },
-    "funPastaHeat": "Os na allwch sefyll y gwres... rydych chi'n debygol o or-goginio pasta.",
-    "@funPastaHeat": {
-        "description": "Light-hearted/funny daily message."
-    },
-    "funPoachIdeas": "Pochoch syniadau, nid wyau. Mae gennym ni ganllaw ar gyfer hynny hefyd.",
-    "@funPoachIdeas": {
-        "description": "Light-hearted/funny daily message."
-    },
-    "funRusticMess": "Mae heddiw'n ddiwrnod gwych i bobi llanast a'i alw'n wledig.",
-    "@funRusticMess": {
-        "description": "Light-hearted/funny daily message."
-    },
-    "funCheflebration": "Yn cadw'ch 100fed rysáit? Gelwir hynny'n *cheflebration* 🎉",
-    "@funCheflebration": {
-        "description": "Light-hearted/funny daily message with pun."
-    },
-    "funMoreThanGran": "Y foment pan fydd gan eich vault fwy o ryseitiau na'ch nain.",
-    "@funMoreThanGran": {
-        "description": "Light-hearted/funny daily message."
-    },
-    "factTomatoes": "Unwaith roedd pobl yn meddwl bod tomatos yn wenwynig. 🍝",
-    "@factTomatoes": {
-        "description": "Food fact: trivia-style daily message."
-    },
-    "factExpensivePizza": "Mae'r pizza drutaf yn y byd yn costio dros £2,000. Eich un chi: amhrisiadwy.",
-    "@factExpensivePizza": {
-        "description": "Food fact: trivia-style daily message."
-    },
-    "factBananasBerries": "Mae bananas yn aeron. Nid yw mefus. Cofiwch hynny!",
-    "@factBananasBerries": {
-        "description": "Food fact: trivia-style daily message."
-    },
-    "factHoneyNeverSpoils": "Nid yw mêl byth yn difetha. Fel eich ryseitiau gorau.",
-    "@factHoneyNeverSpoils": {
-        "description": "Food fact: trivia-style daily message."
-    },
-    "factOysters": "Unwaith roedd wystrys yn cael eu hystyried yn fwyd y tlawd. Nawr? Moethus.",
-    "@factOysters": {
-        "description": "Food fact: trivia-style daily message."
-    },
-    "factPuffLayers": "Mae gan bastai phyll dros 700 o haenau. Mae ganddo hefyd ffordd fer yma.",
-    "@factPuffLayers": {
-        "description": "Food fact: trivia-style daily message."
-    },
-    "vaultLikeFridge": "Mae eich vault fel oergell: agorwch ef yn aml a'i gadw'n ffres.",
-    "@vaultLikeFridge": {
-        "description": "Vault-themed motivational message."
-    },
-    "vaultBackUpTastebuds": "Gwnewch gopi wrth gefn o'ch blagur blas. Ychwanegwch rysáit heddiw.",
-    "@vaultBackUpTastebuds": {
-        "description": "Vault-themed motivational message."
-    },
-    "vaultYouOwnIt": "Chi sy'n berchen ar y vault hwn. Dim ond cadw'r drws yn daclus a wnawn ni.",
-    "@vaultYouOwnIt": {
-        "description": "Vault-themed motivational message."
-    },
-    "vaultFewerWhatsForDinner": "Bob rysáit a gedwir yw un llai o 'Beth sydd i swper?'",
-    "@vaultFewerWhatsForDinner": {
-        "description": "Vault-themed motivational message."
-    },
-    "vaultHungryIdeas": "Galwodd eich vault. Mae eisiau syniadau newydd.",
-    "@vaultHungryIdeas": {
-        "description": "Vault-themed motivational message."
-    },
-    "quoteLoveVisible": "Mae coginio yn gariad wedi'i wneud yn weladwy – cadwch bryd a wnaeth eich gwneud yn hapus heddiw.",
-    "@quoteLoveVisible": {
-        "description": "Inspirational quote."
-    },
-    "quoteCuriousCook": "Nid yw neb yn cael ei eni'n gogydd gwych – dim ond un chwilfrydig.",
-    "@quoteCuriousCook": {
-        "description": "Inspirational quote."
-    },
-    "quoteStories": "Mae ryseitiau fel straeon. Beth mae eich un chi'n ei ddweud heddiw?",
-    "@quoteStories": {
-        "description": "Inspirational quote."
-    },
-    "quoteBurntToast": "Mae hyd yn oed tost wedi'i losgi yn wers sy'n werth ei chadw.",
-    "@quoteBurntToast": {
-        "description": "Inspirational quote."
-    },
-    "quoteSingleChop": "Mae pob pryd yn dechrau gyda thorriad sengl.",
-    "@quoteSingleChop": {
-        "description": "Inspirational quote."
-    },
-    "riddleTinGrin": "🧠 Pos: Rwy’n dechrau mewn tun, yn gorffen gyda gwên, ac yn mynd yn wych gyda ffa. Beth ydw i?",
-    "@riddleTinGrin": {
-        "description": "Riddle-style daily engagement message."
-    },
-    "quizPuffPastry": "💡 Cwis i ti dy hun: Allwch chi enwi 3 phryd sy’n defnyddio pasteiod phwff?",
-    "@quizPuffPastry": {
-        "description": "Quiz-style daily engagement message."
-    },
-    "challengeFiveIngredients": "🥄 Her y Vault: Ychwanegwch rysáit heddiw gyda dim ond 5 cynhwysyn.",
-    "@challengeFiveIngredients": {
-        "description": "Challenge-style daily engagement message."
-    },
-    "triviaPoachBoil": "🍳 Ffaith ddifyr: Beth yw’r gwahaniaeth rhwng poci a berwi? Awgrym: tymheredd!",
-    "@triviaPoachBoil": {
-        "description": "Trivia-style daily engagement message."
-    },
-    "rollOldestRecipe": "🎲 Rholiwch y dis—rhowch gynnig ar goginio’r rysáit hynaf yn eich vault!",
-    "@rollOldestRecipe": {
-        "description": "Challenge-style daily engagement message."
-    },
-    "encouragementScribbledNote": "Mae heddiw’n ddiwrnod gwych i droi’r nodyn bras hwnnw’n rysáit wedi’i gadw.",
-    "@encouragementScribbledNote": {
-        "description": "Encouragement message to capture a loose recipe."
-    },
-    "encouragementDeliciousNotPerfect": "Peidiwch ag anelu am berffeithrwydd—anewch am flas arbennig. Yna ei gadw!",
-    "@encouragementDeliciousNotPerfect": {
-        "description": "Encouragement message about imperfection."
-    },
-    "encouragementStockedWithJoy": "Cadwch eich vault fel eich cegin: wedi’i stocio gyda llawenydd ac yn barod i’w ddefnyddio.",
-    "@encouragementStockedWithJoy": {
-        "description": "Encouragement message about maintaining the vault."
-    },
-    "encouragementLegacyCookbook": "Mae pob rysáit a gedwir yn gam nesaf at eich llyfr coginio etifeddiaeth eich hun.",
-    "@encouragementLegacyCookbook": {
-        "description": "Encouragement message about long-term collection."
-    },
-    "changePasswordTitle": "Newid Cyfrinair",
-    "@changePasswordTitle": {
-        "description": "Title for the change password screen."
-    },
-    "passwordTooShort": "Mae'r cyfrinair yn rhy fyr (isafswm o 6 nod).",
-    "@passwordTooShort": {
-        "description": "Validation error when the password is shorter than the minimum length."
-    },
-    "emailInUse": "Mae'r e-bost hwn eisoes yn cael ei ddefnyddio.",
-    "@emailInUse": {
-        "description": "Shown when the email address is already registered."
-    },
-    "invalidEmail": "E-bost annilys.",
-    "@invalidEmail": {
-        "description": "Shown when the email format is invalid."
-    },
-    "registrationDisabled": "Mae cofrestru wedi'i analluogi dros dro.",
-    "@registrationDisabled": {
-        "description": "Shown when sign-ups are turned off in the backend."
-    },
-    "passwordUpdated": "Cyfrinair wedi’i ddiweddaru’n llwyddiannus",
-    "@passwordUpdated": {
-        "description": "Toast/snackbar after a successful password change."
-    },
-    "currentPasswordLabel": "Cyfrinair Presennol",
-    "@currentPasswordLabel": {
-        "description": "Label for current password input field."
-    },
-    "newPasswordLabel": "Cyfrinair Newydd",
-    "@newPasswordLabel": {
-        "description": "Label for new password input field."
-    },
-    "confirmPasswordLabel": "Cadarnhau Cyfrinair Newydd",
-    "@confirmPasswordLabel": {
-        "description": "Label for confirm password input field."
-    },
-    "enterCurrentPassword": "Rhowch eich cyfrinair presennol",
-    "@enterCurrentPassword": {
-        "description": "Helper text for current password input."
-    },
-    "passwordMinLength": "Rhaid bod o leiaf 6 nod",
-    "@passwordMinLength": {
-        "description": "Validation message for minimum password length."
-    },
-    "passwordsDoNotMatch": "Nid yw’r cyfrineiriau’n cyd-fynd",
-    "@passwordsDoNotMatch": {
-        "description": "Validation message when password confirmation fails."
-    },
-    "updatePasswordButton": "Diweddaru Cyfrinair",
-    "@updatePasswordButton": {
-        "description": "CTA to submit password change."
-    },
-    "emailLabel": "E-bost",
-    "@emailLabel": {
-        "description": "Label for email input field."
-    },
-    "passwordLabel": "Cyfrinair",
-    "@passwordLabel": {
-        "description": "Label for password input field."
-    },
-    "signInWithEmail": "Mewngofnodi gyda E-bost",
-    "@signInWithEmail": {
-        "description": "CTA to sign in using email/password."
-    },
-    "signInWithGoogle": "Mewngofnodi gyda Google",
-    "@signInWithGoogle": {
-        "description": "CTA to sign in using Google account."
-    },
-    "signInWithApple": "Mewngofnodi gyda Apple",
-    "@signInWithApple": {
-        "description": "CTA to sign in using Apple account."
-    },
-    "registerCta": "Dim cyfrif? Cofrestrwch",
-    "@registerCta": {
-        "description": "Prompt/CTA to navigate to registration."
-    },
-    "signInCancelled": "Canslwyd y mewngofnodi.",
-    "@signInCancelled": {
-        "description": "Shown when a third-party sign-in flow is cancelled by the user."
-    },
-    "authInvalidCredential": "E-bost neu gyfrinair annilys.",
-    "@authInvalidCredential": {
-        "description": "Auth error for invalid credentials."
-    },
-    "authUserNotFound": "Heb ddod o hyd i gyfrif gyda’r e-bost hwnnw.",
-    "@authUserNotFound": {
-        "description": "Auth error when no user exists for the provided email."
-    },
-    "authWrongPassword": "Cyfrinair anghywir.",
-    "@authWrongPassword": {
-        "description": "Auth error when password is incorrect."
-    },
-    "authTooManyRequests": "Gormod o ymdrechion. Ceisiwch eto’n hwyrach.",
-    "@authTooManyRequests": {
-        "description": "Rate-limiting/lockout auth error message."
-    },
-    "createAccountTitle": "Creu eich cyfrif\nRecipeVault",
-    "@createAccountTitle": {
-        "description": "Title on the registration screen (with forced line break)."
-    },
-    "trialLine": "Mwynhewch dreial am ddim am 7 diwrnod – dim angen cerdyn.",
-    "@trialLine": {
-        "description": "Subheading explaining registration includes a free trial."
-    },
-    "createAccountButton": "Creu Cyfrif",
-    "@createAccountButton": {
-        "description": "CTA to complete registration."
-    },
-    "continueWithGoogle": "Parhau gyda Google",
-    "@continueWithGoogle": {
-        "description": "Alternate registration CTA with Google."
-    },
-    "continueWithApple": "Parhau gyda Apple",
-    "@continueWithApple": {
-        "description": "Alternate registration CTA with Apple."
-    },
-    "alreadyHaveAccountCta": "Oes gennych gyfrif eisoes? Mewngofnodwch",
-    "@alreadyHaveAccountCta": {
-        "description": "Link/CTA to go to login screen."
-    },
-    "registrationFailed": "Methodd y cofrestru",
-    "@registrationFailed": {
-        "description": "Generic error title when registration fails."
-    },
-    "googleSignupCancelled": "Canslwyd cofrestru Google.",
-    "@googleSignupCancelled": {
-        "description": "Shown when Google sign-up flow is cancelled."
-    },
-    "googleSignupFailed": "Methodd cofrestru Google",
-    "@googleSignupFailed": {
-        "description": "Shown when Google sign-up flow fails."
-    },
-    "appleSignupCancelled": "Canslwyd cofrestru Apple.",
-    "@appleSignupCancelled": {
-        "description": "Shown when Apple sign-up flow is cancelled."
-    },
-    "appleSignupFailed": "Methodd cofrestru Apple",
-    "@appleSignupFailed": {
-        "description": "Shown when Apple sign-up flow fails."
-    },
-    "purchaseSuccess": "Pryniant yn llwyddiannus!",
-    "@purchaseSuccess": {
-        "description": "Toast/snackbar after a successful purchase."
-    },
-    "purchaseCancelled": "Canslwyd y pryniant.",
-    "@purchaseCancelled": {
-        "description": "Toast/snackbar when user cancels a purchase flow."
-    },
-    "purchaseFailed": "Methodd y pryniant. Ceisiwch eto.",
-    "@purchaseFailed": {
-        "description": "Toast/snackbar when purchase fails."
-    },
-    "unexpectedError": "Digwyddodd gwall annisgwyl. Ceisiwch eto.",
-    "@unexpectedError": {
-        "description": "Generic unexpected error message."
-    },
-    "chefModeTitle": "Modd Cogydd",
-    "@chefModeTitle": {
-        "description": "Title for Chef Mode feature/screen."
-    },
-    "paywallHeader": "Datgloi eich potensial coginio llawn",
-    "@paywallHeader": {
-        "description": "Header text at the top of the paywall screen."
-    },
-    "badgeCurrentPlan": "Cynllun Presennol",
-    "@badgeCurrentPlan": {
-        "description": "Badge label marking the user’s current plan."
-    },
-    "badgeBestValue": "Gwerth Gorau",
-    "@badgeBestValue": {
-        "description": "Badge label highlighting best-value plan."
-    },
-    "badgeFreeTrial": "Treial Am Ddim",
-    "@badgeFreeTrial": {
-        "description": "Badge label highlighting a free trial."
-    },
-    "noPlans": "Dim cynlluniau tanysgrifio ar gael ar hyn o bryd.",
-    "@noPlans": {
-        "description": "Shown when the app cannot load any subscription plans."
-    },
-    "legalAgreePrefix": "Drwy barhau, rydych yn cytuno i’n",
-    "@legalAgreePrefix": {
-        "description": "Lead-in text before terms/privacy links."
-    },
-    "legalTerms": "Telerau Gwasanaeth",
-    "@legalTerms": {
-        "description": "Link label to Terms of Service."
-    },
-    "legalAnd": "a",
-    "@legalAnd": {
-        "description": "Conjunction between terms/privacy links."
-    },
-    "legalPrivacy": "Polisi Preifatrwydd",
-    "@legalPrivacy": {
-        "description": "Link label to Privacy Policy."
-    },
-    "legalAutoRenew": "Bydd tanysgrifiadau’n adnewyddu’n awtomatig oni bai eu bod yn cael eu canslo.",
-    "@legalAutoRenew": {
-        "description": "Disclosure about auto-renewal."
-    },
-    "legalManageApple": "Rheoli eich tanysgrifiad yn Gosodiadau Apple.",
-    "@legalManageApple": {
-        "description": "Apple-specific subscription management guidance."
-    },
-    "manageOrCancelCta": "Rheoli neu ganslo eich tanysgrifiad",
-    "@manageOrCancelCta": {
-        "description": "CTA to manage or cancel a subscription."
-    },
-    "planDefaultDescription": "Mwynhewch fynediad llawn i nodweddion RecipeVault a’r offer pweredig gan AI.",
-    "@planDefaultDescription": {
-        "description": "Fallback description for plans when a specific one is not provided."
-    },
-    "trialEndedTitle": "Daeth y Treial i Ben",
-    "@trialEndedTitle": {
-        "description": "Title shown when the free trial has ended."
-    },
-    "trialEndedHeadline": "Mae eich treial am ddim wedi dod i ben",
-    "@trialEndedHeadline": {
-        "description": "Headline shown on the trial-ended screen."
-    },
-    "trialEndedDescription": "I barhau i ddefnyddio nodweddion AI RecipeVault fel sganio, cyfieithu, a llwytho delweddau, dewiswch gynllun isod.",
-    "@trialEndedDescription": {
-        "description": "Body copy explaining next steps after trial ends."
-    },
-    "seePlanOptions": "Gweld yr holl opsiynau cynllun",
-    "@seePlanOptions": {
-        "description": "CTA to view all available subscription plans."
-    },
-    "appBarToggleViewMode": "Newid modd golwg",
-    "@appBarToggleViewMode": {
-        "description": "Tooltip for switching between grid and list layouts."
-    },
-    "appBarRefreshSubscription": "Adnewyddu eich cynllun tanysgrifio",
-    "@appBarRefreshSubscription": {
-        "description": "Tooltip for button that refreshes subscription status."
-    },
-    "subscriptionRefreshed": "Cynllun tanysgrifio wedi’i adnewyddu.",
-    "@subscriptionRefreshed": {
-        "description": "Snackbar after subscription refresh completes."
-    },
-    "upgradeToUnlockTitle": "Uwchraddio i Ddatgloi",
-    "@upgradeToUnlockTitle": {
-        "description": "Dialog title when a feature is locked behind a paid plan."
-    },
-    "imageUploadLockedMessage": "Mae creu ryseitiau o ddelweddau ar gael ar gynlluniau taledig.",
-    "@imageUploadLockedMessage": {
-        "description": "Dialog body explaining image-based creation is paid-only."
-    },
-    "upgradeToUnlockFeature": "Uwchraddiwch i ddatgloi’r nodwedd hon.",
-    "@upgradeToUnlockFeature": {
-        "description": "Secondary message encouraging upgrade from the lock dialog."
-    },
-    "createFromImagesPaid": "Mae creu ryseitiau o ddelweddau ar gael ar gynlluniau taledig.",
-    "@createFromImagesPaid": {
-        "description": "Inline warning when free users attempt image creation."
-    },
-    "upgradeToUnlockBody": "Uwchraddiwch i ddatgloi’r nodwedd hon.",
-    "@upgradeToUnlockBody": {
-        "description": "Secondary message for locked feature dialog (duplicate-friendly)."
-    },
-    "tabCreate": "Creu",
-    "@tabCreate": {
-        "description": "Bottom navigation label for the Create tab."
-    },
-    "tabVault": "Vault",
-    "@tabVault": {
-        "description": "Bottom navigation label for the Vault tab."
-    },
-    "tabProfile": "Proffil",
-    "@tabProfile": {
-        "description": "Bottom navigation label for the Profile tab."
-    },
-    "viewPlans": "Gweld Cynlluniau",
-    "@viewPlans": {
-        "description": "Button text to navigate to the paywall/plans screen."
-    },
-    "addCategoryTitle": "Ychwanegu Categori Newydd",
-    "@addCategoryTitle": {
-        "description": "Dialog title for creating a new category."
-    },
-    "addCategoryHint": "e.e. Byrbrydau",
-    "@addCategoryHint": {
-        "description": "Hint text inside the new category name input."
-    },
-    "add": "Ychwanegu",
-    "@add": {
-        "description": "Generic Add action label used in buttons/menus."
-    },
-    "usage": "Defnydd",
-    "@usage": {
-        "description": "Label for usage metrics button or section."
-    },
-    "createRecipe": "Creu Rysáit",
-    "@createRecipe": {
-        "description": "Speed-dial/action label to start recipe creation."
-    },
-    "upgradeToCreateRecipe": "Uwchraddio i Greu Rysáit",
-    "@upgradeToCreateRecipe": {
-        "description": "Locked label shown when user’s plan cannot create recipes."
-    },
-    "upgradeToAddCategory": "Uwchraddio i Ychwanegu Categori",
-    "@upgradeToAddCategory": {
-        "description": "Locked label shown when user’s plan cannot add categories."
-    },
-    "recipeCreationLimited": "🔒 Dim ond ar gynlluniau Home Chef a Master Chef y mae modd creu ryseitiau.",
-    "@recipeCreationLimited": {
-        "description": "SnackBar text when recipe creation is restricted by plan."
-    },
-    "categoryCreationLimited": "🔒 Dim ond ar gynlluniau Home Chef a Master Chef y mae modd creu categorïau.",
-    "@categoryCreationLimited": {
-        "description": "SnackBar text when category creation is restricted by plan."
-    },
-    "gotIt": "Iawn",
-    "@gotIt": {
-        "description": "Button text for dismissing onboarding/info bubbles"
-    },
-    "editRecipeTitle": "Golygu Rysáit",
-    "@editRecipeTitle": {
-        "description": "Title of the edit recipe screen"
-    },
-    "editRecipeFieldTitle": "Teitl",
-    "@editRecipeFieldTitle": {
-        "description": "Label for recipe title field"
-    },
-    "editRecipeFieldIngredients": "Cynhwysion (un ar bob llinell)",
-    "@editRecipeFieldIngredients": {
-        "description": "Label for ingredients field"
-    },
-    "editRecipeFieldSteps": "Camau",
-    "@editRecipeFieldSteps": {
-        "description": "Label for recipe steps field"
-    },
-    "editRecipeSaving": "Yn cadw...",
-    "@editRecipeSaving": {
-        "description": "Label shown while recipe is being saved"
-    },
-    "editRecipeSaveChanges": "Cadw Newidiadau",
-    "@editRecipeSaveChanges": {
-        "description": "Label for button to save changes"
-    },
-    "menuFavourite": "Ffefryn",
-    "@menuFavourite": {
-        "description": "Popup menu item to mark a recipe as favourite"
-    },
-    "menuUnfavourite": "Tynnu o Ffefrynnau",
-    "@menuUnfavourite": {
-        "description": "Popup menu item to remove a recipe from favourites"
-    },
-    "menuAssignCategories": "Neilltuo Categorïau",
-    "@menuAssignCategories": {
-        "description": "Popup menu item to assign categories to a recipe"
-    },
-    "menuMoreOptions": "Mwy o opsiynau",
-    "@menuMoreOptions": {
-        "description": "Tooltip/accessible label for the overflow menu button on recipe cards"
-    },
-    "systemAll": "Pob un",
-    "@systemAll": {
-        "description": "System category: show all recipes"
-    },
-    "systemTranslated": "Wedi’i gyfieithu",
-    "@systemTranslated": {
-        "description": "System category: recipes created via translation"
-    },
-    "defaultBreakfast": "Brecwast",
-    "@defaultBreakfast": {
-        "description": "Default category name"
-    },
-    "defaultMain": "Prif Gwrs",
-    "@defaultMain": {
-        "description": "Default category name for main course"
-    },
-    "defaultDessert": "Pwdin",
-    "@defaultDessert": {
-        "description": "Default category name for desserts"
-    },
-    "chipDeleteCategoryTooltip": "Dileu categori",
-    "@chipDeleteCategoryTooltip": {
-        "description": "Tooltip for the delete icon on a category chip"
-    },
-    "addToFavourites": "Ychwanegu at ffefrynnau",
-    "@addToFavourites": {
-        "description": "Tooltip/action for marking an item as favourite"
-    },
-    "removeFromFavourites": "Tynnu o ffefrynnau",
-    "@removeFromFavourites": {
-        "description": "Tooltip/action for unmarking an item as favourite"
-    },
-    "shareAsPdf": "Rhannu fel PDF",
-    "@shareAsPdf": {
-        "description": "Tooltip / action to export and share the recipe as a PDF"
-    },
-    "tapToViewRecipe": "Tapio i weld y rysáit",
-    "@tapToViewRecipe": {
-        "description": "Small hint shown under a recipe title in list view."
-    },
-    "recipeOptions": "Opsiynau Rysáit",
-    "@recipeOptions": {
-        "description": "Title for the bottom sheet that shows actions for a recipe"
-    },
-    "updateImage": "Diweddaru Delwedd",
-    "@updateImage": {
-        "description": "Button label to add or update the recipe image"
-    },
-    "all": "Pob un",
-    "@all": {
-        "description": "System category label representing all recipes"
-    },
-    "translated": "Wedi’i gyfieithu",
-    "@translated": {
-        "description": "System category label for recipes that were translated"
-    },
-    "clearSearch": "Clirio chwilio",
-    "@clearSearch": {
-        "description": "Tooltip text for the clear search (X) button in the search bar."
-    },
-    "searchRecipesAndIngredients": "Chwilio ryseitiau neu gynhwysion...",
-    "@searchRecipesAndIngredients": {
-        "description": "Hint when searching across recipe titles and ingredients."
-    },
-    "searchScopeTitles": "Chwilio teitlau yn unig",
-    "@searchScopeTitles": {
-        "description": "Tooltip for toggling the search scope to titles only."
-    },
-    "searchScopeTitlesIngredients": "Chwilio teitlau + cynhwysion",
-    "@searchScopeTitlesIngredients": {
-        "description": "Tooltip for toggling the search scope to titles and ingredients."
-    },
-    "title": "Teitl",
-    "@title": {
-        "description": "Generic label for a recipe title (used in markdown export)."
-    },
-    "hintsAndTips": "Awgrymiadau a Chynghorion",
-    "@hintsAndTips": {
-        "description": "Label for the hints & tips section of a recipe (used in markdown export)."
-    },
-    "noAdditionalTips": "Dim awgrymiadau ychwanegol wedi’u darparu.",
-    "@noAdditionalTips": {
-        "description": "Fallback text when there are no hints or tips for a recipe (used in markdown export)."
-    },
-    "bubbleScan": "📸 Sganio Ryseitiau\nTapio “Creu” neu + i lwytho a sganio delweddau rysáit.",
-    "@bubbleScan": {
-        "description": "Onboarding bubble message explaining how to scan recipes by uploading images."
-    },
-    "bubbleViewToggle": "👁️ Newid Golwg\nTapio i newid sut mae ryseitiau’n cael eu harddangos.",
-    "@bubbleViewToggle": {
-        "description": "Onboarding bubble message explaining how to toggle between different recipe view modes."
-    },
-    "bubbleLongPress": "📌 Gwasgu a dal rysáit\nTapio a dal i’w wneud yn ffefryn neu bennu categori.",
-    "@bubbleLongPress": {
-        "description": "Onboarding bubble message explaining how to long-press a recipe card to favourite or assign a category."
-    },
-    "vaultBubbleSwitchViews": "Newid golygfeydd yma",
-    "@vaultBubbleSwitchViews": {
-        "description": "Onboarding bubble prompting the user to change between grid/list views."
-    },
-    "vaultBubbleLongPress": "Gwasgwch a daliwch rysáit am opsiynau",
-    "@vaultBubbleLongPress": {
-        "description": "Onboarding bubble explaining long-press on a recipe card."
-    },
-    "vaultBubbleScan": "Sganiwch ryseitiau gyda’r botwm +",
-    "@vaultBubbleScan": {
-        "description": "Onboarding bubble pointing to the create/+ scan entry point."
-    },
-    "sharedRecipeTitle": "Rysáit a Rennir",
-    "@sharedRecipeTitle": {
-        "description": "AppBar title for the shared recipe screen."
-    },
-    "sharedRecipeNotFound": "Methu dod o hyd i’r rysáit a rennir hwn.",
-    "@sharedRecipeNotFound": {
-        "description": "Shown when a shared recipe document is missing."
-    },
-    "sharedRecipeLoadError": "Digwyddodd gwall wrth lwytho’r rysáit.",
-    "@sharedRecipeLoadError": {
-        "description": "Shown when the shared recipe fetch fails."
-    },
-    "noRecipeDataFound": "Dim data rysáit wedi’i ddarganfod.",
-    "@noRecipeDataFound": {
-        "description": "Shown when ResultsScreen gets no data in navigation."
-    },
-    "copyToClipboard": "Copïo i’r clipfwrdd",
-    "@copyToClipboard": {
-        "description": "Tooltip for copy button on ResultsScreen."
-    },
-    "copiedToClipboard": "📋 Rysáit wedi’i gopïo i’r clipfwrdd",
-    "@copiedToClipboard": {
-        "description": "Snackbar after copying recipe text."
-    },
-    "languageLabel": "Iaith: {language}",
-    "@languageLabel": {
-        "description": "Label when simply displaying detected language.",
-        "placeholders": {
-            "language": {
-                "type": "String"
-            }
-        }
-    },
-    "notSignedIn": "Heb fewngofnodi",
-    "@notSignedIn": {
-        "description": "Error when an action requires a signed-in user."
-    },
-    "imageCropCancelled": "Canslwyd tocio delwedd",
-    "@imageCropCancelled": {
-        "description": "Shown when the user cancels image crop."
-    },
-    "uploadFailed": "Methodd llwytho: {error}",
-    "@uploadFailed": {
-        "description": "Shown when image upload fails.",
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "showOcr": "Dangos OCR",
-    "@showOcr": {
-        "description": "Debug toggle to show OCR text."
-    },
-    "hideOcr": "Cuddio OCR",
-    "@hideOcr": {
-        "description": "Debug toggle to hide OCR text."
-    },
-    "formattingError": "Wps! Aeth rhywbeth o’i le gyda’r fformatio.\nCeisiwch eto.",
-    "@formattingError": {
-        "description": "Error card message when the recipe formatter failed."
-    },
-    "aboutLegalTitle": "Ynghylch a Chyfreithiol",
-    "@aboutLegalTitle": {
-        "description": "App bar title for About screen."
-    },
-    "appInfoSectionTitle": "Gwybodaeth App",
-    "@appInfoSectionTitle": {
-        "description": "Section heading for app information."
-    },
-    "versionLabel": "Fersiwn",
-    "@versionLabel": {
-        "description": "Label for the app version row."
-    },
-    "legalSectionTitle": "Cyfreithiol",
-    "@legalSectionTitle": {
-        "description": "Section heading for legal links."
-    },
-    "supportSectionTitle": "Cefnogaeth",
-    "@supportSectionTitle": {
-        "description": "Section heading for support links."
-    },
-    "visitWebsite": "Ymweld â’r Wefan",
-    "@visitWebsite": {
-        "description": "Button/link to open the website."
-    },
-    "contactSupport": "Cysylltu â Chefnogaeth",
-    "@contactSupport": {
-        "description": "Button/link to contact support."
-    },
-    "accountSettingsTitle": "Gosodiadau Cyfrif",
-    "@accountSettingsTitle": {
-        "description": "App bar title for account settings screen."
-    },
-    "noUserSignedIn": "Dim defnyddiwr wedi mewngofnodi",
-    "@noUserSignedIn": {
-        "description": "Shown when account screen is opened without an authenticated user."
-    },
-    "noName": "Dim enw",
-    "@noName": {
-        "description": "Fallback display name when user.displayName is null."
-    },
-    "securitySectionTitle": "Diogelwch",
-    "@securitySectionTitle": {
-        "description": "Section header for security items."
-    },
-    "signOut": "Allgofnodi",
-    "@signOut": {
-        "description": "Menu/button text to sign out."
-    },
-    "signedOut": "Wedi allgofnodi",
-    "@signedOut": {
-        "description": "Snackbar text after successful sign out."
-    },
-    "signOutQuestion": "Allgofnodi?",
-    "@signOutQuestion": {
-        "description": "Dialog title asking to confirm sign out."
-    },
-    "signOutConfirmBody": "Ydych chi’n siŵr eich bod am allgofnodi?",
-    "@signOutConfirmBody": {
-        "description": "Dialog body confirming sign out."
-    },
-    "signOutFailed": "Methwyd allgofnodi: {error}",
-    "@signOutFailed": {
-        "description": "Snackbar when sign out fails.",
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "deleteAccount": "Dileu Cyfrif",
-    "@deleteAccount": {
-        "description": "Menu/button text to delete the account."
-    },
-    "deleteAccountQuestion": "Dileu Eich Cyfrif?",
-    "@deleteAccountQuestion": {
-        "description": "Dialog title asking to confirm account deletion."
-    },
-    "deleteAccountBody": "Bydd hyn yn dileu eich cyfrif a’r holl ddata cysylltiedig yn barhaol gan gynnwys ryseitiau, delweddau, a dewisiadau.\n\nNi ellir dadwneud y weithred hon.",
-    "@deleteAccountBody": {
-        "description": "Dialog body warning about account deletion."
-    },
-    "deleteAccountSuccess": "Cyfrif wedi’i ddileu’n llwyddiannus.",
-    "@deleteAccountSuccess": {
-        "description": "Snackbar after successful account deletion."
-    },
-    "deleteAccountFailed": "Methwyd dileu’r cyfrif: {error}",
-    "@deleteAccountFailed": {
-        "description": "Snackbar when account deletion fails.",
-        "placeholders": {
-            "error": {
-                "type": "String"
-            }
-        }
-    },
-    "appearanceTitle": "Golwg",
-    "@appearanceTitle": {
-        "description": "App bar title for the Appearance settings screen."
-    },
-    "appThemeSectionTitle": "Thema App",
-    "@appThemeSectionTitle": {
-        "description": "Section header for theme options."
-    },
-    "lightMode": "Modd Golau",
-    "@lightMode": {
-        "description": "Option label for light theme."
-    },
-    "darkMode": "Modd Tywyll",
-    "@darkMode": {
-        "description": "Option label for dark theme."
-    },
-    "textSizeSectionTitle": "Maint Testun",
-    "@textSizeSectionTitle": {
-        "description": "Section header for text size options."
-    },
-    "textSizeSmall": "Bach",
-    "@textSizeSmall": {
-        "description": "Option label for small text size."
-    },
-    "textSizeMedium": "Canolig",
-    "@textSizeMedium": {
-        "description": "Option label for medium text size."
-    },
-    "textSizeLarge": "Mawr",
-    "@textSizeLarge": {
-        "description": "Option label for large text size."
-    },
-    "faqsTitle": "Cwestiynau Cyffredin",
-    "@faqsTitle": {
-        "description": "App bar title for the FAQs screen."
-    },
-    "faqsSectionScanSave": "Sganio a Chadw",
-    "@faqsSectionScanSave": {
-        "description": "Section header for scanning/saving FAQs."
-    },
-    "faqsQHowScan": "Sut ydw i’n sganio rysáit?",
-    "@faqsQHowScan": {
-        "description": "Question: scanning a recipe."
-    },
-    "faqsAHowScan": "O’r sgrin Cartref, tapiwch y botwm \"+\" a llwytho un neu fwy o ddelweddau o’ch rysáit.",
-    "@faqsAHowScan": {
-        "description": "Answer: scanning a recipe."
-    },
-    "faqsQAddImage": "Sut ydw i’n ychwanegu delwedd rysáit?",
-    "@faqsQAddImage": {
-        "description": "Question: add recipe image."
-    },
-    "faqsAAddImage": "Ar ôl sganio, tapiwch \"Ychwanegu Delwedd\" i docio a llwytho llun ar gyfer pennyn eich cerdyn rysáit.",
-    "@faqsAAddImage": {
-        "description": "Answer: add recipe image."
-    },
-    "faqsQSaveRecipe": "Sut ydw i’n cadw rysáit?",
-    "@faqsQSaveRecipe": {
-        "description": "Question: save recipe."
-    },
-    "faqsASaveRecipe": "Unwaith y byddwch wedi adolygu’r canlyniad wedi’i fformatio, tapiwch \"Cadw i’r Vault\" i’w storio’n barhaol.",
-    "@faqsASaveRecipe": {
-        "description": "Answer: save recipe."
-    },
-    "faqsSectionAccessUse": "Mynediad ac Defnydd App",
-    "@faqsSectionAccessUse": {
-        "description": "Section header for access/use FAQs."
-    },
-    "faqsQOffline": "Alla i ddefnyddio’r app all-lein?",
-    "@faqsQOffline": {
-        "description": "Question: offline usage."
-    },
-    "faqsAOffline": "Gallwch weld unrhyw ryseitiau sydd eisoes wedi’u cadw yn eich Vault, hyd yn oed heb gysylltiad rhyngrwyd.",
-    "@faqsAOffline": {
-        "description": "Answer: offline usage."
-    },
-    "faqsSectionSubSupport": "Tanysgrifiad a Chefnogaeth",
-    "@faqsSectionSubSupport": {
-        "description": "Section header for subscription/support FAQs."
-    },
-    "faqsQWhySub": "Pam mae angen tanysgrifiad arnaf?",
-    "@faqsQWhySub": {
-        "description": "Question: why subscription."
-    },
-    "faqsAWhySub": "Mae tanysgrifiadau’n datgloi cydamseru cwmwl, llwytho delweddau, cyfieithu, a fformatio pweredig gan AI.",
-    "@faqsAWhySub": {
-        "description": "Answer: why subscription."
-    },
-    "faqsQCancel": "Sut alla i ganslo fy nhanysgrifiad?",
-    "@faqsQCancel": {
-        "description": "Question: cancel subscription."
-    },
-    "faqsACancel": "Rheolwch neu ganslwch eich cynllun unrhyw bryd trwy osodiadau eich cyfrif App Store neu Google Play.",
-    "@faqsACancel": {
-        "description": "Answer: cancel subscription."
-    },
-    "notificationsTitle": "Hysbysiadau",
-    "@notificationsTitle": {
-        "description": "App bar title for notifications settings."
-    },
-    "notificationsSectionReminders": "Atgoffwyr",
-    "@notificationsSectionReminders": {
-        "description": "Section header for reminder notifications."
-    },
-    "notificationsWeeklyTitle": "Atgoffa Wythnosol am Ryseitiau",
-    "@notificationsWeeklyTitle": {
-        "description": "Title of weekly reminder toggle."
-    },
-    "notificationsWeeklySubtitle": "Derbyn gwthiad wythnosol i ychwanegu ryseitiau i’ch vault.",
-    "@notificationsWeeklySubtitle": {
-        "description": "Subtitle explaining weekly reminder."
-    },
-    "notificationsSectionUpdates": "Diweddariadau",
-    "@notificationsSectionUpdates": {
-        "description": "Section header for updates/announcements."
-    },
-    "notificationsFeatureAlertsTitle": "Rhybuddion Nodwedd Newydd",
-    "@notificationsFeatureAlertsTitle": {
-        "description": "Title of feature announcements toggle."
-    },
-    "notificationsFeatureAlertsSubtitle": "Byddwch y cyntaf i glywed pan fydd rhywbeth blasus yn cael ei ychwanegu!",
-    "@notificationsFeatureAlertsSubtitle": {
-        "description": "Subtitle for feature announcements toggle."
-    },
-    "planIncludedHeader": "Wedi’i gynnwys yn eich cynllun:",
-    "@planIncludedHeader": {
-        "description": "Header shown above the list of plan benefits on the plan card."
-    },
-    "trialEnds": "Daw’r treial i ben: {date}",
-    "@trialEnds": {
-        "description": "Shown on plan card if user is on a trial.",
-        "placeholders": {
-            "date": {
-                "type": "String"
-            }
-        }
-    },
-    "settingsSectionAccount": "Cyfrif",
-    "@settingsSectionAccount": {
-        "description": "Header label for account-related settings section in Settings screen.",
-        "type": "text"
-    },
-    "settingsSectionPreferences": "Dewisiadau",
-    "@settingsSectionPreferences": {
-        "description": "Header label for preferences-related settings section in Settings screen.",
-        "type": "text"
-    },
-    "settingsSectionStorage": "Storio Lleol",
-    "@settingsSectionStorage": {
-        "description": "Header label for local storage management settings section in Settings screen.",
-        "type": "text"
-    },
-    "settingsSectionSubscription": "Tanysgrifiad",
-    "@settingsSectionSubscription": {
-        "description": "Header label for subscription management settings section in Settings screen.",
-        "type": "text"
-    },
-    "settingsSectionSupport": "Cefnogaeth",
-    "@settingsSectionSupport": {
-        "description": "Header label for support and help-related settings section in Settings screen.",
-        "type": "text"
-    },
-    "settingsTileAccountSettings": "Gosodiadau Cyfrif",
-    "@settingsTileAccountSettings": {
-        "description": "Settings tile label for navigating to account settings.",
-        "type": "text"
-    },
-    "settingsTileAppearance": "Golwg",
-    "@settingsTileAppearance": {
-        "description": "Settings tile label for navigating to appearance/theme settings.",
-        "type": "text"
-    },
-    "settingsTileNotifications": "Hysbysiadau",
-    "@settingsTileNotifications": {
-        "description": "Settings tile label for navigating to notifications settings.",
-        "type": "text"
-    },
-    "settingsTileCacheClear": "Clirio Storfa",
-    "@settingsTileCacheClear": {
-        "description": "Settings tile label for clearing cached data from the app.",
-        "type": "text"
-    },
-    "settingsTileManageSubscription": "Rheoli Tanysgrifiad",
-    "@settingsTileManageSubscription": {
-        "description": "Settings tile label for navigating to the subscription management screen.",
-        "type": "text"
-    },
-    "settingsTileHelpFaqs": "Cymorth a Cwestiynau Cyffredin",
-    "@settingsTileHelpFaqs": {
-        "description": "Settings tile label for navigating to the help and FAQs screen.",
-        "type": "text"
-    },
-    "settingsTileAboutLegal": "Ynghylch a Chyfreithiol",
-    "@settingsTileAboutLegal": {
-        "description": "Settings tile label for navigating to the about and legal information screen.",
-        "type": "text"
-    },
-    "footerCompanyName": "Cheeky Badger Creations",
-    "@footerCompanyName": {
-        "description": "The name of the company shown at the bottom of the settings screen.",
-        "type": "text"
-    },
-    "localStorageTitle": "Storio Lleol",
-    "@localStorageTitle": {
-        "description": "App bar title for the screen that manages local storage and cache.",
-        "type": "text"
-    },
-    "clearLocalCacheTitle": "Clirio Storfa Leol",
-    "@clearLocalCacheTitle": {
-        "description": "Headline on the Local Storage screen above the action to clear cache.",
-        "type": "text"
-    },
-    "clearLocalCacheDescription": "Dileu’r holl ryseitiau, categorïau a baneri tiwtorial sydd wedi’u storio ar y ddyfais hon.\nNi fydd eich data cwmwl yn cael ei effeithio.",
-    "@clearLocalCacheDescription": {
-        "description": "Body text describing what clearing the local cache will do.",
-        "type": "text"
-    },
-    "clearLocalCacheButton": "Clirio Storfa Leol",
-    "@clearLocalCacheButton": {
-        "description": "Primary button label to start clearing local cache.",
-        "type": "text"
-    },
-    "clearCacheDialogTitle": "Clirio’r Storfa?",
-    "@clearCacheDialogTitle": {
-        "description": "Title of the confirmation dialog shown before clearing cache.",
-        "type": "text"
-    },
-    "clearCacheDialogBody": "Bydd hyn yn dileu’r holl ryseitiau, categorïau a baneri tiwtorial sydd wedi’u storio’n lleol.\nBydd eich data cwmwl yn aros yn ddiogel.",
-    "@clearCacheDialogBody": {
-        "description": "Body of the confirmation dialog explaining the effects of clearing cache.",
-        "type": "text"
-    },
-    "clearNow": "Clirio Nawr",
-    "@clearNow": {
-        "description": "Confirm action button in the clear cache dialog.",
-        "type": "text"
-    },
-    "localCacheCleared": "Storfa leol wedi’i glirio",
-    "@localCacheCleared": {
-        "description": "Snackbar/toast text shown after local cache is successfully cleared.",
-        "type": "text"
-    },
-    "processingTitle": "Wrthi’n Prosesu Eich Rysáit",
-    "@processingTitle": {
-        "description": "Title of the processing overlay."
-    },
-    "processingStepUploading": "Llwytho Delweddau i Fyny",
-    "@processingStepUploading": {
-        "description": "Step: uploading images."
-    },
-    "processingStepTranslating": "Cyfieithu",
-    "@processingStepTranslating": {
-        "description": "Step: translating text."
-    },
-    "processingStepFormatting": "Echdynnu a Fformatio",
-    "@processingStepFormatting": {
-        "description": "Step: extracting & formatting recipe."
-    },
-    "processingStepFinishing": "Gorffen",
-    "@processingStepFinishing": {
-        "description": "Step: finishing up."
-    },
-    "processingFunUploading": "Yn chrensian lluniau sgrin fel cornflakes…",
-    "@processingFunUploading": {
-        "description": "Fun line shown during upload step."
-    },
-    "processingFunFormatting": "Yn gweini eich rysáit yn daclus…",
-    "@processingFunFormatting": {
-        "description": "Fun line shown during formatting step."
-    },
-    "processingFunCompleted": "Yn ychwanegu’r addurn olaf…",
-    "@processingFunCompleted": {
-        "description": "Fun line shown during finishing step."
-    },
-    "processingFunUploading1": "Wrthi'n llwytho eich sgrinluniau…",
-    "@processingFunUploading1": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam llwytho."
-    },
-    "processingFunUploading2": "Anfon cynhwysion i'r gegin yn y cwmwl…",
-    "@processingFunUploading2": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam llwytho."
-    },
-    "processingFunUploading3": "Cnoi sgrinluniau fel cornflakes…",
-    "@processingFunUploading3": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam llwytho."
-    },
-    "processingFunUploading4": "Cymysgu eich hud lwytho…",
-    "@processingFunUploading4": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam llwytho."
-    },
-    "processingFunExtracting1": "Darllen eich brasluniau ysgrifenedig â llaw…",
-    "@processingFunExtracting1": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam echdynnu."
-    },
-    "processingFunExtracting2": "Galw ar y corachod OCR…",
-    "@processingFunExtracting2": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam echdynnu."
-    },
-    "processingFunExtracting3": "Echdynnu manylion blasus o'r picseli…",
-    "@processingFunExtracting3": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam echdynnu."
-    },
-    "processingFunExtracting4": "Dod o hyd i aur rysáit yn y sŵn…",
-    "@processingFunExtracting4": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam echdynnu."
-    },
-    "processingFunTranslating1": "Trosi cyfrinachau coginio i Saesneg Prydeinig…",
-    "@processingFunTranslating1": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam cyfieithu."
-    },
-    "processingFunTranslating2": "Ychwanegu ychydig o ramadeg cywir…",
-    "@processingFunTranslating2": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam cyfieithu."
-    },
-    "processingFunTranslating3": "Rhoi acen bonheddig i'ch rysáit…",
-    "@processingFunTranslating3": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam cyfieithu."
-    },
-    "processingFunTranslating4": "Bragu cyfieithiad…",
-    "@processingFunTranslating4": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam cyfieithu."
-    },
-    "processingFunFormatting1": "Mae ChatGPT yn gwisgo het gogydd…",
-    "@processingFunFormatting1": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam fformatio."
-    },
-    "processingFunFormatting2": "Chwipio'ch testun i mewn i rysáit flasus…",
-    "@processingFunFormatting2": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam fformatio."
-    },
-    "processingFunFormatting3": "Taclo eich cyfarwyddiadau gyda hud AI…",
-    "@processingFunFormatting3": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam fformatio."
-    },
-    "processingFunFormatting4": "Addurno'ch camau gyda manylder…",
-    "@processingFunFormatting4": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam fformatio."
-    },
-    "processingFunCompleted1": "Cerdyn rysáit yn barod! Gadewch i ni fwyta. 🍽️",
-    "@processingFunCompleted1": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam gorffen."
-    },
-    "processingFunCompleted2": "Voilà! Mae eich pryd digidol wedi'i weini.",
-    "@processingFunCompleted2": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam gorffen."
-    },
-    "processingFunCompleted3": "Wedi gorffen — mwynhewch, arddull AI!",
-    "@processingFunCompleted3": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam gorffen."
-    },
-    "processingFunCompleted4": "Mae eich rysáit wedi'i goginio ac yn barod i'w weini!",
-    "@processingFunCompleted4": {
-        "description": "Llinell hwyliog a ddangosir yn ystod y cam gorffen."
+  "@@locale": "cy",
+  "loading": "Llwytho...",
+  "@loading": {
+    "description": "Shown while an operation is in progress."
+  },
+  "appTitle": "RecipeVault",
+  "@appTitle": {
+    "description": "Main application title."
+  },
+  "untitled": "Ddi-deitl",
+  "@untitled": {
+    "description": "Fallback title when a recipe has no title."
+  },
+  "welcomeMessage": "Croeso i RecipeVault",
+  "@welcomeMessage": {
+    "description": "Greeting shown on app launch/sign-in."
+  },
+  "scanRecipe": "Sganio Rysáit",
+  "@scanRecipe": {
+    "description": "CTA/button to start scanning a recipe."
+  },
+  "saveToVault": "Cadw i'r Cwpwrdd",
+  "@saveToVault": {
+    "description": "CTA/button to save a recipe to the user’s vault."
+  },
+  "settings": "Gosodiadau",
+  "@settings": {
+    "description": "Menu item to open settings."
+  },
+  "logout": "Allgofnodi",
+  "@logout": {
+    "description": "Action to sign out the current user."
+  },
+  "yes": "Ie",
+  "@yes": {
+    "description": "Affirmative action label."
+  },
+  "no": "Na",
+  "@no": {
+    "description": "Negative action label."
+  },
+  "cancel": "Canslo",
+  "@cancel": {
+    "description": "Cancels the current action/dialog."
+  },
+  "close": "Cau",
+  "@close": {
+    "description": "Closes a dialog/sheet."
+  },
+  "save": "Cadw",
+  "@save": {
+    "description": "Saves current changes."
+  },
+  "delete": "Dileu",
+  "@delete": {
+    "description": "Deletes the current item."
+  },
+  "edit": "Golygu",
+  "@edit": {
+    "description": "Begins editing the current item."
+  },
+  "confirm": "Cadarnhau",
+  "@confirm": {
+    "description": "Confirms the current action."
+  },
+  "myVault": "Fy Nghwpwrdd",
+  "@myVault": {
+    "description": "Tab/section for user’s saved recipes."
+  },
+  "favourites": "Ffefrynnau",
+  "@favourites": {
+    "description": "Tab/section for favourite recipes."
+  },
+  "categories": "Categorïau",
+  "@categories": {
+    "description": "Tab/section for recipe categories."
+  },
+  "searchRecipes": "Chwilio ryseitiau...",
+  "@searchRecipes": {
+    "description": "Placeholder text in recipe search input."
+  },
+  "noRecipesFound": "Dim ryseitiau wedi’u canfod",
+  "@noRecipesFound": {
+    "description": "Shown when a recipe search returns no results."
+  },
+  "emptyVaultTitle": "Mae eich Vault Ryseitiau yn Wag",
+  "@emptyVaultTitle": {
+    "description": "Title shown when the vault has no recipes"
+  },
+  "emptyVaultBody": "Trowch eich sgrinluniau blêr yn gardiau rysáit trefnus.",
+  "@emptyVaultBody": {
+    "description": "Testun yn annog y defnyddiwr i fewnforio sgrinluniau a chreu ei rysáit cyntaf"
+  },
+  "addCategory": "Ychwanegu Categori",
+  "@addCategory": {
+    "description": "Action to create a new category."
+  },
+  "removeCategory": "Tynnu Categori",
+  "@removeCategory": {
+    "description": "Action to remove an existing category."
+  },
+  "assignCategory": "Neulltuo Categori",
+  "@assignCategory": {
+    "description": "Action to apply a category to a recipe."
+  },
+  "recipeDetails": "Manylion y Rysáit",
+  "@recipeDetails": {
+    "description": "Header/title for the recipe details screen."
+  },
+  "ingredients": "Cynhwysion",
+  "@ingredients": {
+    "description": "Section header for ingredients list."
+  },
+  "instructions": "Cyfarwyddiadau",
+  "@instructions": {
+    "description": "Section header for cooking steps."
+  },
+  "notes": "Nodiadau",
+  "@notes": {
+    "description": "Section header for extra notes."
+  },
+  "dailyTipTitle": "Awgrym Dyddiol",
+  "@dailyTipTitle": {
+    "description": "Title above the daily tip/message card."
+  },
+  "dismiss": "Cau",
+  "@dismiss": {
+    "description": "Button to hide a tip/notification."
+  },
+  "dailyMessagePlaceholder": "Bydd eich ysbrydoliaeth ddyddiol yn ymddangos yma.",
+  "@dailyMessagePlaceholder": {
+    "description": "Placeholder text when the daily message hasn’t loaded."
+  },
+  "upgradeNow": "Uwchraddio Nawr",
+  "@upgradeNow": {
+    "description": "Primary CTA to upgrade subscription."
+  },
+  "trialAvailable": "Treial Am Ddim ar Gael",
+  "@trialAvailable": {
+    "description": "Indicator that a free trial can be started."
+  },
+  "upgradeBannerMessage": "Datgloi mwy o ryseitiau, cyfieithiadau a nodweddion – uwchraddiwch nawr!",
+  "@upgradeBannerMessage": {
+    "description": "Promotional banner text encouraging upgrade."
+  },
+  "trialDaysRemaining": "{days} diwrnod ar ôl",
+  "@trialDaysRemaining": {
+    "description": "Shows the number of trial days remaining.",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
     }
+  },
+  "planTaster": "Blaswr",
+  "@planTaster": {
+    "description": "Subscription tier: entry-level plan."
+  },
+  "planHomeChef": "Cogydd Cartref",
+  "@planHomeChef": {
+    "description": "Subscription tier: mid-level plan."
+  },
+  "planMasterChef": "Prif Gogydd",
+  "@planMasterChef": {
+    "description": "Subscription tier: top-level plan."
+  },
+  "planFree": "Cynllun Am Ddim",
+  "@planFree": {
+    "description": "Subscription tier: free access plan."
+  },
+  "unknownTier": "Haen Anhysbys",
+  "@unknownTier": {
+    "description": "Shown when the user’s subscription tier cannot be determined."
+  },
+  "specialAccessBadge": "⭐ {tierLabel}",
+  "@specialAccessBadge": {
+    "description": "Badge label for special access within a tier.",
+    "placeholders": {
+      "tierLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "planHomeChefSubtitleAnnual": "Cynllun Blynyddol",
+  "@planHomeChefSubtitleAnnual": {
+    "description": "Subtitle for Home Chef annual plan."
+  },
+  "planHomeChefSubtitleMonthly": "Cynllun Misol",
+  "@planHomeChefSubtitleMonthly": {
+    "description": "Subtitle for Home Chef monthly plan."
+  },
+  "planMasterChefSubtitleAnnual": "Cynllun Blynyddol",
+  "@planMasterChefSubtitleAnnual": {
+    "description": "Subtitle for Master Chef annual plan."
+  },
+  "planMasterChefSubtitleMonthly": "Cynllun Misol",
+  "@planMasterChefSubtitleMonthly": {
+    "description": "Subtitle for Master Chef monthly plan."
+  },
+  "planHomeChefDescription": "Cam clyfar ymlaen – perffaith i gogyddion cartref rheolaidd sydd eisiau mwy o bŵer.",
+  "@planHomeChefDescription": {
+    "description": "Marketing description for the Home Chef tier."
+  },
+  "planMasterChefDescriptionAnnual": "Y cynllun eithaf i gariadon bwyd difrifol – gwerth gorau os ydych chi’n ymrwymo’n llawn.",
+  "@planMasterChefDescriptionAnnual": {
+    "description": "Marketing description for Master Chef annual plan."
+  },
+  "planMasterChefDescriptionMonthly": "I’r rhai sydd eisiau popeth – mynediad llawn bob mis.",
+  "@planMasterChefDescriptionMonthly": {
+    "description": "Marketing description for Master Chef monthly plan."
+  },
+  "featureUnlimitedRecipes": "Sganiau rysáit diderfyn",
+  "@featureUnlimitedRecipes": {
+    "description": "Plan feature label: unlimited AI recipe scanning."
+  },
+  "featureUnlimitedTranslations": "Cyfieithiadau diderfyn",
+  "@featureUnlimitedTranslations": {
+    "description": "Plan feature label: unlimited translations."
+  },
+  "featureCloudBackup": "Copi wrth gefn cwmwl",
+  "@featureCloudBackup": {
+    "description": "Plan feature label: cloud backup of user data."
+  },
+  "featureCategories": "Categorïau personol",
+  "@featureCategories": {
+    "description": "Plan feature label: create custom categories."
+  },
+  "featureFavourites": "Nodi fel ffefryn",
+  "@featureFavourites": {
+    "description": "Plan feature label: mark recipes as favourites."
+  },
+  "featureVaultSync": "Cydamseru ar draws dyfeisiau",
+  "@featureVaultSync": {
+    "description": "Plan feature label: sync vault across devices."
+  },
+  "featureHomeChef1": "👨‍🍳 20 cerdyn rysáit AI/mis – coginio syniadau newydd yn hawdd",
+  "@featureHomeChef1": {
+    "description": "Home Chef feature list item 1."
+  },
+  "featureHomeChef2": "🌍 5 cyfieithiad/mis – sganio ryseitiau llawysgrif neu o dramor",
+  "@featureHomeChef2": {
+    "description": "Home Chef feature list item 2."
+  },
+  "featureHomeChef3": "📦 Cadwch eich hoff ryseitiau yn eich cwpwrdd personol",
+  "@featureHomeChef3": {
+    "description": "Home Chef feature list item 3."
+  },
+  "featureHomeChef4": "🏷️ Creu a rheoli hyd at 3 chategori personol",
+  "@featureHomeChef4": {
+    "description": "Home Chef feature list item 4."
+  },
+  "featureHomeChef5": "🔗 Rhannwch eich ryseitiau gyda ffrindiau a theulu",
+  "@featureHomeChef5": {
+    "description": "Home Chef feature list item 5."
+  },
+  "featureMasterChef1": "🍽️ 100 cerdyn rysáit AI/mis – dim terfyn ar greadigrwydd",
+  "@featureMasterChef1": {
+    "description": "Master Chef feature list item 1."
+  },
+  "featureMasterChef2": "🈂️ 20 cyfieithiad/mis – perffaith ar gyfer prydau rhyngwladol",
+  "@featureMasterChef2": {
+    "description": "Master Chef feature list item 2."
+  },
+  "featureMasterChef3": "📦 Cadw diderfyn o ryseitiau yn eich cwpwrdd personol",
+  "@featureMasterChef3": {
+    "description": "Master Chef feature list item 3."
+  },
+  "featureMasterChef4": "🏷️ Creu categorïau diderfyn a defnyddio offer didoli uwch",
+  "@featureMasterChef4": {
+    "description": "Master Chef feature list item 4."
+  },
+  "featureMasterChef5": "🔗 Rhannwch eich ryseitiau unrhyw le gyda dolenni cyhoeddus",
+  "@featureMasterChef5": {
+    "description": "Master Chef feature list item 5."
+  },
+  "featureMasterChef6": "⚡ Prosesu AI â blaenoriaeth – yn gyflymach ac yn gallach bob tro",
+  "@featureMasterChef6": {
+    "description": "Master Chef feature list item 6."
+  },
+  "onboardingScan": "Tap + i sganio rysáit a’i gadw ar unwaith.",
+  "@onboardingScan": {
+    "description": "Onboarding tip: how to scan a recipe."
+  },
+  "onboardingSwitchView": "Newidiwch rhwng golygfeydd grid a rhestr yma.",
+  "@onboardingSwitchView": {
+    "description": "Onboarding tip: toggle layout views."
+  },
+  "onboardingLongPress": "Pwyswch yn hir ar rysáit i weld mwy o opsiynau.",
+  "@onboardingLongPress": {
+    "description": "Onboarding tip: long-press interaction."
+  },
+  "deleteConfirmation": "Ydych chi’n siŵr eich bod am ddileu hwn?",
+  "@deleteConfirmation": {
+    "description": "Confirmation text before deleting an item."
+  },
+  "recipeSaved": "Rysáit wedi’i gadw i’r cwpwrdd!",
+  "@recipeSaved": {
+    "description": "Toast/snackbar after saving a recipe."
+  },
+  "recipeDeleted": "Rysáit wedi’i ddileu.",
+  "@recipeDeleted": {
+    "description": "Toast/snackbar after deleting a recipe."
+  },
+  "translationUsed": "Wedi’i gyfieithu o {language}",
+  "@translationUsed": {
+    "description": "Indicates which language the recipe was translated from.",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "usageThisMonthTitle": "📊 Defnydd y mis hwn",
+  "@usageThisMonthTitle": {
+    "description": "Title above usage meters."
+  },
+  "labelAiRecipes": "Ryseitiau AI",
+  "@labelAiRecipes": {
+    "description": "Label for AI recipe usage count."
+  },
+  "labelTranslations": "Cyfieithiadau",
+  "@labelTranslations": {
+    "description": "Label for translation usage count."
+  },
+  "usageCount": "{used} / {max}",
+  "@usageCount": {
+    "description": "Usage count in the form 'used / max'.",
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "usageOutOfThisMonth": "allan o {max} y mis hwn",
+  "@usageOutOfThisMonth": {
+    "description": "Subtitle under AI usage meter.",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "usageMonthlyLimit": "terfyn misol o {max}",
+  "@usageMonthlyLimit": {
+    "description": "Subtitle under translations usage meter.",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "error": "Gwall",
+  "@error": {
+    "description": "Generic error dialog title."
+  },
+  "networkError": "Gwall rhwydwaith, ceisiwch eto.",
+  "@networkError": {
+    "description": "Shown for connectivity-related failures."
+  },
+  "unknownError": "Aeth rhywbeth o'i le. Ceisiwch eto'n hwyrach.",
+  "@unknownError": {
+    "description": "Fallback error message for unknown issues."
+  },
+  "tipScanPlus": "Tap + i sganio rysáit. Mae hyd yn oed gweddillion yn haeddu lle yn eich vault!",
+  "@tipScanPlus": {
+    "description": "Daily tip: encourages scanning recipes."
+  },
+  "tipFamilyClassic": "Oes gennych chi glasur teuluol? Ychwanegwch ef heddiw a'i gadw am byth.",
+  "@tipFamilyClassic": {
+    "description": "Daily tip: encourages adding family recipes."
+  },
+  "tipLongPressSort": "Pwyswch am hir ar rysáit i'w drefnu fel proffesiynol. Vault taclus, cogydd hapus.",
+  "@tipLongPressSort": {
+    "description": "Daily tip: hints at long-press to organize."
+  },
+  "tipFavouriteIt": "Peidiwch â'i gadw yn unig—ffefrynwch ef! Tapiwch y galon ar eich prydau gorau.",
+  "@tipFavouriteIt": {
+    "description": "Daily tip: promotes using favourites."
+  },
+  "tipNewCategory": "Ceisiwch greu categori newydd heddiw. 'Prydau Clyd yr Hydref', efallai?",
+  "@tipNewCategory": {
+    "description": "Daily tip: suggests creating a new category."
+  },
+  "tipEachScanStep": "Mae pob sgan yn gam nes at eich llyfr coginio eich hun.",
+  "@tipEachScanStep": {
+    "description": "Daily tip: motivational scanning message."
+  },
+  "funButter": "Cofiwch: menyn yw'r cynhwysyn cyfrinachol fel arfer... neu dryswch.",
+  "@funButter": {
+    "description": "Light-hearted/funny daily message."
+  },
+  "funPastaHeat": "Os na allwch sefyll y gwres... rydych chi'n debygol o or-goginio pasta.",
+  "@funPastaHeat": {
+    "description": "Light-hearted/funny daily message."
+  },
+  "funPoachIdeas": "Pochoch syniadau, nid wyau. Mae gennym ni ganllaw ar gyfer hynny hefyd.",
+  "@funPoachIdeas": {
+    "description": "Light-hearted/funny daily message."
+  },
+  "funRusticMess": "Mae heddiw'n ddiwrnod gwych i bobi llanast a'i alw'n wledig.",
+  "@funRusticMess": {
+    "description": "Light-hearted/funny daily message."
+  },
+  "funCheflebration": "Yn cadw'ch 100fed rysáit? Gelwir hynny'n *cheflebration* 🎉",
+  "@funCheflebration": {
+    "description": "Light-hearted/funny daily message with pun."
+  },
+  "funMoreThanGran": "Y foment pan fydd gan eich vault fwy o ryseitiau na'ch nain.",
+  "@funMoreThanGran": {
+    "description": "Light-hearted/funny daily message."
+  },
+  "factTomatoes": "Unwaith roedd pobl yn meddwl bod tomatos yn wenwynig. 🍝",
+  "@factTomatoes": {
+    "description": "Food fact: trivia-style daily message."
+  },
+  "factExpensivePizza": "Mae'r pizza drutaf yn y byd yn costio dros £2,000. Eich un chi: amhrisiadwy.",
+  "@factExpensivePizza": {
+    "description": "Food fact: trivia-style daily message."
+  },
+  "factBananasBerries": "Mae bananas yn aeron. Nid yw mefus. Cofiwch hynny!",
+  "@factBananasBerries": {
+    "description": "Food fact: trivia-style daily message."
+  },
+  "factHoneyNeverSpoils": "Nid yw mêl byth yn difetha. Fel eich ryseitiau gorau.",
+  "@factHoneyNeverSpoils": {
+    "description": "Food fact: trivia-style daily message."
+  },
+  "factOysters": "Unwaith roedd wystrys yn cael eu hystyried yn fwyd y tlawd. Nawr? Moethus.",
+  "@factOysters": {
+    "description": "Food fact: trivia-style daily message."
+  },
+  "factPuffLayers": "Mae gan bastai phyll dros 700 o haenau. Mae ganddo hefyd ffordd fer yma.",
+  "@factPuffLayers": {
+    "description": "Food fact: trivia-style daily message."
+  },
+  "vaultLikeFridge": "Mae eich vault fel oergell: agorwch ef yn aml a'i gadw'n ffres.",
+  "@vaultLikeFridge": {
+    "description": "Vault-themed motivational message."
+  },
+  "vaultBackUpTastebuds": "Gwnewch gopi wrth gefn o'ch blagur blas. Ychwanegwch rysáit heddiw.",
+  "@vaultBackUpTastebuds": {
+    "description": "Vault-themed motivational message."
+  },
+  "vaultYouOwnIt": "Chi sy'n berchen ar y vault hwn. Dim ond cadw'r drws yn daclus a wnawn ni.",
+  "@vaultYouOwnIt": {
+    "description": "Vault-themed motivational message."
+  },
+  "vaultFewerWhatsForDinner": "Bob rysáit a gedwir yw un llai o 'Beth sydd i swper?'",
+  "@vaultFewerWhatsForDinner": {
+    "description": "Vault-themed motivational message."
+  },
+  "vaultHungryIdeas": "Galwodd eich vault. Mae eisiau syniadau newydd.",
+  "@vaultHungryIdeas": {
+    "description": "Vault-themed motivational message."
+  },
+  "quoteLoveVisible": "Mae coginio yn gariad wedi'i wneud yn weladwy – cadwch bryd a wnaeth eich gwneud yn hapus heddiw.",
+  "@quoteLoveVisible": {
+    "description": "Inspirational quote."
+  },
+  "quoteCuriousCook": "Nid yw neb yn cael ei eni'n gogydd gwych – dim ond un chwilfrydig.",
+  "@quoteCuriousCook": {
+    "description": "Inspirational quote."
+  },
+  "quoteStories": "Mae ryseitiau fel straeon. Beth mae eich un chi'n ei ddweud heddiw?",
+  "@quoteStories": {
+    "description": "Inspirational quote."
+  },
+  "quoteBurntToast": "Mae hyd yn oed tost wedi'i losgi yn wers sy'n werth ei chadw.",
+  "@quoteBurntToast": {
+    "description": "Inspirational quote."
+  },
+  "quoteSingleChop": "Mae pob pryd yn dechrau gyda thorriad sengl.",
+  "@quoteSingleChop": {
+    "description": "Inspirational quote."
+  },
+  "riddleTinGrin": "🧠 Pos: Rwy’n dechrau mewn tun, yn gorffen gyda gwên, ac yn mynd yn wych gyda ffa. Beth ydw i?",
+  "@riddleTinGrin": {
+    "description": "Riddle-style daily engagement message."
+  },
+  "quizPuffPastry": "💡 Cwis i ti dy hun: Allwch chi enwi 3 phryd sy’n defnyddio pasteiod phwff?",
+  "@quizPuffPastry": {
+    "description": "Quiz-style daily engagement message."
+  },
+  "challengeFiveIngredients": "🥄 Her y Vault: Ychwanegwch rysáit heddiw gyda dim ond 5 cynhwysyn.",
+  "@challengeFiveIngredients": {
+    "description": "Challenge-style daily engagement message."
+  },
+  "triviaPoachBoil": "🍳 Ffaith ddifyr: Beth yw’r gwahaniaeth rhwng poci a berwi? Awgrym: tymheredd!",
+  "@triviaPoachBoil": {
+    "description": "Trivia-style daily engagement message."
+  },
+  "rollOldestRecipe": "🎲 Rholiwch y dis—rhowch gynnig ar goginio’r rysáit hynaf yn eich vault!",
+  "@rollOldestRecipe": {
+    "description": "Challenge-style daily engagement message."
+  },
+  "encouragementScribbledNote": "Mae heddiw’n ddiwrnod gwych i droi’r nodyn bras hwnnw’n rysáit wedi’i gadw.",
+  "@encouragementScribbledNote": {
+    "description": "Encouragement message to capture a loose recipe."
+  },
+  "encouragementDeliciousNotPerfect": "Peidiwch ag anelu am berffeithrwydd—anewch am flas arbennig. Yna ei gadw!",
+  "@encouragementDeliciousNotPerfect": {
+    "description": "Encouragement message about imperfection."
+  },
+  "encouragementStockedWithJoy": "Cadwch eich vault fel eich cegin: wedi’i stocio gyda llawenydd ac yn barod i’w ddefnyddio.",
+  "@encouragementStockedWithJoy": {
+    "description": "Encouragement message about maintaining the vault."
+  },
+  "encouragementLegacyCookbook": "Mae pob rysáit a gedwir yn gam nesaf at eich llyfr coginio etifeddiaeth eich hun.",
+  "@encouragementLegacyCookbook": {
+    "description": "Encouragement message about long-term collection."
+  },
+  "changePasswordTitle": "Newid Cyfrinair",
+  "@changePasswordTitle": {
+    "description": "Title for the change password screen."
+  },
+  "passwordTooShort": "Mae'r cyfrinair yn rhy fyr (isafswm o 6 nod).",
+  "@passwordTooShort": {
+    "description": "Validation error when the password is shorter than the minimum length."
+  },
+  "emailInUse": "Mae'r e-bost hwn eisoes yn cael ei ddefnyddio.",
+  "@emailInUse": {
+    "description": "Shown when the email address is already registered."
+  },
+  "invalidEmail": "E-bost annilys.",
+  "@invalidEmail": {
+    "description": "Shown when the email format is invalid."
+  },
+  "registrationDisabled": "Mae cofrestru wedi'i analluogi dros dro.",
+  "@registrationDisabled": {
+    "description": "Shown when sign-ups are turned off in the backend."
+  },
+  "passwordUpdated": "Cyfrinair wedi’i ddiweddaru’n llwyddiannus",
+  "@passwordUpdated": {
+    "description": "Toast/snackbar after a successful password change."
+  },
+  "currentPasswordLabel": "Cyfrinair Presennol",
+  "@currentPasswordLabel": {
+    "description": "Label for current password input field."
+  },
+  "newPasswordLabel": "Cyfrinair Newydd",
+  "@newPasswordLabel": {
+    "description": "Label for new password input field."
+  },
+  "confirmPasswordLabel": "Cadarnhau Cyfrinair Newydd",
+  "@confirmPasswordLabel": {
+    "description": "Label for confirm password input field."
+  },
+  "enterCurrentPassword": "Rhowch eich cyfrinair presennol",
+  "@enterCurrentPassword": {
+    "description": "Helper text for current password input."
+  },
+  "passwordMinLength": "Rhaid bod o leiaf 6 nod",
+  "@passwordMinLength": {
+    "description": "Validation message for minimum password length."
+  },
+  "passwordsDoNotMatch": "Nid yw’r cyfrineiriau’n cyd-fynd",
+  "@passwordsDoNotMatch": {
+    "description": "Validation message when password confirmation fails."
+  },
+  "updatePasswordButton": "Diweddaru Cyfrinair",
+  "@updatePasswordButton": {
+    "description": "CTA to submit password change."
+  },
+  "emailLabel": "E-bost",
+  "@emailLabel": {
+    "description": "Label for email input field."
+  },
+  "passwordLabel": "Cyfrinair",
+  "@passwordLabel": {
+    "description": "Label for password input field."
+  },
+  "signInWithEmail": "Mewngofnodi gyda E-bost",
+  "@signInWithEmail": {
+    "description": "CTA to sign in using email/password."
+  },
+  "signInWithGoogle": "Mewngofnodi gyda Google",
+  "@signInWithGoogle": {
+    "description": "CTA to sign in using Google account."
+  },
+  "signInWithApple": "Mewngofnodi gyda Apple",
+  "@signInWithApple": {
+    "description": "CTA to sign in using Apple account."
+  },
+  "registerCta": "Dim cyfrif? Cofrestrwch",
+  "@registerCta": {
+    "description": "Prompt/CTA to navigate to registration."
+  },
+  "signInCancelled": "Canslwyd y mewngofnodi.",
+  "@signInCancelled": {
+    "description": "Shown when a third-party sign-in flow is cancelled by the user."
+  },
+  "authInvalidCredential": "E-bost neu gyfrinair annilys.",
+  "@authInvalidCredential": {
+    "description": "Auth error for invalid credentials."
+  },
+  "authUserNotFound": "Heb ddod o hyd i gyfrif gyda’r e-bost hwnnw.",
+  "@authUserNotFound": {
+    "description": "Auth error when no user exists for the provided email."
+  },
+  "authWrongPassword": "Cyfrinair anghywir.",
+  "@authWrongPassword": {
+    "description": "Auth error when password is incorrect."
+  },
+  "authTooManyRequests": "Gormod o ymdrechion. Ceisiwch eto’n hwyrach.",
+  "@authTooManyRequests": {
+    "description": "Rate-limiting/lockout auth error message."
+  },
+  "createAccountTitle": "Creu eich cyfrif\nRecipeVault",
+  "@createAccountTitle": {
+    "description": "Title on the registration screen (with forced line break)."
+  },
+  "trialLine": "Mwynhewch dreial am ddim am 7 diwrnod – dim angen cerdyn.",
+  "@trialLine": {
+    "description": "Subheading explaining registration includes a free trial."
+  },
+  "createAccountButton": "Creu Cyfrif",
+  "@createAccountButton": {
+    "description": "CTA to complete registration."
+  },
+  "continueWithGoogle": "Parhau gyda Google",
+  "@continueWithGoogle": {
+    "description": "Alternate registration CTA with Google."
+  },
+  "continueWithApple": "Parhau gyda Apple",
+  "@continueWithApple": {
+    "description": "Alternate registration CTA with Apple."
+  },
+  "alreadyHaveAccountCta": "Oes gennych gyfrif eisoes? Mewngofnodwch",
+  "@alreadyHaveAccountCta": {
+    "description": "Link/CTA to go to login screen."
+  },
+  "registrationFailed": "Methodd y cofrestru",
+  "@registrationFailed": {
+    "description": "Generic error title when registration fails."
+  },
+  "googleSignupCancelled": "Canslwyd cofrestru Google.",
+  "@googleSignupCancelled": {
+    "description": "Shown when Google sign-up flow is cancelled."
+  },
+  "googleSignupFailed": "Methodd cofrestru Google",
+  "@googleSignupFailed": {
+    "description": "Shown when Google sign-up flow fails."
+  },
+  "appleSignupCancelled": "Canslwyd cofrestru Apple.",
+  "@appleSignupCancelled": {
+    "description": "Shown when Apple sign-up flow is cancelled."
+  },
+  "appleSignupFailed": "Methodd cofrestru Apple",
+  "@appleSignupFailed": {
+    "description": "Shown when Apple sign-up flow fails."
+  },
+  "purchaseSuccess": "Pryniant yn llwyddiannus!",
+  "@purchaseSuccess": {
+    "description": "Toast/snackbar after a successful purchase."
+  },
+  "purchaseCancelled": "Canslwyd y pryniant.",
+  "@purchaseCancelled": {
+    "description": "Toast/snackbar when user cancels a purchase flow."
+  },
+  "purchaseFailed": "Methodd y pryniant. Ceisiwch eto.",
+  "@purchaseFailed": {
+    "description": "Toast/snackbar when purchase fails."
+  },
+  "unexpectedError": "Digwyddodd gwall annisgwyl. Ceisiwch eto.",
+  "@unexpectedError": {
+    "description": "Generic unexpected error message."
+  },
+  "chefModeTitle": "Modd Cogydd",
+  "@chefModeTitle": {
+    "description": "Title for Chef Mode feature/screen."
+  },
+  "paywallHeader": "Datgloi eich potensial coginio llawn",
+  "@paywallHeader": {
+    "description": "Header text at the top of the paywall screen."
+  },
+  "badgeCurrentPlan": "Cynllun Presennol",
+  "@badgeCurrentPlan": {
+    "description": "Badge label marking the user’s current plan."
+  },
+  "badgeBestValue": "Gwerth Gorau",
+  "@badgeBestValue": {
+    "description": "Badge label highlighting best-value plan."
+  },
+  "badgeFreeTrial": "Treial Am Ddim",
+  "@badgeFreeTrial": {
+    "description": "Badge label highlighting a free trial."
+  },
+  "noPlans": "Dim cynlluniau tanysgrifio ar gael ar hyn o bryd.",
+  "@noPlans": {
+    "description": "Shown when the app cannot load any subscription plans."
+  },
+  "legalAgreePrefix": "Drwy barhau, rydych yn cytuno i’n",
+  "@legalAgreePrefix": {
+    "description": "Lead-in text before terms/privacy links."
+  },
+  "legalTerms": "Telerau Gwasanaeth",
+  "@legalTerms": {
+    "description": "Link label to Terms of Service."
+  },
+  "legalAnd": "a",
+  "@legalAnd": {
+    "description": "Conjunction between terms/privacy links."
+  },
+  "legalPrivacy": "Polisi Preifatrwydd",
+  "@legalPrivacy": {
+    "description": "Link label to Privacy Policy."
+  },
+  "legalAutoRenew": "Bydd tanysgrifiadau’n adnewyddu’n awtomatig oni bai eu bod yn cael eu canslo.",
+  "@legalAutoRenew": {
+    "description": "Disclosure about auto-renewal."
+  },
+  "legalManageApple": "Rheoli eich tanysgrifiad yn Gosodiadau Apple.",
+  "@legalManageApple": {
+    "description": "Apple-specific subscription management guidance."
+  },
+  "manageOrCancelCta": "Rheoli neu ganslo eich tanysgrifiad",
+  "@manageOrCancelCta": {
+    "description": "CTA to manage or cancel a subscription."
+  },
+  "planDefaultDescription": "Mwynhewch fynediad llawn i nodweddion RecipeVault a’r offer pweredig gan AI.",
+  "@planDefaultDescription": {
+    "description": "Fallback description for plans when a specific one is not provided."
+  },
+  "trialEndedTitle": "Daeth y Treial i Ben",
+  "@trialEndedTitle": {
+    "description": "Title shown when the free trial has ended."
+  },
+  "trialEndedHeadline": "Mae eich treial am ddim wedi dod i ben",
+  "@trialEndedHeadline": {
+    "description": "Headline shown on the trial-ended screen."
+  },
+  "trialEndedDescription": "I barhau i ddefnyddio nodweddion AI RecipeVault fel sganio, cyfieithu, a llwytho delweddau, dewiswch gynllun isod.",
+  "@trialEndedDescription": {
+    "description": "Body copy explaining next steps after trial ends."
+  },
+  "seePlanOptions": "Gweld yr holl opsiynau cynllun",
+  "@seePlanOptions": {
+    "description": "CTA to view all available subscription plans."
+  },
+  "appBarToggleViewMode": "Newid modd golwg",
+  "@appBarToggleViewMode": {
+    "description": "Tooltip for switching between grid and list layouts."
+  },
+  "appBarRefreshSubscription": "Adnewyddu eich cynllun tanysgrifio",
+  "@appBarRefreshSubscription": {
+    "description": "Tooltip for button that refreshes subscription status."
+  },
+  "subscriptionRefreshed": "Cynllun tanysgrifio wedi’i adnewyddu.",
+  "@subscriptionRefreshed": {
+    "description": "Snackbar after subscription refresh completes."
+  },
+  "upgradeToUnlockTitle": "Uwchraddio i Ddatgloi",
+  "@upgradeToUnlockTitle": {
+    "description": "Dialog title when a feature is locked behind a paid plan."
+  },
+  "imageUploadLockedMessage": "Mae creu ryseitiau o ddelweddau ar gael ar gynlluniau taledig.",
+  "@imageUploadLockedMessage": {
+    "description": "Dialog body explaining image-based creation is paid-only."
+  },
+  "upgradeToUnlockFeature": "Uwchraddiwch i ddatgloi’r nodwedd hon.",
+  "@upgradeToUnlockFeature": {
+    "description": "Secondary message encouraging upgrade from the lock dialog."
+  },
+  "createFromImagesPaid": "Mae creu ryseitiau o ddelweddau ar gael ar gynlluniau taledig.",
+  "@createFromImagesPaid": {
+    "description": "Inline warning when free users attempt image creation."
+  },
+  "upgradeToUnlockBody": "Uwchraddiwch i ddatgloi’r nodwedd hon.",
+  "@upgradeToUnlockBody": {
+    "description": "Secondary message for locked feature dialog (duplicate-friendly)."
+  },
+  "tabCreate": "Creu",
+  "@tabCreate": {
+    "description": "Bottom navigation label for the Create tab."
+  },
+  "tabVault": "Vault",
+  "@tabVault": {
+    "description": "Bottom navigation label for the Vault tab."
+  },
+  "tabProfile": "Proffil",
+  "@tabProfile": {
+    "description": "Bottom navigation label for the Profile tab."
+  },
+  "viewPlans": "Gweld Cynlluniau",
+  "@viewPlans": {
+    "description": "Button text to navigate to the paywall/plans screen."
+  },
+  "addCategoryTitle": "Ychwanegu Categori Newydd",
+  "@addCategoryTitle": {
+    "description": "Dialog title for creating a new category."
+  },
+  "addCategoryHint": "e.e. Byrbrydau",
+  "@addCategoryHint": {
+    "description": "Hint text inside the new category name input."
+  },
+  "add": "Ychwanegu",
+  "@add": {
+    "description": "Generic Add action label used in buttons/menus."
+  },
+  "usage": "Defnydd",
+  "@usage": {
+    "description": "Label for usage metrics button or section."
+  },
+  "createRecipe": "Creu Rysáit",
+  "@createRecipe": {
+    "description": "Speed-dial/action label to start recipe creation."
+  },
+  "upgradeToCreateRecipe": "Uwchraddio i Greu Rysáit",
+  "@upgradeToCreateRecipe": {
+    "description": "Locked label shown when user’s plan cannot create recipes."
+  },
+  "upgradeToAddCategory": "Uwchraddio i Ychwanegu Categori",
+  "@upgradeToAddCategory": {
+    "description": "Locked label shown when user’s plan cannot add categories."
+  },
+  "recipeCreationLimited": "🔒 Dim ond ar gynlluniau Home Chef a Master Chef y mae modd creu ryseitiau.",
+  "@recipeCreationLimited": {
+    "description": "SnackBar text when recipe creation is restricted by plan."
+  },
+  "categoryCreationLimited": "🔒 Dim ond ar gynlluniau Home Chef a Master Chef y mae modd creu categorïau.",
+  "@categoryCreationLimited": {
+    "description": "SnackBar text when category creation is restricted by plan."
+  },
+  "gotIt": "Iawn",
+  "@gotIt": {
+    "description": "Button text for dismissing onboarding/info bubbles"
+  },
+  "editRecipeTitle": "Golygu Rysáit",
+  "@editRecipeTitle": {
+    "description": "Title of the edit recipe screen"
+  },
+  "editRecipeFieldTitle": "Teitl",
+  "@editRecipeFieldTitle": {
+    "description": "Label for recipe title field"
+  },
+  "editRecipeFieldIngredients": "Cynhwysion (un ar bob llinell)",
+  "@editRecipeFieldIngredients": {
+    "description": "Label for ingredients field"
+  },
+  "editRecipeFieldSteps": "Camau",
+  "@editRecipeFieldSteps": {
+    "description": "Label for recipe steps field"
+  },
+  "editRecipeSaving": "Yn cadw...",
+  "@editRecipeSaving": {
+    "description": "Label shown while recipe is being saved"
+  },
+  "editRecipeSaveChanges": "Cadw Newidiadau",
+  "@editRecipeSaveChanges": {
+    "description": "Label for button to save changes"
+  },
+  "menuFavourite": "Ffefryn",
+  "@menuFavourite": {
+    "description": "Popup menu item to mark a recipe as favourite"
+  },
+  "menuUnfavourite": "Tynnu o Ffefrynnau",
+  "@menuUnfavourite": {
+    "description": "Popup menu item to remove a recipe from favourites"
+  },
+  "menuAssignCategories": "Neilltuo Categorïau",
+  "@menuAssignCategories": {
+    "description": "Popup menu item to assign categories to a recipe"
+  },
+  "menuMoreOptions": "Mwy o opsiynau",
+  "@menuMoreOptions": {
+    "description": "Tooltip/accessible label for the overflow menu button on recipe cards"
+  },
+  "systemAll": "Pob un",
+  "@systemAll": {
+    "description": "System category: show all recipes"
+  },
+  "systemTranslated": "Wedi’i gyfieithu",
+  "@systemTranslated": {
+    "description": "System category: recipes created via translation"
+  },
+  "defaultBreakfast": "Brecwast",
+  "@defaultBreakfast": {
+    "description": "Default category name"
+  },
+  "defaultMain": "Prif Gwrs",
+  "@defaultMain": {
+    "description": "Default category name for main course"
+  },
+  "defaultDessert": "Pwdin",
+  "@defaultDessert": {
+    "description": "Default category name for desserts"
+  },
+  "chipDeleteCategoryTooltip": "Dileu categori",
+  "@chipDeleteCategoryTooltip": {
+    "description": "Tooltip for the delete icon on a category chip"
+  },
+  "addToFavourites": "Ychwanegu at ffefrynnau",
+  "@addToFavourites": {
+    "description": "Tooltip/action for marking an item as favourite"
+  },
+  "removeFromFavourites": "Tynnu o ffefrynnau",
+  "@removeFromFavourites": {
+    "description": "Tooltip/action for unmarking an item as favourite"
+  },
+  "shareAsPdf": "Rhannu fel PDF",
+  "@shareAsPdf": {
+    "description": "Tooltip / action to export and share the recipe as a PDF"
+  },
+  "tapToViewRecipe": "Tapio i weld y rysáit",
+  "@tapToViewRecipe": {
+    "description": "Small hint shown under a recipe title in list view."
+  },
+  "recipeOptions": "Opsiynau Rysáit",
+  "@recipeOptions": {
+    "description": "Title for the bottom sheet that shows actions for a recipe"
+  },
+  "updateImage": "Diweddaru Delwedd",
+  "@updateImage": {
+    "description": "Button label to add or update the recipe image"
+  },
+  "all": "Pob un",
+  "@all": {
+    "description": "System category label representing all recipes"
+  },
+  "translated": "Wedi’i gyfieithu",
+  "@translated": {
+    "description": "System category label for recipes that were translated"
+  },
+  "clearSearch": "Clirio chwilio",
+  "@clearSearch": {
+    "description": "Tooltip text for the clear search (X) button in the search bar."
+  },
+  "searchRecipesAndIngredients": "Chwilio ryseitiau neu gynhwysion...",
+  "@searchRecipesAndIngredients": {
+    "description": "Hint when searching across recipe titles and ingredients."
+  },
+  "searchScopeTitles": "Chwilio teitlau yn unig",
+  "@searchScopeTitles": {
+    "description": "Tooltip for toggling the search scope to titles only."
+  },
+  "searchScopeTitlesIngredients": "Chwilio teitlau + cynhwysion",
+  "@searchScopeTitlesIngredients": {
+    "description": "Tooltip for toggling the search scope to titles and ingredients."
+  },
+  "title": "Teitl",
+  "@title": {
+    "description": "Generic label for a recipe title (used in markdown export)."
+  },
+  "hintsAndTips": "Awgrymiadau a Chynghorion",
+  "@hintsAndTips": {
+    "description": "Label for the hints & tips section of a recipe (used in markdown export)."
+  },
+  "noAdditionalTips": "Dim awgrymiadau ychwanegol wedi’u darparu.",
+  "@noAdditionalTips": {
+    "description": "Fallback text when there are no hints or tips for a recipe (used in markdown export)."
+  },
+  "bubbleScan": "📸 Sganio Ryseitiau\nTapio “Creu” neu + i lwytho a sganio delweddau rysáit.",
+  "@bubbleScan": {
+    "description": "Onboarding bubble message explaining how to scan recipes by uploading images."
+  },
+  "bubbleViewToggle": "👁️ Newid Golwg\nTapio i newid sut mae ryseitiau’n cael eu harddangos.",
+  "@bubbleViewToggle": {
+    "description": "Onboarding bubble message explaining how to toggle between different recipe view modes."
+  },
+  "bubbleLongPress": "📌 Gwasgu a dal rysáit\nTapio a dal i’w wneud yn ffefryn neu bennu categori.",
+  "@bubbleLongPress": {
+    "description": "Onboarding bubble message explaining how to long-press a recipe card to favourite or assign a category."
+  },
+  "vaultBubbleSwitchViews": "Newid golygfeydd yma",
+  "@vaultBubbleSwitchViews": {
+    "description": "Onboarding bubble prompting the user to change between grid/list views."
+  },
+  "vaultBubbleLongPress": "Gwasgwch a daliwch rysáit am opsiynau",
+  "@vaultBubbleLongPress": {
+    "description": "Onboarding bubble explaining long-press on a recipe card."
+  },
+  "vaultBubbleScan": "Sganiwch ryseitiau gyda’r botwm +",
+  "@vaultBubbleScan": {
+    "description": "Onboarding bubble pointing to the create/+ scan entry point."
+  },
+  "sharedRecipeTitle": "Rysáit a Rennir",
+  "@sharedRecipeTitle": {
+    "description": "AppBar title for the shared recipe screen."
+  },
+  "sharedRecipeNotFound": "Methu dod o hyd i’r rysáit a rennir hwn.",
+  "@sharedRecipeNotFound": {
+    "description": "Shown when a shared recipe document is missing."
+  },
+  "sharedRecipeLoadError": "Digwyddodd gwall wrth lwytho’r rysáit.",
+  "@sharedRecipeLoadError": {
+    "description": "Shown when the shared recipe fetch fails."
+  },
+  "noRecipeDataFound": "Dim data rysáit wedi’i ddarganfod.",
+  "@noRecipeDataFound": {
+    "description": "Shown when ResultsScreen gets no data in navigation."
+  },
+  "copyToClipboard": "Copïo i’r clipfwrdd",
+  "@copyToClipboard": {
+    "description": "Tooltip for copy button on ResultsScreen."
+  },
+  "copiedToClipboard": "📋 Rysáit wedi’i gopïo i’r clipfwrdd",
+  "@copiedToClipboard": {
+    "description": "Snackbar after copying recipe text."
+  },
+  "languageLabel": "Iaith: {language}",
+  "@languageLabel": {
+    "description": "Label when simply displaying detected language.",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "notSignedIn": "Heb fewngofnodi",
+  "@notSignedIn": {
+    "description": "Error when an action requires a signed-in user."
+  },
+  "imageCropCancelled": "Canslwyd tocio delwedd",
+  "@imageCropCancelled": {
+    "description": "Shown when the user cancels image crop."
+  },
+  "uploadFailed": "Methodd llwytho: {error}",
+  "@uploadFailed": {
+    "description": "Shown when image upload fails.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "showOcr": "Dangos OCR",
+  "@showOcr": {
+    "description": "Debug toggle to show OCR text."
+  },
+  "hideOcr": "Cuddio OCR",
+  "@hideOcr": {
+    "description": "Debug toggle to hide OCR text."
+  },
+  "formattingError": "Wps! Aeth rhywbeth o’i le gyda’r fformatio.\nCeisiwch eto.",
+  "@formattingError": {
+    "description": "Error card message when the recipe formatter failed."
+  },
+  "aboutLegalTitle": "Ynghylch a Chyfreithiol",
+  "@aboutLegalTitle": {
+    "description": "App bar title for About screen."
+  },
+  "appInfoSectionTitle": "Gwybodaeth App",
+  "@appInfoSectionTitle": {
+    "description": "Section heading for app information."
+  },
+  "versionLabel": "Fersiwn",
+  "@versionLabel": {
+    "description": "Label for the app version row."
+  },
+  "legalSectionTitle": "Cyfreithiol",
+  "@legalSectionTitle": {
+    "description": "Section heading for legal links."
+  },
+  "supportSectionTitle": "Cefnogaeth",
+  "@supportSectionTitle": {
+    "description": "Section heading for support links."
+  },
+  "visitWebsite": "Ymweld â’r Wefan",
+  "@visitWebsite": {
+    "description": "Button/link to open the website."
+  },
+  "contactSupport": "Cysylltu â Chefnogaeth",
+  "@contactSupport": {
+    "description": "Button/link to contact support."
+  },
+  "accountSettingsTitle": "Gosodiadau Cyfrif",
+  "@accountSettingsTitle": {
+    "description": "App bar title for account settings screen."
+  },
+  "noUserSignedIn": "Dim defnyddiwr wedi mewngofnodi",
+  "@noUserSignedIn": {
+    "description": "Shown when account screen is opened without an authenticated user."
+  },
+  "noName": "Dim enw",
+  "@noName": {
+    "description": "Fallback display name when user.displayName is null."
+  },
+  "securitySectionTitle": "Diogelwch",
+  "@securitySectionTitle": {
+    "description": "Section header for security items."
+  },
+  "signOut": "Allgofnodi",
+  "@signOut": {
+    "description": "Menu/button text to sign out."
+  },
+  "signedOut": "Wedi allgofnodi",
+  "@signedOut": {
+    "description": "Snackbar text after successful sign out."
+  },
+  "signOutQuestion": "Allgofnodi?",
+  "@signOutQuestion": {
+    "description": "Dialog title asking to confirm sign out."
+  },
+  "signOutConfirmBody": "Ydych chi’n siŵr eich bod am allgofnodi?",
+  "@signOutConfirmBody": {
+    "description": "Dialog body confirming sign out."
+  },
+  "signOutFailed": "Methwyd allgofnodi: {error}",
+  "@signOutFailed": {
+    "description": "Snackbar when sign out fails.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAccount": "Dileu Cyfrif",
+  "@deleteAccount": {
+    "description": "Menu/button text to delete the account."
+  },
+  "deleteAccountQuestion": "Dileu Eich Cyfrif?",
+  "@deleteAccountQuestion": {
+    "description": "Dialog title asking to confirm account deletion."
+  },
+  "deleteAccountBody": "Bydd hyn yn dileu eich cyfrif a’r holl ddata cysylltiedig yn barhaol gan gynnwys ryseitiau, delweddau, a dewisiadau.\n\nNi ellir dadwneud y weithred hon.",
+  "@deleteAccountBody": {
+    "description": "Dialog body warning about account deletion."
+  },
+  "deleteAccountSuccess": "Cyfrif wedi’i ddileu’n llwyddiannus.",
+  "@deleteAccountSuccess": {
+    "description": "Snackbar after successful account deletion."
+  },
+  "deleteAccountFailed": "Methwyd dileu’r cyfrif: {error}",
+  "@deleteAccountFailed": {
+    "description": "Snackbar when account deletion fails.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "appearanceTitle": "Golwg",
+  "@appearanceTitle": {
+    "description": "App bar title for the Appearance settings screen."
+  },
+  "appThemeSectionTitle": "Thema App",
+  "@appThemeSectionTitle": {
+    "description": "Section header for theme options."
+  },
+  "lightMode": "Modd Golau",
+  "@lightMode": {
+    "description": "Option label for light theme."
+  },
+  "darkMode": "Modd Tywyll",
+  "@darkMode": {
+    "description": "Option label for dark theme."
+  },
+  "textSizeSectionTitle": "Maint Testun",
+  "@textSizeSectionTitle": {
+    "description": "Section header for text size options."
+  },
+  "textSizeSmall": "Bach",
+  "@textSizeSmall": {
+    "description": "Option label for small text size."
+  },
+  "textSizeMedium": "Canolig",
+  "@textSizeMedium": {
+    "description": "Option label for medium text size."
+  },
+  "textSizeLarge": "Mawr",
+  "@textSizeLarge": {
+    "description": "Option label for large text size."
+  },
+  "faqsTitle": "Cwestiynau Cyffredin",
+  "@faqsTitle": {
+    "description": "App bar title for the FAQs screen."
+  },
+  "faqsSectionScanSave": "Sganio a Chadw",
+  "@faqsSectionScanSave": {
+    "description": "Section header for scanning/saving FAQs."
+  },
+  "faqsQHowScan": "Sut ydw i’n sganio rysáit?",
+  "@faqsQHowScan": {
+    "description": "Question: scanning a recipe."
+  },
+  "faqsAHowScan": "O’r sgrin Cartref, tapiwch y botwm \"+\" a llwytho un neu fwy o ddelweddau o’ch rysáit.",
+  "@faqsAHowScan": {
+    "description": "Answer: scanning a recipe."
+  },
+  "faqsQAddImage": "Sut ydw i’n ychwanegu delwedd rysáit?",
+  "@faqsQAddImage": {
+    "description": "Question: add recipe image."
+  },
+  "faqsAAddImage": "Ar ôl sganio, tapiwch \"Ychwanegu Delwedd\" i docio a llwytho llun ar gyfer pennyn eich cerdyn rysáit.",
+  "@faqsAAddImage": {
+    "description": "Answer: add recipe image."
+  },
+  "faqsQSaveRecipe": "Sut ydw i’n cadw rysáit?",
+  "@faqsQSaveRecipe": {
+    "description": "Question: save recipe."
+  },
+  "faqsASaveRecipe": "Unwaith y byddwch wedi adolygu’r canlyniad wedi’i fformatio, tapiwch \"Cadw i’r Vault\" i’w storio’n barhaol.",
+  "@faqsASaveRecipe": {
+    "description": "Answer: save recipe."
+  },
+  "faqsSectionAccessUse": "Mynediad ac Defnydd App",
+  "@faqsSectionAccessUse": {
+    "description": "Section header for access/use FAQs."
+  },
+  "faqsQOffline": "Alla i ddefnyddio’r app all-lein?",
+  "@faqsQOffline": {
+    "description": "Question: offline usage."
+  },
+  "faqsAOffline": "Gallwch weld unrhyw ryseitiau sydd eisoes wedi’u cadw yn eich Vault, hyd yn oed heb gysylltiad rhyngrwyd.",
+  "@faqsAOffline": {
+    "description": "Answer: offline usage."
+  },
+  "faqsSectionSubSupport": "Tanysgrifiad a Chefnogaeth",
+  "@faqsSectionSubSupport": {
+    "description": "Section header for subscription/support FAQs."
+  },
+  "faqsQWhySub": "Pam mae angen tanysgrifiad arnaf?",
+  "@faqsQWhySub": {
+    "description": "Question: why subscription."
+  },
+  "faqsAWhySub": "Mae tanysgrifiadau’n datgloi cydamseru cwmwl, llwytho delweddau, cyfieithu, a fformatio pweredig gan AI.",
+  "@faqsAWhySub": {
+    "description": "Answer: why subscription."
+  },
+  "faqsQCancel": "Sut alla i ganslo fy nhanysgrifiad?",
+  "@faqsQCancel": {
+    "description": "Question: cancel subscription."
+  },
+  "faqsACancel": "Rheolwch neu ganslwch eich cynllun unrhyw bryd trwy osodiadau eich cyfrif App Store neu Google Play.",
+  "@faqsACancel": {
+    "description": "Answer: cancel subscription."
+  },
+  "notificationsTitle": "Hysbysiadau",
+  "@notificationsTitle": {
+    "description": "App bar title for notifications settings."
+  },
+  "notificationsSectionReminders": "Atgoffwyr",
+  "@notificationsSectionReminders": {
+    "description": "Section header for reminder notifications."
+  },
+  "notificationsWeeklyTitle": "Atgoffa Wythnosol am Ryseitiau",
+  "@notificationsWeeklyTitle": {
+    "description": "Title of weekly reminder toggle."
+  },
+  "notificationsWeeklySubtitle": "Derbyn gwthiad wythnosol i ychwanegu ryseitiau i’ch vault.",
+  "@notificationsWeeklySubtitle": {
+    "description": "Subtitle explaining weekly reminder."
+  },
+  "notificationsSectionUpdates": "Diweddariadau",
+  "@notificationsSectionUpdates": {
+    "description": "Section header for updates/announcements."
+  },
+  "notificationsFeatureAlertsTitle": "Rhybuddion Nodwedd Newydd",
+  "@notificationsFeatureAlertsTitle": {
+    "description": "Title of feature announcements toggle."
+  },
+  "notificationsFeatureAlertsSubtitle": "Byddwch y cyntaf i glywed pan fydd rhywbeth blasus yn cael ei ychwanegu!",
+  "@notificationsFeatureAlertsSubtitle": {
+    "description": "Subtitle for feature announcements toggle."
+  },
+  "planIncludedHeader": "Wedi’i gynnwys yn eich cynllun:",
+  "@planIncludedHeader": {
+    "description": "Header shown above the list of plan benefits on the plan card."
+  },
+  "trialEnds": "Daw’r treial i ben: {date}",
+  "@trialEnds": {
+    "description": "Shown on plan card if user is on a trial.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsSectionAccount": "Cyfrif",
+  "@settingsSectionAccount": {
+    "description": "Header label for account-related settings section in Settings screen.",
+    "type": "text"
+  },
+  "settingsSectionPreferences": "Dewisiadau",
+  "@settingsSectionPreferences": {
+    "description": "Header label for preferences-related settings section in Settings screen.",
+    "type": "text"
+  },
+  "settingsSectionStorage": "Storio Lleol",
+  "@settingsSectionStorage": {
+    "description": "Header label for local storage management settings section in Settings screen.",
+    "type": "text"
+  },
+  "settingsSectionSubscription": "Tanysgrifiad",
+  "@settingsSectionSubscription": {
+    "description": "Header label for subscription management settings section in Settings screen.",
+    "type": "text"
+  },
+  "settingsSectionSupport": "Cefnogaeth",
+  "@settingsSectionSupport": {
+    "description": "Header label for support and help-related settings section in Settings screen.",
+    "type": "text"
+  },
+  "settingsTileAccountSettings": "Gosodiadau Cyfrif",
+  "@settingsTileAccountSettings": {
+    "description": "Settings tile label for navigating to account settings.",
+    "type": "text"
+  },
+  "settingsTileAppearance": "Golwg",
+  "@settingsTileAppearance": {
+    "description": "Settings tile label for navigating to appearance/theme settings.",
+    "type": "text"
+  },
+  "settingsTileNotifications": "Hysbysiadau",
+  "@settingsTileNotifications": {
+    "description": "Settings tile label for navigating to notifications settings.",
+    "type": "text"
+  },
+  "settingsTileCacheClear": "Clirio Storfa",
+  "@settingsTileCacheClear": {
+    "description": "Settings tile label for clearing cached data from the app.",
+    "type": "text"
+  },
+  "settingsTileManageSubscription": "Rheoli Tanysgrifiad",
+  "@settingsTileManageSubscription": {
+    "description": "Settings tile label for navigating to the subscription management screen.",
+    "type": "text"
+  },
+  "settingsTileHelpFaqs": "Cymorth a Cwestiynau Cyffredin",
+  "@settingsTileHelpFaqs": {
+    "description": "Settings tile label for navigating to the help and FAQs screen.",
+    "type": "text"
+  },
+  "settingsTileAboutLegal": "Ynghylch a Chyfreithiol",
+  "@settingsTileAboutLegal": {
+    "description": "Settings tile label for navigating to the about and legal information screen.",
+    "type": "text"
+  },
+  "footerCompanyName": "Cheeky Badger Creations",
+  "@footerCompanyName": {
+    "description": "The name of the company shown at the bottom of the settings screen.",
+    "type": "text"
+  },
+  "localStorageTitle": "Storio Lleol",
+  "@localStorageTitle": {
+    "description": "App bar title for the screen that manages local storage and cache.",
+    "type": "text"
+  },
+  "clearLocalCacheTitle": "Clirio Storfa Leol",
+  "@clearLocalCacheTitle": {
+    "description": "Headline on the Local Storage screen above the action to clear cache.",
+    "type": "text"
+  },
+  "clearLocalCacheDescription": "Dileu’r holl ryseitiau, categorïau a baneri tiwtorial sydd wedi’u storio ar y ddyfais hon.\nNi fydd eich data cwmwl yn cael ei effeithio.",
+  "@clearLocalCacheDescription": {
+    "description": "Body text describing what clearing the local cache will do.",
+    "type": "text"
+  },
+  "clearLocalCacheButton": "Clirio Storfa Leol",
+  "@clearLocalCacheButton": {
+    "description": "Primary button label to start clearing local cache.",
+    "type": "text"
+  },
+  "clearCacheDialogTitle": "Clirio’r Storfa?",
+  "@clearCacheDialogTitle": {
+    "description": "Title of the confirmation dialog shown before clearing cache.",
+    "type": "text"
+  },
+  "clearCacheDialogBody": "Bydd hyn yn dileu’r holl ryseitiau, categorïau a baneri tiwtorial sydd wedi’u storio’n lleol.\nBydd eich data cwmwl yn aros yn ddiogel.",
+  "@clearCacheDialogBody": {
+    "description": "Body of the confirmation dialog explaining the effects of clearing cache.",
+    "type": "text"
+  },
+  "clearNow": "Clirio Nawr",
+  "@clearNow": {
+    "description": "Confirm action button in the clear cache dialog.",
+    "type": "text"
+  },
+  "localCacheCleared": "Storfa leol wedi’i glirio",
+  "@localCacheCleared": {
+    "description": "Snackbar/toast text shown after local cache is successfully cleared.",
+    "type": "text"
+  },
+  "processingTitle": "Wrthi’n Prosesu Eich Rysáit",
+  "@processingTitle": {
+    "description": "Title of the processing overlay."
+  },
+  "processingStepUploading": "Llwytho Delweddau i Fyny",
+  "@processingStepUploading": {
+    "description": "Step: uploading images."
+  },
+  "processingStepTranslating": "Cyfieithu",
+  "@processingStepTranslating": {
+    "description": "Step: translating text."
+  },
+  "processingStepFormatting": "Echdynnu a Fformatio",
+  "@processingStepFormatting": {
+    "description": "Step: extracting & formatting recipe."
+  },
+  "processingStepFinishing": "Gorffen",
+  "@processingStepFinishing": {
+    "description": "Step: finishing up."
+  },
+  "processingFunUploading": "Yn chrensian lluniau sgrin fel cornflakes…",
+  "@processingFunUploading": {
+    "description": "Fun line shown during upload step."
+  },
+  "processingFunFormatting": "Yn gweini eich rysáit yn daclus…",
+  "@processingFunFormatting": {
+    "description": "Fun line shown during formatting step."
+  },
+  "processingFunCompleted": "Yn ychwanegu’r addurn olaf…",
+  "@processingFunCompleted": {
+    "description": "Fun line shown during finishing step."
+  },
+  "processingFunUploading1": "Wrthi'n llwytho eich sgrinluniau…",
+  "@processingFunUploading1": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam llwytho."
+  },
+  "processingFunUploading2": "Anfon cynhwysion i'r gegin yn y cwmwl…",
+  "@processingFunUploading2": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam llwytho."
+  },
+  "processingFunUploading3": "Cnoi sgrinluniau fel cornflakes…",
+  "@processingFunUploading3": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam llwytho."
+  },
+  "processingFunUploading4": "Cymysgu eich hud lwytho…",
+  "@processingFunUploading4": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam llwytho."
+  },
+  "processingFunExtracting1": "Darllen eich brasluniau ysgrifenedig â llaw…",
+  "@processingFunExtracting1": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam echdynnu."
+  },
+  "processingFunExtracting2": "Galw ar y corachod OCR…",
+  "@processingFunExtracting2": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam echdynnu."
+  },
+  "processingFunExtracting3": "Echdynnu manylion blasus o'r picseli…",
+  "@processingFunExtracting3": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam echdynnu."
+  },
+  "processingFunExtracting4": "Dod o hyd i aur rysáit yn y sŵn…",
+  "@processingFunExtracting4": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam echdynnu."
+  },
+  "processingFunTranslating1": "Trosi cyfrinachau coginio i Saesneg Prydeinig…",
+  "@processingFunTranslating1": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam cyfieithu."
+  },
+  "processingFunTranslating2": "Ychwanegu ychydig o ramadeg cywir…",
+  "@processingFunTranslating2": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam cyfieithu."
+  },
+  "processingFunTranslating3": "Rhoi acen bonheddig i'ch rysáit…",
+  "@processingFunTranslating3": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam cyfieithu."
+  },
+  "processingFunTranslating4": "Bragu cyfieithiad…",
+  "@processingFunTranslating4": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam cyfieithu."
+  },
+  "processingFunFormatting1": "Mae ChatGPT yn gwisgo het gogydd…",
+  "@processingFunFormatting1": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam fformatio."
+  },
+  "processingFunFormatting2": "Chwipio'ch testun i mewn i rysáit flasus…",
+  "@processingFunFormatting2": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam fformatio."
+  },
+  "processingFunFormatting3": "Taclo eich cyfarwyddiadau gyda hud AI…",
+  "@processingFunFormatting3": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam fformatio."
+  },
+  "processingFunFormatting4": "Addurno'ch camau gyda manylder…",
+  "@processingFunFormatting4": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam fformatio."
+  },
+  "processingFunCompleted1": "Cerdyn rysáit yn barod! Gadewch i ni fwyta. 🍽️",
+  "@processingFunCompleted1": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam gorffen."
+  },
+  "processingFunCompleted2": "Voilà! Mae eich pryd digidol wedi'i weini.",
+  "@processingFunCompleted2": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam gorffen."
+  },
+  "processingFunCompleted3": "Wedi gorffen — mwynhewch, arddull AI!",
+  "@processingFunCompleted3": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam gorffen."
+  },
+  "processingFunCompleted4": "Mae eich rysáit wedi'i goginio ac yn barod i'w weini!",
+  "@processingFunCompleted4": {
+    "description": "Llinell hwyliog a ddangosir yn ystod y cam gorffen."
+  }
 }

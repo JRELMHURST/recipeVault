@@ -8,6 +8,10 @@
   "@appTitle": {
     "description": "Main application title."
   },
+  "untitled": "Ohne Titel",
+  "@untitled": {
+    "description": "Fallback title when a recipe has no title."
+  },
   "welcomeMessage": "Willkommen bei RecipeVault",
   "@welcomeMessage": {
     "description": "Greeting shown on app launch/sign-in."

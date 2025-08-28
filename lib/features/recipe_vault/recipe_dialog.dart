@@ -85,12 +85,45 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
 
     // 🔑 Smart title fallback
     final localeTag = Localizations.localeOf(context).toLanguageTag();
-    final translatedTitle =
+    final translatedText =
         widget.recipe.formattedForLocaleTag(localeTag) ??
         widget.recipe.title.trim();
-    final safeTitle = translatedTitle.isNotEmpty
-        ? translatedTitle
+    final safeTitle = translatedText.isNotEmpty
+        ? translatedText
         : l10n.untitled;
+
+    // 🔑 Decide what to render inside card
+    final hasStructured =
+        widget.recipe.ingredients.isNotEmpty ||
+        widget.recipe.instructions.isNotEmpty ||
+        widget.recipe.hints.isNotEmpty;
+
+    Widget recipeBody;
+    if (hasStructured) {
+      // ✅ Nice styled card (English / parsed recipes)
+      recipeBody = RecipeCard.fromModel(widget.recipe);
+    } else if (widget.recipe.formattedForLocaleTag(localeTag) != null &&
+        widget.recipe.formattedForLocaleTag(localeTag)!.isNotEmpty) {
+      // ✅ Fallback: raw formatted text block
+      recipeBody = Card(
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            widget.recipe.formattedForLocaleTag(localeTag)!,
+            style: theme.textTheme.bodyMedium?.copyWith(fontSize: 15),
+          ),
+        ),
+      );
+    } else {
+      recipeBody = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(l10n.noRecipeDataFound),
+        ),
+      );
+    }
 
     final header = (imageUrl != null && imageUrl.isNotEmpty)
         ? ClipRRect(
@@ -146,10 +179,7 @@ class _ShareableRecipeCardState extends State<_ShareableRecipeCard> {
               header,
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Semantics(
-                  label: safeTitle,
-                  child: RecipeCard.fromModel(widget.recipe),
-                ),
+                child: Semantics(label: safeTitle, child: recipeBody),
               ),
             ],
           ),

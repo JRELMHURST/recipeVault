@@ -10,12 +10,17 @@ class PricingCard extends StatelessWidget {
   final bool isDisabled;
   final String? badge;
 
+  /// RevenueCat intro/trial status for this package
+  /// Values: "eligible" | "ineligible" | "unknown" | null
+  final String? trialStatus;
+
   const PricingCard({
     super.key,
     required this.package,
     required this.onTap,
     this.isDisabled = false,
     this.badge,
+    this.trialStatus,
   });
 
   @override
@@ -31,7 +36,6 @@ class PricingCard extends StatelessWidget {
     final features = _featuresFor(loc, package);
 
     final isAnnual = _isAnnual(product);
-    final hasFreeTrial = _hasFreeTrial(product);
 
     final cardColor = theme.cardTheme.color ?? cs.surface;
     final cardShape =
@@ -39,19 +43,22 @@ class PricingCard extends StatelessWidget {
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(16));
     final cardElevation = theme.cardTheme.elevation ?? 2;
 
-    // --- Badge normalization & selection ---
-    // Treat empty/whitespace badge values as "no badge"
+    // --- Badge logic ---
     final normalizedBadge = (badge != null && badge!.trim().isNotEmpty)
         ? badge!.trim()
         : null;
 
-    final effectiveBadge =
-        normalizedBadge ??
-        (hasFreeTrial
-            ? loc.badgeFreeTrial
-            : (isAnnual ? loc.badgeBestValue : null));
+    // Show "Free Trial" only if eligible
+    final trialBadge = (trialStatus == "eligible") ? loc.badgeFreeTrial : null;
 
-    final hasBadge = effectiveBadge != null && effectiveBadge.trim().isNotEmpty;
+    final List<String> badges = [
+      if (trialBadge != null) trialBadge,
+      if (normalizedBadge != null) normalizedBadge,
+    ];
+
+    final ctaText = (trialStatus == "eligible")
+        ? '${loc.upgradeNow} • ${loc.badgeFreeTrial}'
+        : loc.upgradeNow;
 
     return Opacity(
       opacity: isDisabled ? 0.6 : 1.0,
@@ -69,7 +76,6 @@ class PricingCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title + subtitle
                   Text(
                     title,
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -88,15 +94,9 @@ class PricingCard extends StatelessWidget {
                         ),
                       ),
                     ),
-
                   const SizedBox(height: 8),
-
-                  // Description
                   Text(description, style: theme.textTheme.bodyMedium),
-
                   const SizedBox(height: 12),
-
-                  // Price
                   Text(
                     product.priceString,
                     style: theme.textTheme.titleLarge?.copyWith(
@@ -104,9 +104,7 @@ class PricingCard extends StatelessWidget {
                       color: cs.primary,
                     ),
                   ),
-
-                  // Inline hint if annual and no separate badge shown
-                  if (isAnnual && !hasBadge)
+                  if (isAnnual && badges.isEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
@@ -117,10 +115,7 @@ class PricingCard extends StatelessWidget {
                         ),
                       ),
                     ),
-
                   const SizedBox(height: 16),
-
-                  // Feature bullets
                   ...features.map(
                     (f) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -140,10 +135,7 @@ class PricingCard extends StatelessWidget {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
-                  // CTA
                   SizedBox(
                     width: double.infinity,
                     child: isDisabled
@@ -154,47 +146,50 @@ class PricingCard extends StatelessWidget {
                           )
                         : ElevatedButton(
                             onPressed: onTap,
-                            child: Text(loc.upgradeNow),
+                            child: Text(ctaText),
                           ),
                   ),
                 ],
               ),
             ),
           ),
-
-          // Badge (free trial / current / best value) — only if non-empty
-          if (hasBadge)
+          if (badges.isNotEmpty)
             Positioned(
               top: -12,
               left: 0,
               right: 0,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: hasFreeTrial
-                        ? Colors.green.shade700
-                        : Colors.amber.shade700,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    effectiveBadge, // safe due to hasBadge
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: badges.map((b) {
+                  final isTrial = b == trialBadge;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
                     ),
-                  ),
-                ),
+                    decoration: BoxDecoration(
+                      color: isTrial
+                          ? Colors.green.shade700
+                          : Colors.amber.shade700,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      b,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
             ),
         ],
@@ -202,90 +197,64 @@ class PricingCard extends StatelessWidget {
     );
   }
 
-  // ---------- Helpers ----------
-
   bool _isAnnual(StoreProduct p) {
     final period = p.subscriptionPeriod?.toUpperCase() ?? '';
-    // RevenueCat uses ISO 8601 durations, e.g. P1M, P1Y
     return period == 'P1Y' || period.endsWith('Y');
   }
 
-  bool _hasFreeTrial(StoreProduct p) {
-    // Prefer explicit introductory details if available
-    final intro = p.introductoryPrice;
-    if (intro != null) {
-      final hasFree = intro.price == 0 || (intro.period.isNotEmpty);
-      return hasFree;
-    }
-    // Heuristic: monthly plans often have trials
-    final period = p.subscriptionPeriod?.toUpperCase() ?? '';
-    return period == 'P1M' || period.endsWith('M');
-  }
-
-  String _titleFor(AppLocalizations loc, Package pkg) {
-    switch (pkg.offeringIdentifier) {
-      case 'home_chef_plan':
-        return loc.planHomeChef;
-      case 'master_chef_plan':
-        return loc.planMasterChef;
-      default:
-        return pkg.storeProduct.title;
-    }
-  }
+  String _titleFor(AppLocalizations loc, Package pkg) =>
+      switch (pkg.offeringIdentifier) {
+        'home_chef_plan' => loc.planHomeChef,
+        'master_chef_plan' => loc.planMasterChef,
+        _ => pkg.storeProduct.title,
+      };
 
   String? _subtitleFor(AppLocalizations loc, Package pkg) {
     final p = pkg.storeProduct;
     final isAnnual = _isAnnual(p);
-    switch (pkg.offeringIdentifier) {
-      case 'master_chef_plan':
-        return isAnnual
+    return switch (pkg.offeringIdentifier) {
+      'master_chef_plan' =>
+        isAnnual
             ? loc.planMasterChefSubtitleAnnual
-            : loc.planMasterChefSubtitleMonthly;
-      case 'home_chef_plan':
-        return isAnnual
+            : loc.planMasterChefSubtitleMonthly,
+      'home_chef_plan' =>
+        isAnnual
             ? loc.planHomeChefSubtitleAnnual
-            : loc.planHomeChefSubtitleMonthly;
-      default:
-        return null;
-    }
+            : loc.planHomeChefSubtitleMonthly,
+      _ => null,
+    };
   }
 
   String _descriptionFor(AppLocalizations loc, Package pkg) {
     final p = pkg.storeProduct;
     final isAnnual = _isAnnual(p);
-    switch (pkg.offeringIdentifier) {
-      case 'home_chef_plan':
-        return loc.planHomeChefDescription;
-      case 'master_chef_plan':
-        return isAnnual
+    return switch (pkg.offeringIdentifier) {
+      'home_chef_plan' => loc.planHomeChefDescription,
+      'master_chef_plan' =>
+        isAnnual
             ? loc.planMasterChefDescriptionAnnual
-            : loc.planMasterChefDescriptionMonthly;
-      default:
-        return 'Enjoy full access to RecipeVault features and AI-powered tools.';
-    }
+            : loc.planMasterChefDescriptionMonthly,
+      _ => 'Enjoy full access to RecipeVault features and AI-powered tools.',
+    };
   }
 
-  List<String> _featuresFor(AppLocalizations loc, Package pkg) {
-    switch (pkg.offeringIdentifier) {
-      case 'home_chef_plan':
-        return [
+  List<String> _featuresFor(AppLocalizations loc, Package pkg) =>
+      switch (pkg.offeringIdentifier) {
+        'home_chef_plan' => [
           loc.featureHomeChef1,
           loc.featureHomeChef2,
           loc.featureHomeChef3,
           loc.featureHomeChef4,
           loc.featureHomeChef5,
-        ];
-      case 'master_chef_plan':
-        return [
+        ],
+        'master_chef_plan' => [
           loc.featureMasterChef1,
           loc.featureMasterChef2,
           loc.featureMasterChef3,
           loc.featureMasterChef4,
           loc.featureMasterChef5,
           loc.featureMasterChef6,
-        ];
-      default:
-        return [loc.featureUnlimitedRecipes, loc.featureCloudBackup];
-    }
-  }
+        ],
+        _ => [loc.featureUnlimitedRecipes, loc.featureCloudBackup],
+      };
 }

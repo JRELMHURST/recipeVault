@@ -57,6 +57,14 @@ String? appRedirect(
     return blocked.contains(loc) ? AppRoutes.vault : null;
   }
 
-  // 🚧 5) Logged in but not entitled → force paywall (manage allowed)
+  // 🚧 5) Logged in but not entitled
+  const allowedWhenFree = {
+    AppRoutes.vault,
+    AppRoutes.settings,
+    AppRoutes.settingsFaqs,
+    AppRoutes.settingsAbout,
+  };
+
+  if (allowedWhenFree.contains(loc)) return null;
   return loc == AppRoutes.paywall ? null : AppRoutes.paywall;
 }

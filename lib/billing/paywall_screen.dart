@@ -37,7 +37,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
   bool _isManaging = false;
 
   List<Package> _availablePackages = [];
-  Set<String> _activeProductIds = const {}; // RevenueCat entitlements
+  Set<String> _activeProductIds = const {};
+
+  // Map product → eligibility status ("eligible" | "ineligible" | "unknown")
+  Map<String, String> _eligibilityMap = const {};
 
   @override
   void initState() {
@@ -84,6 +87,30 @@ class _PaywallScreenState extends State<PaywallScreen> {
         }
       });
 
+      // Check eligibility
+      // Replace this whole block:
+      try {
+        final productIds = packages
+            .map((p) => p.storeProduct.identifier)
+            .toList();
+        final eligMap =
+            await Purchases.checkTrialOrIntroductoryPriceEligibility(
+              productIds,
+            );
+
+        // ✅ Assign directly to the class field
+        _eligibilityMap = {
+          for (final e in eligMap.entries)
+            e.key: e.value.status.name, // store as string
+        };
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Eligibility check failed: $e');
+        }
+        _eligibilityMap = {};
+      }
+
+      // Sort packages by priority
       final productId = _subscriptionService.productId;
       packages.sort((a, b) {
         bool isCurrentPkg(Package p) => _isPackageCurrent(p, productId);
@@ -193,7 +220,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final isResolving = status == EntitlementStatus.checking;
     final showSpinner = _isLoading || isResolving;
 
-    // 🔎 subscription plan label for consistency
     final tier = context.watch<SubscriptionService>().tier;
     final planLabel = switch (tier) {
       'home_chef' => t.planHomeChef,
@@ -225,7 +251,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
         actions: [
           if (!showSpinner)
             IconButton(
-              tooltip: 'Refresh',
+              tooltip: t.appBarRefreshSubscription,
               onPressed: _loadSubscriptionData,
               icon: const Icon(Icons.refresh),
             ),
@@ -331,6 +357,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             ? t.badgeCurrentPlan
                             : (isYearly ? t.badgeBestValue : null);
 
+                        final trialStatus =
+                            _eligibilityMap[pkg.storeProduct.identifier];
+
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: PricingCard(
@@ -342,6 +371,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             },
                             isDisabled: isCurrent,
                             badge: badge,
+                            trialStatus: trialStatus, // ✅ updated
                           ),
                         );
                       }),

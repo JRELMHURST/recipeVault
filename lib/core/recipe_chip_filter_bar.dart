@@ -5,11 +5,11 @@ import 'package:recipe_vault/data/models/recipe_card_model.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 
 class RecipeChipFilterBar extends StatefulWidget {
-  final List<String> categories; // system + custom (raw labels allowed)
+  final List<String> categories;
   final String selectedCategory;
   final void Function(String category) onCategorySelected;
-  final void Function(String category)? onCategoryDeleted; // optional
-  final List<RecipeCardModel> allRecipes; // full list for counts
+  final void Function(String category)? onCategoryDeleted;
+  final List<RecipeCardModel> allRecipes;
 
   const RecipeChipFilterBar({
     super.key,
@@ -109,7 +109,6 @@ class _RecipeChipFilterBarState extends State<RecipeChipFilterBar> {
     final keys = _buildDisplayKeys(t);
     if (keys.isEmpty) return const SizedBox.shrink();
 
-    // Colors tuned for readability
     final onPrimary = cs.onPrimary;
     final idleText = cs.onSurface.withOpacity(0.87);
     final disabledText = cs.onSurface.withOpacity(0.60);
@@ -117,7 +116,7 @@ class _RecipeChipFilterBarState extends State<RecipeChipFilterBar> {
     final idleBorder = cs.outline.withOpacity(0.55);
 
     return SizedBox(
-      height: 46, // a touch taller to fit emoji/icons + label
+      height: 46,
       child: ListView.separated(
         key: const PageStorageKey('recipe-chip-filter'),
         controller: _scrollCtrl,
@@ -135,51 +134,29 @@ class _RecipeChipFilterBarState extends State<RecipeChipFilterBar> {
           final canDelete =
               !protected && count == 0 && widget.onCategoryDeleted != null;
 
-          IconData? iconData;
-          switch (key) {
-            case 'All':
-              iconData = Icons.public_rounded;
-              break; // globe
-            case 'Favourites':
-              iconData = Icons.star_rounded;
-              break;
-            case 'Translated':
-              iconData = Icons.translate_rounded;
-              break;
-          }
-
-          final labelStyle = theme.textTheme.labelMedium?.copyWith(
-            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
-            letterSpacing: 0.25,
-            // High-contrast text
-            color: isSelected ? onPrimary : (enabled ? idleText : disabledText),
+          final label = Text(
+            _localized(t, key),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+              letterSpacing: 0.25,
+              color: isSelected
+                  ? onPrimary
+                  : (enabled ? idleText : disabledText),
+            ),
           );
 
           final chip = InputChip(
-            avatar: iconData == null
-                ? null
-                : Icon(
-                    iconData,
-                    size: 18,
-                    color: isSelected ? onPrimary : cs.primary,
-                  ),
-            label: Text(
-              _localized(t, key),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: labelStyle,
-            ),
-            // room for icon + label
-            labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+            avatar: null,
+            label: label,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 16),
             visualDensity: const VisualDensity(horizontal: -1, vertical: -2),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             clipBehavior: Clip.antiAlias,
-
             selected: isSelected,
             selectedColor: cs.primary,
             backgroundColor: idleBg,
             onSelected: (_) => widget.onCategorySelected(key),
-
             deleteIcon: canDelete ? const Icon(Icons.close, size: 16) : null,
             deleteButtonTooltipMessage: canDelete
                 ? t.chipDeleteCategoryTooltip
@@ -193,7 +170,6 @@ class _RecipeChipFilterBarState extends State<RecipeChipFilterBar> {
                     );
                   }
                 : null,
-
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(
@@ -205,41 +181,35 @@ class _RecipeChipFilterBarState extends State<RecipeChipFilterBar> {
             pressElevation: 3,
           );
 
-          // Add a tiny count badge (only if > 0 and not "All" to avoid noise)
-          final showBadge = key != 'All' && count > 0;
           return ConstrainedBox(
             constraints: const BoxConstraints(minWidth: 78),
             child: Stack(
               clipBehavior: Clip.none,
               children: [
                 chip,
-                if (showBadge)
+                if (count > 0 && key != 'All')
                   Positioned(
-                    right: -2,
                     top: -4,
+                    right: -6,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? onPrimary.withOpacity(.18)
-                            : cs.primary.withOpacity(.12),
-                        borderRadius: BorderRadius.circular(10),
+                        color: cs.primary.withOpacity(0.12),
                         border: Border.all(
-                          color: isSelected
-                              ? onPrimary.withOpacity(.35)
-                              : cs.primary.withOpacity(.45),
+                          color: cs.primary.withOpacity(0.35),
                           width: 0.8,
                         ),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         '$count',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          height: 1.0,
-                          color: isSelected ? onPrimary : cs.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: cs.primary,
                         ),
                       ),
                     ),

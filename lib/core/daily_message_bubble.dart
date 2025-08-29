@@ -125,17 +125,35 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
 
   @override
   Widget build(BuildContext context) {
-    final baseIcon = Icon(widget.iconData, color: Colors.white);
-    final unreadDot = Positioned(
-      right: 6,
-      top: 6,
-      child: AnimatedScale(
-        duration: const Duration(milliseconds: 240),
-        scale: _isUnread ? 1 : 0,
-        child: _UnreadBadge(pulse: _pulseCtrl),
-      ),
+    final glowingIcon = Stack(
+      alignment: Alignment.center,
+      children: [
+        if (_isUnread)
+          FadeTransition(
+            opacity: Tween<double>(begin: 0.3, end: 0.8).animate(_pulseCtrl),
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.95, end: 1.2).animate(
+                CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
+              ),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.6),
+                      blurRadius: 16,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        Icon(widget.iconData, color: Colors.white),
+      ],
     );
-
     return Tooltip(
       message: widget.tooltip,
       waitDuration: const Duration(milliseconds: 300),
@@ -154,8 +172,7 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
                 highlightShape: BoxShape.circle,
                 child: const SizedBox.expand(),
               ),
-              baseIcon,
-              unreadDot,
+              glowingIcon, // 👈 replaces baseIcon and unreadDot
             ],
           ),
         ),
@@ -165,49 +182,6 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
 }
 
 /* ───────────── Helper widgets (kept local to avoid missing-symbol errors) ───────────── */
-
-class _UnreadBadge extends StatelessWidget {
-  const _UnreadBadge({required this.pulse});
-  final AnimationController pulse;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        FadeTransition(
-          opacity: Tween<double>(begin: .2, end: .55).animate(pulse),
-          child: ScaleTransition(
-            scale: Tween<double>(
-              begin: .9,
-              end: 1.25,
-            ).animate(CurvedAnimation(parent: pulse, curve: Curves.easeInOut)),
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: const BoxDecoration(
-                color: Colors.amber,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(blurRadius: 10, color: Colors.amberAccent),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: Colors.amber.shade700,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 1.5),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _Sparkle extends StatefulWidget {
   const _Sparkle(this.base);

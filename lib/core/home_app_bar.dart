@@ -29,18 +29,16 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     final theme = Theme.of(context);
     final loc = AppLocalizations.of(context);
     final subs = context.watch<SubscriptionService>();
-
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final titleText = _getAppBarTitle(loc, selectedIndex, subs.tier);
 
     return AppBar(
-      toolbarHeight: 88,
+      toolbarHeight: 112,
       elevation: 0,
       backgroundColor: Colors.transparent,
       shadowColor: Colors.transparent,
       automaticallyImplyLeading: false,
-      centerTitle: true,
       systemOverlayStyle: SystemUiOverlayStyle(
         statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
         statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
@@ -60,56 +58,61 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
       ),
-
-      // Leading: vault view toggle or settings refresh
-      leading: switch (selectedIndex) {
-        1 when viewModeIcon != null && onToggleViewMode != null => Tooltip(
-          message: loc.appBarToggleViewMode,
-          waitDuration: const Duration(milliseconds: 300),
-          child: IconButton(
-            icon: Icon(viewModeIcon, color: Colors.white),
-            onPressed: onToggleViewMode,
-          ),
-        ),
-        2 => Tooltip(
-          message: loc.appBarRefreshSubscription,
-          waitDuration: const Duration(milliseconds: 300),
-          child: IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () async {
-              final subs = context.read<SubscriptionService>();
-              await subs.refresh(); // pulls latest from RevenueCat + Firestore
-              // Optionally push reconcile if you want immediate backend alignment
-              await subs.refreshAndNotify(); // keeps UI in sync
-
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(loc.subscriptionRefreshed),
-                    duration: const Duration(seconds: 2),
+      title: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // 🔄 Toggle / Refresh button
+            switch (selectedIndex) {
+              1 when viewModeIcon != null && onToggleViewMode != null =>
+                Tooltip(
+                  message: loc.appBarToggleViewMode,
+                  waitDuration: const Duration(milliseconds: 300),
+                  child: IconButton(
+                    icon: Icon(viewModeIcon, color: Colors.white),
+                    onPressed: onToggleViewMode,
                   ),
-                );
-              }
+                ),
+              2 => Tooltip(
+                message: loc.appBarRefreshSubscription,
+                waitDuration: const Duration(milliseconds: 300),
+                child: IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: () async {
+                    final subs = context.read<SubscriptionService>();
+                    await subs.refresh();
+                    await subs.refreshAndNotify();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(loc.subscriptionRefreshed),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+              _ => const SizedBox(width: 48), // maintain spacing
             },
-          ),
-        ),
-        _ => const SizedBox.shrink(),
-      },
 
-      title: _GradientTitle(text: titleText),
-
-      // Daily tips bubble (ramen icon)
-      // Daily tips bubble (icon updated)
-      actions: [
-        if (selectedIndex == 1)
-          const Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: DailyMessageBubble(
-              iconData: Icons.tips_and_updates_rounded, // 💡 updated icon
-              tooltip: 'Daily cooking tip',
+            // 🏷️ Gradient Title
+            Expanded(
+              child: Center(child: _GradientTitle(text: titleText)),
             ),
-          ),
-      ],
+
+            // 💡 Daily Tip
+            if (selectedIndex == 1)
+              const DailyMessageBubble(
+                iconData: Icons.tips_and_updates_rounded,
+                tooltip: 'Daily cooking tip',
+              )
+            else
+              const SizedBox(width: 48), // maintain spacing
+          ],
+        ),
+      ),
     );
   }
 

@@ -35,9 +35,9 @@ class RecipeLongPressMenu {
     final theme = Theme.of(context);
 
     // Locale-aware display title
-    final locale = Localizations.localeOf(context);
+    Localizations.localeOf(context);
     final localeTag =
-        "${locale.languageCode}${locale.countryCode != null ? '-${locale.countryCode}' : ''}";
+        "\${locale.languageCode}\${locale.countryCode != null ? '-\${locale.countryCode}' : ''}";
     final translatedTitle = recipe.formattedForLocaleTag(localeTag);
     final displayTitle = (translatedTitle?.trim().isNotEmpty ?? false)
         ? translatedTitle!.trim()
@@ -47,17 +47,17 @@ class RecipeLongPressMenu {
     final rootContext = context;
 
     // Treat these as "system chips" and hide them from assignment.
-    final systemChips = <String>{
-      'Favourites',
-      'All',
-      'Translated',
-      l.favourites,
-      l.systemAll,
-      l.systemTranslated,
+    final systemChipLabels = <String>{
+      'favourites',
+      'translated',
+      'all',
+      l.favourites.toLowerCase(),
+      l.systemTranslated.toLowerCase(),
+      l.systemAll.toLowerCase(),
     };
 
     final filteredCategories = categories
-        .where((c) => !systemChips.contains(c))
+        .where((c) => !systemChipLabels.contains(c.trim().toLowerCase()))
         .toList();
     final selectedCategories = List<String>.from(recipe.categories);
 
@@ -79,7 +79,6 @@ class RecipeLongPressMenu {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // grab handle
                         Container(
                           width: 40,
                           height: 4,
@@ -97,7 +96,6 @@ class RecipeLongPressMenu {
                           ),
                         ),
                         const SizedBox(height: 16),
-
                         Row(
                           children: [
                             ClipRRect(
@@ -139,46 +137,47 @@ class RecipeLongPressMenu {
                                       child: Wrap(
                                         spacing: 6,
                                         runSpacing: -4,
-                                        children: recipe.categories.map((c) {
-                                          final shown = systemChips.contains(c)
-                                              ? (c == 'Translated' ||
-                                                        c == l.systemTranslated
-                                                    ? l.systemTranslated
-                                                    : c == 'Favourites' ||
-                                                          c == l.favourites
-                                                    ? l.favourites
-                                                    : c == 'All' ||
-                                                          c == l.systemAll
-                                                    ? l.systemAll
-                                                    : c)
-                                              : localizeCategoryLabel(c, l);
-
-                                          return Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                color: theme.colorScheme.outline
-                                                    .withOpacity(0.4),
+                                        children: recipe.categories
+                                            .where(
+                                              (c) => !systemChipLabels.contains(
+                                                c.trim().toLowerCase(),
                                               ),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              shown,
-                                              style: theme.textTheme.labelSmall
-                                                  ?.copyWith(
-                                                    fontSize: 10,
+                                            )
+                                            .map((c) {
+                                              final shown =
+                                                  localizeCategoryLabel(c, l);
+                                              return Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  border: Border.all(
                                                     color: theme
                                                         .colorScheme
-                                                        .onSurface
-                                                        .withOpacity(0.6),
+                                                        .outline
+                                                        .withOpacity(0.4),
                                                   ),
-                                            ),
-                                          );
-                                        }).toList(),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  shown,
+                                                  style: theme
+                                                      .textTheme
+                                                      .labelSmall
+                                                      ?.copyWith(
+                                                        fontSize: 10,
+                                                        color: theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withOpacity(0.6),
+                                                      ),
+                                                ),
+                                              );
+                                            })
+                                            .toList(),
                                       ),
                                     ),
                                 ],
@@ -187,7 +186,6 @@ class RecipeLongPressMenu {
                           ],
                         ),
                         const SizedBox(height: 24),
-
                         if (filteredCategories.isNotEmpty)
                           Theme(
                             data: theme.copyWith(
@@ -234,10 +232,8 @@ class RecipeLongPressMenu {
                           ),
                         if (filteredCategories.isNotEmpty)
                           const SizedBox(height: 24),
-
                         Row(
                           children: [
-                            // Update image
                             Expanded(
                               child: OutlinedButton.icon(
                                 icon: const Icon(Icons.image_rounded, size: 18),
@@ -246,9 +242,7 @@ class RecipeLongPressMenu {
                                   style: const TextStyle(fontSize: 13),
                                 ),
                                 onPressed: () {
-                                  // Close ONLY the sheet
                                   Navigator.of(sheetContext).pop();
-                                  // Then perform the action
                                   onAddOrUpdateImage();
                                 },
                                 style: OutlinedButton.styleFrom(
@@ -267,8 +261,6 @@ class RecipeLongPressMenu {
                               ),
                             ),
                             const SizedBox(width: 12),
-
-                            // Edit
                             Expanded(
                               child: ElevatedButton.icon(
                                 icon: const Icon(Icons.edit_rounded, size: 18),
@@ -277,10 +269,7 @@ class RecipeLongPressMenu {
                                   style: const TextStyle(fontSize: 13),
                                 ),
                                 onPressed: () async {
-                                  // Close ONLY the sheet
                                   Navigator.of(sheetContext).pop();
-
-                                  // Push AFTER closing, on the root navigator, next frame.
                                   WidgetsBinding.instance.addPostFrameCallback((
                                     _,
                                   ) {
@@ -311,8 +300,6 @@ class RecipeLongPressMenu {
                           ],
                         ),
                         const SizedBox(height: 16),
-
-                        // Delete
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
@@ -323,7 +310,6 @@ class RecipeLongPressMenu {
                             ),
                             onPressed: () async {
                               final confirmed = await showDialog<bool>(
-                                // Use the sheet context so the dialog sits above the sheet
                                 context: sheetContext,
                                 builder: (dialogCtx) => Dialog(
                                   shape: RoundedRectangleBorder(
@@ -410,9 +396,7 @@ class RecipeLongPressMenu {
                                   ),
                                 ),
                               );
-
                               if (confirmed == true) {
-                                // Close the sheet first, then run the deletion
                                 Navigator.of(sheetContext).pop();
                                 onDelete();
                               }

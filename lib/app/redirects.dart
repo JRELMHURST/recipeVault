@@ -36,14 +36,18 @@ String? appRedirect(
   }
 
   // 🥾 3) Bootstrap gating (while subs/status resolving)
-  if (!AppBootstrap.isReady && !AppBootstrap.timeoutReached) {
+  final isStillBooting = !AppBootstrap.isReady || subs.tier == 'none';
+  if (isStillBooting && !AppBootstrap.timeoutReached) {
     // Allow paywall if user explicitly opened manage
     if (loc == AppRoutes.paywall && isManaging) return null;
     return AppRoutes.boot;
   }
 
-  // ✅ 4) Entitled (active sub or special access)
-  if (subs.hasActiveSubscription || subs.hasSpecialAccess) {
+  // ✅ 4) Entitled (trial, active sub, or special access)
+  final isEntitled =
+      subs.isInTrial || subs.hasActiveSubscription || subs.hasSpecialAccess;
+
+  if (isEntitled) {
     // Allow paywall manage deep-link
     if (loc == AppRoutes.paywall && isManaging) return null;
 
@@ -57,6 +61,13 @@ String? appRedirect(
     return blocked.contains(loc) ? AppRoutes.vault : null;
   }
 
-  // 🚧 5) Logged in but not entitled → force paywall (manage allowed)
-  return loc == AppRoutes.paywall ? null : AppRoutes.paywall;
+  // 🚧 5) Logged in but NOT entitled → block everything except explicit paywall/manage
+  final isOnPaywall = loc == AppRoutes.paywall;
+  if (!isEntitled) {
+    if (isManaging && isOnPaywall) return null;
+    return AppRoutes.paywall;
+  }
+
+  // ✅ Default: allow navigation
+  return null;
 }

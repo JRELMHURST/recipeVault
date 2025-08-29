@@ -18,45 +18,37 @@ import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 class AppBootstrap {
   AppBootstrap._();
 
-  // Exposed Firebase services (Firebase is initialized in main.dart)
   static final FirebaseFunctions functions = FirebaseFunctions.instanceFor(
     region: 'europe-west2',
   );
   static final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  // ── Readiness signalling for the router ──────────────────────────────
   static final ValueNotifier<bool> _ready = ValueNotifier<bool>(false);
   static ValueListenable<bool> get readyListenable => _ready;
   static bool get isReady => _ready.value;
 
-  // One-shot timeout so the router can stop showing /boot after a while
   static const Duration _bootTimeout = Duration(seconds: 8);
   static final ValueNotifier<bool> _timeoutReached = ValueNotifier<bool>(false);
   static ValueListenable<bool> get timeoutListenable => _timeoutReached;
   static bool get timeoutReached => _timeoutReached.value;
 
   static bool _initialised = false;
-
-  // Prevent RevenueCat from being configured twice
   static bool _rcConfigured = false;
+  static bool _hasSetReady = false;
 
-  /// Call once at app start (before runApp).
   static Future<void> ensureReady() async {
     if (_initialised) return;
     _initialised = true;
 
-    // Fire a one-shot signal at timeout so GoRouter re-runs redirects
     Future<void>.delayed(_bootTimeout).then((_) {
       if (!_timeoutReached.value) _timeoutReached.value = true;
     });
 
-    // 1) RevenueCat — only configure once, on supported platforms (Android/iOS only)
     try {
       if (Platform.isIOS || Platform.isAndroid) {
         if (!_rcConfigured) {
           if (kDebugMode) await Purchases.setLogLevel(LogLevel.debug);
 
-          // Prefer passing keys via --dart-define for security.
           final iosKey = const String.fromEnvironment(
             'RC_API_KEY_IOS',
             defaultValue: 'appl_oqbgqmtmctjzzERpEkswCejmukh',
@@ -83,7 +75,6 @@ class AppBootstrap {
       debugPrintStack(stackTrace: st);
     }
 
-    // 2) Notifications
     try {
       await NotificationService.init();
     } catch (e, st) {
@@ -91,7 +82,6 @@ class AppBootstrap {
       debugPrintStack(stackTrace: st);
     }
 
-    // 3) Hive + adapters (+ optional legacy migration)
     try {
       await Hive.initFlutter();
 
@@ -102,7 +92,6 @@ class AppBootstrap {
         Hive.registerAdapter(CategoryModelAdapter());
       }
 
-      // Optional legacy categories migration
       try {
         if (await Hive.boxExists('categories')) {
           final catBox = await Hive.openBox('categories');
@@ -130,16 +119,14 @@ class AppBootstrap {
       debugPrintStack(stackTrace: st);
     }
 
-    // 4) Keep per-user services + RC AppUserID in lockstep with Auth
-    //    Use a single, de-duplicated listener (no immediate “initial sync”).
     FirebaseAuth.instance
         .authStateChanges()
-        .distinct((prev, next) => prev?.uid == next?.uid) // de-dupe by UID
+        .distinct((prev, next) => prev?.uid == next?.uid)
         .listen((user) async {
           debugPrint(
             user == null
                 ? '🧍 BOOT: FirebaseAuth → No user signed in'
-                : '✅ BOOT: FirebaseAuth → Signed in uid=${user.uid}',
+                : '✅ BOOT: FirebaseAuth → Signed in uid=\${user.uid}',
           );
 
           final uid = user?.uid;
@@ -147,27 +134,33 @@ class AppBootstrap {
           try {
             await CategoryService.onAuthChanged(uid);
           } catch (e, st) {
-            debugPrint('⚠️ BOOT: CategoryService.onAuthChanged failed: $e');
+            debugPrint('⚠️ BOOT: CategoryService.onAuthChanged failed: \$e');
             debugPrintStack(stackTrace: st);
           }
+
           try {
             await UserPreferencesService.onAuthChanged(uid);
           } catch (e, st) {
             debugPrint(
-              '⚠️ BOOT: UserPreferencesService.onAuthChanged failed: $e',
+              '⚠️ BOOT: UserPreferencesService.onAuthChanged failed: \$e',
             );
             debugPrintStack(stackTrace: st);
           }
+
           try {
-            await SubscriptionService().setAppUserId(uid);
-            await SubscriptionService().refresh(); // ✅ Add this
+            final subs = SubscriptionService();
+            await subs.setAppUserId(uid);
+            await subs.refresh();
           } catch (e, st) {
-            debugPrint('⚠️ BOOT: SubscriptionService failed: $e');
+            debugPrint('⚠️ BOOT: SubscriptionService failed: \$e');
             debugPrintStack(stackTrace: st);
           }
-        });
 
-    // 5) Core bootstrap finished → allow router to proceed
-    _ready.value = true;
+          if (!_hasSetReady) {
+            _hasSetReady = true;
+            _ready.value = true;
+            debugPrint('✅ BOOT: AppBootstrap isReady = true');
+          }
+        });
   }
 }

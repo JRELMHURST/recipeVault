@@ -1,4 +1,3 @@
-// lib/core/usage_metrics_widget.dart
 // ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'dart:async';
@@ -100,17 +99,14 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
 
   @override
   Widget build(BuildContext context) {
-    final usage = context.watch<UsageService>(); // live counts
-    final sub = context.watch<SubscriptionService>(); // tier / limits
+    final usage = context.watch<UsageService>();
+    final sub = context.watch<SubscriptionService>();
     final loc = AppLocalizations.of(context);
 
-    if (!sub.showUsageWidget || !sub.trackUsage) {
-      return const SizedBox.shrink();
-    }
+    if (!sub.showUsageWidget || !sub.trackUsage) return const SizedBox.shrink();
 
     final recipesUsed = usage.recipesUsed;
     final translatedUsed = usage.translatedRecipesUsed;
-
     final recipeLimit = sub.aiLimit;
     final translatedLimit = sub.translatedRecipeLimit;
 
@@ -159,7 +155,6 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header row
               Row(
                 children: [
                   _pill(
@@ -172,8 +167,6 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
                 ],
               ),
               const SizedBox(height: 12),
-
-              // Metrics
               AnimatedBuilder(
                 animation: _controller,
                 builder: (_, __) => Column(
@@ -247,23 +240,29 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
         ? 'Master Chef'
         : tier;
     final color = tier == 'master_chef' ? cs.primary : cs.secondary;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      constraints: const BoxConstraints(maxWidth: 120),
       decoration: BoxDecoration(
         color: color.withOpacity(.12),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: color.withOpacity(.18)),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.workspace_premium_rounded, size: 16, color: color),
           const SizedBox(width: 6),
-          Text(
-            name,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: .2,
+          Flexible(
+            child: Text(
+              name,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: .2,
+              ),
             ),
           ),
         ],
@@ -282,7 +281,6 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
     required String secondaryText,
   }) {
     final theme = Theme.of(context);
-
     final remaining = (limit <= 0) ? 0 : (limit - used).clamp(0, limit);
     final showBadge = limit > 0;
 
@@ -294,7 +292,6 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // label + count
               Row(
                 children: [
                   Expanded(
@@ -317,10 +314,8 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
                 ],
               ),
               const SizedBox(height: 6),
-              // progress
               _progressBar(percent: percent, color: barColor),
               const SizedBox(height: 6),
-              // caption + remaining badge
               Row(
                 children: [
                   Expanded(
@@ -367,7 +362,6 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
           height: 8,
           child: Stack(
             children: [
-              // track
               Container(
                 width: w,
                 decoration: BoxDecoration(
@@ -375,7 +369,6 @@ class _UsageMetricsWidgetState extends State<UsageMetricsWidget>
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              // fill
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOut,

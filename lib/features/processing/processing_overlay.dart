@@ -1,6 +1,5 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
-import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -112,9 +111,9 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       if (_hasCancelled) return;
 
       debugPrint(
-        "🧭 RAW FUNCTION RESPONSE = ${JsonEncoder.withIndent('  ').convert(result.toMap())}",
+        "🧭 RAW FUNCTION RESPONSE = \${JsonEncoder.withIndent('  ').convert(result.toMap())}",
       );
-      debugPrint("📄 User tier (from CF): ${result.tier}");
+      debugPrint("📄 User tier (from CF): \${result.tier}");
 
       // If translation is needed → adjust steps
       if (mounted && result.translationUsed) {
@@ -144,13 +143,13 @@ class _ProcessingOverlayViewState extends State<_ProcessingOverlayView>
       if (!mounted) return;
       ProcessingOverlay.hide();
       context.push(AppRoutes.results, extra: result);
-    } catch (e, st) {
-      debugPrint('❌ Processing failed: $e\n$st');
+    } catch (e) {
+      debugPrint('❌ Processing failed: \$e\n\$st');
       if (mounted) {
-        final t = AppLocalizations.of(context);
+        AppLocalizations.of(context);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('${t.error}: $e')));
+        ).showSnackBar(SnackBar(content: Text('\${t.error}: \$e')));
       }
       ProcessingOverlay.hide();
     }

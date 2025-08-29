@@ -11,57 +11,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:recipe_vault/firebase_storage.dart'; // FirebaseStorageService
 import 'package:recipe_vault/features/processing/processed_recipe_result.dart';
 import 'package:recipe_vault/billing/subscription/subscription_service.dart';
 
 class ImageProcessingService {
-  // ───────────────────────────── Tunables ─────────────────────────────
   static const int _jpegQualityAndroid = 80;
   static const int _jpegQualityIOS = 85;
-  static const int _maxDimension = 2200; // clamp long side for uploads
-
+  static const int _maxDimension = 2200;
   static const Duration _uploadTimeout = Duration(seconds: 30);
-
-  // ⏱️ CF timeout – give OCR+translate+GPT breathing room
   static const Duration _cfTimeout = Duration(seconds: 150);
-
-  // Two‑stage “first‑good-pages” strategy
-  static const int _primaryPages = 3; // try first N pages first
-  static const int _ocrSufficientChars = 900; // if OCR shorter, retry with all
-
+  static const int _primaryPages = 3;
+  static const int _ocrSufficientChars = 900;
   static const bool _debug = false;
-
   static final ImagePicker _picker = ImagePicker();
-
-  // ───────────────────────── PLAN GATES ─────────────────────────
 
   static Future<void> _ensureUploadAllowedOrThrow(BuildContext context) async {
     final subs = context.read<SubscriptionService>();
     if (!subs.allowImageUpload) {
-      _logDebug("❌ Upload entitlement denied. Tier=${subs.tier}");
+      _logDebug("❌ Upload entitlement denied. Tier=\${subs.tier}");
       throw SubscriptionGateException(
         '✨ Upload images with the Home Chef or Master Chef plan.',
       );
     }
   }
-
-  static Future<void> _ensureProcessingAllowedOrThrow(
-    BuildContext context,
-  ) async {
-    final subs = context.read<SubscriptionService>();
-    if (!subs.allowTranslation) {
-      _logDebug("❌ Processing entitlement denied. Tier=${subs.tier}");
-      throw SubscriptionGateException(
-        '✨ Unlock Chef Mode with Home Chef or Master Chef to process recipes.',
-      );
-    }
-  }
-
-  // ───────────────────────── PICK + COMPRESS ─────────────────────────
 
   static Future<List<File>> pickAndCompressImages(BuildContext context) async {
     await _ensureUploadAllowedOrThrow(context);
@@ -71,7 +47,7 @@ class ImageProcessingService {
   }
 
   static Future<List<File>> _compressFiles(List<File> files) async {
-    final tempDir = await getTemporaryDirectory();
+    final tempDir = await getTemporaryDirectory(); // ✅ This was missing
     final out = <File>[];
 
     for (final file in files) {
@@ -90,16 +66,16 @@ class ImageProcessingService {
           autoCorrectionAngle: true,
         );
 
-        if (compressed != null) {
+        if (compressed != null && compressed.existsSync()) {
           out.add(compressed);
           _logDebug(
             '✅ Compressed → ${compressed.path} (${await compressed.length()} bytes)',
           );
         } else {
-          out.add(file);
           _logDebug(
-            '⚠️ Compression returned null; kept original: ${file.path}',
+            '⚠️ Compression returned null or file missing: ${file.path}',
           );
+          out.add(file);
         }
       } catch (e) {
         _logDebug('⚠️ Compression failed for ${file.path}: $e');
@@ -109,14 +85,12 @@ class ImageProcessingService {
     return out;
   }
 
-  // ────────────────────────────── UPLOADS ──────────────────────────────
-
   static Future<List<String>> uploadFiles(
     BuildContext context,
     List<File> files,
   ) async {
     await _ensureUploadAllowedOrThrow(context);
-    _logDebug('⏫ Uploading ${files.length} file(s) to Firebase Storage…');
+    _logDebug('⏫ Uploading \${files.length} file(s) to Firebase Storage…');
     return FirebaseStorageService.uploadImages(files);
   }
 
@@ -129,7 +103,7 @@ class ImageProcessingService {
     await _ensureUploadAllowedOrThrow(context);
     try {
       final ref = FirebaseStorage.instance.ref(
-        'users/$userId/recipe_images/$recipeId.jpg',
+        'users/\$userId/recipe_images/\$recipeId.jpg',
       );
       final metadata = SettableMetadata(
         contentType: 'image/jpeg',
@@ -140,20 +114,18 @@ class ImageProcessingService {
           .putFile(imageFile, metadata)
           .timeout(_uploadTimeout);
       final url = await task.ref.getDownloadURL();
-      _logDebug('✅ Uploaded recipe image: $url');
+      _logDebug('✅ Uploaded recipe image: \$url');
       return url;
     } on TimeoutException {
       throw NetworkTimeoutException(
         'Upload timed out. Please check your connection.',
       );
-    } on FirebaseException catch (e) {
-      throw StorageException('Storage error: ${e.code}');
+    } on FirebaseException {
+      throw StorageException('Storage error: \${e.code}');
     } catch (e) {
-      throw StorageException('Failed to upload recipe image: $e');
+      throw StorageException('Failed to upload recipe image: \$e');
     }
   }
-
-  // ─────────────────────────────── CROP ───────────────────────────────
 
   static Future<File?> cropImage(File originalImage) async {
     final cropped = await ImageCropper().cropImage(
@@ -206,22 +178,16 @@ class ImageProcessingService {
         recipeId: recipeId,
       );
     } catch (e) {
-      showError(context, 'Image upload failed: $e');
+      showError(context, 'Image upload failed: \$e');
       return null;
     }
   }
-
-  // ───────── OCR → TRANSLATE → FORMAT (Cloud Function) ─────────
-  // Two‑stage: try first N images for speed; if OCR looks short, retry with all.
 
   static Future<ProcessedRecipeResult> extractAndFormatRecipe(
     List<String> imageUrls,
     BuildContext context, {
     Duration timeout = _cfTimeout,
   }) async {
-    await _ensureProcessingAllowedOrThrow(context);
-
-    // pick primary pages first
     final primaryUrls = imageUrls.length > _primaryPages
         ? imageUrls.take(_primaryPages).toList()
         : imageUrls;
@@ -229,7 +195,6 @@ class ImageProcessingService {
     final locale = Localizations.localeOf(context);
     final functions = FirebaseFunctions.instanceFor(region: 'europe-west2');
 
-    // ⏱️ Increase callable timeout on client
     final callable = functions.httpsCallable(
       'extractAndFormatRecipe',
       options: HttpsCallableOptions(timeout: timeout),
@@ -241,7 +206,7 @@ class ImageProcessingService {
       await user.getIdToken(true);
 
       _logDebug(
-        '🤖 Calling CF with ${urls.length} image(s) → ${locale.languageCode}_${locale.countryCode}',
+        '🤖 Calling CF with \${urls.length} image(s) → \${locale.languageCode}_\${locale.countryCode}',
       );
 
       final res = await callable.call({
@@ -259,15 +224,20 @@ class ImageProcessingService {
     }
 
     try {
-      // 1) Fast path: fewer pages
       final fast = await callCF(primaryUrls);
 
-      // If OCR text is short and we have more pages, retry with full set
+      final subs = context.read<SubscriptionService>();
+      if (fast.translationUsed && !subs.allowTranslation) {
+        throw SubscriptionGateException(
+          '✨ Unlock Chef Mode with Home Chef or Master Chef to translate recipes.',
+        );
+      }
+
       final original = fast.originalText.trim();
       if (imageUrls.length > primaryUrls.length &&
           original.length < _ocrSufficientChars) {
         _logDebug(
-          '↪️ OCR looked short (${original.length} chars). Retrying with all ${imageUrls.length} images…',
+          '↪️ OCR looked short (\${original.length} chars). Retrying with all \${imageUrls.length} images…',
         );
         final full = await callCF(imageUrls);
         return full;
@@ -275,7 +245,7 @@ class ImageProcessingService {
 
       return fast;
     } on FirebaseFunctionsException catch (e) {
-      _logDebug('🛑 CF exception: ${e.code} — ${e.message}');
+      _logDebug('🛑 CF exception: \${e.code} — \${e.message}');
       switch (e.code) {
         case 'permission-denied':
           throw SubscriptionGateException(
@@ -287,7 +257,6 @@ class ImageProcessingService {
           );
         case 'deadline-exceeded':
         case 'unavailable':
-          // quick retry once with same set
           await Future.delayed(const Duration(milliseconds: 600));
           final retry =
               await FirebaseFunctions.instanceFor(region: 'europe-west2')
@@ -304,17 +273,15 @@ class ImageProcessingService {
             (retry.data as Map).cast<String, dynamic>(),
           );
         default:
-          throw ProcessingException('Processing failed: ${e.message}');
+          throw ProcessingException('Processing failed: \${e.message}');
       }
     } on TimeoutException {
       throw NetworkTimeoutException('Server took too long. Please try again.');
     } catch (e) {
-      _logDebug('❌ General exception: $e');
-      throw ProcessingException('Failed to process recipe: $e');
+      _logDebug('❌ General exception: \$e');
+      throw ProcessingException('Failed to process recipe: \$e');
     }
   }
-
-  // ───────────────────────────── UI HELPERS ─────────────────────────────
 
   static void showError(BuildContext context, String message) {
     ScaffoldMessenger.of(
@@ -322,53 +289,49 @@ class ImageProcessingService {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  // ────────────────────────────── LOGGING ──────────────────────────────
-
   static void _logDebug(String message) {
     if (_debug) debugPrint(message);
   }
 }
 
-// ────────────────────────────── Custom Exceptions ──────────────────────────────
-
 class SubscriptionGateException implements Exception {
   final String message;
   SubscriptionGateException(this.message);
   @override
-  String toString() => 'SubscriptionGateException: $message';
+  String toString() => 'SubscriptionGateException: \$message';
 }
 
 class UsageLimitException implements Exception {
   final String message;
   UsageLimitException(this.message);
   @override
-  String toString() => 'UsageLimitException: $message';
+  String toString() => 'UsageLimitException: \$message';
 }
 
 class NetworkTimeoutException implements Exception {
   final String message;
   NetworkTimeoutException(this.message);
   @override
-  String toString() => 'NetworkTimeoutException: $message';
+  String toString() => 'NetworkTimeoutException: \$message';
 }
 
 class StorageException implements Exception {
   final String message;
   StorageException(this.message);
   @override
-  String toString() => 'StorageException: $message';
+  String toString() => 'StorageException: \$message';
 }
 
 class AuthException implements Exception {
   final String message;
   AuthException(this.message);
   @override
-  String toString() => 'AuthException: $message';
+  String toString() => 'AuthException: \$message';
 }
 
 class ProcessingException implements Exception {
   final String message;
   ProcessingException(this.message);
   @override
-  String toString() => 'ProcessingException: $message';
+  String toString() => 'ProcessingException: \$message';
 }

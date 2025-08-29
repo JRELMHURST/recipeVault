@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 import 'package:recipe_vault/features/recipe_vault/recipe_long_press_menu.dart';
+import 'package:recipe_vault/widgets/box_decoration.dart';
 
 class RecipeGridView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
@@ -45,7 +46,6 @@ class RecipeGridView extends StatelessWidget {
       itemBuilder: (context, index) {
         final recipe = recipes[index];
 
-        // ---- Locale-aware title ----
         final locale = Localizations.localeOf(context);
         final tag =
             "${locale.languageCode}${locale.countryCode != null ? '-${locale.countryCode}' : ''}";
@@ -68,22 +68,12 @@ class RecipeGridView extends StatelessWidget {
               onAddOrUpdateImage: () => onAddOrUpdateImage(recipe),
               categories: categories,
             ),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
+            child: Container(
+              decoration: whiteGlowDecoration(surface),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: Stack(
                   children: [
-                    // Image (with loader + fallback)
                     if (recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty)
                       Image.network(
                         recipe.imageUrl!,
@@ -115,7 +105,6 @@ class RecipeGridView extends StatelessWidget {
                     else
                       _fallbackIcon(theme),
 
-                    // Title overlay
                     Positioned(
                       bottom: 0,
                       left: 0,
@@ -148,7 +137,6 @@ class RecipeGridView extends StatelessWidget {
                       ),
                     ),
 
-                    // Favourite icon button
                     Positioned(
                       top: 6,
                       right: 6,
@@ -179,7 +167,6 @@ class RecipeGridView extends StatelessWidget {
                       ),
                     ),
 
-                    // Subtle border for contrast on light images
                     Positioned.fill(
                       child: IgnorePointer(
                         child: DecoratedBox(

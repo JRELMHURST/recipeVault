@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
+import 'package:recipe_vault/widgets/box_decoration.dart';
 
 class RecipeCard extends StatelessWidget {
   // Legacy path (still used by ResultsScreen)
@@ -30,28 +31,33 @@ class RecipeCard extends StatelessWidget {
         return Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxWidth),
-            child: Card(
-              elevation: 6,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: colour.primary.withOpacity(0.25),
-                  width: 1.1,
-                ),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(height: 4, color: colour.primary),
-                  Container(
-                    color: theme.cardColor,
-                    padding: const EdgeInsets.all(20),
-                    child: recipe != null
-                        ? _buildFromModel(context, recipe!, theme)
-                        : _buildFromText(context, recipeText ?? "", theme),
+            child: Container(
+              decoration: whiteGlowDecoration(
+                Theme.of(context).colorScheme.surface,
+              ), // 👈 Apply glow here
+              child: Card(
+                elevation: 6,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: colour.primary.withOpacity(0.25),
+                    width: 1.1,
                   ),
-                ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(height: 4, color: colour.primary),
+                    Container(
+                      color: theme.cardColor,
+                      padding: const EdgeInsets.all(20),
+                      child: recipe != null
+                          ? _buildFromModel(context, recipe!, theme)
+                          : _buildFromText(context, recipeText ?? "", theme),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

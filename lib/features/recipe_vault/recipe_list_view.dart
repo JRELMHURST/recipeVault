@@ -6,6 +6,7 @@ import 'package:recipe_vault/l10n/app_localizations.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 import 'package:recipe_vault/features/recipe_vault/recipe_long_press_menu.dart';
 import 'package:recipe_vault/widgets/network_recipe_image.dart';
+import 'package:recipe_vault/widgets/box_decoration.dart';
 
 class RecipeListView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
@@ -44,7 +45,6 @@ class RecipeListView extends StatelessWidget {
       itemBuilder: (context, index) {
         final recipe = recipes[index];
 
-        // Locale-aware title
         final locale = Localizations.localeOf(context);
         final tag =
             "${locale.languageCode}${locale.countryCode != null ? '-${locale.countryCode}' : ''}";
@@ -104,54 +104,49 @@ class RecipeListView extends StatelessWidget {
             child: Semantics(
               button: true,
               label: '$displayTitle. $tapHint',
-              child: Card(
+              child: Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(
+                decoration: whiteGlowDecoration(theme.cardColor),
+                child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: theme.colorScheme.primary.withOpacity(0.20),
-                    width: 1.5,
-                  ),
-                ),
-                color: theme.cardColor,
-                elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
-                          ? NetworkRecipeImage(
-                              imageUrl: recipe.imageUrl!,
-                              width: 56,
-                              height: 56,
-                            )
-                          : _fallbackIcon(),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _TitleAndHint(
-                          title: displayTitle,
-                          hint: tapHint,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty
+                            ? NetworkRecipeImage(
+                                imageUrl: recipe.imageUrl!,
+                                width: 56,
+                                height: 56,
+                              )
+                            : _fallbackIcon(),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _TitleAndHint(
+                            title: displayTitle,
+                            hint: tapHint,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      IconButton(
-                        onPressed: () => onToggleFavourite(recipe),
-                        tooltip: recipe.isFavourite
-                            ? l.menuUnfavourite
-                            : l.menuFavourite,
-                        icon: Icon(
-                          recipe.isFavourite
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: recipe.isFavourite
-                              ? Colors.redAccent
-                              : theme.hintColor,
-                          size: 20,
+                        const SizedBox(width: 12),
+                        IconButton(
+                          onPressed: () => onToggleFavourite(recipe),
+                          tooltip: recipe.isFavourite
+                              ? l.menuUnfavourite
+                              : l.menuFavourite,
+                          icon: Icon(
+                            recipe.isFavourite
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: recipe.isFavourite
+                                ? Colors.redAccent
+                                : theme.hintColor,
+                            size: 20,
+                          ),
+                          splashRadius: 22,
                         ),
-                        splashRadius: 22,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

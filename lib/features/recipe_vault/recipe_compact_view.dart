@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:recipe_vault/data/models/recipe_card_model.dart';
 import 'package:recipe_vault/features/recipe_vault/recipe_long_press_menu.dart';
 import 'package:recipe_vault/l10n/app_localizations.dart';
+import 'package:recipe_vault/widgets/box_decoration.dart';
 
 class RecipeCompactView extends StatelessWidget {
   final List<RecipeCardModel> recipes;
@@ -55,7 +56,6 @@ class RecipeCompactView extends StatelessWidget {
         final recipe = recipes[index];
         final hasImage = recipe.imageUrl != null && recipe.imageUrl!.isNotEmpty;
 
-        // ---- Locale-aware title ----
         final locale = Localizations.localeOf(context);
         final tag =
             "${locale.languageCode}${locale.countryCode != null ? '-${locale.countryCode}' : ''}";
@@ -70,64 +70,67 @@ class RecipeCompactView extends StatelessWidget {
           child: GestureDetector(
             onTap: () => onTap(recipe),
             onLongPress: () => _showActionMenu(context, recipe),
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: hasImage
-                      ? Image.network(
-                          recipe.imageUrl!,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                          gaplessPlayback: true,
-                          errorBuilder: (context, error, stackTrace) =>
-                              _fallbackTile(theme),
-                          loadingBuilder: (context, child, progress) {
-                            if (progress == null) return child;
-                            return Semantics(
-                              label: l.loading,
-                              child: _loadingTile(theme),
-                            );
-                          },
-                        )
-                      : _fallbackTile(theme),
-                ),
+            child: Container(
+              decoration: whiteGlowDecoration(theme.colorScheme.surface),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Stack(
+                  children: [
+                    hasImage
+                        ? Image.network(
+                            recipe.imageUrl!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            gaplessPlayback: true,
+                            errorBuilder: (context, error, stackTrace) =>
+                                _fallbackTile(theme),
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return Semantics(
+                                label: l.loading,
+                                child: _loadingTile(theme),
+                              );
+                            },
+                          )
+                        : _fallbackTile(theme),
 
-                // Favourite toggle
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: Tooltip(
-                    message: recipe.isFavourite
-                        ? l.removeFromFavourites
-                        : l.addToFavourites,
-                    child: IconButton(
-                      icon: Icon(
-                        recipe.isFavourite
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color: recipe.isFavourite
-                            ? Colors.redAccent
-                            : theme.colorScheme.onPrimary,
-                        size: 26,
+                    // Favourite toggle
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Tooltip(
+                        message: recipe.isFavourite
+                            ? l.removeFromFavourites
+                            : l.addToFavourites,
+                        child: IconButton(
+                          icon: Icon(
+                            recipe.isFavourite
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: recipe.isFavourite
+                                ? Colors.redAccent
+                                : theme.colorScheme.onPrimary,
+                            size: 26,
+                          ),
+                          onPressed: () => onToggleFavourite(recipe),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          splashRadius: 20,
+                        ),
                       ),
-                      onPressed: () => onToggleFavourite(recipe),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      splashRadius: 20,
                     ),
-                  ),
-                ),
 
-                // Title overlay (locale-aware)
-                Positioned(
-                  left: 6,
-                  right: 6,
-                  bottom: 6,
-                  child: _titlePill(theme, displayTitle),
+                    // Title overlay
+                    Positioned(
+                      left: 6,
+                      right: 6,
+                      bottom: 6,
+                      child: _titlePill(theme, displayTitle),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         );

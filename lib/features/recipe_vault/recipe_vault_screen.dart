@@ -146,65 +146,78 @@ class _VaultBodyState extends State<_VaultBody> {
 
                 // Results area
                 Expanded(
-                  child: filtered.isEmpty
-                      ? (c.allRecipes.isEmpty
-                            ? const EmptyVaultPlaceholder(topSpacing: 8)
-                            : Center(
-                                child: Text(
-                                  t.noRecipesFound,
-                                  style: Theme.of(context).textTheme.bodyLarge,
+                  child: c.isLoading
+                      ? const SizedBox.shrink()
+                      : (filtered.isEmpty
+                            ? (c.allRecipes.isEmpty
+                                  ? const EmptyVaultPlaceholder(topSpacing: 8)
+                                  : Center(
+                                      child: Text(
+                                        t.noRecipesFound,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodyLarge,
+                                      ),
+                                    ))
+                            : AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 300),
+                                child: ResponsiveWrapper(
+                                  child: switch (viewMode) {
+                                    ViewMode.list => list_view.RecipeListView(
+                                      recipes: filtered,
+                                      onDelete: c.deleteRecipe,
+                                      onTap: (r) => showRecipeDialog(
+                                        context,
+                                        _normaliseRecipe(context, r),
+                                      ),
+                                      onToggleFavourite: c.toggleFavourite,
+                                      categories: c.categories,
+                                      onAssignCategories: (r, cats) =>
+                                          c.assignCategories(r, cats),
+                                      onAddOrUpdateImage: (r) =>
+                                          c.addOrUpdateImage(
+                                            r,
+                                            context: context,
+                                          ),
+                                    ),
+                                    ViewMode.grid => grid_view.RecipeGridView(
+                                      recipes: filtered,
+                                      onTap: (r) => showRecipeDialog(
+                                        context,
+                                        _normaliseRecipe(context, r),
+                                      ),
+                                      onToggleFavourite: c.toggleFavourite,
+                                      onAssignCategories: (r, cats) =>
+                                          c.assignCategories(r, cats),
+                                      categories: c.categories,
+                                      onDelete: c.deleteRecipe,
+                                      onAddOrUpdateImage: (r) =>
+                                          c.addOrUpdateImage(
+                                            r,
+                                            context: context,
+                                          ),
+                                    ),
+                                    ViewMode.compact =>
+                                      compact_view.RecipeCompactView(
+                                        recipes: filtered,
+                                        onTap: (r) => showRecipeDialog(
+                                          context,
+                                          _normaliseRecipe(context, r),
+                                        ),
+                                        onToggleFavourite: c.toggleFavourite,
+                                        onDelete: c.deleteRecipe,
+                                        categories: c.categories,
+                                        onAssignCategories: (r, cats) =>
+                                            c.assignCategories(r, cats),
+                                        onAddOrUpdateImage: (r) =>
+                                            c.addOrUpdateImage(
+                                              r,
+                                              context: context,
+                                            ),
+                                      ),
+                                  },
                                 ),
-                              ))
-                      : AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          child: ResponsiveWrapper(
-                            child: switch (viewMode) {
-                              ViewMode.list => list_view.RecipeListView(
-                                recipes: filtered,
-                                onDelete: c.deleteRecipe,
-                                onTap: (r) => showRecipeDialog(
-                                  context,
-                                  _normaliseRecipe(context, r),
-                                ),
-                                onToggleFavourite: c.toggleFavourite,
-                                categories: c.categories,
-                                onAssignCategories: (r, cats) =>
-                                    c.assignCategories(r, cats),
-                                onAddOrUpdateImage: (r) =>
-                                    c.addOrUpdateImage(r, context: context),
-                              ),
-                              ViewMode.grid => grid_view.RecipeGridView(
-                                recipes: filtered,
-                                onTap: (r) => showRecipeDialog(
-                                  context,
-                                  _normaliseRecipe(context, r),
-                                ),
-                                onToggleFavourite: c.toggleFavourite,
-                                onAssignCategories: (r, cats) =>
-                                    c.assignCategories(r, cats),
-                                categories: c.categories,
-                                onDelete: c.deleteRecipe,
-                                onAddOrUpdateImage: (r) =>
-                                    c.addOrUpdateImage(r, context: context),
-                              ),
-                              ViewMode.compact =>
-                                compact_view.RecipeCompactView(
-                                  recipes: filtered,
-                                  onTap: (r) => showRecipeDialog(
-                                    context,
-                                    _normaliseRecipe(context, r),
-                                  ),
-                                  onToggleFavourite: c.toggleFavourite,
-                                  onDelete: c.deleteRecipe,
-                                  categories: c.categories,
-                                  onAssignCategories: (r, cats) =>
-                                      c.assignCategories(r, cats),
-                                  onAddOrUpdateImage: (r) =>
-                                      c.addOrUpdateImage(r, context: context),
-                                ),
-                            },
-                          ),
-                        ),
+                              )),
                 ),
               ],
             ),
@@ -234,7 +247,7 @@ class _VaultBodyState extends State<_VaultBody> {
               border: Border.all(color: Colors.white, width: 2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.18),
+                  color: Colors.black.withAlpha(46),
                   blurRadius: 16,
                   offset: const Offset(0, 8),
                 ),

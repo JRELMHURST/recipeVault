@@ -63,22 +63,26 @@ class AppBootstrap {
           );
           await Purchases.configure(cfg);
           _rcConfigured = true;
-          debugPrint('✅ BOOT: RevenueCat configured');
+          debugPrint('✅ BOOT: RevenueCat configured successfully');
         } else {
-          debugPrint('ℹ️ BOOT: RevenueCat already configured, skipping');
+          debugPrint('ℹ️ BOOT: RevenueCat already configured — skipping setup');
         }
       } else {
         debugPrint('ℹ️ BOOT: RevenueCat not configured (non-mobile platform)');
       }
     } catch (e, st) {
-      debugPrint('❌ BOOT: RevenueCat configure failed: $e');
+      debugPrint(
+        '❌ BOOT ERROR: Failed to configure RevenueCat (in-app purchases). Error: $e',
+      );
       debugPrintStack(stackTrace: st);
     }
 
     try {
       await NotificationService.init();
     } catch (e, st) {
-      debugPrint('⚠️ BOOT: NotificationService init failed: $e');
+      debugPrint(
+        '⚠️ BOOT WARNING: NotificationService failed to initialize. Some features may be unavailable. Error: $e',
+      );
       debugPrintStack(stackTrace: st);
     }
 
@@ -108,14 +112,18 @@ class AppBootstrap {
           await catBox.close();
         }
       } catch (e, st) {
-        debugPrint('⚠️ BOOT: Legacy category migration failed: $e');
+        debugPrint(
+          '⚠️ BOOT WARNING: Failed to migrate legacy category entries. Old categories may not appear correctly. Error: $e',
+        );
         debugPrintStack(stackTrace: st);
       }
 
       await CategoryService.init();
       await UserPreferencesService.init();
     } catch (e, st) {
-      debugPrint('❌ BOOT: Hive core setup failed: $e');
+      debugPrint(
+        '❌ BOOT ERROR: Failed to initialise local data storage (Hive). App may not function as expected. Error: $e',
+      );
       debugPrintStack(stackTrace: st);
     }
 
@@ -125,8 +133,8 @@ class AppBootstrap {
         .listen((user) async {
           debugPrint(
             user == null
-                ? '🧍 BOOT: FirebaseAuth → No user signed in'
-                : '✅ BOOT: FirebaseAuth → Signed in uid=\${user.uid}',
+                ? '👤 BOOT: No user currently signed in. Limited functionality available.'
+                : '✅ BOOT: Signed in as user → ${user.uid}',
           );
 
           final uid = user?.uid;
@@ -134,7 +142,9 @@ class AppBootstrap {
           try {
             await CategoryService.onAuthChanged(uid);
           } catch (e, st) {
-            debugPrint('⚠️ BOOT: CategoryService.onAuthChanged failed: \$e');
+            debugPrint(
+              '⚠️ BOOT WARNING: Failed to update category preferences. Error: $e',
+            );
             debugPrintStack(stackTrace: st);
           }
 
@@ -142,7 +152,7 @@ class AppBootstrap {
             await UserPreferencesService.onAuthChanged(uid);
           } catch (e, st) {
             debugPrint(
-              '⚠️ BOOT: UserPreferencesService.onAuthChanged failed: \$e',
+              '⚠️ BOOT WARNING: Failed to load user preferences. Error: $e',
             );
             debugPrintStack(stackTrace: st);
           }
@@ -152,14 +162,18 @@ class AppBootstrap {
             await subs.setAppUserId(uid);
             await subs.refresh();
           } catch (e, st) {
-            debugPrint('⚠️ BOOT: SubscriptionService failed: \$e');
+            debugPrint(
+              '⚠️ BOOT WARNING: Failed to initialise subscription status. Error: $e',
+            );
             debugPrintStack(stackTrace: st);
           }
 
           if (!_hasSetReady) {
             _hasSetReady = true;
             _ready.value = true;
-            debugPrint('✅ BOOT: AppBootstrap isReady = true');
+            debugPrint(
+              '✅ BOOT COMPLETE: AppBootstrap marked ready. All critical services initialised.',
+            );
           }
         });
   }

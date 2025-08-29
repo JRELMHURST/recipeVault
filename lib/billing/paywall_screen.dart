@@ -101,7 +101,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
         // ✅ Assign directly to the class field
         _eligibilityMap = {
           for (final e in eligMap.entries)
-            e.key: e.value.status.name, // store as string
+            e.key: (e.value.status.name == "eligible")
+                ? "eligible"
+                : "ineligible", // treat unknown as ineligible
         };
       } catch (e) {
         if (kDebugMode) {

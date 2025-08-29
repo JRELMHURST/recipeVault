@@ -1,4 +1,3 @@
-// lib/core/daily_message_bubble.dart
 // ignore_for_file: file_names, deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
@@ -172,7 +171,7 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
                 highlightShape: BoxShape.circle,
                 child: const SizedBox.expand(),
               ),
-              glowingIcon, // 👈 replaces baseIcon and unreadDot
+              glowingIcon,
             ],
           ),
         ),
@@ -180,8 +179,6 @@ class _DailyMessageBubbleState extends State<DailyMessageBubble>
     );
   }
 }
-
-/* ───────────── Helper widgets (kept local to avoid missing-symbol errors) ───────────── */
 
 class _Sparkle extends StatefulWidget {
   const _Sparkle(this.base);
@@ -223,8 +220,6 @@ class _SparkleState extends State<_Sparkle>
   }
 }
 
-/// Rounded card with subtle gradient border (no blur; no dart:ui import needed)
-/// Rounded card with gradient border + subtle shadow
 class _BannerBody extends StatelessWidget {
   final String title;
   final String body;
@@ -262,112 +257,116 @@ class _BannerBody extends StatelessWidget {
         ],
       ),
       child: Container(
-        margin: const EdgeInsets.all(1.5), // thickness of border
+        margin: const EdgeInsets.all(1.5),
         decoration: BoxDecoration(
           color: cs.surface,
           borderRadius: BorderRadius.circular(18),
         ),
         padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            // Icon chip
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: isDark
-                      ? [cs.tertiary, cs.primary]
-                      : [cs.primary, cs.secondary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Icon(iconData, color: Colors.white),
-            ),
-            const SizedBox(width: 14),
-
-            // Text + CTA
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: .2,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _Sparkle(cs.primary),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    body,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      height: 1.45,
-                      color: cs.onSurface.withOpacity(.92),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [cs.tertiary, cs.primary]
+                          : [cs.primary, cs.secondary],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  child: Icon(iconData, color: Colors.white),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TextButton(
-                        onPressed: onClose,
-                        style: TextButton.styleFrom(
-                          foregroundColor: cs.primary,
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context).close,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              title,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: .2,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _Sparkle(cs.primary),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        body,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          height: 1.45,
+                          color: cs.onSurface.withOpacity(.92),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: onClose,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: cs.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 10,
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: onClose,
+                            style: TextButton.styleFrom(
+                              foregroundColor: cs.primary,
+                            ),
+                            child: Text(
+                              AppLocalizations.of(context).close,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: onClose,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: cs.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 10,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: Text(
+                              AppLocalizations.of(context).gotIt,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          AppLocalizations.of(context).gotIt,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-
-            // Close
-            IconButton(
-              padding: const EdgeInsets.only(left: 4),
-              constraints: const BoxConstraints(),
-              onPressed: onClose,
-              icon: Icon(
-                Icons.close_rounded,
-                color: cs.onSurface.withOpacity(0.70),
+            Positioned(
+              top: -6,
+              right: -6,
+              child: IconButton(
+                onPressed: onClose,
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: cs.onSurface.withOpacity(0.70),
+                ),
               ),
             ),
           ],

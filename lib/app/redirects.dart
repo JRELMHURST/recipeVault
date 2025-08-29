@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:recipe_vault/app/app_bootstrap.dart';
 import 'package:recipe_vault/billing/subscription/subscription_service.dart';
+import 'package:recipe_vault/billing/subscription/subscription_types.dart';
 import 'package:recipe_vault/data/services/user_session_service.dart';
 import 'routes.dart';
 
@@ -35,11 +36,16 @@ String? appRedirect(
     return onAuth ? null : AppRoutes.login;
   }
 
-  // 🥾 3) Bootstrap gating (while subs/status resolving)
-  final isStillBooting = !AppBootstrap.isReady || subs.tier == 'none';
+  // 🥾 3) Bootstrap + Subscription still resolving
+  final isStillBooting =
+      !AppBootstrap.isReady || subs.status == EntitlementStatus.checking;
   if (isStillBooting && !AppBootstrap.timeoutReached) {
     // Allow paywall if user explicitly opened manage
     if (loc == AppRoutes.paywall && isManaging) return null;
+
+    // Prevent accidental flash of paywall
+    if (loc == AppRoutes.paywall && !isManaging) return AppRoutes.boot;
+
     return AppRoutes.boot;
   }
 
